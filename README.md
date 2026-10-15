@@ -1,6 +1,14 @@
 # CuenkArena
 
-Deathmatch online estilo Quake que corre en el navegador. Mapa **dm1 · La Represa**, siete armas, plataformas de salto, teletransportador, daño cuádruple, bots y movimiento con *strafe jump* y *bunny hop*.
+Deathmatch online estilo Quake que corre en el navegador. Dos mapas que rotan al terminar cada partida: **dm1 · La Represa** (industrial, con lava) y **dm2 · Sagrado** (un boliche con pista LED, plataformas móviles, ascensores y subwoofers que te lanzan). Siete armas, tienda con créditos, taquilla para personalizar tu personaje, bots y movimiento con *strafe jump* y *bunny hop*.
+
+## Créditos y tienda
+
+Cada frag da ¤ 200 (¤ 100 extra si cortás una racha de 3 y ¤ 100 extra con pistola). Arrancás con ¤ 300. Con **B** se abre la tienda: pistola y escopeta vienen gratis; el resto de las armas, el blindaje y la cartuchera doble se desbloquean y quedan tuyos hasta que termina la partida (aparecés con eso cada vez). Los precios están en `SHOP` dentro de `public/game.js`.
+
+## Taquilla
+
+Desde el menú: color de armadura (o uno a elección), color de visor y accesorio. Se guarda en el navegador y los demás lo ven al instante.
 
 No tiene dependencias: solo necesitás **Node.js 18 o más nuevo**.
 
@@ -22,7 +30,17 @@ node server.js
 
 El plan gratuito de Render apaga el servidor después de 15 minutos sin visitas. La primera persona que entra después espera unos 30–50 segundos a que arranque.
 
-Otras opciones que también soportan WebSockets: Railway, Fly.io (hay un `Dockerfile`) o cualquier VPS con `node server.js`. Vercel y Netlify **no** sirven para el servidor porque no mantienen conexiones WebSocket abiertas.
+### Menos ping desde Argentina: Fly.io en São Paulo
+
+Render solo tiene servidores en EE. UU. y Europa, así que desde Misiones el ping ronda los 150–200 ms. Fly.io tiene región en São Paulo (`gru`) y el repo ya trae `fly.toml` y `Dockerfile`:
+
+1. Instalá `flyctl` y hacé `fly auth signup` (pide tarjeta).
+2. En la carpeta del juego: `fly launch --no-deploy --copy-config` (si `cuenkarena` está tomado, elegí otro nombre).
+3. `fly deploy`.
+
+La máquina más chica cuesta unos pocos dólares por mes y se apaga sola cuando nadie juega.
+
+Vercel y Netlify **no** sirven para el servidor porque no mantienen conexiones WebSocket abiertas.
 
 ## Configuración
 
@@ -36,8 +54,9 @@ Variables de entorno opcionales:
 | `FRAGLIMIT` | 20 | Frags para ganar la partida |
 | `TIMELIMIT` | 10 | Minutos por partida |
 | `MAX_PLAYERS` | 16 | Jugadores máximos, contando bots |
+| `MAP` | represa | Mapa inicial: `represa` o `sagrado` |
 
-Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 30`, `/restart`.
+Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 30`, `/map sagrado`, `/restart`.
 
 ## Controles
 
@@ -47,6 +66,7 @@ Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 
 | Espacio | saltar (mantenelo para encadenar saltos) |
 | Mouse / click | apuntar / disparar |
 | 1–7, rueda, Q | armas (Q vuelve a la anterior) |
+| B | tienda |
 | Tab | tabla de frags |
 | T o Enter | chat |
 | + / − | agregar o sacar bots (solo en práctica) |
@@ -57,22 +77,23 @@ Para ganar velocidad como en Quake: saltá, soltá W, mantené A o D y girá el 
 ## Cómo está armado
 
 ```
-server.js          servidor HTTP + WebSocket propio (sin librerías), corre la partida a 60 Hz
+server.js          servidor HTTP + WebSocket propio (sin librerías), corre la partida a 40 Hz con paso fijo
 public/index.html  cliente: render con three.js, HUD, menú, sonido sintetizado, red
 public/game.js     núcleo compartido: mapa, física, armas, ítems, reglas y bots
 ```
 
-`game.js` lo usan los dos lados. El servidor es la autoridad sobre salud, munición, ítems, frags, proyectiles y bots. Cada cliente simula su propio movimiento (para que se sienta instantáneo) y le avisa al servidor dónde está 30 veces por segundo; el servidor manda el estado de todos 20 veces por segundo y el cliente interpola a los demás. Los disparos instantáneos los detecta el cliente que dispara y el servidor los valida (distancia, ángulo y que no haya una pared en el medio).
+`game.js` lo usan los dos lados. El servidor es la autoridad sobre salud, munición, ítems, frags, proyectiles y bots. Cada cliente simula su propio movimiento (para que se sienta instantáneo) y le avisa al servidor dónde está 30 veces por segundo; el servidor manda el estado de todos 20 veces por segundo y el cliente interpola a los demás con un colchón que se adapta al jitter de la conexión. Los disparos instantáneos los detecta el cliente que dispara y el servidor los valida (distancia, ángulo y que no haya una pared en el medio).
 
 La práctica con bots del menú corre la misma clase `Game` dentro del navegador, sin servidor.
 
 ### Editar el mapa
 
-El mapa está en `buildMap()` dentro de `public/game.js`. Todo son cajas, como los *brushes* de Quake:
+Los mapas están en `buildRepresa()` y `buildSagrado()` dentro de `public/game.js`. Todo son cajas, como los *brushes* de Quake:
 
 - `add(x0, y0, z0, x1, y1, z1, 'material')` agrega un bloque sólido.
 - `stairs(...)`, `ramp(...)` y `wall(... , [puertas])` arman escaleras, rampas y paredes con aberturas.
 - `pads.push(...)` agrega una plataforma de salto con su punto de llegada; `teles.push(...)` un teletransportador.
+- `mover(...)` agrega una plataforma móvil (eje, amplitud, período y fase).
 - `I('tipo', x, y, z)` coloca un ítem y `spawns` define dónde aparecen los jugadores.
 
 Los bots generan su mapa de navegación solos a partir de las cajas, así que no hace falta marcar caminos a mano.

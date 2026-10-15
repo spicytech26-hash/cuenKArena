@@ -55,14 +55,31 @@ for (const k in ITEMS) if (ITEMS[k].weapon != null) ITEMS[k].name = WEAPONS[ITEM
 for (const k in ITEMS) if (!ITEMS[k].name && ITEMS[k].ammo) ITEMS[k].name = AMMO_NAME[ITEMS[k].ammo];
 
 const COLORS = ['#e8542a', '#3fa7ff', '#9ccc3c', '#ffcc33', '#c45cff', '#ff5c8a', '#38d6c4', '#f2efe6', '#ff8f1f', '#7a8cff'];
+/* ---------- Economía: créditos por frag y tienda (tecla B) ---------- */
+const ECON = { START: 300, KILL: 200, SHUTDOWN: 100, PISTOL: 100, MAX: 9999 };
+// pack: munición con la que aparecés si desbloqueaste el arma
+const SHOP = [
+  { id: 'w0', cat: 'Pistolas', name: 'Pistola', w: 0, price: 0, free: 1, desc: 'Munición infinita, un tiro por click' },
+  { id: 'w1', cat: 'Escopetas', name: 'Escopeta', w: 1, price: 0, free: 1, desc: '10 perdigones, ideal de cerca' },
+  { id: 'w2', cat: 'Escopetas', name: 'Escopeta doble', w: 2, price: 500, pack: ['shells', 20], desc: '20 perdigones, gasta 2 cartuchos' },
+  { id: 'w3', cat: 'Automáticas', name: 'Ametralladora', w: 3, price: 600, pack: ['bullets', 100], desc: 'Fuego continuo a media distancia' },
+  { id: 'w4', cat: 'Explosivas', name: 'Lanzagranadas', w: 4, price: 900, pack: ['grenades', 10], desc: 'Granadas que rebotan' },
+  { id: 'w5', cat: 'Explosivas', name: 'Lanzacohetes', w: 5, price: 1300, pack: ['rockets', 10], desc: 'Daño en área y rocket jump' },
+  { id: 'w6', cat: 'Precisión', name: 'Rifle de riel', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Atraviesa a todos los que estén en línea' },
+  { id: 'a1', cat: 'Blindaje', name: 'Chaleco', price: 400, armor: 50, desc: 'Aparecés con 50 de blindaje' },
+  { id: 'a2', cat: 'Blindaje', name: 'Armadura pesada', price: 900, armor: 100, desc: 'Aparecés con 100 de blindaje' },
+  { id: 'am', cat: 'Suministros', name: 'Cartuchera doble', price: 500, desc: 'Aparecés con el doble de munición' },
+  { id: 'rf', cat: 'Suministros', name: 'Recarga', price: 150, use: 1, desc: 'Llena la munición de tus armas ahora' }
+];
+const ACCESSORIES = ['Ninguno', 'Cresta', 'Antena', 'Cuernos', 'Gorra'];
 const BOT_NAMES = ['Yacaré', 'Carpincho', 'Surubí', 'Tatú', 'Coatí', 'Aguará', 'Yaguareté', 'Pacú', 'Dorado', 'Tero', 'Hornero', 'Mbiguá', 'Urutaú', 'Tucán', 'Zorro', 'Lobito'];
 
 /* =====================================================================
-   MAPA — "dm1 · La Represa"
+   MAPAS
    Todo el nivel son cajas (brushes), igual que en Quake.
    x: oeste(-) / este(+) · z: norte(-) / sur(+) · y: altura
    ===================================================================== */
-function buildMap() {
+function mapKit() {
   const B = [], pads = [], teles = [], lava = [], items = [], spawns = [], lights = [];
   function add(x0, y0, z0, x1, y1, z1, mat, ex) {
     const b = { min: [Math.min(x0, x1), Math.min(y0, y1), Math.min(z0, z1)], max: [Math.max(x0, x1), Math.max(y0, y1), Math.max(z0, z1)], mat: mat || 'wall' };
@@ -104,6 +121,21 @@ function buildMap() {
   }
   const D = (a0, a1, y0, y1) => [a0, a1, y0, y1];
   const face = (x, z, tx, tz) => Math.atan2(-(tx - x), -(tz - z));
+  const I = (type, x, y, z) => items.push({ type, x, y, z });
+  // plataforma móvil: se desplaza amp metros sobre axis (0=x, 1=y, 2=z) ida y vuelta cada period segundos
+  const mover = (x0, y0, z0, x1, y1, z1, mat, axis, amp, period, phase) => add(x0, y0, z0, x1, y1, z1, mat, { mover: { axis, amp, period, phase: phase || 0 } });
+  function finish(o) {
+    const movers = B.filter(b => b.mover);
+    movers.forEach(b => { b.mover.min0 = b.min.slice(); b.mover.max0 = b.max.slice(); b.off = 0; });
+    B.forEach((b, i) => b.id = i);
+    return Object.assign({ brushes: B, pads, teles, lava, items, spawns, lights, movers }, o);
+  }
+  return { B, pads, teles, lava, items, spawns, lights, add, ramp, wall, stairs, D, face, I, mover, finish };
+}
+
+/* ---------- dm1 · La Represa ---------- */
+function buildRepresa() {
+  const { pads, teles, lava, spawns, lights, add, ramp, wall, stairs, D, face, I, finish } = mapKit();
 
   /* ---- Límites del mundo ---- */
   add(-41, -6, -41, 41, 24, -40, 'block');
@@ -213,7 +245,6 @@ function buildMap() {
   add(-15.9, 3.5, 37.8, 15.9, 3.8, 38, 'light', { nc: 1 });
 
   /* ---- Ítems ---- */
-  const I = (type, x, y, z) => items.push({ type, x, y, z });
   I('quad', 0, 7, 0);
   I('health', -8, 0, 10); I('health', 8, 0, -10); I('shells', 14, 6, -14); I('bullets', -14, 6, 14); I('armor', 14, 6, 14);
   I('w6', 0, 12, -31); I('slugs', 3, 12, -32.5); I('armor', -20, 2.5, -36); I('health', 20, 0, -36);
@@ -239,9 +270,112 @@ function buildMap() {
     { x: 0, y: -2, z: 0, c: 0xff4a10, i: 1.4, d: 12 }
   );
 
-  return { name: 'dm1 · La Represa', brushes: B, pads, teles, lava, items, spawns, lights, bounds: { x0: -41, x1: 41, z0: -41, z1: 39 } };
+  return finish({ id: 'represa', name: 'dm1 · La Represa', bounds: { x0: -41, x1: 41, z0: -41, z1: 39 },
+    theme: { sky: 'dusk', fog: 0x1c1310, fogD: .0105, amb: 0x55453a, ambI: .85, hemi: [0x5a4a6a, 0x1a100a, .55], sun: true } });
 }
-const WORLD = buildMap();
+
+/* ---------- dm2 · Sagrado — un boliche (homenaje a la noche de Posadas) ---------- */
+function buildSagrado() {
+  const { pads, spawns, lights, add, wall, stairs, D, face, I, mover, finish } = mapKit();
+  /* ---- cáscara: salón principal x[-20,20] z[-18,18], techo a 16 ---- */
+  wall(-21, -19, 21, -18, -2, 17, [], 'black');
+  wall(-21, 18, 21, 19, -2, 17, [D(-12, -8, 0, 4), D(-2, 2, 0, 4), D(8, 12, 0, 4), D(-3, 3, 7, 10), D(16, 20, 7, 10), D(-20, -16, 7, 10)], 'black');
+  add(-21, -2, -18, -20, 17, 18, 'black'); add(20, -2, -18, 21, 17, 18, 'black');
+  add(-21, 16, -19, 21, 17, 19, 'roof');
+  // piso: pista LED en el centro y baldosas alrededor
+  add(-12, -1, -10, 12, 0, 10, 'led');
+  add(-20, -1, -18, 20, 0, -10, 'club'); add(-20, -1, 10, 20, 0, 18, 'club');
+  add(-20, -1, -10, -12, 0, 10, 'club'); add(12, -1, -10, 20, 0, 10, 'club');
+  add(-4, 0, -4, 4, 1, 4, 'led');                                  // podio central
+  /* ---- escenario y cabina del DJ ---- */
+  add(-10, 0, -18, 10, 2, -12, 'stage');
+  stairs(-6, -12, 6, -10.5, 0, .5, 3, 'z', -1, 'stage');
+  add(-3, 2, -15, 3, 3.1, -13.5, 'chrome');
+  /* ---- torres de parlantes: escalones hasta el VIP ---- */
+  for (const sx of [-1, 1]) {
+    const X = (a, b) => sx < 0 ? [a, b] : [-b, -a];
+    let [a, b] = X(-14, -10); add(a, 0, -18, b, 2.6, -14.5, 'speaker');
+    [a, b] = X(-17, -14); add(a, 0, -18, b, 3.8, -14.5, 'speaker');
+    [a, b] = X(-20, -17); add(a, 0, -18, b, 5.0, -14.5, 'speaker');
+    [a, b] = X(-20, -17); add(a, 0, -14.5, b, 6.2, -12, 'speaker');
+  }
+  /* ---- VIP: balcones en U a 7 m ---- */
+  add(-20, 6.5, -12, -15, 7, 18, 'velvet'); add(15, 6.5, -12, 20, 7, 18, 'velvet'); add(-15, 6.5, 13, 15, 7, 18, 'velvet');
+  [-6, 6].forEach(z => { add(-15.5, 0, z - .25, -15, 6.5, z + .25, 'chrome'); add(15, 0, z - .25, 15.5, 6.5, z + .25, 'chrome'); });
+  [-8, 8].forEach(x => add(x - .25, 0, 13, x + .25, 6.5, 13.5, 'chrome'));
+  // barras debajo del VIP
+  add(-17, 0, -8, -16, 1.1, 8, 'glass'); add(16, 0, -8, 17, 1.1, 8, 'glass');
+  /* ---- estructura de luces (truss) a 12 m ---- */
+  add(-14, 11.6, -9.5, 14, 12, -8, 'truss'); add(-14, 11.6, 8, 14, 12, 9.5, 'truss');
+  add(-14, 11.6, -8, -12.5, 12, 8, 'truss'); add(12.5, 11.6, -8, 14, 12, 8, 'truss');
+  /* ---- cabina flotante con el cuádruple ---- */
+  add(-2.5, 10.6, -2.5, 2.5, 11, 2.5, 'chrome');
+  /* ---- partes móviles ---- */
+  mover(-14.5, 6.6, -7.5, -11.5, 7, -4.5, 'lift', 0, 26, 10, 0);              // plataforma que cruza el salón
+  mover(-14.5, 6.6, 4.5, -11.5, 7, 7.5, 'lift', 0, 26, 10, Math.PI);
+  mover(-14, -.1, 10, -11, .3, 13, 'lift', 1, 6.7, 8, 0);                    // ascensores al VIP sur
+  mover(11, -.1, 10, 14, .3, 13, 'lift', 1, 6.7, 8, Math.PI);
+  /* ---- subwoofers (plataformas de salto) ---- */
+  pads.push({ x: 9, y: 0, z: 0, r: 1, t: [1, 11, 0], apex: 1.5 });
+  pads.push({ x: -9, y: 0, z: 0, r: 1, t: [-1, 11, 0], apex: 1.5 });
+  pads.push({ x: 0, y: 0, z: 10.6, r: 1, t: [0, 7, 15.5], apex: 1.2 });
+  pads.push({ x: -17.5, y: 7, z: -3, r: 1, t: [-13.25, 12, -3], apex: 1.5 });
+  pads.push({ x: 17.5, y: 7, z: 3, r: 1, t: [13.25, 12, 3], apex: 1.5 });
+  /* ---- lobby / baños y terraza ---- */
+  add(-21, -1, 19, 21, 0, 32, 'club');
+  add(-21, -2, 19, -20, 17, 32, 'black'); add(20, -2, 19, 21, 17, 32, 'black'); add(-21, -2, 32, 21, 17, 33, 'black');
+  add(-16, 4.5, 19, 16, 5, 32, 'roof');                                         // techo del lobby = terraza
+  add(-20, 12, 19, -16, 13, 32, 'roof'); add(16, 12, 19, 20, 13, 32, 'roof');   // techos de las escaleras
+  stairs(17, 19, 20, 31, 0, .5, 14, 'z', -1, 'stage');
+  stairs(-20, 19, -17, 31, 0, .5, 14, 'z', -1, 'stage');
+  add(-14, 0, 26, -4, 4.5, 26.6, 'mirror'); add(4, 0, 26, 14, 4.5, 26.6, 'mirror');
+  [-8, 8].forEach(x => add(x - .5, 0, 24, x + .5, 4.5, 25, 'chrome'));
+  add(-1, 0, 28.5, 1, .4, 30.5, 'chrome');
+  add(-14, 0, 30.5, -8, .6, 32, 'velvet'); add(8, 0, 30.5, 14, .6, 32, 'velvet');
+  /* ---- neón ---- */
+  add(-15.1, 6.3, -12, -14.9, 6.5, 13, 'neonP', { nc: 1 }); add(14.9, 6.3, -12, 15.1, 6.5, 13, 'neonC', { nc: 1 });
+  add(-15, 6.3, 12.9, 15, 6.5, 13.1, 'neonP', { nc: 1 });
+  add(-19.9, 14.8, -18, -19.7, 15.1, 18, 'neonC', { nc: 1 }); add(19.7, 14.8, -18, 19.9, 15.1, 18, 'neonP', { nc: 1 });
+  add(-10, 2.05, -11.9, 10, 2.2, -11.7, 'neonC', { nc: 1 });
+  add(-16, 4.1, 31.8, 16, 4.3, 32, 'neonP', { nc: 1 });
+  /* ---- ítems ---- */
+  I('quad', 0, 11, 0); I('mega', 0, 12, 8.75); I('w6', 0, 12, -8.75); I('slugs', 13.25, 12, -4); I('grenades', -13.25, 12, 4);
+  I('w5', 0, .4, 29.5); I('rockets', -11, 0, 28.5); I('rockets', 11, 5, 28); I('w2', 6, 2, -15.5); I('w3', -17.5, 7, -7); I('w4', 17.5, 7, 7);
+  I('shells', -8, 0, -8); I('shells', 8, 0, 8); I('bullets', 8, 0, -8); I('bullets', -17.5, 7, 15); I('armor', 17.5, 7, -10); I('armor', -17.5, 7, 10);
+  I('armorH', 0, 5, 22); I('health', -18.5, 0, 0); I('health', 18.5, 0, 0); I('health', -12, 0, 22); I('health', 12, 0, 22); I('w1', -6, 2, -15.5);
+  /* ---- apariciones ---- */
+  [[-14, 0, -6], [14, 0, 6], [-8, 0, 15], [8, 0, 15.5], [4, 2, -16.5], [-17.5, 7, 1], [17.5, 7, -2], [-5, 7, 15.5], [5, 7, 15.5],
+   [-10, 0, 21], [10, 0, 21], [-6, 0, 30], [6, 0, 30], [-12, 5, 24], [12, 5, 24], [0, 1, 0]]
+    .forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
+  /* ---- luces ---- */
+  lights.push(
+    { x: -12, y: 9, z: 0, c: 0xff2bd6, i: 1.6, d: 30 },
+    { x: 12, y: 9, z: 0, c: 0x2be6ff, i: 1.6, d: 30 },
+    { x: 0, y: 14, z: 0, c: 0x8a4bff, i: 1.5, d: 34 },
+    { x: 0, y: 6, z: -14, c: 0xffb040, i: 1.4, d: 22 },
+    { x: 0, y: 3.5, z: 25, c: 0xff3050, i: 1.3, d: 22 },
+    { x: 0, y: 10, z: 26, c: 0x6a7bff, i: 1.1, d: 26 }
+  );
+  return finish({ id: 'sagrado', name: 'dm2 · Sagrado', bounds: { x0: -22, x1: 22, z0: -20, z1: 34 },
+    theme: { sky: 'night', fog: 0x0d0716, fogD: .013, amb: 0x3a2a55, ambI: .9, hemi: [0x6040a0, 0x10081a, .55], sun: false, club: true } });
+}
+const MAPS = { represa: buildRepresa(), sagrado: buildSagrado() };
+const MAP_IDS = Object.keys(MAPS);
+const WORLD = MAPS.represa;
+
+/* ---------- plataformas móviles: su posición depende solo del reloj de la partida ---------- */
+function moverOff(m, t) {
+  const u = clamp(.5 + .75 * Math.sin(2 * Math.PI * t / m.period + m.phase), 0, 1);
+  return m.amp * u * u * (3 - 2 * u);
+}
+function updateMovers(W, t) {
+  for (const b of W.movers) {
+    const m = b.mover, o = moverOff(m, t);
+    b.off = o;
+    for (let k = 0; k < 3; k++) { b.min[k] = m.min0[k]; b.max[k] = m.max0[k]; }
+    b.min[m.axis] += o; b.max[m.axis] += o;
+  }
+}
 
 /* =====================================================================
    COLISIÓN Y MOVIMIENTO
@@ -289,15 +423,19 @@ function stepY(W, s, h, wasOn) {
   const r = K.R, H = K.H, x0 = s.x - r, x1 = s.x + r, z0 = s.z - r, z1 = s.z + r;
   const ny = s.y + s.vy * h;
   if (s.vy <= 0) {
-    let ground = -Infinity;
+    let ground = -Infinity, gb = null;
     for (const b of W.brushes) {
       if (b.nc || !overlapXZ(b, x0, z0, x1, z1)) continue;
       const top = topAt(b, x0, z0, x1, z1);
-      if (top <= s.y + .02 && top > ground) ground = top;
+      if (top <= s.y + .02 && top > ground) { ground = top; gb = b; }
     }
-    if (ny <= ground) { s.y = ground; s.vy = 0; s.on = true; }
-    else if (wasOn && s.y - ground <= K.STEP + .05 && s.vy > -6) { s.y = ground; s.vy = 0; s.on = true; }
-    else { s.y = ny; s.on = false; }
+    let land = false;
+    if (ny <= ground) land = true;
+    else if (wasOn && s.y - ground <= K.STEP + .05 && s.vy > -6) land = true;
+    if (land) {
+      s.y = ground; s.vy = 0; s.on = true;
+      if (gb && gb.mover) { if (s.gb !== gb.id) { s.gb = gb.id; s.gbo = gb.off; } } else s.gb = null;
+    } else { s.y = ny; s.on = false; s.gb = null; }
   } else {
     let ceil = Infinity;
     for (const b of W.brushes) {
@@ -325,7 +463,24 @@ function accelerate(s, wx, wz, wishspeed, acc, h, air) {
 }
 /* Movimiento estilo Quake: aceleración en el aire que permite strafe-jump y bunny hop.
    cmd = {wx, wz, jump}: dirección deseada en el mundo (largo ≤ 1). */
+function carry(W, s) {
+  // te lleva la plataforma sobre la que estás parado
+  if (s.gb != null) {
+    const b = W.brushes[s.gb];
+    if (b && b.mover && s.on) {
+      const d = b.off - (s.gbo == null ? b.off : s.gbo);
+      if (d) { if (b.mover.axis === 0) s.x += d; else if (b.mover.axis === 1) s.y += d; else s.z += d; }
+      s.gbo = b.off;
+    } else s.gb = null;
+  }
+  // si una plataforma te atraviesa, quedás parado arriba
+  for (const b of W.movers) {
+    if (!overlapXZ(b, s.x - K.R, s.z - K.R, s.x + K.R, s.z + K.R)) continue;
+    if (b.max[1] > s.y + EPS && b.min[1] < s.y + K.H && b.max[1] - s.y < 1.2) { s.y = b.max[1]; if (s.vy < 0) s.vy = 0; s.on = true; s.gb = b.id; s.gbo = b.off; }
+  }
+}
 function pmove(W, s, cmd, dt) {
+  if (W.movers.length) carry(W, s);
   const steps = Math.max(1, Math.ceil(dt / (1 / 120) - 1e-6)), h = dt / steps;
   let wx = cmd.wx || 0, wz = cmd.wz || 0;
   const wl = Math.hypot(wx, wz); let wish = 0;
@@ -456,7 +611,7 @@ function projStep(W, p, dt) {
 /* =====================================================================
    NAVEGACIÓN DE BOTS (grilla de 1 m generada desde el mapa)
    ===================================================================== */
-let NAV = null;
+const NAVS = {};
 function inLava(W, x, y, z) { for (const l of W.lava) if (x > l.min[0] && x < l.max[0] && z > l.min[2] && z < l.max[2] && y < l.max[1] + .05 && y > l.min[1] - .5) return true; return false; }
 function airtime(dy) { const disc = K.JUMP * K.JUMP - 2 * K.GRAV * dy; if (disc < 0) return 0; return (K.JUMP + Math.sqrt(disc)) / K.GRAV; }
 function buildNav(W) {
@@ -465,7 +620,7 @@ function buildNav(W) {
   for (let cz = 0; cz < NZ; cz++) for (let cx = 0; cx < NX; cx++) {
     const px = X0 + cx + .5, pz = Z0 + cz + .5, tops = [];
     for (const b of W.brushes) {
-      if (b.nc || !(b.min[0] < px && b.max[0] > px && b.min[2] < pz && b.max[2] > pz)) continue;
+      if (b.nc || b.mover || !(b.min[0] < px && b.max[0] > px && b.min[2] < pz && b.max[2] > pz)) continue;
       const t = topAt(b, px, pz, px, pz);
       if (t > 12.5) continue;
       if (!tops.some(q => Math.abs(q - t) < .05)) tops.push(t);
@@ -541,7 +696,7 @@ function buildNav(W) {
   off[N] = k;
   return { X0, Z0, NX, NZ, cells, nodes, at, nodeAt, off, to, cost };
 }
-function getNav() { if (!NAV) NAV = buildNav(WORLD); return NAV; }
+function getNav(W) { W = W || WORLD; if (!NAVS[W.id]) NAVS[W.id] = buildNav(W); return NAVS[W.id]; }
 function findNode(nav, x, y, z) {
   let n = nav.nodeAt(x, y, z);
   if (n) return n;
@@ -594,20 +749,32 @@ const SKILL = [
   { react: .13, err: .016, turn: 16, name: 'Pesadilla' }
 ];
 function cleanName(n) { n = String(n || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 16); return n || 'Jugador'; }
+const HEX = /^#[0-9a-fA-F]{6}$/;
+function cleanSkin(k, fallback) {
+  const f = fallback || { c: COLORS[0], v: '#ffffff', a: 0 };
+  if (!k || typeof k !== 'object') return Object.assign({}, f);
+  return { c: HEX.test(k.c) ? k.c : f.c, v: HEX.test(k.v) ? k.v : f.v, a: Number.isInteger(k.a) && k.a >= 0 && k.a < ACCESSORIES.length ? k.a : 0 };
+}
+const SHOP_BY_ID = {}; SHOP.forEach(it => SHOP_BY_ID[it.id] = it);
 
 class Game {
   constructor(o) {
-    this.o = Object.assign({ fraglimit: 20, timelimit: 600, bots: null, botFill: 4, botSkill: 1, online: false, maxPlayers: 16 }, o || {});
-    this.W = WORLD; this.nav = getNav();
+    this.o = Object.assign({ fraglimit: 20, timelimit: 600, bots: null, botFill: 0, botSkill: 1, online: false, maxPlayers: 16, map: 'represa', rotate: true }, o || {});
     this.players = new Map(); this.nextId = 1; this.projs = []; this.pid = 1;
-    this.items = WORLD.items.map((it, i) => ({ i, type: it.type, x: it.x, y: it.y, z: it.z, up: true, t: 0 }));
     this.time = 0; this.snapT = 0; this.scT = 0; this.botT = 0; this.state = 'play'; this.left = this.o.timelimit; this.interT = 0;
+    this.setMap(MAPS[this.o.map] ? this.o.map : 'represa');
+  }
+  setMap(id) {
+    this.W = MAPS[id]; this.nav = getNav(this.W);
+    this.items = this.W.items.map((it, i) => ({ i, type: it.type, x: it.x, y: it.y, z: it.z, up: true, t: 0 }));
+    this.projs.length = 0;
+    updateMovers(this.W, this.time);
   }
   /* ---- conexiones ---- */
   addClient(send) {
     if (this.humanCount(true) >= this.o.maxPlayers) { send({ t: 'full' }); return 0; }
     const id = this.nextId++;
-    const p = this.newPlayer(id, 'Jugador', COLORS[id % COLORS.length], false);
+    const p = this.newPlayer(id, 'Jugador', { c: COLORS[id % COLORS.length], v: '#ffffff', a: 0 }, false);
     p.send = send; this.players.set(id, p); return id;
   }
   removeClient(id) {
@@ -615,14 +782,15 @@ class Game {
     this.players.delete(id);
     if (p.joined) { this.bcast({ t: 'ev', e: 'leave', id, n: p.name }); this.botT = 0; }
   }
-  newPlayer(id, name, color, bot) {
-    return { id, name, color, bot, send: null, s: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, on: false }, yaw: 0, pitch: 0, w: 1,
+  newPlayer(id, name, skin, bot) {
+    return { id, name, skin, color: skin.c, bot, send: null, s: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, on: false }, yaw: 0, pitch: 0, w: 1,
       hp: 100, ar: 0, am: { shells: 0, bullets: 0, grenades: 0, rockets: 0, slugs: 0 }, ow: [1, 1, 0, 0, 0, 0, 0], alive: false, deadT: 0,
-      frags: 0, deaths: 0, quadT: 0, lavaT: 0, megaT: 0, lastFire: -9, ping: 0, dirty: true, joined: false, ai: null, spawnT: 0, padT: 0 };
+      frags: 0, deaths: 0, quadT: 0, lavaT: 0, megaT: 0, lastFire: -9, ping: 0, dirty: true, joined: false, ai: null, spawnT: 0, padT: 0,
+      cr: ECON.START, unl: [1, 1, 0, 0, 0, 0, 0], perk: { ar: 0, am: 0 }, streak: 0 };
   }
   humanCount(all) { let n = 0; for (const p of this.players.values()) if (!p.bot && (all || p.joined)) n++; return n; }
   bcast(m, except) { for (const p of this.players.values()) if (p.send && p.joined && p.id !== except) p.send(m); }
-  roster() { return [...this.players.values()].filter(p => p.joined).map(p => [p.id, p.name, p.color, p.bot ? 1 : 0]); }
+  roster() { return [...this.players.values()].filter(p => p.joined).map(p => [p.id, p.name, p.color, p.bot ? 1 : 0, p.skin]); }
   mult(p) { return p.quadT > 0 ? 4 : 1; }
 
   /* ---- mensajes de clientes ---- */
@@ -632,10 +800,10 @@ class Game {
       case 'join': {
         if (p.joined) return;
         p.name = this.uniqueName(cleanName(m.name));
-        p.color = /^#[0-9a-fA-F]{6}$/.test(m.color) ? m.color : p.color;
+        p.skin = cleanSkin(m.skin || { c: m.color }, p.skin); p.color = p.skin.c;
         p.joined = true;
-        p.send({ t: 'welcome', id, map: this.W.name, items: this.items.map(it => it.up ? 1 : 0), fl: this.o.fraglimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state });
-        this.bcast({ t: 'ev', e: 'join', id, n: p.name, c: p.color }, id);
+        p.send({ t: 'welcome', id, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), fl: this.o.fraglimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time });
+        this.bcast({ t: 'ev', e: 'join', id, n: p.name, c: p.color, s: p.skin }, id);
         this.spawn(p); this.botT = 0; this.sendScores();
         break;
       }
@@ -647,11 +815,19 @@ class Game {
         if (Array.isArray(v) && v.length === 3 && v.every(Number.isFinite)) { p.s.vx = clamp(v[0], -80, 80); p.s.vy = clamp(v[1], -80, 80); p.s.vz = clamp(v[2], -80, 80); }
         if (Number.isFinite(m.y)) p.yaw = m.y; if (Number.isFinite(m.x)) p.pitch = clamp(m.x, -1.6, 1.6);
         if (Number.isInteger(m.w) && m.w >= 0 && m.w < WEAPONS.length && p.ow[m.w]) p.w = m.w;
+        p.s.on = !!m.o;
         break;
       }
       case 'fire': this.humanFire(p, m); break;
+      case 'buy': this.buy(p, String(m.id || '')); break;
+      case 'skin': {
+        if (!p.joined) return;
+        p.skin = cleanSkin(m.s, p.skin); p.color = p.skin.c;
+        this.bcast({ t: 'ev', e: 'skin', id: p.id, s: p.skin });
+        break;
+      }
       case 'respawn': if (p.joined && !p.alive && p.deadT > 1 && this.state === 'play') this.spawn(p); break;
-      case 'ping': p.send({ t: 'pong', c: m.c }); if (Number.isFinite(m.r)) p.ping = Math.round(clamp(m.r, 0, 9999)); break;
+      case 'ping': p.send({ t: 'pong', c: m.c, tm: this.time }); if (Number.isFinite(m.r)) p.ping = Math.round(clamp(m.r, 0, 9999)); break;
       case 'chat': {
         const txt = String(m.m || '').replace(/[\u0000-\u001f]/g, '').slice(0, 120).trim();
         if (!txt) return;
@@ -666,6 +842,7 @@ class Game {
     if (m.bots !== undefined) this.o.bots = m.bots === null ? null : clamp(m.bots | 0, 0, 15);
     if (m.skill !== undefined) this.o.botSkill = clamp(m.skill | 0, 0, 3);
     if (m.fl !== undefined) { this.o.fraglimit = clamp(m.fl | 0, 1, 200); this.sendScores(); }
+    if (m.map !== undefined && MAPS[m.map] && m.map !== this.W.id) { this.o.map = m.map; this.restart(m.map); }
     this.botT = 0;
   }
   command(p, txt) {
@@ -678,8 +855,12 @@ class Game {
       this.botT = 0;
     } else if (cmd === 'skill' && /^[0-3]$/.test(arg || '')) { this.o.botSkill = +arg; this.bcast({ t: 'ev', e: 'sys', m: 'Dificultad de bots: ' + SKILL[+arg].name }); }
     else if (cmd === 'fraglimit' && /^\d+$/.test(arg || '')) { this.o.fraglimit = clamp(+arg, 1, 200); this.sendScores(); this.bcast({ t: 'ev', e: 'sys', m: 'Límite de frags: ' + this.o.fraglimit }); }
+    else if (cmd === 'map') {
+      if (MAPS[arg]) { this.bcast({ t: 'ev', e: 'sys', m: p.name + ' cambió el mapa a ' + MAPS[arg].name }); this.restart(arg); }
+      else say('Mapas: ' + MAP_IDS.join(', ') + ' · uso: /map sagrado');
+    }
     else if (cmd === 'restart') { this.bcast({ t: 'ev', e: 'sys', m: p.name + ' reinició la partida' }); this.restart(); }
-    else say('Comandos: /bots N · /bots auto · /skill 0-3 · /fraglimit N · /restart');
+    else say('Comandos: /bots N · /bots auto · /skill 0-3 · /fraglimit N · /map ' + MAP_IDS.join('|') + ' · /restart');
   }
 
   /* ---- aparición ---- */
@@ -691,15 +872,59 @@ class Game {
     }).sort((a, b) => b.d - a.d);
     return scored[Math.floor(Math.random() * Math.min(3, scored.length))].sp;
   }
+  loadout(p) {
+    const mul = p.perk.am ? 2 : 1;
+    p.ow = [1, 1, 0, 0, 0, 0, 0]; p.am = { shells: 10 * mul, bullets: 0, grenades: 0, rockets: 0, slugs: 0 };
+    for (const it of SHOP) if (it.w != null && it.pack && p.unl[it.w]) { p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n * mul); }
+    p.ar = p.perk.ar;
+  }
   spawn(p) {
     const sp = this.pickSpawn();
     p.s = { x: sp.x, y: sp.y, z: sp.z, vx: 0, vy: 0, vz: 0, on: true };
-    p.yaw = sp.yaw; p.pitch = 0; p.hp = 100; p.ar = 0; p.w = 1; p.quadT = 0; p.megaT = 0;
-    p.am = { shells: 10, bullets: 0, grenades: 0, rockets: 0, slugs: 0 }; p.ow = [1, 1, 0, 0, 0, 0, 0];
+    p.yaw = sp.yaw; p.pitch = 0; p.hp = 100; p.w = 1; p.quadT = 0; p.megaT = 0;
+    if (p.bot) this.botShop(p);
+    this.loadout(p);
     p.alive = true; p.dirty = true; p.spawnT = this.time; p.lavaT = 0;
-    if (p.send) p.send({ t: 'spawn', p: [sp.x, sp.y, sp.z], yaw: sp.yaw });
+    if (p.send) p.send({ t: 'spawn', p: [sp.x, sp.y, sp.z], yaw: sp.yaw, ow: p.ow, am: p.am, ar: p.ar });
     this.bcast({ t: 'ev', e: 'tp', p: [sp.x, sp.y, sp.z] });
-    if (p.bot) p.ai = this.newAI();
+    if (p.bot) { p.ai = this.newAI(); const best = [6, 5, 3, 2, 4].find(w => p.ow[w]); if (best != null) p.w = best; }
+  }
+
+  /* ---- tienda ---- */
+  buy(p, id) {
+    const it = SHOP_BY_ID[id];
+    const no = why => p.send && p.send({ t: 'ev', e: 'buy', id, ok: 0, why });
+    if (!it || it.free || !p.joined) return no('No se puede comprar');
+    if (this.state !== 'play') return no('La partida terminó');
+    if (it.w != null && p.unl[it.w]) return no('Ya lo tenés');
+    if (it.armor && p.perk.ar >= it.armor) return no('Ya tenés ese blindaje');
+    if (it.id === 'am' && p.perk.am) return no('Ya la tenés');
+    if (p.cr < it.price) return no('Te faltan ' + (it.price - p.cr) + ' créditos');
+    p.cr -= it.price;
+    if (it.w != null) {
+      p.unl[it.w] = 1;
+      if (p.alive) { p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n); }
+    } else if (it.armor) { p.perk.ar = it.armor; if (p.alive) p.ar = Math.max(p.ar, it.armor); }
+    else if (it.id === 'am') { p.perk.am = 1; }
+    else if (it.id === 'rf' && p.alive) {
+      for (const s of SHOP) if (s.w != null && p.ow[s.w] && s.pack) { const [k, n] = s.pack; p.am[k] = Math.max(p.am[k], Math.min(AMMO_MAX[k], n * 2)); }
+      p.am.shells = Math.max(p.am.shells, 20);
+    }
+    p.dirty = true;
+    if (p.send) p.send({ t: 'ev', e: 'buy', id, ok: 1 });
+    this.sendScores();
+  }
+  botShop(p) {
+    for (const id of ['w5', 'w6', 'a1', 'w3', 'w2', 'a2', 'w4', 'am']) {
+      const it = SHOP_BY_ID[id];
+      if ((it.w != null && p.unl[it.w]) || (it.armor && p.perk.ar >= it.armor) || (id === 'am' && p.perk.am)) continue;
+      if (p.cr >= it.price) { p.cr -= it.price; if (it.w != null) p.unl[it.w] = 1; else if (it.armor) p.perk.ar = it.armor; else p.perk.am = 1; }
+      break;
+    }
+  }
+  credit(p, n, why) {
+    p.cr = Math.min(ECON.MAX, p.cr + n); p.dirty = true;
+    if (p.send) p.send({ t: 'ev', e: 'cr', n, why });
   }
 
   /* ---- disparos ---- */
@@ -737,7 +962,9 @@ class Game {
     const proj = cx * d[0] + cy * d[1] + cz * d[2];
     if (proj < -1 || proj > (W_.range || 300) + 5) return false;
     const px = cx - d[0] * proj, py = cy - d[1] * proj, pz = cz - d[2] * proj;
-    if (Math.hypot(px, py, pz) > 2.4 + proj * .025) return false;
+    // tolerancia generosa: el que dispara ve a los demás un poco en el pasado
+    const sp = Math.hypot(t.s.vx, t.s.vz);
+    if (Math.hypot(px, py, pz) > 2.4 + proj * .025 + sp * .25) return false;
     return los(this.W, o[0], o[1], o[2], t.s.x, t.s.y + 1.1, t.s.z) || los(this.W, o[0], o[1], o[2], t.s.x, t.s.y + 1.6, t.s.z);
   }
   trace(o, d, range, shooter, pierce) {
@@ -837,7 +1064,14 @@ class Game {
     const gib = v.hp < -40;
     v.alive = false; v.deadT = 0; v.deaths++; v.dirty = true; v.quadT = 0;
     let k = 0;
-    if (att && att !== v) { att.frags++; k = att.id; } else v.frags--;
+    if (att && att !== v) {
+      att.frags++; k = att.id; att.streak++;
+      let n = ECON.KILL; const why = [];
+      if (v.streak >= 3) { n += ECON.SHUTDOWN; why.push('cortaste una racha'); }
+      if (w === 0) { n += ECON.PISTOL; why.push('con pistola'); }
+      this.credit(att, n, why.join(' · '));
+    } else v.frags--;
+    v.streak = 0;
     this.bcast({ t: 'ev', e: 'kill', k, v: v.id, w: w == null ? -1 : w, how: how || 'frag', gib: gib ? 1 : 0, p: r3a([v.s.x, v.s.y, v.s.z]) });
     if (v.bot && v.ai) v.ai.path = null;
     this.sendScores();
@@ -881,20 +1115,27 @@ class Game {
   }
 
   /* ---- partida ---- */
-  scores() { return [...this.players.values()].filter(p => p.joined).sort((a, b) => b.frags - a.frags || a.deaths - b.deaths).map(p => [p.id, p.name, p.frags, p.deaths, p.bot ? 0 : p.ping, p.bot ? 1 : 0, p.color]); }
-  sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.o.fraglimit, st: this.state }); }
+  scores() { return [...this.players.values()].filter(p => p.joined).sort((a, b) => b.frags - a.frags || a.deaths - b.deaths).map(p => [p.id, p.name, p.frags, p.deaths, p.bot ? 0 : p.ping, p.bot ? 1 : 0, p.color, p.cr]); }
+  sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.o.fraglimit, st: this.state, map: this.W.id }); }
   endMatch() {
     if (this.state !== 'play') return;
-    this.state = 'inter'; this.interT = 9;
+    this.state = 'inter'; this.interT = 10;
     const l = this.scores();
-    this.bcast({ t: 'end', l, w: l.length ? l[0][1] : '' });
+    const next = this.o.rotate ? MAP_IDS[(MAP_IDS.indexOf(this.W.id) + 1) % MAP_IDS.length] : this.W.id;
+    this.nextMap = next;
+    this.bcast({ t: 'end', l, w: l.length ? l[0][1] : '', next, nextName: MAPS[next].name });
     this.projs.length = 0;
   }
-  restart() {
+  restart(mapId) {
+    const id = mapId || this.nextMap || this.W.id; this.nextMap = null;
+    if (id !== this.W.id) this.setMap(id);
     this.state = 'play'; this.left = this.o.timelimit; this.projs.length = 0;
     for (const it of this.items) { it.up = true; it.t = 0; }
-    this.bcast({ t: 'start', items: this.items.map(() => 1) });
-    for (const p of this.players.values()) if (p.joined) { p.frags = 0; p.deaths = 0; this.spawn(p); }
+    this.bcast({ t: 'start', map: this.W.id, items: this.items.map(() => 1), tm: this.time });
+    for (const p of this.players.values()) if (p.joined) {
+      p.frags = 0; p.deaths = 0; p.cr = ECON.START; p.unl = [1, 1, 0, 0, 0, 0, 0]; p.perk = { ar: 0, am: 0 }; p.streak = 0; p.dirty = true;
+      this.spawn(p);
+    }
     this.sendScores();
   }
   manageBots() {
@@ -907,9 +1148,10 @@ class Game {
       const id = this.nextId++;
       const usedC = new Set([...this.players.values()].map(p => p.color));
       const freeC = COLORS.filter(c => !usedC.has(c));
-      const p = this.newPlayer(id, name, freeC.length ? freeC[Math.floor(Math.random() * freeC.length)] : COLORS[id % COLORS.length], true);
+      const skin = { c: freeC.length ? freeC[Math.floor(Math.random() * freeC.length)] : COLORS[id % COLORS.length], v: COLORS[Math.floor(Math.random() * COLORS.length)], a: Math.floor(Math.random() * ACCESSORIES.length) };
+      const p = this.newPlayer(id, name, skin, true);
       p.joined = true; this.players.set(id, p);
-      this.bcast({ t: 'ev', e: 'join', id, n: name, c: p.color, bot: 1 });
+      this.bcast({ t: 'ev', e: 'join', id, n: name, c: p.color, s: skin, bot: 1 });
       this.spawn(p); this.sendScores();
     } else if (bots.length > want) {
       const b = bots[bots.length - 1];
@@ -920,6 +1162,7 @@ class Game {
   }
   tick(dt) {
     this.time += dt;
+    updateMovers(this.W, this.time);
     if (this.state === 'inter') {
       this.interT -= dt;
       if (this.interT <= 0) this.restart();
@@ -948,7 +1191,7 @@ class Game {
     }
     if (this.state === 'play') { this.tickProjs(dt); this.tickItems(dt); }
     this.snapT -= dt;
-    if (this.snapT <= 0) { this.snapT = .05; this.snapshot(); }
+    if (this.snapT <= 1e-6) { this.snapT += .05; if (this.snapT < 0) this.snapT = 0; this.snapshot(); }
     this.scT -= dt;
     if (this.scT <= 0) { this.scT = 1; this.sendScores(); }
   }
@@ -956,13 +1199,13 @@ class Game {
     const ps = [];
     for (const p of this.players.values()) {
       if (!p.joined) continue;
-      ps.push([p.id, r2(p.s.x), r2(p.s.y), r2(p.s.z), r2(p.yaw), r2(p.pitch), p.w, (p.alive ? 1 : 0) | (p.quadT > 0 ? 2 : 0) | (p.s.on ? 4 : 0), r2(Math.hypot(p.s.vx, p.s.vz))]);
+      ps.push([p.id, r2(p.s.x), r2(p.s.y), r2(p.s.z), r2(p.yaw), r2(p.pitch), p.w, (p.alive ? 1 : 0) | (p.quadT > 0 ? 2 : 0) | (p.s.on ? 4 : 0), r2(p.s.vx), r2(p.s.vy), r2(p.s.vz)]);
     }
     this.bcast({ t: 'sn', tm: Math.round(this.time * 1000) / 1000, ps });
     for (const p of this.players.values()) {
       if (p.bot || !p.send || !p.joined || !p.dirty) continue;
       p.dirty = false;
-      p.send({ t: 'you', hp: Math.ceil(p.hp), ar: Math.ceil(p.ar), am: p.am, ow: p.ow, q: Math.ceil(p.quadT), al: p.alive ? 1 : 0 });
+      p.send({ t: 'you', hp: Math.ceil(p.hp), ar: Math.ceil(p.ar), am: Object.assign({}, p.am), ow: p.ow.slice(), q: Math.ceil(p.quadT), al: p.alive ? 1 : 0, cr: p.cr, unl: p.unl.slice(), perk: Object.assign({}, p.perk) });
     }
   }
 
@@ -1126,5 +1369,5 @@ class Game {
   }
 }
 
-return { K, WEAPONS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, SKILL, topAt, pmove, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, Game, getNav };
+return { K, WEAPONS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, SKILL, topAt, pmove, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
 });

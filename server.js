@@ -21,6 +21,7 @@ const num = (v, d) => (v === undefined || v === '' || isNaN(+v)) ? d : +v;
 
 const game = new Game({
   online: true,
+  map: process.env.MAP || 'represa',
   botFill: num(process.env.BOTS, 0),
   botSkill: num(process.env.BOT_SKILL, 1),
   fraglimit: num(process.env.FRAGLIMIT, 20),
@@ -133,14 +134,18 @@ server.on('upgrade', (req, sock) => {
   ws.onclose = () => { sockets.delete(ws); game.removeClient(id); };
 });
 
-/* ---------- bucle del juego a 60 Hz ---------- */
-let last = process.hrtime.bigint();
+/* ---------- bucle del juego a 40 Hz con paso fijo ----------
+   Paso fijo = la simulación no depende de que el servidor se atrase.
+   40 Hz alcanza (la física interna corre a 120 Hz) y consume menos CPU
+   en planes chicos como el gratuito de Render. */
+const TICK = 1 / 40;
+let last = process.hrtime.bigint(), acc = 0;
 setInterval(() => {
   const now = process.hrtime.bigint();
-  let dt = Number(now - last) / 1e9; last = now;
-  if (dt > .1) dt = .1;
-  try { game.tick(dt); } catch (e) { console.error('Error en tick:', e); }
-}, 1000 / 60);
+  acc += Number(now - last) / 1e9; last = now;
+  if (acc > .25) acc = .25;
+  try { while (acc >= TICK) { game.tick(TICK); acc -= TICK; } } catch (e) { console.error('Error en tick:', e); }
+}, 1000 / 80);
 
 /* ---------- latidos para cortar conexiones muertas ---------- */
 setInterval(() => {

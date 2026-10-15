@@ -1,0 +1,14 @@
+{
+  "name": "cuenkarena",
+  "version": "1.0.0",
+  "description": "Deathmatch online estilo Quake que corre en el navegador",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

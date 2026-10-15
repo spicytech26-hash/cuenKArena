@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: cuenkarena
+    runtime: node
+    plan: free
+    buildCommand: echo "CuenkArena no tiene dependencias"
+    startCommand: node server.js
+    healthCheckPath: /health
+    envVars:
+      - key: BOTS
+        value: "4"
+      - key: BOT_SKILL
+        value: "1"
+      - key: FRAGLIMIT
+        value: "20"
+      - key: TIMELIMIT
+        value: "10"

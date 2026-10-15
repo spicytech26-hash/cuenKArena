@@ -1,0 +1,157 @@
+/* =====================================================================
+   CuenkArena — servidor de juego
+   Sin dependencias: solo Node.js (18 o más nuevo).
+   Sirve el cliente web y maneja las partidas por WebSocket en /ws
+     node server.js            → http://localhost:3000
+   Variables de entorno opcionales:
+     PORT=3000  BOTS=4 (rellena hasta N jugadores con bots)
+     BOT_SKILL=1 (0 fácil · 3 pesadilla)  FRAGLIMIT=20  TIMELIMIT=10 (minutos)
+     MAX_PLAYERS=16
+   ===================================================================== */
+'use strict';
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const { Game } = require('./public/game.js');
+
+const PORT = +process.env.PORT || 3000;
+const PUBLIC = path.join(__dirname, 'public');
+const num = (v, d) => (v === undefined || v === '' || isNaN(+v)) ? d : +v;
+
+const game = new Game({
+  online: true,
+  botFill: num(process.env.BOTS, 4),
+  botSkill: num(process.env.BOT_SKILL, 1),
+  fraglimit: num(process.env.FRAGLIMIT, 20),
+  timelimit: num(process.env.TIMELIMIT, 10) * 60,
+  maxPlayers: num(process.env.MAX_PLAYERS, 16)
+});
+
+/* ---------- archivos estáticos ---------- */
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.svg': 'image/svg+xml' };
+const server = http.createServer((req, res) => {
+  const url = decodeURIComponent((req.url || '/').split('?')[0]);
+  if (url === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain' }); res.end('ok'); return; }
+  if (url === '/status') {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify({ juego: 'CuenkArena', mapa: game.W.name, jugadores: game.scores().map(s => ({ nombre: s[1], frags: s[2], bot: !!s[5] })) }));
+    return;
+  }
+  let file = path.normalize(path.join(PUBLIC, url === '/' ? 'index.html' : url));
+  if (!file.startsWith(PUBLIC)) { res.writeHead(403); res.end(); return; }
+  fs.readFile(file, (err, data) => {
+    if (err) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('No encontrado'); return; }
+    if (path.extname(file) === '.html' && !/^\s*<!doctype/i.test(data.toString('utf8', 0, 64))) {
+      data = Buffer.concat([Buffer.from('<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"></head><body>\n'), data, Buffer.from('\n</body></html>')]);
+    }
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+    res.end(data);
+  });
+});
+
+/* ---------- WebSocket mínimo (RFC 6455) ---------- */
+const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+class Socket {
+  constructor(sock) {
+    this.sock = sock; this.buf = Buffer.alloc(0); this.frags = []; this.open = true;
+    this.onmessage = null; this.onclose = null; this.alive = true;
+    sock.setNoDelay(true);
+    sock.on('data', d => this.data(d));
+    sock.on('close', () => this.closed());
+    sock.on('error', () => this.closed());
+  }
+  data(d) {
+    this.buf = this.buf.length ? Buffer.concat([this.buf, d]) : d;
+    while (this.buf.length >= 2) {
+      const b0 = this.buf[0], b1 = this.buf[1], fin = b0 & 0x80, op = b0 & 0x0f, masked = b1 & 0x80;
+      let len = b1 & 0x7f, off = 2;
+      if (len === 126) { if (this.buf.length < 4) return; len = this.buf.readUInt16BE(2); off = 4; }
+      else if (len === 127) { if (this.buf.length < 10) return; const hi = this.buf.readUInt32BE(2); len = this.buf.readUInt32BE(6); if (hi) return this.close(); off = 10; }
+      if (len > 65536) return this.close();
+      const need = off + (masked ? 4 : 0) + len;
+      if (this.buf.length < need) return;
+      let payload = this.buf.subarray(off + (masked ? 4 : 0), need);
+      if (masked) {
+        const mask = this.buf.subarray(off, off + 4), out = Buffer.allocUnsafe(len);
+        for (let i = 0; i < len; i++) out[i] = payload[i] ^ mask[i & 3];
+        payload = out;
+      }
+      this.buf = this.buf.subarray(need);
+      if (op === 0x8) return this.close();
+      if (op === 0x9) { this.frame(0xA, payload); continue; }
+      if (op === 0xA) { this.alive = true; continue; }
+      if (op === 0x1 || op === 0x2 || op === 0x0) {
+        this.frags.push(payload);
+        if (fin) {
+          const msg = Buffer.concat(this.frags).toString('utf8'); this.frags = [];
+          this.alive = true;
+          if (this.onmessage) this.onmessage(msg);
+        }
+      }
+    }
+  }
+  frame(op, payload) {
+    if (!this.open) return;
+    const len = payload.length;
+    let head;
+    if (len < 126) { head = Buffer.from([0x80 | op, len]); }
+    else if (len < 65536) { head = Buffer.alloc(4); head[0] = 0x80 | op; head[1] = 126; head.writeUInt16BE(len, 2); }
+    else { head = Buffer.alloc(10); head[0] = 0x80 | op; head[1] = 127; head.writeUInt32BE(0, 2); head.writeUInt32BE(len, 6); }
+    this.sock.write(Buffer.concat([head, payload]));
+  }
+  send(text) { this.frame(0x1, Buffer.from(text, 'utf8')); }
+  get backlog() { return this.sock.writableLength; }
+  close() { if (!this.open) return; try { this.frame(0x8, Buffer.alloc(0)); } catch (e) {} this.sock.end(); this.closed(); }
+  closed() { if (!this.open) return; this.open = false; if (this.onclose) this.onclose(); }
+}
+
+let cacheObj = null, cacheStr = '';
+const sockets = new Set();
+server.on('upgrade', (req, sock) => {
+  const key = req.headers['sec-websocket-key'];
+  if ((req.url || '').split('?')[0] !== '/ws' || !key) { sock.destroy(); return; }
+  const accept = crypto.createHash('sha1').update(key + GUID).digest('base64');
+  sock.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' + accept + '\r\n\r\n');
+  const ws = new Socket(sock);
+  sockets.add(ws);
+  let count = 0, windowT = Date.now();
+  const id = game.addClient(obj => {
+    if (!ws.open) return;
+    if (obj.t === 'sn' && ws.backlog > 256 * 1024) return; // cliente lento: saltear snapshots
+    if (obj !== cacheObj) { cacheObj = obj; cacheStr = JSON.stringify(obj); }
+    ws.send(cacheStr);
+  });
+  if (!id) { setTimeout(() => ws.close(), 200); return; }
+  ws.onmessage = text => {
+    const now = Date.now();
+    if (now - windowT > 1000) { windowT = now; count = 0; }
+    if (++count > 120) return; // límite de mensajes por segundo
+    let m; try { m = JSON.parse(text); } catch (e) { return; }
+    game.onMessage(id, m);
+  };
+  ws.onclose = () => { sockets.delete(ws); game.removeClient(id); };
+});
+
+/* ---------- bucle del juego a 60 Hz ---------- */
+let last = process.hrtime.bigint();
+setInterval(() => {
+  const now = process.hrtime.bigint();
+  let dt = Number(now - last) / 1e9; last = now;
+  if (dt > .1) dt = .1;
+  try { game.tick(dt); } catch (e) { console.error('Error en tick:', e); }
+}, 1000 / 60);
+
+/* ---------- latidos para cortar conexiones muertas ---------- */
+setInterval(() => {
+  for (const ws of sockets) {
+    if (!ws.alive) { ws.close(); continue; }
+    ws.alive = false; ws.frame(0x9, Buffer.alloc(0));
+  }
+}, 20000);
+
+server.listen(PORT, () => {
+  console.log('CuenkArena corriendo en http://localhost:' + PORT);
+  const nets = require('os').networkInterfaces();
+  for (const k in nets) for (const n of nets[k]) if (n.family === 'IPv4' && !n.internal) console.log('  En tu red local: http://' + n.address + ':' + PORT);
+});

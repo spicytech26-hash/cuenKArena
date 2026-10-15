@@ -8,7 +8,7 @@ services:
     healthCheckPath: /health
     envVars:
       - key: BOTS
-        value: "4"
+        value: "0"
       - key: BOT_SKILL
         value: "1"
       - key: FRAGLIMIT

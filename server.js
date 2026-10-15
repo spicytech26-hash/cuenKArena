@@ -4,7 +4,7 @@
    Sirve el cliente web y maneja las partidas por WebSocket en /ws
      node server.js            → http://localhost:3000
    Variables de entorno opcionales:
-     PORT=3000  BOTS=4 (rellena hasta N jugadores con bots)
+     PORT=3000  BOTS=0 (si es mayor a 0, rellena hasta N jugadores con bots)
      BOT_SKILL=1 (0 fácil · 3 pesadilla)  FRAGLIMIT=20  TIMELIMIT=10 (minutos)
      MAX_PLAYERS=16
    ===================================================================== */
@@ -21,7 +21,7 @@ const num = (v, d) => (v === undefined || v === '' || isNaN(+v)) ? d : +v;
 
 const game = new Game({
   online: true,
-  botFill: num(process.env.BOTS, 4),
+  botFill: num(process.env.BOTS, 0),
   botSkill: num(process.env.BOT_SKILL, 1),
   fraglimit: num(process.env.FRAGLIMIT, 20),
   timelimit: num(process.env.TIMELIMIT, 10) * 60,

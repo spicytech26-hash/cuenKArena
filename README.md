@@ -31,7 +31,7 @@ Variables de entorno opcionales:
 | Variable | Por defecto | Qué hace |
 |---|---|---|
 | `PORT` | 3000 | Puerto HTTP |
-| `BOTS` | 4 | Rellena con bots hasta tener esa cantidad de jugadores |
+| `BOTS` | 0 | Si es mayor a 0, rellena con bots hasta tener esa cantidad de jugadores. Por defecto la partida online arranca sin bots; se agregan desde el chat con `/bots N` |
 | `BOT_SKILL` | 1 | 0 fácil · 1 normal · 2 difícil · 3 pesadilla |
 | `FRAGLIMIT` | 20 | Frags para ganar la partida |
 | `TIMELIMIT` | 10 | Minutos por partida |

@@ -2,6 +2,14 @@
 
 Deathmatch online estilo Quake que corre en el navegador. Dos mapas que rotan al terminar cada partida: **dm1 · La Represa** (industrial, con lava) y **dm2 · Sagrado** (un boliche con pista LED, plataformas móviles, ascensores y subwoofers que te lanzan). Siete armas, tienda con créditos, taquilla para personalizar tu personaje, bots y movimiento con *strafe jump* y *bunny hop*.
 
+## Modos de juego
+
+Al tocar **Jugar online** (o **Práctica con bots**) elegís el modo. Cada modo es una sala aparte del servidor.
+
+- **Arena**: todos contra todos en La Represa y Sagrado, con créditos y tienda.
+- **Gungame**: todos arrancan con la ametralladora y cada baja te da la siguiente arma de una lista de 20 niveles (armas fuertes primero, pistola y riel al final, machete en el último). Munición infinita, sin tienda ni armas tiradas. Si te matás solo, o te matan con el machete, bajás un nivel. Gana el primero en hacer la baja número 20.
+- **Captura la bandera**: rojo (Posadas) contra azul (Encarnación) en **ctf1 · El Puente**. Robá la bandera rival del fortín enemigo y llevala hasta la tuya, que tiene que estar en tu base. Si matan al que la lleva, la bandera queda tirada 20 segundos: si la toca su equipo vuelve a la base. Gana el primero en llegar a 5 capturas. No hay fuego amigo y los equipos se equilibran solos con los bots.
+
 ## Créditos y tienda
 
 Cada frag da ¤ 200 (¤ 100 extra si cortás una racha de 3 y ¤ 100 extra con pistola). Arrancás con ¤ 300. Con **B** se abre la tienda: pistola y escopeta vienen gratis; el resto de las armas, el blindaje y la cartuchera doble se desbloquean y quedan tuyos hasta que termina la partida (aparecés con eso cada vez). Los precios están en `SHOP` dentro de `public/game.js`.
@@ -54,9 +62,10 @@ Variables de entorno opcionales:
 | `FRAGLIMIT` | 20 | Frags para ganar la partida |
 | `TIMELIMIT` | 10 | Minutos por partida |
 | `MAX_PLAYERS` | 16 | Jugadores máximos, contando bots |
-| `MAP` | represa | Mapa inicial: `represa` o `sagrado` |
+| `MAP` | represa | Mapa inicial de Arena: `represa` o `sagrado` |
+| `CAPLIMIT` | 5 | Capturas para ganar en Captura la bandera |
 
-Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 30`, `/map sagrado`, `/restart`.
+Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 30`, `/caplimit 3` (bandera), `/map sagrado`, `/restart`. Los comandos afectan solo a la sala del modo en el que estás.
 
 ## Controles
 
@@ -65,7 +74,7 @@ Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 
 | W A S D | moverse |
 | Espacio | saltar (mantenelo para encadenar saltos) |
 | Mouse / click | apuntar / disparar |
-| 1–7, rueda, Q | armas (Q vuelve a la anterior) |
+| 1–8, rueda, Q | armas (Q vuelve a la anterior; el 8 es el machete de Gungame) |
 | B | tienda |
 | Tab | tabla de frags |
 | T o Enter | chat |
@@ -88,7 +97,7 @@ La práctica con bots del menú corre la misma clase `Game` dentro del navegador
 
 ### Editar el mapa
 
-Los mapas están en `buildRepresa()` y `buildSagrado()` dentro de `public/game.js`. Todo son cajas, como los *brushes* de Quake:
+Los mapas están en `buildRepresa()`, `buildSagrado()` y `buildPuente()` dentro de `public/game.js`. Todo son cajas, como los *brushes* de Quake:
 
 - `add(x0, y0, z0, x1, y1, z1, 'material')` agrega un bloque sólido.
 - `stairs(...)`, `ramp(...)` y `wall(... , [puertas])` arman escaleras, rampas y paredes con aberturas.

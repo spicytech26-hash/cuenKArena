@@ -6,25 +6,29 @@
    Variables de entorno opcionales:
      PORT=3000  BOTS=0 (si es mayor a 0, rellena hasta N jugadores con bots)
      BOT_SKILL=1 (0 fácil · 3 pesadilla)  FRAGLIMIT=20  TIMELIMIT=10 (minutos)
-     MAX_PLAYERS=16
+     MAX_PLAYERS=16  MAP=represa (mapa inicial de Arena)  CAPLIMIT=5
+   Hay una sala por modo de juego (Arena, Gungame, Captura la bandera);
+   el cliente elige con /ws?mode=arena|gungame|ctf
    ===================================================================== */
 'use strict';
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { Game } = require('./public/game.js');
+const { Game, MODES, MODE_IDS } = require('./public/game.js');
 
 const PORT = +process.env.PORT || 3000;
 const PUBLIC = path.join(__dirname, 'public');
 const num = (v, d) => (v === undefined || v === '' || isNaN(+v)) ? d : +v;
 
-const game = new Game({
-  online: true,
-  map: process.env.MAP || 'represa',
+const games = {};
+for (const mode of MODE_IDS) games[mode] = new Game({
+  online: true, mode,
+  map: mode === 'arena' ? (process.env.MAP || 'represa') : undefined,
   botFill: num(process.env.BOTS, 0),
   botSkill: num(process.env.BOT_SKILL, 1),
   fraglimit: num(process.env.FRAGLIMIT, 20),
+  caplimit: num(process.env.CAPLIMIT, 5),
   timelimit: num(process.env.TIMELIMIT, 10) * 60,
   maxPlayers: num(process.env.MAX_PLAYERS, 16)
 });
@@ -36,7 +40,9 @@ const server = http.createServer((req, res) => {
   if (url === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain' }); res.end('ok'); return; }
   if (url === '/status') {
     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-    res.end(JSON.stringify({ juego: 'CuenkArena', mapa: game.W.name, jugadores: game.scores().map(s => ({ nombre: s[1], frags: s[2], bot: !!s[5] })) }));
+    const salas = {};
+    for (const m of MODE_IDS) { const g = games[m]; salas[m] = { modo: MODES[m].name, mapa: g.W.name, humanos: g.humanCount(false), jugadores: g.scores().map(s => ({ nombre: s[1], frags: s[2], bot: !!s[5] })) }; }
+    res.end(JSON.stringify({ juego: 'CuenkArena', salas }));
     return;
   }
   let file = path.normalize(path.join(PUBLIC, url === '/' ? 'index.html' : url));
@@ -111,7 +117,10 @@ let cacheObj = null, cacheStr = '';
 const sockets = new Set();
 server.on('upgrade', (req, sock) => {
   const key = req.headers['sec-websocket-key'];
-  if ((req.url || '').split('?')[0] !== '/ws' || !key) { sock.destroy(); return; }
+  const [route, query] = (req.url || '').split('?');
+  if (route !== '/ws' || !key) { sock.destroy(); return; }
+  const mode = (/(?:^|&)mode=([a-z]+)/.exec(query || '') || [])[1];
+  const game = games[mode] || games.arena;
   const accept = crypto.createHash('sha1').update(key + GUID).digest('base64');
   sock.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' + accept + '\r\n\r\n');
   const ws = new Socket(sock);
@@ -144,7 +153,11 @@ setInterval(() => {
   const now = process.hrtime.bigint();
   acc += Number(now - last) / 1e9; last = now;
   if (acc > .25) acc = .25;
-  try { while (acc >= TICK) { game.tick(TICK); acc -= TICK; } } catch (e) { console.error('Error en tick:', e); }
+  while (acc >= TICK) {
+    // las salas vacías no gastan CPU: solo avanzan las que tienen alguien conectado
+    for (const m of MODE_IDS) { const g = games[m]; if (!g.humanCount(true)) continue; try { g.tick(TICK); } catch (e) { console.error('Error en tick (' + m + '):', e); } }
+    acc -= TICK;
+  }
 }, 1000 / 80);
 
 /* ---------- latidos para cortar conexiones muertas ---------- */

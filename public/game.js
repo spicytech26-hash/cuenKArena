@@ -76,9 +76,9 @@ const SHOP = [
 ];
 /* ---------- Modos de juego ---------- */
 const MODES = {
-  arena:   { name: 'Arena', maps: ['represa', 'sagrado'], shop: true,
+  arena:   { name: 'Arena', maps: ['represa', 'salvaje'], shop: true,
              desc: 'Todos contra todos. Cada frag da créditos para la tienda (B).' },
-  gungame: { name: 'Gungame', maps: ['represa', 'sagrado'], shop: false, gg: true,
+  gungame: { name: 'Gungame', maps: ['represa', 'salvaje'], shop: false, gg: true,
              desc: 'Cada baja te da la siguiente arma de la lista. Munición infinita, sin tienda. El primero en hacer las 20 bajas, la última con machete, gana.' },
   ctf:     { name: 'Captura la bandera', maps: ['puente'], shop: true, teams: true,
              desc: 'Rojo contra azul. Robá la bandera rival y llevala a tu base mientras defendés la tuya. Gana el primero en llegar a 5 capturas.' }
@@ -290,8 +290,8 @@ function buildRepresa() {
     theme: { sky: 'dusk', fog: 0x1c1310, fogD: .0105, amb: 0x55453a, ambI: .85, hemi: [0x5a4a6a, 0x1a100a, .55], sun: true } });
 }
 
-/* ---------- dm2 · Sagrado — un boliche (homenaje a la noche de Posadas) ---------- */
-function buildSagrado() {
+/* ---------- dm2 · Salvaje — un boliche (homenaje a la noche de Posadas) ---------- */
+function buildSalvaje() {
   const { pads, spawns, lights, add, wall, stairs, D, face, I, mover, finish } = mapKit();
   /* ---- cáscara: salón principal x[-20,20] z[-18,18], techo a 16 ---- */
   wall(-21, -19, 21, -18, -2, 17, [], 'black');
@@ -372,7 +372,7 @@ function buildSagrado() {
     { x: 0, y: 3.5, z: 25, c: 0xff3050, i: 1.3, d: 22 },
     { x: 0, y: 10, z: 26, c: 0x6a7bff, i: 1.1, d: 26 }
   );
-  return finish({ id: 'sagrado', name: 'dm2 · Sagrado', bounds: { x0: -22, x1: 22, z0: -20, z1: 34 },
+  return finish({ id: 'salvaje', name: 'dm2 · Salvaje', bounds: { x0: -22, x1: 22, z0: -20, z1: 34 },
     theme: { sky: 'night', fog: 0x0d0716, fogD: .013, amb: 0x3a2a55, ambI: .9, hemi: [0x6040a0, 0x10081a, .55], sun: false, club: true } });
 }
 /* ---------- ctf1 · El Puente ----------
@@ -459,7 +459,9 @@ function buildPuente() {
     flags: [{ x: 0, y: .5, z: -42 }, { x: 0, y: .5, z: 42 }],
     theme: { sky: 'dusk', fog: 0x1c1416, fogD: .0085, amb: 0x5a4a48, ambI: .9, hemi: [0x6a5a7a, 0x1a120a, .55], sun: true } });
 }
-const MAPS = { represa: buildRepresa(), sagrado: buildSagrado(), puente: buildPuente() };
+const MAPS = { represa: buildRepresa(), salvaje: buildSalvaje(), puente: buildPuente() };
+const MAP_ALIAS = { sagrado: 'salvaje' }; // nombre viejo del boliche
+const mapId = id => MAP_ALIAS[id] || id;
 const MAP_IDS = Object.keys(MAPS);
 const WORLD = MAPS.represa;
 
@@ -843,11 +845,18 @@ function linkType(nav, a, b) { for (const l of nav.nodes[a].l) if (l[0] === b) r
    PARTIDA — lógica autoritativa (corre en el servidor o, en práctica,
    dentro del navegador)
    ===================================================================== */
+/* Dificultad de los bots. Cada nivel cambia todo, no solo la puntería:
+   react  segundos que tarda en empezar a disparar después de verte
+   err    error de puntería (radianes)       turn   velocidad para girar (rad/s)
+   track  qué tan rápido sigue tus movimientos (más bajo = apunta a donde estabas)
+   lead   cuánto adelanta cohetes y granadas  fire   multiplica la cadencia (más alto = dispara más lento)
+   dmg    multiplica el daño que hace         fov / range  qué tan lejos y hacia dónde te ve
+   strafe cuánto esquiva de costado          hop    probabilidad de saltar en combate */
 const SKILL = [
-  { react: .7, err: .09, turn: 4, name: 'Fácil' },
-  { react: .45, err: .055, turn: 7, name: 'Normal' },
-  { react: .25, err: .03, turn: 11, name: 'Difícil' },
-  { react: .13, err: .016, turn: 16, name: 'Pesadilla' }
+  { name: 'Fácil',     react: .9,  err: .14,  turn: 3,   track: 6,   lead: 0,   fire: 2.2, dmg: .55, fov: .5,  range: 38, strafe: .3,  hop: 0 },
+  { name: 'Normal',    react: .6,  err: .09,  turn: 4.5, track: 8,   lead: .45, fire: 1.5, dmg: .8,  fov: .15, range: 52, strafe: .65, hop: .12 },
+  { name: 'Difícil',   react: .3,  err: .05,  turn: 8.5, track: 14,  lead: .8,  fire: 1.1, dmg: 1,   fov: -.2, range: 68, strafe: 1,   hop: .3 },
+  { name: 'Pesadilla', react: .14, err: .02,  turn: 15,  track: 28,  lead: 1,   fire: 1,   dmg: 1.1, fov: -.5, range: 80, strafe: 1.15, hop: .45 }
 ];
 function cleanName(n) { n = String(n || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 16); return n || 'Jugador'; }
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -866,6 +875,7 @@ class Game {
     this.players = new Map(); this.nextId = 1; this.projs = []; this.pid = 1;
     this.time = 0; this.snapT = 0; this.scT = 0; this.botT = 0; this.state = 'play'; this.left = this.o.timelimit; this.interT = 0;
     this.ts = [0, 0]; this.flags = [];
+    this.o.map = mapId(this.o.map);
     this.setMap(this.mode.maps.includes(this.o.map) ? this.o.map : this.mode.maps[0]);
   }
   setMap(id) {
@@ -917,6 +927,8 @@ class Game {
         if (p.joined) return;
         // si la sala estaba vacía, el primero que entra arranca una partida nueva
         if (this.o.online && this.humanCount(false) === 0 && (this.left < this.o.timelimit - 5 || this.state !== 'play')) this.restart(this.W.id);
+        // el primero que entra a una sala vacía elige la dificultad de los bots
+        if (this.o.online && this.humanCount(false) === 0 && Number.isInteger(m.skill) && m.skill >= 0 && m.skill < SKILL.length) this.o.botSkill = m.skill;
         p.name = this.uniqueName(cleanName(m.name));
         p.skin = cleanSkin(m.skin || { c: m.color }, p.skin); p.color = p.skin.c;
         if (this.mode.teams) this.setTeam(p, this.pickTeam(p));
@@ -961,11 +973,12 @@ class Game {
     if (m.bots !== undefined) this.o.bots = m.bots === null ? null : clamp(m.bots | 0, 0, 15);
     if (m.skill !== undefined) this.o.botSkill = clamp(m.skill | 0, 0, 3);
     if (m.fl !== undefined) { this.o.fraglimit = clamp(m.fl | 0, 1, 200); this.sendScores(); }
+    if (m.map !== undefined) m.map = mapId(m.map);
     if (m.map !== undefined && this.mode.maps.includes(m.map) && m.map !== this.W.id) { this.o.map = m.map; this.restart(m.map); }
     this.botT = 0;
   }
   command(p, txt) {
-    const [cmd, arg] = txt.slice(1).split(/\s+/);
+    const parts = txt.slice(1).split(/\s+/), cmd = parts[0], arg = cmd === 'map' ? mapId(parts[1]) : parts[1];
     const say = s => p.send && p.send({ t: 'ev', e: 'sys', m: s });
     if (cmd === 'bots') {
       if (arg === 'auto') { this.o.bots = null; this.bcast({ t: 'ev', e: 'sys', m: p.name + ' activó el relleno automático de bots' }); }
@@ -1128,12 +1141,12 @@ class Game {
     }
     for (const [t, a] of acc) {
       const dmg = W_.type === 'rail' ? W_.dmg * (a.hs ? 1.5 : 1) : (a.n + a.hs) * W_.dmg;
-      this.damage(t, dmg * this.mult(p), p, w, d, .05, 'frag');
+      this.damage(t, dmg * this.mult(p) * this.skill().dmg, p, w, d, .05, 'frag');
     }
   }
   spawnProj(p, w, o, d) {
     const W_ = WEAPONS[w], v = projLaunch(w, d);
-    const pr = { id: this.pid++, k: W_.proj, w, own: p.id, x: o[0], y: o[1], z: o[2], v, life: W_.proj === 'grenade' ? 2.4 : 6, q: this.mult(p), age: 0 };
+    const pr = { id: this.pid++, k: W_.proj, w, own: p.id, x: o[0], y: o[1], z: o[2], v, life: W_.proj === 'grenade' ? 2.4 : 6, q: this.mult(p) * (p.bot ? this.skill().dmg : 1), age: 0 };
     this.projs.push(pr);
     this.bcast({ t: 'ev', e: 'proj', pid: pr.id, k: pr.k, own: p.id, p: r3a(o), v: r3a(v) });
   }
@@ -1434,16 +1447,18 @@ class Game {
      BOTS
      ===================================================================== */
   newAI() { return { think: 0, replan: 0, path: null, pi: 0, tgt: 0, seeT: 0, lostT: 0, last: null, strafe: Math.random() < .5 ? 1 : -1, strafeT: 1, stuckT: 0, bestD: 1e9, hurtBy: 0, hurtT: 0, aimErrX: 0, aimErrY: 0, errT: 0, hopT: 0, goal: null, flyT: 0, noLook: 0 }; }
+  skill() { return SKILL[this.o.botSkill] || SKILL[1]; }
   findTarget(p) {
-    let best = null, bd = 1e9;
+    let best = null, bd = 1e9; const sk = this.skill();
     const ex = p.s.x, ey = p.s.y + K.EYE, ez = p.s.z;
     for (const t of this.players.values()) {
       if (t === p || !t.alive || !t.joined || (this.mode.teams && t.team === p.team)) continue;
       const d = Math.hypot(t.s.x - ex, t.s.y + 1 - ey, t.s.z - ez);
-      if (d > 70) continue;
-      // campo de visión amplio salvo que lo hayan atacado
+      const hurt = p.ai.hurtT > 0 && p.ai.hurtBy === t.id;
+      if (d > sk.range && !hurt) continue;
+      // campo de visión según la dificultad, salvo que lo hayan atacado o estés encima
       const f = dirFromAngles(p.yaw, 0), dot = ((t.s.x - ex) * f[0] + (t.s.z - ez) * f[2]) / (Math.hypot(t.s.x - ex, t.s.z - ez) || 1);
-      if (dot < -.2 && !(p.ai.hurtT > 0 && p.ai.hurtBy === t.id) && d > 6) continue;
+      if (dot < sk.fov && !hurt && d > 4 && t.id !== p.ai.tgt) continue;
       if (!los(this.W, ex, ey, ez, t.s.x, t.s.y + 1.2, t.s.z)) continue;
       const score = d - (p.ai.hurtBy === t.id && p.ai.hurtT > 0 ? 15 : 0) - (t.id === p.ai.tgt ? 8 : 0);
       if (score < bd) { bd = score; best = t; }
@@ -1565,10 +1580,11 @@ class Game {
       ai.strafeT -= dt; if (ai.strafeT <= 0) { ai.strafe *= -1; ai.strafeT = .5 + Math.random() * 1.2; }
       const melee = !!WEAPONS[p.w].melee;
       const pref = melee ? 0 : p.w === 2 || p.w === 1 ? 5 : p.w === 6 ? 18 : 11;
-      const ix = dx / dist, iz = dz / dist, sx = -iz * ai.strafe * (melee ? .3 : 1), sz = ix * ai.strafe * (melee ? .3 : 1);
+      const sm = (melee ? .3 : 1) * sk.strafe;
+      const ix = dx / dist, iz = dz / dist, sx = -iz * ai.strafe * sm, sz = ix * ai.strafe * sm;
       const approach = melee ? 1.2 : dist > pref + 3 ? .6 : dist < pref - 3 ? -.6 : 0;
       if (dist < 25 || !ai.path) { wx = wx * .4 + sx * .8 + ix * approach; wz = wz * .4 + sz * .8 + iz * approach; }
-      ai.hopT -= dt; if (ai.hopT <= 0) { ai.hopT = .6 + Math.random() * 1.5; if (Math.random() < .35) jump = true; }
+      ai.hopT -= dt; if (ai.hopT <= 0) { ai.hopT = .6 + Math.random() * 1.5; if (Math.random() < sk.hop) jump = true; }
       // no caminar hacia la lava ni al vacío
       const fx = s.x + wx * 1.2, fz = s.z + wz * 1.2;
       if (s.on && !nav.nodeAt(fx, s.y, fz)) { wx = -wx * .3; wz = -wz * .3; }
@@ -1586,9 +1602,13 @@ class Game {
       const dist = Math.hypot(tgt.s.x - s.x, tgt.s.y - s.y, tgt.s.z - s.z);
       const w = this.chooseWeapon(p, dist); if (w !== p.w) { p.w = w; p.lastFire = Math.max(p.lastFire, this.time - WEAPONS[w].rate * .5); }
       const W_ = WEAPONS[w];
-      let tx = tgt.s.x, ty = tgt.s.y + (W_.proj === 'rocket' && tgt.s.on ? .2 : 1.15), tz = tgt.s.z;
+      // el bot apunta a una posición "recordada" que persigue a la real según su dificultad
+      if (!ai.trk || ai.trkId !== tgt.id) { ai.trk = [tgt.s.x - tgt.s.vx * .25, tgt.s.y, tgt.s.z - tgt.s.vz * .25]; ai.trkId = tgt.id; }
+      const kt = Math.min(1, sk.track * dt);
+      ai.trk[0] += (tgt.s.x - ai.trk[0]) * kt; ai.trk[1] += (tgt.s.y - ai.trk[1]) * kt; ai.trk[2] += (tgt.s.z - ai.trk[2]) * kt;
+      let tx = ai.trk[0], ty = ai.trk[1] + (W_.proj === 'rocket' && tgt.s.on ? .2 : 1.15), tz = ai.trk[2];
       if (W_.type === 'proj') {
-        const tt = dist / W_.speed; tx += tgt.s.vx * tt * .8; tz += tgt.s.vz * tt * .8;
+        const tt = dist / W_.speed; tx += tgt.s.vx * tt * .8 * sk.lead; tz += tgt.s.vz * tt * .8 * sk.lead;
         if (W_.proj === 'grenade') ty += dist * .06;
       }
       const ex = s.x, ey = s.y + K.EYE, ez = s.z;
@@ -1597,7 +1617,7 @@ class Game {
       let dy = wantYaw + ai.aimErrX - p.yaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
       const mt = sk.turn * dt;
       p.yaw += clamp(dy, -mt, mt); p.pitch += clamp(wantPitch + ai.aimErrY - p.pitch, -mt, mt);
-      if (ai.seeT > sk.react && Math.abs(dy) < .12 + 1 / (dist + 1) && this.canFire(p, w)) {
+      if (ai.seeT > sk.react && Math.abs(dy) < .12 + 1 / (dist + 1) && this.canFire(p, w) && this.time - p.lastFire >= W_.rate * sk.fire) {
         if (W_.type !== 'proj' || dist > 3) this.botFire(p, w, [ex, ey, ez], dirFromAngles(p.yaw, p.pitch));
       }
     } else {

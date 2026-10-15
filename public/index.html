@@ -233,7 +233,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
   </div>
   <div id="shopHint">B · TIENDA</div>
   <div id="slots"></div>
-  <div id="chat"><div id="chatLog"></div><input id="chatIn" maxlength="120" placeholder="Escribí y apretá Enter · /map sagrado · /bots N" hidden autocomplete="off"></div>
+  <div id="chat"><div id="chatLog"></div><input id="chatIn" maxlength="120" placeholder="Escribí y apretá Enter · /map salvaje · /bots N" hidden autocomplete="off"></div>
 </div>
 <div id="board" hidden>
   <h2 id="bTitle">dm1 · La Represa</h2>
@@ -253,7 +253,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
   <div class="mbox">
     <div class="kicker" id="mKick">Arena · Gungame · Captura la bandera</div>
     <h1 id="mTitle">CUENK<span>ARENA</span></h1>
-    <p id="mSub">Tres modos y tres mapas: la represa industrial, Sagrado (un boliche con pista LED y subwoofers que te tiran por el aire) y El Puente, donde Posadas y Encarnación se disputan la bandera de un lado al otro del río.</p>
+    <p id="mSub">Tres modos y tres mapas: la represa industrial, Salvaje (un boliche con pista LED y subwoofers que te tiran por el aire) y El Puente, donde Posadas y Encarnación se disputan la bandera de un lado al otro del río.</p>
     <div class="idrow"><label for="pName">Tu nombre</label><input id="pName" maxlength="16" autocomplete="off" spellcheck="false"></div>
     <div class="mrow">
       <button id="bOnline" class="btn primary" type="button" disabled>Jugar online</button>
@@ -264,6 +264,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
     </div>
     <div id="modePanel" class="panel" hidden>
       <div class="ptitle" id="modeTitle">Elegí el modo</div>
+      <div class="srow" id="modeSkillRow"><span>Dificultad de los bots</span><div class="seg" id="mSkill" role="group" aria-label="Dificultad de los bots"><button type="button" data-v="0">Fácil</button><button type="button" data-v="1">Normal</button><button type="button" data-v="2">Difícil</button><button type="button" data-v="3">Pesadilla</button></div></div>
       <div class="modes" id="modeGrid"></div>
       <p class="note" id="modeNote"></p>
     </div>
@@ -291,11 +292,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
       <div class="srow"><span>Calidad gráfica</span><div class="seg" id="sQ" role="group" aria-label="Calidad"><button type="button" data-v="1">Alta</button><button type="button" data-v="0">Liviana</button></div></div>
       <div class="sep"></div>
       <div class="ptitle">Práctica con bots</div>
-      <div class="srow"><span>Mapa</span><div class="seg" id="sMap" role="group" aria-label="Mapa"><button type="button" data-v="represa">La Represa</button><button type="button" data-v="sagrado">Sagrado</button></div></div>
+      <div class="srow"><span>Mapa</span><div class="seg" id="sMap" role="group" aria-label="Mapa"><button type="button" data-v="represa">La Represa</button><button type="button" data-v="salvaje">Salvaje</button></div></div>
       <div class="srow"><span>Bots en la arena</span><div class="stepper"><button type="button" id="bMinus" aria-label="Sacar un bot">−</button><output id="oBots"></output><button type="button" id="bPlus" aria-label="Agregar un bot">+</button></div></div>
       <div class="srow"><span>Dificultad</span><div class="seg" id="sSkill" role="group" aria-label="Dificultad"><button type="button" data-v="0">Fácil</button><button type="button" data-v="1">Normal</button><button type="button" data-v="2">Difícil</button><button type="button" data-v="3">Pesadilla</button></div></div>
       <div class="srow"><span>Límite de frags</span><div class="seg" id="sFl" role="group" aria-label="Límite de frags"><button type="button" data-v="10">10</button><button type="button" data-v="20">20</button><button type="button" data-v="30">30</button><button type="button" data-v="50">50</button></div></div>
-      <p class="note">El mapa vale para Arena y Gungame; Captura la bandera se juega en El Puente. En la práctica, los bots se agregan o sacan al instante con <b>+</b> y <b>−</b>. Online, desde el chat: <b>/bots 6</b>, <b>/skill 2</b>, <b>/fraglimit 30</b>, <b>/caplimit 3</b>, <b>/map sagrado</b>.</p>
+      <p class="note">El mapa vale para Arena y Gungame; Captura la bandera se juega en El Puente. En la práctica, los bots se agregan o sacan al instante con <b>+</b> y <b>−</b>. Online, desde el chat: <b>/bots 6</b>, <b>/skill 2</b>, <b>/fraglimit 30</b>, <b>/caplimit 3</b>, <b>/map salvaje</b>.</p>
     </div>
     <div class="keys" id="mKeys">
       <kbd>W A S D</kbd><span>moverse</span><kbd>Espacio</kbd><span>saltar (mantené para bunny hop)</span>
@@ -321,6 +322,7 @@ const GG=C.GG,TEAMS=C.TEAMS;
 /* =================== AJUSTES =================== */
 const S={sens:1,fov:95,vol:.5,music:.45,invY:false,hop:true,name:'',skin:{c:C.COLORS[0],v:'#ffffff',a:0},bots:5,skill:1,fl:20,map:'represa',q:1,mode:'arena'};
 try{const saved=JSON.parse(localStorage.getItem('cuenk_settings')||'{}');if(saved.color&&!saved.skin)saved.skin={c:saved.color,v:'#ffffff',a:0};Object.assign(S,saved);}catch(e){}
+if(S.map==='sagrado')S.map='salvaje';
 if(!S.skin||typeof S.skin!=='object')S.skin={c:C.COLORS[0],v:'#ffffff',a:0};
 function saveS(){try{localStorage.setItem('cuenk_settings',JSON.stringify(S));}catch(e){}}
 if(!S.name)S.name='Jugador'+(100+Math.floor(Math.random()*900));
@@ -560,7 +562,7 @@ function buildClub(group){
   }
   const sc=document.createElement('canvas');sc.width=256;sc.height=96;club.screen=sc;club.screenTex=new THREE.CanvasTexture(sc);club.screenTex.magFilter=THREE.NearestFilter;
   const scr=new THREE.Mesh(new THREE.PlaneGeometry(22,8),new THREE.MeshBasicMaterial({map:club.screenTex}));scr.position.set(0,8,-17.97);group.add(scr);
-  const sign=cv(512,128,(g)=>{g.font='bold 92px "Black Ops One", Impact, sans-serif';g.textAlign='center';g.textBaseline='middle';g.shadowColor='#ff3fd2';g.shadowBlur=24;g.fillStyle='#ff9be9';g.fillText('SAGRADO',256,68);});
+  const sign=cv(512,128,(g)=>{g.font='bold 92px "Black Ops One", Impact, sans-serif';g.textAlign='center';g.textBaseline='middle';g.shadowColor='#ff3fd2';g.shadowBlur=24;g.fillStyle='#ff9be9';g.fillText('SALVAJE',256,68);});
   const sm=new THREE.Mesh(new THREE.PlaneGeometry(14,3.5),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(sign),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));sm.position.set(0,9.5,31.9);sm.rotation.y=Math.PI;group.add(sm);
   const bottleCols=[0x3aff9c,0xffcf3a,0x2be6ff,0xff4a6a,0xb46cff];
   for(const sx of [-1,1])for(let z=-7;z<=7;z+=1.4){const m=new THREE.Mesh(new THREE.CylinderGeometry(.07,.09,.42,6),new THREE.MeshBasicMaterial({color:bottleCols[(Math.abs(z*5)|0)%5],transparent:true,opacity:.8}));m.position.set(sx*16.5,1.32,z);group.add(m);}
@@ -578,7 +580,7 @@ function updClub(dt,beatF){
   c.scrT=(c.scrT||0)-dt;
   if(c.scrT<=0){c.scrT=1/15;const g=c.screen.getContext('2d');g.fillStyle='#07050c';g.fillRect(0,0,256,96);
     for(let i=0;i<32;i++){const h=(Math.sin(G.time*3+i*.7)*.5+.5)*(.35+pulse*.65)*70*(.5+.5*Math.abs(Math.sin(i*1.7)));g.fillStyle=LEDC[(i+beat)%LEDC.length];g.fillRect(i*8+1,92-h,6,h);}
-    g.font='bold 30px "Black Ops One", Impact, sans-serif';g.textAlign='center';g.fillStyle='rgba(255,255,255,'+(.55+pulse*.45)+')';g.fillText('SAGRADO',128+Math.sin(G.time)*20,36);
+    g.font='bold 30px "Black Ops One", Impact, sans-serif';g.textAlign='center';g.fillStyle='rgba(255,255,255,'+(.55+pulse*.45)+')';g.fillText('SALVAJE',128+Math.sin(G.time)*20,36);
     c.screenTex.needsUpdate=true;}
   for(const ml of level.maplights)ml.l.intensity=ml.base*(.75+pulse*.5);
 }
@@ -841,7 +843,7 @@ function startGame(isOnline,mode){
   online=isOnline;myId=0;CLK.off=null;CLK.jit=.02;MODE=mode;myTeam=-1;FL=[];TS=[0,0];me.lvl=0;
   players.forEach((p,id)=>removePlayer(id));projs.forEach(p=>scene.remove(p.m));projs.length=0;
   scores=[];$('feed').innerHTML='';$('chatLog').innerHTML='';
-  const join=()=>{net.send({t:'join',name:S.name,skin:S.skin});};
+  const join=()=>{net.send({t:'join',name:S.name,skin:S.skin,skill:S.skill});};
   if(isOnline){
     net=new WSNet(wsURL+'?mode='+mode,join,(wasOk)=>{showMenu();toast(wasOk?'Se cortó la conexión con el servidor':'No se pudo conectar al servidor');net=null;inGame=false;});
   }else{net=new LocalNet(mode);join();}
@@ -1443,13 +1445,14 @@ function openModePicker(isOnline){
   ['settings','lockerPanel'].forEach(x=>$(x).hidden=true);['bSet','bLocker'].forEach(x=>$(x).setAttribute('aria-expanded','false'));
   $('modePanel').hidden=false;
   $('modeTitle').textContent='Elegí el modo · '+(isOnline?'online':'práctica con '+S.bots+' bots');
-  $('modeNote').textContent=isOnline?'Cada modo es una sala aparte del servidor: entrás con los que estén jugando ese modo.':'Los bots se suman a tu partida. En Captura la bandera se reparten entre los dos equipos.';
+  $('modeNote').innerHTML=isOnline?'Cada modo es una sala aparte del servidor: entrás con los que estén jugando ese modo. La dificultad elegida se aplica a los bots de la sala; cualquiera la puede cambiar después con <b>/skill 0-3</b> en el chat.':'Los bots se suman a tu partida. En Captura la bandera se reparten entre los dos equipos. La dificultad se puede cambiar en plena partida desde Ajustes.';
   const grid=$('modeGrid');
   grid.innerHTML=C.MODE_IDS.map(id=>{const md=C.MODES[id];return '<button type="button" class="mcard" data-m="'+id+'"><span class="mn">'+md.name+'</span><span class="md">'+md.desc+'</span><span class="mp" id="mp_'+id+'"></span><span class="mm">'+md.maps.map(k=>C.MAPS[k].name).join(' · ')+'</span></button>';}).join('');
   const cards=[...grid.querySelectorAll('.mcard')];const def=cards.find(b=>b.dataset.m===S.mode)||cards[0];if(def)def.focus();
   if(isOnline&&/^https?:$/.test(location.protocol))fetch('/status',{cache:'no-store'}).then(r=>r.json()).then(j=>{for(const id in (j.salas||{})){const e=$('mp_'+id);if(e){const n=j.salas[id].humanos;e.textContent=n?n+(n===1?' jugando ahora':' jugando ahora'):'Sala vacía';}}}).catch(()=>{});
 }
 $('modeGrid').addEventListener('click',e=>{const b=e.target.closest('.mcard');if(!b)return;$('modePanel').hidden=true;startGame(pickOnline,b.dataset.m);});
+$('mSkill').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.skill=+v;saveS();syncSettings();SFX.ui();});
 $('bOnline').addEventListener('click',()=>{if(inGame&&online){resumeGame();return;}openModePicker(true);});
 $('bOffline').addEventListener('click',()=>{openModePicker(false);});
 $('bLeave').addEventListener('click',()=>{leaveGame();$('mKick').textContent='Arena · Gungame · Captura la bandera';$('bOnline').textContent='Jugar online';$('bOnline').disabled=!serverOK;$('bOffline').textContent='Práctica con bots';});
@@ -1467,6 +1470,7 @@ function syncSettings(){
   $('sMus').value=S.music;$('oMus').textContent=Math.round(S.music*100)+'%';
   $('sInv').checked=S.invY;$('sHop').checked=S.hop;$('oBots').textContent=S.bots;
   [...$('sSkill').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.skill)));
+  [...$('mSkill').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.skill)));
   [...$('sFl').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.fl)));
   [...$('sMap').children].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===S.map)));
   [...$('sQ').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.q)));

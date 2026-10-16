@@ -6,7 +6,7 @@
    Variables de entorno opcionales:
      PORT=3000  BOTS=0 (si es mayor a 0, rellena hasta N jugadores con bots)
      BOT_SKILL=1 (0 fácil · 3 pesadilla)  FRAGLIMIT=20  TIMELIMIT=10 (minutos)
-     MAX_PLAYERS=16  MAP=represa (mapa inicial de Arena)  CAPLIMIT=5
+     MAX_PLAYERS=16  MAP=represa (mapa inicial de Arena)  CAPLIMIT=3
    Hay una sala por modo de juego (Arena, Gungame, Captura la bandera);
    el cliente elige con /ws?mode=arena|gungame|ctf
    ===================================================================== */
@@ -28,7 +28,7 @@ for (const mode of MODE_IDS) games[mode] = new Game({
   botFill: num(process.env.BOTS, 0),
   botSkill: num(process.env.BOT_SKILL, 1),
   fraglimit: num(process.env.FRAGLIMIT, 20),
-  caplimit: num(process.env.CAPLIMIT, 5),
+  caplimit: num(process.env.CAPLIMIT, 3),
   timelimit: num(process.env.TIMELIMIT, 10) * 60,
   maxPlayers: num(process.env.MAX_PLAYERS, 16)
 });

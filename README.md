@@ -7,9 +7,9 @@ Deathmatch online estilo Quake que corre en el navegador. Mapas que rotan al ter
 Al tocar **Jugar online** (o **Práctica con bots**) elegís el modo. Cada modo es una sala aparte del servidor.
 
 - **Arena**: todos contra todos en La Represa y Pan & Manteca, con créditos y tienda.
-- **Gungame**: todos arrancan con la ametralladora y cada baja te da la siguiente arma de una lista de 20 niveles (armas fuertes primero, pistola, riel y francotirador al final, cuchillo en el último). Munición infinita, sin tienda ni armas tiradas. Además de la del nivel tenés siempre el cuchillo: si te matás solo, o te matan con cuchillo, bajás un nivel. Gana el primero en hacer la baja número 20.
+- **Gungame**: todos arrancan con la ametralladora y cada baja te da la siguiente arma de una lista de 20 niveles (armas fuertes primero, pistola, riel y francotirador al final, cuchillo en el último). Munición infinita, sin tienda y sin nada tirado en el mapa (ni armas, ni vida, ni blindaje). Además de la del nivel tenés siempre el cuchillo: si te matás solo, o te matan con cuchillo, bajás un nivel. Gana el primero en hacer la baja número 20.
 - **Team Deathmatch**: rojo contra azul, cada baja suma para el equipo hasta llegar al límite. Online la sala espera a tener **4 jugadores** (mientras tanto hay calentamiento y las bajas no cuentan) y arranca con una cuenta regresiva. El límite de bajas lo elige el primero en entrar desde la pantalla de modos, y se puede cambiar desde el menú (Esc) mientras esperan.
-- **Captura la bandera**: rojo (Posadas) contra azul (Encarnación) en **ctf1 · El Puente**. Robá la bandera rival del fortín enemigo y llevala hasta el pedestal de tu base (cuenta aunque tu bandera esté robada). Si matan al que la lleva, la bandera queda tirada 20 segundos: si la toca su equipo vuelve a la base. Gana el primero en llegar a 5 capturas. No hay fuego amigo y los equipos se equilibran solos con los bots.
+- **Captura la bandera**: rojo (Posadas) contra azul (Encarnación) en **ctf1 · El Puente**. Robá la bandera rival del fortín enemigo y llevala hasta el pedestal de tu base (cuenta aunque tu bandera esté robada). Si matan al que la lleva, la bandera queda tirada 20 segundos: si la toca su equipo vuelve a la base. Gana el primer equipo en capturarla 3 veces (se cambia con `/caplimit N`). No hay fuego amigo y los equipos se equilibran solos con los bots.
 
 ## Armas
 
@@ -33,6 +33,13 @@ El blindaje absorbe un tercio del daño y llega como máximo a 100; la megasalud
 ## Dificultad de los bots
 
 Se elige al escoger el modo (y en práctica también desde Ajustes, en plena partida). Cada nivel cambia el tiempo de reacción, la puntería, qué tan rápido siguen tus movimientos, la cadencia, el daño, cuánto ven y cuánto esquivan. Online, el primero que entra a una sala vacía define la dificultad; después se cambia con `/skill 0-3`.
+
+## Detalles de juego
+
+- Al terminar una partida se ve el ganador, el próximo mapa y la cuenta regresiva (25 s), con **Seguir jugando** y **Volver al menú**.
+- Agacharse con **Ctrl** necesita pantalla completa: el juego la pide al empezar (se desactiva en Ajustes). Sin pantalla completa, Ctrl+W cierra la pestaña en el navegador, así que usá **C**; igual el juego pide confirmación antes de cerrar.
+- El rifle de caza tiene su propia mira: retícula dúplex con marcas de caída de bala a 25, 50, 75 y 100 m.
+- En La Cuenca, las ventanas de los pisos se pasan saltando y agachándote, y hay un ascensor de salto en el pasillo del primer piso: pisá el saltador de la planta baja para subir y tirate por el hueco para bajar.
 
 ## Créditos y tienda
 
@@ -87,7 +94,7 @@ Variables de entorno opcionales:
 | `TIMELIMIT` | 10 | Minutos por partida |
 | `MAX_PLAYERS` | 16 | Jugadores máximos, contando bots |
 | `MAP` | represa | Mapa inicial de Arena: `represa` o `panymanteca` |
-| `CAPLIMIT` | 5 | Capturas para ganar en Captura la bandera |
+| `CAPLIMIT` | 3 | Capturas para ganar en Captura la bandera |
 
 Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 30`, `/caplimit 3` (bandera), `/map pan`, `/restart`. Los comandos afectan solo a la sala del modo en el que estás.
 
@@ -100,6 +107,7 @@ Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 
 | Mouse / click | apuntar / disparar |
 | 1–0, rueda, Q | armas (Q vuelve a la anterior) |
 | F o V | cuchillo |
+| Ctrl o C | agacharse (más lento y más bajo; saltá y agachate para pasar por ventanas) |
 | R | recargar la escopeta doble |
 | Click derecho | mira del francotirador |
 | B | tienda |

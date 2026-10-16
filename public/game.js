@@ -13,8 +13,10 @@
 /* ---------- Constantes de física (1 unidad = 1 metro) ---------- */
 const K = {
   GRAV: 25, JUMP: 8.4, MAXSPD: 10, ACC: 10, AIRACC: 10, AIRCAP: 0.94,
-  FRIC: 6, STOP: 3, STEP: 0.55, R: 0.4, H: 1.8, EYE: 1.6, KILLY: -15
+  FRIC: 6, STOP: 3, STEP: 0.55, R: 0.4, H: 1.8, EYE: 1.6, KILLY: -15,
+  HC: 1.1, EYEC: 0.95, CROUCH_SPD: 0.5   // agachado: más bajo y más lento
 };
+const hOf = s => s.crouch ? K.HC : K.H;
 const EPS = 1e-3;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const r2 = v => Math.round(v * 100) / 100;
@@ -97,7 +99,7 @@ const MODES = {
   tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca'], shop: true, teams: true, tdm: true, minPlayers: 4,
              desc: 'Rojo contra azul: cada baja suma para tu equipo hasta llegar al límite que elijan. Online arranca cuando hay 4 jugadores; mientras tanto, calentamiento.' },
   ctf:     { name: 'Captura la bandera', maps: ['puente'], shop: true, teams: true, ctf: true,
-             desc: 'Rojo contra azul. Robá la bandera rival y llevala hasta tu base. Gana el primero en llegar a 5 capturas.' }
+             desc: 'Rojo contra azul. Robá la bandera rival y llevala hasta tu base. Gana el primer equipo en capturarla 3 veces.' }
 };
 const MODE_IDS = Object.keys(MODES);
 // Gungame: arranca con armas fuertes y termina con las difíciles; la última baja es con machete
@@ -481,7 +483,7 @@ function buildPuente() {
    y la vereda de ladrillo. El edificio se recorre por dentro: planta baja, dos pisos de aulas,
    biblioteca con balcón y terraza en el techo. Norte = -z (el edificio), sur = +z (la calle). */
 function buildLaCuenca() {
-  const { spawns, lights, add, ramp, wall, stairs, D, face, I, finish } = mapKit();
+  const { pads, spawns, lights, add, ramp, wall, stairs, D, face, I, finish } = mapKit();
   const deco = [];
   /* ---- suelo, vecinos y límites ---- */
   add(-30, -2, -30, 30, 0, 29, 'brick');
@@ -541,22 +543,31 @@ function buildLaCuenca() {
   add(-15.6, 3, -27.6, 21.6, 3.05, -6.4, 'tiles');
   // fachada con la entrada, puerta lateral, ventanas de aulas, balcón de la biblioteca y ventanitas cuadradas
   wall(-16, -6.4, 22, -6, 3, 15, [D(-10, -2, 3, 6.6), D(17.5, 21, 3, 5.6),
-    D(-14, -11, 8, 9.6), D(-7, -4, 8, 9.6), D(3, 6, 8, 9.6), D(9, 12, 8, 9.6), D(15, 15.8, 8.6, 9.4), D(16.6, 17.4, 8.6, 9.4),
-    D(-14, -11, 11, 13.4), D(-7, -4, 12, 13.6), D(3, 6, 12, 13.6), D(15, 15.8, 12.6, 13.4), D(16.6, 17.4, 12.6, 13.4)], 'whitewall');
-  wall(-16, -28, 22, -27.6, 3, 15, [D(-8, -4, 8, 9.6), D(4, 8, 8, 9.6), D(-8, -4, 12, 13.6)], 'whitewall');
-  wall(-16, -27.6, -15.6, -6.4, 3, 15, [D(-12, -9, 3, 5.6), D(-22, -18, 8, 9.6), D(-22, -18, 12, 13.6)], 'whitewall');
+    D(-14, -11, 7.8, 9.4), D(-7, -4, 7.8, 9.4), D(3, 6, 7.8, 9.4), D(9, 12, 7.8, 9.4), D(15, 15.8, 8.6, 9.4), D(16.6, 17.4, 8.6, 9.4),
+    D(-14, -11, 11, 13.4), D(-7, -4, 11.8, 13.4), D(3, 6, 11.8, 13.4), D(9, 12, 11.8, 13.4), D(15, 15.8, 12.6, 13.4), D(16.6, 17.4, 12.6, 13.4)], 'whitewall');
+  wall(-16, -28, 22, -27.6, 3, 15, [D(-8, -4, 7.8, 9.4), D(4, 8, 7.8, 9.4), D(-8, -4, 11.8, 13.4)], 'whitewall');
+  wall(-16, -27.6, -15.6, -6.4, 3, 15, [D(-12, -9, 3, 5.6), D(-22, -18, 7.8, 9.4), D(-12, -9, 7.8, 9.4), D(-22, -18, 11.8, 13.4)], 'whitewall');
   add(21.6, 3, -27.6, 22, 15, -6.4, 'whitewall');
   // escalera: tres tramos en el lado este (planta baja → 1º → 2º → techo)
-  add(-15.6, 6.6, -27.6, 19.3, 7, -6.4, 'tiles'); add(19.3, 6.6, -27.6, 21.6, 7, -24, 'tiles'); add(19.3, 6.6, -16, 21.6, 7, -6.4, 'tiles');
+  // losa del primer piso con el hueco del ascensor (x 12.6–15.2, z -11.6…-9)
+  add(-15.6, 6.6, -27.6, 12.6, 7, -6.4, 'tiles'); add(12.6, 6.6, -27.6, 15.2, 7, -11.6, 'tiles'); add(12.6, 6.6, -9, 15.2, 7, -6.4, 'tiles'); add(15.2, 6.6, -27.6, 19.3, 7, -6.4, 'tiles');
+  add(19.3, 6.6, -27.6, 21.6, 7, -24, 'tiles'); add(19.3, 6.6, -16, 21.6, 7, -6.4, 'tiles');
   add(-15.6, 10.6, -27.6, 17, 11, -6.4, 'tiles'); add(17, 10.6, -27.6, 19.3, 11, -24, 'tiles'); add(17, 10.6, -16, 19.3, 11, -6.4, 'tiles'); add(19.3, 10.6, -27.6, 21.6, 11, -6.4, 'tiles');
   add(-16, 14.6, -28, 19.3, 15, -6, 'roof'); add(19.3, 14.6, -28, 22, 15, -24, 'roof'); add(19.3, 14.6, -16, 22, 15, -6, 'roof');
   stairs(19.3, -24, 21.6, -16, 3, .25, 16, 'z', -1, 'step');
   stairs(17, -24, 19.3, -16, 7, .25, 16, 'z', 1, 'step');
   stairs(19.3, -24, 21.6, -16, 11, .25, 16, 'z', -1, 'step');
+  add(19.22, 3.05, -24, 19.38, 14.6, -16, 'whitewall');                  // tabique entre tramos (nadie queda encajado debajo)
   add(19.3, 7, -16.15, 21.6, 8, -16, 'rail'); add(17, 11, -24.15, 19.3, 12, -24, 'rail'); add(19.3, 15, -16.15, 22, 16, -16, 'rail');
   wall(16.6, -27.6, 17, -6.4, 3, 6.6, [D(-11, -8, 3, 5.6)], 'whitewall');
   wall(16.6, -27.6, 17, -6.4, 7, 10.6, [D(-27.2, -24.6, 7, 9.6)], 'whitewall');
   wall(16.6, -27.6, 17, -6.4, 11, 14.6, [D(-11, -8, 11, 13.6)], 'whitewall');
+  // ascensor de salto: tubo de vidrio entre la planta baja y el primer piso, abierto hacia el oeste.
+  // Pisá el saltador para subir; para bajar, tirate por el hueco (si caés encima no te vuelve a lanzar)
+  add(12.6, 3.05, -11.6, 15.2, 10.6, -11.4, 'tube'); add(12.6, 3.05, -9.2, 15.2, 10.6, -9, 'tube'); add(15, 3.05, -11.4, 15.2, 10.6, -9.2, 'tube');
+  add(12.55, 3.05, -11.65, 12.65, 10.6, -11.55, 'neonC', { nc: 1 }); add(12.55, 3.05, -9.05, 12.65, 10.6, -8.95, 'neonC', { nc: 1 });
+  add(12.6, 6.98, -11.4, 12.8, 7.02, -9.2, 'neonC', { nc: 1 });
+  pads.push({ x: 13.9, y: 3.05, z: -10.3, r: .75, t: [10.4, 7, -10.3], apex: 1.6, soft: 1 });
   // planta baja: hall con recepción y aulas al fondo
   add(-6, 3.05, -12, 0, 4.1, -11, 'wood');
   wall(-15.6, -18.2, 16.6, -17.8, 3.05, 6.6, [D(-12, -9, 3, 5.6), D(-1, 2, 3, 5.6), D(9, 12, 3, 5.6)], 'whitewall');
@@ -566,7 +577,7 @@ function buildLaCuenca() {
   wall(-15.6, -12.2, 16.6, -11.8, 7, 10.6, [D(-12, -9, 7, 9.6), D(-2, 1, 7, 9.6), D(8, 11, 7, 9.6)], 'whitewall');
   add(-4.2, 7, -27.6, -3.8, 10.6, -12.2, 'whitewall'); add(5.8, 7, -27.6, 6.2, 10.6, -12.2, 'whitewall');
   for (const [x0, x1] of [[-14, -6], [-2, 4], [8, 15]]) for (const z of [-24, -20, -16]) add(x0, 7, z, x1, 7.8, z + .8, 'wood');
-  add(-14, 7, -27.5, -6, 9.4, -27.3, 'board'); add(-2, 7, -27.5, 4, 9.4, -27.3, 'board');
+  add(-14, 7, -27.5, -9, 9.4, -27.3, 'board'); add(-2, 7, -27.5, 4, 9.4, -27.3, 'board');
   // segundo piso: biblioteca abierta con estanterías y balcón
   for (const z of [-25, -21, -17]) { add(-13, 11, z, -3, 13, z + .6, 'wood'); add(1, 11, z, 12, 13, z + .6, 'wood'); }
   add(-15, 10.6, -6, -10, 11, -3.6, 'whitewall');
@@ -654,7 +665,7 @@ function solidAt(W, x, y, z, r, h) {
 }
 function stepAxis(W, s, ax, d) {
   if (!d) return true;
-  const nx = ax === 0 ? s.x + d : s.x, nz = ax === 2 ? s.z + d : s.z, r = K.R, H = K.H;
+  const nx = ax === 0 ? s.x + d : s.x, nz = ax === 2 ? s.z + d : s.z, r = K.R, H = hOf(s);
   const x0 = nx - r, x1 = nx + r, z0 = nz - r, z1 = nz + r;
   let rise = 0;
   for (const b of W.brushes) {
@@ -673,7 +684,7 @@ function stepAxis(W, s, ax, d) {
   s.x = nx; s.z = nz; return true;
 }
 function stepY(W, s, h, wasOn) {
-  const r = K.R, H = K.H, x0 = s.x - r, x1 = s.x + r, z0 = s.z - r, z1 = s.z + r;
+  const r = K.R, H = hOf(s), x0 = s.x - r, x1 = s.x + r, z0 = s.z - r, z1 = s.z + r;
   const ny = s.y + s.vy * h;
   if (s.vy <= 0) {
     let ground = -Infinity, gb = null;
@@ -732,12 +743,22 @@ function carry(W, s) {
     if (b.max[1] > s.y + EPS && b.min[1] < s.y + K.H && b.max[1] - s.y < 1.2) { s.y = b.max[1]; if (s.vy < 0) s.vy = 0; s.on = true; s.gb = b.id; s.gbo = b.off; }
   }
 }
+function crouchUpdate(W, s, want) {
+  const dh = K.H - K.HC;
+  if (want && !s.crouch) { s.crouch = true; if (!s.on) s.y += dh * .35; }           // en el aire encoge las piernas
+  else if (!want && s.crouch) {
+    if (!s.on && !solidAt(W, s.x, s.y - dh * .35, s.z, K.R, K.H) && s.y - dh * .35 > -100) { s.crouch = false; s.y -= dh * .35; }
+    else if (!solidAt(W, s.x, s.y + .01, s.z, K.R, K.H)) s.crouch = false;           // no se para si no hay lugar arriba
+  }
+}
 function pmove(W, s, cmd, dt) {
   if (W.movers.length) carry(W, s);
+  crouchUpdate(W, s, !!cmd.crouch);
   const steps = Math.max(1, Math.ceil(dt / (1 / 120) - 1e-6)), h = dt / steps;
   let wx = cmd.wx || 0, wz = cmd.wz || 0;
   const wl = Math.hypot(wx, wz); let wish = 0;
   if (wl > 1e-4) { wish = K.MAXSPD * Math.min(1, wl); wx /= wl; wz /= wl; }
+  if (s.crouch && s.on) wish *= K.CROUCH_SPD;
   const out = { jumped: false, landed: 0 };
   for (let i = 0; i < steps; i++) {
     const wasOn = s.on;
@@ -755,6 +776,13 @@ function pmove(W, s, cmd, dt) {
     if (!wasOn && s.on && preVy < out.landed) out.landed = preVy;
   }
   return out;
+}
+function padReady(s, pad, landed) {
+  if (!pad) { s.padArm = true; return false; }
+  if (!pad.soft) return true;
+  if (!s.on) return false;            // el del ascensor solo funciona parado encima
+  if (landed) s.padArm = false;
+  return s.padArm !== false;
 }
 function triggers(W, s) {
   const out = { pad: null, tele: null, lava: 0 };
@@ -820,10 +848,10 @@ function raySphere(ox, oy, oz, dx, dy, dz, cx, cy, cz, r) {
   const s = Math.sqrt(disc); let t = -b - s; if (t < 0) t = -b + s; return t < 0 ? -1 : t;
 }
 const SPH = [[.5, .42, 0], [1.1, .48, 0], [1.6, .26, 1]];
-function rayPlayer(x, y, z, ox, oy, oz, dx, dy, dz) {
-  let best = null;
+function rayPlayer(x, y, z, ox, oy, oz, dx, dy, dz, crouch) {
+  let best = null; const k = crouch ? .62 : 1;
   for (const s of SPH) {
-    const t = raySphere(ox, oy, oz, dx, dy, dz, x, y + s[0], z, s[1]);
+    const t = raySphere(ox, oy, oz, dx, dy, dz, x, y + s[0] * k, z, s[1]);
     if (t >= 0 && (!best || t < best.t)) best = { t, head: !!s[2] };
   }
   return best;
@@ -1025,7 +1053,7 @@ const SHOP_BY_ID = {}; SHOP.forEach(it => SHOP_BY_ID[it.id] = it);
 
 class Game {
   constructor(o) {
-    this.o = Object.assign({ fraglimit: 20, timelimit: 600, caplimit: 5, bots: null, botFill: 0, botSkill: 1, online: false, maxPlayers: 16, map: null, rotate: true, mode: 'arena' }, o || {});
+    this.o = Object.assign({ fraglimit: 20, timelimit: 600, caplimit: 3, bots: null, botFill: 0, botSkill: 1, online: false, maxPlayers: 16, map: null, rotate: true, mode: 'arena' }, o || {});
     if (!MODES[this.o.mode]) this.o.mode = 'arena';
     this.mode = MODES[this.o.mode];
     this.players = new Map(); this.nextId = 1; this.projs = []; this.pid = 1;
@@ -1038,7 +1066,7 @@ class Game {
   setMap(id) {
     this.W = MAPS[id]; this.nav = getNav(this.W); safeSpawns(this.W);
     // en gungame no hay armas ni munición tiradas: cada uno tiene la de su nivel
-    const off = t => !!(this.mode.gg && (ITEMS[t].weapon != null || ITEMS[t].ammo));
+    const off = t => !!this.mode.gg; // en gungame no hay nada tirado: cada arma se gana con bajas
     this.items = this.W.items.map((it, i) => ({ i, type: it.type, x: it.x, y: it.y, z: it.z, off: off(it.type), up: !off(it.type), t: 0 }));
     this.projs.length = 0;
     this.resetFlags();
@@ -1106,7 +1134,7 @@ class Game {
         if (Array.isArray(v) && v.length === 3 && v.every(Number.isFinite)) { p.s.vx = clamp(v[0], -80, 80); p.s.vy = clamp(v[1], -80, 80); p.s.vz = clamp(v[2], -80, 80); }
         if (Number.isFinite(m.y)) p.yaw = m.y; if (Number.isFinite(m.x)) p.pitch = clamp(m.x, -1.6, 1.6);
         if (Number.isInteger(m.w) && m.w >= 0 && m.w < NW && p.ow[m.w]) p.w = m.w;
-        p.s.on = !!m.o;
+        p.s.on = !!m.o; p.s.crouch = !!m.c;
         break;
       }
       case 'fire': this.humanFire(p, m); break;
@@ -1295,7 +1323,7 @@ class Game {
     const wt = wall ? wall.t : range, hits = [];
     for (const t of this.players.values()) {
       if (!t.alive || t === shooter || !t.joined) continue;
-      const h = rayPlayer(t.s.x, t.s.y, t.s.z, o[0], o[1], o[2], d[0], d[1], d[2]);
+      const h = rayPlayer(t.s.x, t.s.y, t.s.z, o[0], o[1], o[2], d[0], d[1], d[2], t.s.crouch);
       if (h && h.t < wt) hits.push({ p: t, t: h.t, head: h.head });
     }
     hits.sort((a, b) => a.t - b.t);
@@ -1343,7 +1371,7 @@ class Game {
       if (L > 1e-6) {
         for (const t of this.players.values()) {
           if (!t.alive || !t.joined || (t.id === pr.own && pr.age < .3)) continue;
-          const h = rayPlayer(t.s.x, t.s.y, t.s.z, ox, oy, oz, dx / L, dy / L, dz / L);
+          const h = rayPlayer(t.s.x, t.s.y, t.s.z, ox, oy, oz, dx / L, dy / L, dz / L, t.s.crouch);
           if (h && h.t <= L + .15 && h.t < bt) { bt = h.t; direct = t; }
         }
       }
@@ -1511,6 +1539,7 @@ class Game {
   }
   tickItems(dt) {
     for (const it of this.items) {
+      if (it.off) continue;
       if (!it.up) { it.t -= dt; if (it.t <= 0) { it.up = true; this.bcast({ t: 'ev', e: 'item', i: it.i, up: 1 }); } continue; }
       for (const p of this.players.values()) {
         if (!p.alive || !p.joined) continue;
@@ -1534,13 +1563,13 @@ class Game {
   sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.o.fraglimit, cl: this.o.caplimit, st: this.state, map: this.W.id, mode: this.o.mode, ts: this.ts, fs: this.flagState(), cd: Math.ceil(this.countT), hn: this.humanCount(false), mp: this.mode.minPlayers || 0 }); }
   endMatch() {
     if (this.state !== 'play') return;
-    this.state = 'inter'; this.interT = 10;
+    this.state = 'inter'; this.interT = 25;
     const l = this.scores(), ms = this.mode.maps;
     const next = this.o.rotate ? ms[(ms.indexOf(this.W.id) + 1) % ms.length] : this.W.id;
     this.nextMap = next;
     let w = l.length ? l[0][1] : '';
     if (this.mode.teams) w = this.ts[0] === this.ts[1] ? '' : 'EQUIPO ' + TEAMS[this.ts[0] > this.ts[1] ? 0 : 1].name.toUpperCase();
-    this.bcast({ t: 'end', l, w, wt: this.mode.teams ? (this.ts[0] === this.ts[1] ? -1 : this.ts[0] > this.ts[1] ? 0 : 1) : -1, ts: this.ts, next, nextName: MAPS[next].name });
+    this.bcast({ t: 'end', l, w, wt: this.mode.teams ? (this.ts[0] === this.ts[1] ? -1 : this.ts[0] > this.ts[1] ? 0 : 1) : -1, ts: this.ts, next, nextName: MAPS[next].name, secs: this.interT });
     this.projs.length = 0;
   }
   restart(mapId) {
@@ -1633,7 +1662,7 @@ class Game {
     const ps = [];
     for (const p of this.players.values()) {
       if (!p.joined) continue;
-      ps.push([p.id, r2(p.s.x), r2(p.s.y), r2(p.s.z), r2(p.yaw), r2(p.pitch), p.w, (p.alive ? 1 : 0) | (p.quadT > 0 ? 2 : 0) | (p.s.on ? 4 : 0), r2(p.s.vx), r2(p.s.vy), r2(p.s.vz)]);
+      ps.push([p.id, r2(p.s.x), r2(p.s.y), r2(p.s.z), r2(p.yaw), r2(p.pitch), p.w, (p.alive ? 1 : 0) | (p.quadT > 0 ? 2 : 0) | (p.s.on ? 4 : 0) | (p.s.crouch ? 8 : 0), r2(p.s.vx), r2(p.s.vy), r2(p.s.vz)]);
       if (p.bot && p.ai && this.flags.length && !p.alive) p.ai.path = null;
     }
     this.bcast({ t: 'sn', tm: Math.round(this.time * 1000) / 1000, ps });
@@ -1792,11 +1821,12 @@ class Game {
     }
     const was = s.on;
     pmove(this.W, s, { wx, wz, jump }, dt);
-    if (was !== s.on && s.on) ai.flyT = 0;
+    const landed = was !== s.on && s.on;
+    if (landed) ai.flyT = 0;
     // plataformas de salto y teletransportadores
     p.padT -= dt;
     const tr = triggers(this.W, s);
-    if (tr.pad && p.padT <= 0) { launchPad(s, tr.pad); p.padT = .4; ai.flyT = 1.5; this.bcast({ t: 'ev', e: 'pad', p: r3a([s.x, s.y, s.z]) }); }
+    if (padReady(s, tr.pad, landed && Math.random() < .5) && tr.pad && p.padT <= 0) { launchPad(s, tr.pad); p.padT = .4; ai.flyT = 1.5; this.bcast({ t: 'ev', e: 'pad', p: r3a([s.x, s.y, s.z]) }); }
     if (tr.tele) { this.teleport(p, tr.tele); ai.replan = 0; }
     // --- puntería y disparo ---
     if (tgt && tgt.alive) {
@@ -1836,5 +1866,5 @@ class Game {
   }
 }
 
-return { K, WEAPONS, NW, AMMO0, MODES, MODE_IDS, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, SKILL, topAt, pmove, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
+return { K, padReady, WEAPONS, NW, AMMO0, MODES, MODE_IDS, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, SKILL, topAt, pmove, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
 });

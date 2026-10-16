@@ -23,7 +23,7 @@ Todos arrancan con pistola (automática), escopeta y cuchillo. Las demás se jun
 | Lanzagranadas | 110 de área + 40 directo | radio 5,5 m, explota al tocar a alguien |
 | Lanzacohetes | 100 directo + 105 de área | cohete rápido, sirve para rocket jump |
 | Rifle de riel | 100 (150 a la cabeza) | atraviesa a todos en línea |
-| Cuchillo | 120 | cuerpo a cuerpo |
+| Cuchillo | 40 por tajo (76 por la espalda) | cuerpo a cuerpo, nunca mata de un golpe a alguien sano |
 | Francotirador | 95 (209 a la cabeza) | click derecho para la mira; sin mira es impreciso |
 
 El blindaje absorbe la mitad del daño.

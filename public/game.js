@@ -32,7 +32,7 @@ const WEAPONS = [
   { name: 'Lanzagranadas',  ammo: 'grenades', cost: 1, rate: .75, type: 'proj', proj: 'grenade', speed: 26, dmg: 110, rad: 5.5, direct: 40 },
   { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 105, rad: 5, direct: 100 },
   { name: 'Rifle de riel',  ammo: 'slugs',    cost: 1, rate: 1.4, type: 'rail', pel: 1,  dmg: 100, range: 400 },
-  { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .42, type: 'hit',  pel: 1,  spread: 0, dmg: 120, range: 2.6, melee: true },
+  { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 40, back: 1.9, range: 2.1, melee: true },
   { name: 'Francotirador',  ammo: 'sniper',   cost: 1, rate: 1.25, type: 'hit', pel: 1,  spread: .002, hip: .045, dmg: 95, head: 2.2, range: 500, scope: true }
 ];
 const NW = WEAPONS.length;
@@ -77,7 +77,7 @@ const SHOP = [
   { id: 'w5', cat: 'Explosivas', name: 'Lanzacohetes', w: 5, price: 1300, pack: ['rockets', 10], desc: 'Daño en área y rocket jump' },
   { id: 'w6', cat: 'Precisión', name: 'Rifle de riel', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Atraviesa a todos los que estén en línea' },
   { id: 'w8', cat: 'Precisión', name: 'Francotirador', w: 8, price: 1500, pack: ['sniper', 10], desc: 'Click derecho para apuntar con mira. A la cabeza mata de un tiro' },
-  { id: 'w7', cat: 'Pistolas', name: 'Cuchillo', w: 7, price: 0, free: 1, desc: 'Cuerpo a cuerpo, mata de un golpe sin blindaje' },
+  { id: 'w7', cat: 'Pistolas', name: 'Cuchillo', w: 7, price: 0, free: 1, desc: 'Cuerpo a cuerpo: 40 por tajo, 76 por la espalda' },
   { id: 'a1', cat: 'Blindaje', name: 'Chaleco', price: 400, armor: 50, desc: 'Aparecés con 50 de blindaje' },
   { id: 'a2', cat: 'Blindaje', name: 'Armadura pesada', price: 900, armor: 100, desc: 'Aparecés con 100 de blindaje' },
   { id: 'am', cat: 'Suministros', name: 'Cartuchera doble', price: 500, desc: 'Aparecés con el doble de munición' },
@@ -1113,9 +1113,15 @@ class Game {
       done.add(t.id);
       const n = clamp(c[1] | 0, 0, W_.pel), hs = clamp(c[2] | 0, 0, n); if (!n) continue;
       if (!this.validHit(o, d, t, W_)) continue;
-      const dmg = W_.type === 'rail' ? W_.dmg * (hs ? 1.5 : 1) : W_.head ? W_.dmg * (hs ? W_.head : 1) : (n + hs) * W_.dmg;
+      const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? W_.dmg * (hs ? 1.5 : 1) : W_.head ? W_.dmg * (hs ? W_.head : 1) : (n + hs) * W_.dmg;
       this.damage(t, dmg * this.mult(p), p, w, d, .05, 'frag');
     }
+  }
+  // cuchillo como en Counter-Strike: tajo de 40; por la espalda hace casi el doble, pero nunca mata de un golpe a alguien sano
+  meleeDmg(p, t, W_) {
+    const ax = p.s.x - t.s.x, az = p.s.z - t.s.z, al = Math.hypot(ax, az) || 1;
+    const behind = (-Math.sin(t.yaw) * ax - Math.cos(t.yaw) * az) / al < -.4;
+    return W_.dmg * (behind ? W_.back : 1);
   }
   validHit(o, d, t, W_) {
     const cx = t.s.x - o[0], cy = t.s.y + 1 - o[1], cz = t.s.z - o[2];
@@ -1158,7 +1164,7 @@ class Game {
       for (const h of tr.hits) { const a = acc.get(h.p) || { n: 0, hs: 0 }; a.n++; if (h.head) a.hs++; acc.set(h.p, a); }
     }
     for (const [t, a] of acc) {
-      const dmg = W_.type === 'rail' ? W_.dmg * (a.hs ? 1.5 : 1) : W_.head ? W_.dmg * (a.hs ? W_.head : 1) : (a.n + a.hs) * W_.dmg;
+      const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? W_.dmg * (a.hs ? 1.5 : 1) : W_.head ? W_.dmg * (a.hs ? W_.head : 1) : (a.n + a.hs) * W_.dmg;
       this.damage(t, dmg * this.mult(p) * this.skill().dmg, p, w, d, .05, 'frag');
     }
   }

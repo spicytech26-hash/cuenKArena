@@ -716,6 +716,16 @@ const mOlive=new THREE.MeshPhongMaterial({color:0x4d5a2e,flatShading:true});
 const mRail=new THREE.MeshBasicMaterial({color:0x8fd8ff});
 function bx(w,h,d,m,x,y,z,rx=0){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.rotation.x=rx;return o;}
 function cy(r,l,m,x,y,z,rz=0,seg=8){const o=new THREE.Mesh(new THREE.CylinderGeometry(r,r,l,seg),m);o.rotation.x=Math.PI/2;if(rz)o.rotation.set(0,0,rz);o.position.set(x,y,z);return o;}
+// acero cepillado para el cuchillo: filo brillante, canal oscuro y lomo gris
+const knifeTex=(()=>{const c=cv(128,128,(g,w,h)=>{
+  const gr=g.createLinearGradient(0,0,w,0);
+  gr.addColorStop(0,'#fbfdff');gr.addColorStop(.12,'#e9eef3');gr.addColorStop(.3,'#c6cdd4');gr.addColorStop(.5,'#9aa2ab');
+  gr.addColorStop(.56,'#6f7780');gr.addColorStop(.62,'#d9dfe5');gr.addColorStop(.8,'#a7afb7');gr.addColorStop(1,'#545b62');
+  g.fillStyle=gr;g.fillRect(0,0,w,h);
+  for(let i=0;i<260;i++){g.fillStyle='rgba(255,255,255,'+(Math.random()*.12)+')';g.fillRect(Math.random()*w,Math.random()*h,1,6+Math.random()*30);}
+  for(let i=0;i<40;i++){g.fillStyle='rgba(40,44,50,'+(Math.random()*.25)+')';g.fillRect(Math.random()*w,Math.random()*h,1,2+Math.random()*8);}
+});const t=new THREE.CanvasTexture(c);t.anisotropy=4;return t;})();
+const gripTex=(()=>{const c=cv(32,64,(g,w,h)=>{g.fillStyle='#2a1d14';g.fillRect(0,0,w,h);for(let y=-8;y<h+8;y+=6){g.strokeStyle='#4a3424';g.lineWidth=3;g.beginPath();g.moveTo(0,y);g.lineTo(w,y+8);g.stroke();g.strokeStyle='#120c08';g.lineWidth=1;g.beginPath();g.moveTo(0,y+2);g.lineTo(w,y+10);g.stroke();}});return new THREE.CanvasTexture(c);})();
 function buildGun(i){const g=new THREE.Group();let tip=[0,0,-.5];
   if(i===0){g.add(bx(.07,.09,.24,mDark,0,0,0),bx(.075,.05,.26,mGun,0,.065,-.01),bx(.065,.15,.08,mDark,0,-.11,.07,.25));tip=[0,.06,-.16];}
   if(i===1){g.add(cy(.032,.72,mGun,0,.02,-.32),cy(.026,.5,mDark,0,-.045,-.24),bx(.075,.07,.16,mWood,0,-.045,-.38),bx(.1,.13,.26,mDark,0,0,.06),bx(.075,.13,.26,mWood,0,-.04,.3,-.15));tip=[0,.02,-.7];}
@@ -723,11 +733,24 @@ function buildGun(i){const g=new THREE.Group();let tip=[0,0,-.5];
   if(i===3){g.add(bx(.12,.14,.4,mGun,0,0,-.04),cy(.024,.42,mDark,0,.01,-.42),cy(.045,.24,mDark,0,.01,-.32,0,6),cy(.095,.09,mBrass,0,-.12,-.02,Math.PI/2,14),bx(.06,.16,.08,mDark,0,-.13,.13,.3));tip=[0,.01,-.64];}
   if(i===4){g.add(cy(.062,.48,mDark,0,.02,-.28,0,10),cy(.072,.05,mOlive,0,.02,-.5,0,10),cy(.11,.16,mOlive,0,-.02,.02,Math.PI/2,6),bx(.06,.16,.08,mDark,0,-.15,.1,.3),bx(.08,.1,.22,mDark,0,.02,.18));tip=[0,.02,-.54];}
   if(i===5){g.add(cy(.078,.82,mGun,0,0,-.2,0,10),cy(.092,.06,mDark,0,0,-.6,0,10),cy(.088,.06,mDark,0,0,.2,0,10),cy(.08,.05,mRed,0,0,-.42,0,10),bx(.06,.16,.08,mDark,0,-.14,-.02,.25));tip=[0,0,-.64];}
-  if(i===7){const blade=new THREE.MeshPhongMaterial({color:0xd8dde2,flatShading:true,shininess:120,specular:0xffffff});g.add(bx(.02,.07,.3,blade,0,.02,-.24),bx(.018,.035,.06,blade,0,.04,-.41),bx(.07,.03,.03,mDark,0,0,-.08),bx(.04,.07,.15,mDark,0,-.01,.02));tip=[0,.02,-.4];}
+  if(i===7){
+    // hoja curva extruida: lomo recto arriba, filo curvo abajo, punta levantada
+    const L=.5,Wd=.06,sh=new THREE.Shape();
+    sh.moveTo(0,0);sh.lineTo(0,L*.8);sh.quadraticCurveTo(0,L*.96,-Wd*.3,L);sh.quadraticCurveTo(-Wd*1.2,L*.72,-Wd,L*.3);sh.lineTo(-Wd*.85,0);sh.lineTo(0,0);
+    const bg=new THREE.ExtrudeGeometry(sh,{depth:.006,bevelEnabled:true,bevelThickness:.0025,bevelSize:.004,bevelSegments:1,curveSegments:10});
+    bg.computeBoundingBox();const bb=bg.boundingBox,uv=bg.attributes.uv,ps=bg.attributes.position;
+    for(let k=0;k<uv.count;k++)uv.setXY(k,(ps.getX(k)-bb.min.x)/(bb.max.x-bb.min.x),(ps.getY(k)-bb.min.y)/(bb.max.y-bb.min.y));
+    bg.translate(Wd*.5,0,-.003);bg.rotateX(-Math.PI/2);bg.rotateZ(Math.PI/2);
+    const blade=new THREE.Mesh(bg,new THREE.MeshPhongMaterial({map:knifeTex,shininess:160,specular:0xffffff,emissive:0x1a1c20}));
+    const guard=new THREE.MeshPhongMaterial({color:0x2b2a2e,shininess:90,specular:0x888888});
+    const grip=new THREE.Mesh(new THREE.CylinderGeometry(.017,.019,.13,10),new THREE.MeshPhongMaterial({map:gripTex,shininess:10}));grip.rotation.x=Math.PI/2;grip.position.set(0,-.005,.075);
+    const pommel=new THREE.Mesh(new THREE.SphereGeometry(.022,10,8),guard);pommel.position.set(0,-.005,.145);
+    g.add(blade,bx(.02,.1,.022,guard,0,-.004,.005),grip,pommel);tip=[0,0,-.5];
+  }
   if(i===8){g.add(bx(.08,.1,.5,mDark,0,0,-.05),cy(.022,.7,mGun,0,.02,-.62),cy(.04,.32,mDark,0,.1,-.08,0,10),cy(.046,.03,mRail,0,.1,-.25,0,10),bx(.07,.11,.28,mWood,0,-.03,.3,-.1),bx(.05,.14,.07,mDark,0,-.12,.06,.3));tip=[0,.02,-.98];}
   if(i===6){g.add(bx(.1,.12,.78,mGun,0,0,-.2),bx(.02,.03,.72,mDark,-.055,.06,-.22),bx(.02,.03,.72,mDark,.055,.06,-.22),bx(.06,.16,.08,mDark,0,-.14,.08,.3));for(let k=0;k<4;k++)g.add(cy(.07,.035,mRail,0,0,-.08-k*.12,0,10));tip=[0,0,-.6];}
   g.userData.tip=new THREE.Vector3(tip[0],tip[1],tip[2]);return g;}
-const vmBase=[[.18,-.18,-.36],[.2,-.19,-.36],[.2,-.2,-.36],[.21,-.2,-.38],[.22,-.21,-.36],[.24,-.22,-.34],[.22,-.2,-.36],[.16,-.2,-.32],[.2,-.2,-.34]].map(a=>new THREE.Vector3(a[0],a[1],a[2]));
+const vmBase=[[.18,-.18,-.36],[.2,-.19,-.36],[.2,-.2,-.36],[.21,-.2,-.38],[.22,-.21,-.36],[.24,-.22,-.34],[.22,-.2,-.36],[.2,-.23,-.3],[.2,-.2,-.34]].map(a=>new THREE.Vector3(a[0],a[1],a[2]));
 const vms=WEAPONS.map((_,i)=>{const g=buildGun(i);g.visible=false;wScene.add(g);return g;});
 wScene.add(new THREE.AmbientLight(0x8a7a66,.75));
 const wDir=new THREE.DirectionalLight(0xffe2c0,.85);wDir.position.set(1,2,1.5);wScene.add(wDir);
@@ -1329,12 +1352,26 @@ function updRemote(dt){
     if(alive&&!p.alive){p.alive=true;p.gib=false;p.deadT=0;}
     if(!alive&&p.alive){p.alive=false;p.deadT=0;}
     p.w=cur.w;p.quad=!!(cur.fl&2);p.onG=!!(cur.fl&4);p.spd=Math.hypot(cur.vx,cur.vz);
-    m.g.position.set(p.x,p.y,p.z);m.g.rotation.y=p.yaw;
+    // el modelo mira a +z y en el juego yaw 0 mira a -z: hay que girarlo media vuelta
+    m.g.position.set(p.x,p.y,p.z);m.g.rotation.y=p.yaw+Math.PI;
+    // velocidad real a partir de cuánto se movió en pantalla (no depende de lo que mande el servidor)
+    if(p.px==null||Math.hypot(p.x-p.px,p.z-p.pz)>3){p.px=p.x;p.pz=p.z;}
+    const ivx=(p.x-p.px)/Math.max(dt,1e-3),ivz=(p.z-p.pz)/Math.max(dt,1e-3);p.px=p.x;p.pz=p.z;
+    const ks=Math.min(1,dt*10);p.vxs=(p.vxs||0)+(ivx-(p.vxs||0))*ks;p.vzs=(p.vzs||0)+(ivz-(p.vzs||0))*ks;
     if(p.alive){
       m.g.visible=true;m.b.rotation.set(0,0,0);m.b.position.y=0;
-      p.phase+=dt*p.spd*2.2;const sw=Math.sin(p.phase)*Math.min(1,p.spd/4)*.65;
-      if(p.onG){m.legs[0].rotation.x=sw;m.legs[1].rotation.x=-sw;}else{m.legs[0].rotation.x=-.6;m.legs[1].rotation.x=.3;}
-      m.armL.rotation.x=-sw*.6;m.armR.rotation.x=-p.pitch*.8-(p.fire>0?.25:0);m.head.rotation.x=-p.pitch*.5;
+      const sp=Math.hypot(p.vxs,p.vzs),sy=Math.sin(p.yaw),cyw=Math.cos(p.yaw);
+      const fwd=-p.vxs*sy-p.vzs*cyw,side=p.vxs*cyw-p.vzs*sy;           // hacia adelante y hacia la derecha
+      const fr=sp>.3?fwd/sp:0,sr=sp>.3?side/sp:0;
+      p.phase+=dt*Math.min(sp,14)*1.9*(fwd<-.3?-1:1);
+      const amp=Math.min(1,sp/5)*.85,ph=Math.sin(p.phase);
+      if(p.onG){
+        m.legs[0].rotation.set(-ph*amp*Math.max(.35,Math.abs(fr)),0,ph*amp*sr*.5);
+        m.legs[1].rotation.set(ph*amp*Math.max(.35,Math.abs(fr)),0,-ph*amp*sr*.5);
+        m.b.position.y=Math.abs(Math.cos(p.phase))*amp*.07;
+        m.b.rotation.x=Math.max(-.12,Math.min(.18,fwd*.014));m.b.rotation.z=Math.max(-.12,Math.min(.12,-side*.01));
+      }else{m.legs[0].rotation.set(-.7,0,0);m.legs[1].rotation.set(.35,0,0);m.b.rotation.x=.08;}
+      m.armL.rotation.x=ph*amp*.8*(p.onG?1:0)-(p.onG?0:.6);m.armR.rotation.x=-p.pitch*.8-(p.fire>0?.25:0);m.head.rotation.x=-p.pitch*.5;
       p.fire=(p.fire||0)-dt;p.pain=(p.pain||0)-dt;
       const em=p.pain>0?0x803020:p.quad?0x5020a0:0;m.mats.forEach(mm=>mm.emissive.setHex(em));
       m.gun.scale.z=p.w===6||p.w===5||p.w===8?1.4:p.w===0?.6:p.w===7?.45:1;
@@ -1419,7 +1456,8 @@ function updViewmodel(dt){
   me.kick=Math.max(0,me.kick-dt*(i===3?14:i===0?10:i===7?4:5));me.raise=Math.max(0,me.raise-dt*4);
   const hs=Math.hypot(me.s.vx,me.s.vz),mv=me.s.on?Math.min(1,hs/10):.3;
   g.position.set(b.x+Math.cos(me.bob)*.014*mv,b.y-Math.abs(Math.sin(me.bob))*.012*mv-me.raise*.35-me.dip*.3+(me.s.on?0:Math.max(-.04,Math.min(.04,-me.s.vy*.003))),b.z+me.kick*.06);
-  if(i===7)g.rotation.set(-Math.sin(me.kick*2.6)*.9-me.raise*.6,Math.sin(me.kick*2.6)*.7,Math.sin(me.kick*2.6)*.6);
+  // cuchillo en diagonal con la cara de la hoja hacia la cámara; el tajo barre de derecha a izquierda
+  if(i===7){const sw=Math.sin(me.kick*2.6);g.rotation.set(.42-sw*.9-me.raise*.6,.55+sw*1.1,.35+sw*.7);}
   else g.rotation.set(me.kick*.12-me.raise*.6,0,0);
   if(me.rel>0){me.rel-=dt;if(me.rel<=0){me.rel=0;if(me.relW>=0)me.mag[me.relW]=WEAPONS[me.relW].mag;updateHUD();}}
   const relDip=me.rel>0&&me.relW===i?Math.sin(Math.min(1,me.rel/(WEAPONS[i].reload*.75))*Math.PI)*.18:0;

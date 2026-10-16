@@ -348,7 +348,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
             <input type="file" id="chestFile" accept="image/png,image/jpeg,image/webp" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
             <button type="button" class="btn" id="chestDel" hidden>Quitar</button>
           </div>
-          <p class="note" id="chestNote" style="margin:0">PNG o JPG. Se recorta cuadrada al centro y se ajusta al pecho.</p>
+          <p class="note" id="chestNote" style="margin:0">PNG o JPG. Se recorta cuadrada al centro y cubre todo el pecho.</p>
           <p class="note">Los cambios se guardan solos. Si estás en una partida online, los demás te ven así al instante.</p>
         </div>
       </div>
@@ -1035,7 +1035,7 @@ function nameSprite(name,color){
 /* ---------- personaje con piel (armadura, visor y accesorio) ---------- */
 const tpCache={};
 function tpGun(w){if(!tpCache[w])tpCache[w]=buildGun(w);return tpCache[w].clone();}
-const chestGeo=new THREE.PlaneGeometry(.25,.25),chestCache=new Map();
+const chestGeo=new THREE.PlaneGeometry(.52,.52),chestCache=new Map();
 function chestTex(url){
   let t=chestCache.get(url);if(t)return t;
   const img=new Image();t=new THREE.Texture(img);t.minFilter=THREE.LinearFilter;img.onload=()=>{t.needsUpdate=true;};img.src=url;
@@ -1050,9 +1050,11 @@ function buildPlayer(skin,name,noTag){
   const mV=new THREE.MeshBasicMaterial({color:vis});
   const g=new THREE.Group(),b=new THREE.Group();g.add(b);
   const legs=[-1,1].map(side=>{const l=new THREE.Group();l.position.set(side*.15,.85,0);l.add(bx(.2,.85,.24,mL,0,-.42,0),bx(.24,.13,.33,mA,0,-.8,.04));b.add(l);return l;});
-  b.add(bx(.5,.18,.3,mL,0,.9,0),bx(.6,.62,.38,mA,0,1.26,0),bx(.42,.28,.06,mL,0,1.3,.2),bx(.24,.17,.42,mA,-.4,1.53,0),bx(.24,.17,.42,mA,.4,1.53,0),bx(.08,.08,.02,mV,.18,1.42,.23));
+  const hasImg=!!(skin.img&&(noTag||S.showImg));
+  b.add(bx(.5,.18,.3,mL,0,.9,0),bx(.6,.62,.38,mA,0,1.26,0),bx(.24,.17,.42,mA,-.4,1.53,0),bx(.24,.17,.42,mA,.4,1.53,0));
+  if(!hasImg)b.add(bx(.42,.28,.06,mL,0,1.3,.2),bx(.08,.08,.02,mV,.18,1.42,.23));
   // imagen del pecho: un cuadrado sobre la placa oscura del frente
-  if(skin.img&&(noTag||S.showImg)){const pl=new THREE.Mesh(chestGeo,new THREE.MeshBasicMaterial({map:chestTex(skin.img)}));pl.position.set(0,1.3,.2315);b.add(pl);}
+  if(hasImg){const pl=new THREE.Mesh(chestGeo,new THREE.MeshBasicMaterial({map:chestTex(skin.img)}));pl.position.set(0,1.27,.1925);b.add(pl);}
   const head=new THREE.Group();head.position.y=1.74;head.add(bx(.3,.3,.3,mH,0,0,0),bx(.27,.07,.04,mV,0,.03,.16));b.add(head);
   const a=skin.a|0;
   if(a===1)head.add(bx(.06,.14,.34,mV,0,.2,-.01));
@@ -1564,10 +1566,10 @@ function loadChest(file){
   if(file.size>15e6){$('chestNote').textContent='La imagen es muy pesada (máximo 15 MB).';return;}
   const url=URL.createObjectURL(file),im=new Image();
   im.onload=()=>{
-    const c=document.createElement('canvas');c.width=c.height=96;const g=c.getContext('2d');
-    g.fillStyle='#2e2a26';g.fillRect(0,0,96,96);
+    const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');
+    g.fillStyle='#2e2a26';g.fillRect(0,0,128,128);
     const sq=Math.min(im.naturalWidth,im.naturalHeight),sx=(im.naturalWidth-sq)/2,sy=(im.naturalHeight-sq)/2;
-    g.imageSmoothingQuality='high';g.drawImage(im,sx,sy,sq,sq,0,0,96,96);URL.revokeObjectURL(url);
+    g.imageSmoothingQuality='high';g.drawImage(im,sx,sy,sq,sq,0,0,128,128);URL.revokeObjectURL(url);
     let q=.85,d=c.toDataURL('image/jpeg',q);while(d.length>23000&&q>.3){q-=.15;d=c.toDataURL('image/jpeg',q);}
     if(!C.okChestImg(d)){$('chestNote').textContent='No se pudo usar esa imagen.';return;}
     $('chestNote').textContent='Listo. Los demás la ven en tu pecho.';setSkin({img:d});
@@ -1576,7 +1578,7 @@ function loadChest(file){
   im.src=url;
 }
 $('chestFile').addEventListener('change',e=>{loadChest(e.target.files[0]);e.target.value='';});
-$('chestDel').addEventListener('click',()=>{delete S.skin.img;setSkin({});$('chestNote').textContent='PNG o JPG. Se recorta cuadrada al centro y se ajusta al pecho.';});
+$('chestDel').addEventListener('click',()=>{delete S.skin.img;setSkin({});$('chestNote').textContent='PNG o JPG. Se recorta cuadrada al centro y cubre todo el pecho.';});
 function syncChest(){const has=!!S.skin.img;$('chestPrev').hidden=!has;$('chestDel').hidden=!has;if(has)$('chestPrev').src=S.skin.img;}
 function setSkin(p){Object.assign(S.skin,p);saveS();syncLocker();syncChest();rebuildLockModel();acctSave();if(net&&inGame)net.send({t:'skin',s:S.skin});SFX.ui();}
 (function(){

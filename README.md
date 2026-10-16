@@ -48,7 +48,7 @@ Cada frag da ¤ 200 (¤ 100 extra si cortás una racha de 3 y ¤ 100 extra con p
 
 ## Taquilla
 
-Desde el menú: color de armadura (o uno a elección), color de visor, accesorio e **imagen en el pecho** (una foto PNG o JPG de tu dispositivo, que se recorta cuadrada al centro y se achica a 96×96 para que pese poco). En Ajustes se pueden ocultar las imágenes de los demás. Se guarda en el navegador (y en tu cuenta si iniciaste sesión) y los demás lo ven al instante.
+Desde el menú: color de armadura (o uno a elección), color de visor, accesorio e **imagen en el pecho** (una foto PNG o JPG de tu dispositivo, que se recorta cuadrada al centro y se achica a 128×128 para que pese poco; cubre todo el frente del torso). En Ajustes se pueden ocultar las imágenes de los demás. Se guarda en el navegador (y en tu cuenta si iniciaste sesión) y los demás lo ven al instante.
 
 ## Mira
 

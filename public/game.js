@@ -21,20 +21,26 @@ const r2 = v => Math.round(v * 100) / 100;
 const r3a = a => [Math.round(a[0] * 1000) / 1000, Math.round(a[1] * 1000) / 1000, Math.round(a[2] * 1000) / 1000];
 
 /* ---------- Armas ---------- */
+/* Daño pensado para combates cortos: 100 de salud cae en ~1 segundo de fuego sostenido.
+   mag/reload: armas con cargador (la escopeta doble tira 2 y recarga).
+   hip: dispersión del francotirador sin mira (con mira usa spread). */
 const WEAPONS = [
-  { name: 'Pistola',        ammo: null,       cost: 0, rate: .30, type: 'hit',  pel: 1,  spread: .006, dmg: 15, semi: true, range: 300 },
-  { name: 'Escopeta',       ammo: 'shells',   cost: 1, rate: .90, type: 'hit',  pel: 10, spread: .07,  dmg: 6,  range: 120 },
-  { name: 'Escopeta doble', ammo: 'shells',   cost: 2, rate: 1.1, type: 'hit',  pel: 20, spread: .12,  dmg: 6,  range: 100 },
-  { name: 'Ametralladora',  ammo: 'bullets',  cost: 1, rate: .09, type: 'hit',  pel: 1,  spread: .025, dmg: 8,  range: 300 },
-  { name: 'Lanzagranadas',  ammo: 'grenades', cost: 1, rate: .80, type: 'proj', proj: 'grenade', speed: 20, dmg: 100, rad: 4.5 },
-  { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .85, type: 'proj', proj: 'rocket',  speed: 26, dmg: 100, rad: 4.5, direct: 100 },
-  { name: 'Rifle de riel',  ammo: 'slugs',    cost: 1, rate: 1.5, type: 'rail', pel: 1,  dmg: 100, range: 400 },
-  { name: 'Machete',        ammo: null,       cost: 0, rate: .45, type: 'hit',  pel: 1,  spread: 0, dmg: 120, range: 2.6, melee: true }
+  { name: 'Pistola',        ammo: null,       cost: 0, rate: .17, type: 'hit',  pel: 1,  spread: .005, dmg: 18, range: 300 },
+  { name: 'Escopeta',       ammo: 'shells',   cost: 1, rate: .85, type: 'hit',  pel: 10, spread: .06,  dmg: 9,  range: 120 },
+  { name: 'Escopeta doble', ammo: 'shells',   cost: 1, rate: .28, type: 'hit',  pel: 12, spread: .085, dmg: 9,  range: 100, mag: 2, reload: 1.7 },
+  { name: 'Ametralladora',  ammo: 'bullets',  cost: 1, rate: .085, type: 'hit', pel: 1,  spread: .013, dmg: 12, range: 300 },
+  { name: 'Lanzagranadas',  ammo: 'grenades', cost: 1, rate: .75, type: 'proj', proj: 'grenade', speed: 26, dmg: 110, rad: 5.5, direct: 40 },
+  { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 105, rad: 5, direct: 100 },
+  { name: 'Rifle de riel',  ammo: 'slugs',    cost: 1, rate: 1.4, type: 'rail', pel: 1,  dmg: 100, range: 400 },
+  { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .42, type: 'hit',  pel: 1,  spread: 0, dmg: 120, range: 2.6, melee: true },
+  { name: 'Francotirador',  ammo: 'sniper',   cost: 1, rate: 1.25, type: 'hit', pel: 1,  spread: .002, hip: .045, dmg: 95, head: 2.2, range: 500, scope: true }
 ];
 const NW = WEAPONS.length;
-const OW0 = () => { const a = new Array(NW).fill(0); a[0] = a[1] = 1; return a; };
-const AMMO_MAX = { shells: 50, bullets: 200, grenades: 25, rockets: 25, slugs: 25 };
-const AMMO_NAME = { shells: 'Cartuchos', bullets: 'Balas', grenades: 'Granadas', rockets: 'Cohetes', slugs: 'Proyectiles de riel' };
+// arrancás siempre con pistola, escopeta y cuchillo
+const OW0 = () => { const a = new Array(NW).fill(0); a[0] = a[1] = a[7] = 1; return a; };
+const AMMO_MAX = { shells: 50, bullets: 200, grenades: 25, rockets: 25, slugs: 25, sniper: 30 };
+const AMMO_NAME = { shells: 'Cartuchos', bullets: 'Balas', grenades: 'Granadas', rockets: 'Cohetes', slugs: 'Proyectiles de riel', sniper: 'Balas de francotirador' };
+const AMMO0 = n => ({ shells: n, bullets: n, grenades: n, rockets: n, slugs: n, sniper: n });
 
 const ITEMS = {
   health: { name: 'Botiquín', respawn: 20 },
@@ -48,6 +54,7 @@ const ITEMS = {
   w4: { weapon: 4, ammo: 'grenades', n: 5, respawn: 10 },
   w5: { weapon: 5, ammo: 'rockets', n: 5, respawn: 10 },
   w6: { weapon: 6, ammo: 'slugs', n: 5, respawn: 10 },
+  w8: { weapon: 8, ammo: 'sniper', n: 5, respawn: 15 },
   shells:   { ammo: 'shells', n: 10, respawn: 15 },
   bullets:  { ammo: 'bullets', n: 50, respawn: 15 },
   grenades: { ammo: 'grenades', n: 5, respawn: 15 },
@@ -69,6 +76,8 @@ const SHOP = [
   { id: 'w4', cat: 'Explosivas', name: 'Lanzagranadas', w: 4, price: 900, pack: ['grenades', 10], desc: 'Granadas que rebotan' },
   { id: 'w5', cat: 'Explosivas', name: 'Lanzacohetes', w: 5, price: 1300, pack: ['rockets', 10], desc: 'Daño en área y rocket jump' },
   { id: 'w6', cat: 'Precisión', name: 'Rifle de riel', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Atraviesa a todos los que estén en línea' },
+  { id: 'w8', cat: 'Precisión', name: 'Francotirador', w: 8, price: 1500, pack: ['sniper', 10], desc: 'Click derecho para apuntar con mira. A la cabeza mata de un tiro' },
+  { id: 'w7', cat: 'Pistolas', name: 'Cuchillo', w: 7, price: 0, free: 1, desc: 'Cuerpo a cuerpo, mata de un golpe sin blindaje' },
   { id: 'a1', cat: 'Blindaje', name: 'Chaleco', price: 400, armor: 50, desc: 'Aparecés con 50 de blindaje' },
   { id: 'a2', cat: 'Blindaje', name: 'Armadura pesada', price: 900, armor: 100, desc: 'Aparecés con 100 de blindaje' },
   { id: 'am', cat: 'Suministros', name: 'Cartuchera doble', price: 500, desc: 'Aparecés con el doble de munición' },
@@ -76,16 +85,16 @@ const SHOP = [
 ];
 /* ---------- Modos de juego ---------- */
 const MODES = {
-  arena:   { name: 'Arena', maps: ['represa', 'salvaje'], shop: true,
+  arena:   { name: 'Arena', maps: ['represa', 'panymanteca'], shop: true,
              desc: 'Todos contra todos. Cada frag da créditos para la tienda (B).' },
-  gungame: { name: 'Gungame', maps: ['represa', 'salvaje'], shop: false, gg: true,
-             desc: 'Cada baja te da la siguiente arma de la lista. Munición infinita, sin tienda. El primero en hacer las 20 bajas, la última con machete, gana.' },
+  gungame: { name: 'Gungame', maps: ['represa', 'panymanteca'], shop: false, gg: true,
+             desc: 'Cada baja te da la siguiente arma de la lista. Munición infinita, sin tienda. Si te matan con cuchillo bajás un nivel. Gana el primero en hacer las 20 bajas; la última es con cuchillo.' },
   ctf:     { name: 'Captura la bandera', maps: ['puente'], shop: true, teams: true,
-             desc: 'Rojo contra azul. Robá la bandera rival y llevala a tu base mientras defendés la tuya. Gana el primero en llegar a 5 capturas.' }
+             desc: 'Rojo contra azul. Robá la bandera rival y llevala hasta tu base. Gana el primero en llegar a 5 capturas.' }
 };
 const MODE_IDS = Object.keys(MODES);
 // Gungame: arranca con armas fuertes y termina con las difíciles; la última baja es con machete
-const GG = [3, 5, 2, 4, 1, 6, 0, 3, 5, 2, 4, 1, 6, 0, 5, 1, 6, 4, 0, 7];
+const GG = [3, 5, 2, 4, 1, 6, 8, 0, 3, 5, 2, 4, 1, 6, 8, 0, 5, 6, 8, 7];
 const TEAMS = [{ name: 'Rojo', c: '#ff4a3a' }, { name: 'Azul', c: '#3a8bff' }];
 const ACCESSORIES = ['Ninguno', 'Cresta', 'Antena', 'Cuernos', 'Gorra'];
 const BOT_NAMES = ['Yacaré', 'Carpincho', 'Surubí', 'Tatú', 'Coatí', 'Aguará', 'Yaguareté', 'Pacú', 'Dorado', 'Tero', 'Hornero', 'Mbiguá', 'Urutaú', 'Tucán', 'Zorro', 'Lobito'];
@@ -268,7 +277,7 @@ function buildRepresa() {
   I('w2', -37, 3, 0); I('w3', -29, 0, 12); I('bullets', -37, 3, -12); I('armorH', -21, 6, -12); I('health', -21, 6, 12); I('shells', -37, 0, 13);
   I('mega', 37, 4, 0); I('rockets', 37, 4, 4); I('health', 31.5, 2.5, -10.5); I('shells', 19, 0, 12); I('bullets', 19, 0, -12); I('grenades', 31.5, 2.5, 10.5);
   I('w5', 0, -2.5, 32); I('rockets', -13, -3, 30); I('armor', 12, -3, 28); I('health', -10, -1, 28); I('w1', -8, -3, 35);
-  I('health', 10, 5, 30); I('bullets', -10, 5, 30); I('slugs', 0, 5, 35); I('rockets', -10, 5, 20);
+  I('health', 10, 5, 30); I('bullets', -10, 5, 30); I('w8', 0, 5, 35); I('rockets', -10, 5, 20);
 
   /* ---- Puntos de aparición ---- */
   [[6, 0, -13], [-6, 0, 13], [-14, 6, 4], [14, 6, -4], [-12, 0, -22], [20, 0, -28], [-30, 0, -10], [-37, 3, 8], [-21, 6, 4],
@@ -290,8 +299,8 @@ function buildRepresa() {
     theme: { sky: 'dusk', fog: 0x1c1310, fogD: .0105, amb: 0x55453a, ambI: .85, hemi: [0x5a4a6a, 0x1a100a, .55], sun: true } });
 }
 
-/* ---------- dm2 · Salvaje — un boliche (homenaje a la noche de Posadas) ---------- */
-function buildSalvaje() {
+/* ---------- dm2 · Pan & Manteca — un boliche (homenaje a la noche de Posadas) ---------- */
+function buildPanYManteca() {
   const { pads, spawns, lights, add, wall, stairs, D, face, I, mover, finish } = mapKit();
   /* ---- cáscara: salón principal x[-20,20] z[-18,18], techo a 16 ---- */
   wall(-21, -19, 21, -18, -2, 17, [], 'black');
@@ -355,7 +364,7 @@ function buildSalvaje() {
   add(-10, 2.05, -11.9, 10, 2.2, -11.7, 'neonC', { nc: 1 });
   add(-16, 4.1, 31.8, 16, 4.3, 32, 'neonP', { nc: 1 });
   /* ---- ítems ---- */
-  I('quad', 0, 11, 0); I('mega', 0, 12, 8.75); I('w6', 0, 12, -8.75); I('slugs', 13.25, 12, -4); I('grenades', -13.25, 12, 4);
+  I('quad', 0, 11, 0); I('mega', 0, 12, 8.75); I('w6', 0, 12, -8.75); I('w8', 13.25, 12, -4); I('grenades', -13.25, 12, 4);
   I('w5', 0, .4, 29.5); I('rockets', -11, 0, 28.5); I('rockets', 11, 5, 28); I('w2', 6, 2, -15.5); I('w3', -17.5, 7, -7); I('w4', 17.5, 7, 7);
   I('shells', -8, 0, -8); I('shells', 8, 0, 8); I('bullets', 8, 0, -8); I('bullets', -17.5, 7, 15); I('armor', 17.5, 7, -10); I('armor', -17.5, 7, 10);
   I('armorH', 0, 5, 22); I('health', -18.5, 0, 0); I('health', 18.5, 0, 0); I('health', -12, 0, 22); I('health', 12, 0, 22); I('w1', -6, 2, -15.5);
@@ -372,7 +381,7 @@ function buildSalvaje() {
     { x: 0, y: 3.5, z: 25, c: 0xff3050, i: 1.3, d: 22 },
     { x: 0, y: 10, z: 26, c: 0x6a7bff, i: 1.1, d: 26 }
   );
-  return finish({ id: 'salvaje', name: 'dm2 · Salvaje', bounds: { x0: -22, x1: 22, z0: -20, z1: 34 },
+  return finish({ id: 'panymanteca', name: 'dm2 · Pan & Manteca', bounds: { x0: -22, x1: 22, z0: -20, z1: 34 },
     theme: { sky: 'night', fog: 0x0d0716, fogD: .013, amb: 0x3a2a55, ambI: .9, hemi: [0x6040a0, 0x10081a, .55], sun: false, club: true } });
 }
 /* ---------- ctf1 · El Puente ----------
@@ -434,7 +443,7 @@ function buildPuente() {
       A(x0, 0, 24, x1, 6, 28, 'block');
       SZ(x0 + .5, 28, x1 - .5, 34, .5, 12, -1, 'step');
     }
-    I('w6', 22, 6, s * 26); I('armor', -22, 6, s * 26);
+    I('w6', 22, 6, s * 26); I('w8', -22, 6, s * 26);
     /* fortín */
     WX(-15, 30, 15, 31, 0, 8, [D(-4, 4, 0, 4.5), D(-3, 3, 4.5, 8), D(-12, -6, 6.2, 7.4), D(6, 12, 6.2, 7.4), D(-13.5, -11.5, 0, 3), D(11.5, 13.5, 0, 3)], 'wall');
     A(-15, 0, 31, -14, 8, 51, 'wall'); A(14, 0, 31, 15, 8, 51, 'wall'); A(-15, 0, 50, 15, 8, 51, 'wall');
@@ -459,8 +468,8 @@ function buildPuente() {
     flags: [{ x: 0, y: .5, z: -42 }, { x: 0, y: .5, z: 42 }],
     theme: { sky: 'dusk', fog: 0x1c1416, fogD: .0085, amb: 0x5a4a48, ambI: .9, hemi: [0x6a5a7a, 0x1a120a, .55], sun: true } });
 }
-const MAPS = { represa: buildRepresa(), salvaje: buildSalvaje(), puente: buildPuente() };
-const MAP_ALIAS = { sagrado: 'salvaje' }; // nombre viejo del boliche
+const MAPS = { represa: buildRepresa(), panymanteca: buildPanYManteca(), puente: buildPuente() };
+const MAP_ALIAS = { sagrado: 'panymanteca', salvaje: 'panymanteca', pan: 'panymanteca' }; // nombres viejos del boliche
 const mapId = id => MAP_ALIAS[id] || id;
 const MAP_IDS = Object.keys(MAPS);
 const WORLD = MAPS.represa;
@@ -668,7 +677,7 @@ function raySphere(ox, oy, oz, dx, dy, dz, cx, cy, cz, r) {
   if (disc < 0) return -1;
   const s = Math.sqrt(disc); let t = -b - s; if (t < 0) t = -b + s; return t < 0 ? -1 : t;
 }
-const SPH = [[.55, .36, 0], [1.12, .44, 0], [1.6, .22, 1]];
+const SPH = [[.5, .42, 0], [1.1, .48, 0], [1.6, .26, 1]];
 function rayPlayer(x, y, z, ox, oy, oz, dx, dy, dz) {
   let best = null;
   for (const s of SPH) {
@@ -907,7 +916,7 @@ class Game {
   }
   newPlayer(id, name, skin, bot) {
     return { id, name, skin, color: skin.c, bot, send: null, s: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, on: false }, yaw: 0, pitch: 0, w: 1,
-      hp: 100, ar: 0, am: { shells: 0, bullets: 0, grenades: 0, rockets: 0, slugs: 0 }, ow: OW0(), alive: false, deadT: 0,
+      hp: 100, ar: 0, am: AMMO0(0), ow: OW0(), mag: {}, relT: {}, alive: false, deadT: 0,
       frags: 0, deaths: 0, quadT: 0, lavaT: 0, megaT: 0, lastFire: -9, ping: 0, dirty: true, joined: false, ai: null, spawnT: 0, padT: 0,
       cr: ECON.START, unl: OW0(), perk: { ar: 0, am: 0 }, streak: 0, lvl: 0, team: -1, caps: 0, role: id % 3 === 0 ? 'def' : 'att' };
   }
@@ -950,6 +959,7 @@ class Game {
         break;
       }
       case 'fire': this.humanFire(p, m); break;
+      case 'reload': { const w = m.w | 0, W_ = WEAPONS[w]; if (W_ && W_.mag && p.alive && p.mag[w] < W_.mag && !(p.relT[w] > this.time)) p.relT[w] = this.time + W_.reload * .75; break; }
       case 'buy': this.buy(p, String(m.id || '')); break;
       case 'skin': {
         if (!p.joined) return;
@@ -1009,15 +1019,16 @@ class Game {
   loadout(p) {
     if (this.mode.gg) {
       const w = GG[Math.min(p.lvl, GG.length - 1)];
-      p.ow = new Array(NW).fill(0); p.ow[w] = 1; p.w = w; p.ar = 0;
-      p.am = { shells: 999, bullets: 999, grenades: 999, rockets: 999, slugs: 999 };
+      p.ow = new Array(NW).fill(0); p.ow[w] = 1; p.ow[7] = 1; p.w = w; p.ar = 0;
+      p.am = AMMO0(999); this.fillMags(p);
       return;
     }
     const mul = p.perk.am ? 2 : 1;
-    p.ow = OW0(); p.am = { shells: 10 * mul, bullets: 0, grenades: 0, rockets: 0, slugs: 0 };
+    p.ow = OW0(); p.am = AMMO0(0); p.am.shells = 10 * mul;
     for (const it of SHOP) if (it.w != null && it.pack && p.unl[it.w]) { p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n * mul); }
-    p.ar = p.perk.ar;
+    p.ar = p.perk.ar; this.fillMags(p);
   }
+  fillMags(p) { p.mag = {}; p.relT = {}; WEAPONS.forEach((W_, i) => { if (W_.mag) p.mag[i] = W_.mag; }); }
   spawn(p) {
     const sp = this.pickSpawn(p);
     p.s = { x: sp.x, y: sp.y, z: sp.z, vx: 0, vy: 0, vz: 0, on: true };
@@ -1027,7 +1038,7 @@ class Game {
     p.alive = true; p.dirty = true; p.spawnT = this.time; p.lavaT = 0;
     if (p.send) p.send({ t: 'spawn', p: [sp.x, sp.y, sp.z], yaw: sp.yaw, ow: p.ow, am: p.am, ar: p.ar, w: p.w });
     this.bcast({ t: 'ev', e: 'tp', p: [sp.x, sp.y, sp.z] });
-    if (p.bot) { p.ai = this.newAI(); const best = [6, 5, 3, 2, 4].find(w => p.ow[w]); if (best != null && !this.mode.gg) p.w = best; }
+    if (p.bot) { p.ai = this.newAI(); const best = [6, 8, 5, 3, 2, 4].find(w => p.ow[w]); if (best != null && !this.mode.gg) p.w = best; }
   }
 
   /* ---- tienda ---- */
@@ -1056,7 +1067,7 @@ class Game {
     this.sendScores();
   }
   botShop(p) {
-    for (const id of ['w5', 'w6', 'a1', 'w3', 'w2', 'a2', 'w4', 'am']) {
+    for (const id of ['w5', 'w8', 'a1', 'w3', 'w2', 'w6', 'a2', 'w4', 'am']) {
       const it = SHOP_BY_ID[id];
       if ((it.w != null && p.unl[it.w]) || (it.armor && p.perk.ar >= it.armor) || (id === 'am' && p.perk.am)) continue;
       if (p.cr >= it.price) { p.cr -= it.price; if (it.w != null) p.unl[it.w] = 1; else if (it.armor) p.perk.ar = it.armor; else p.perk.am = 1; }
@@ -1073,9 +1084,16 @@ class Game {
   canFire(p, w) {
     const W_ = WEAPONS[w]; if (!W_ || !p.alive || !p.ow[w] || this.state !== 'play') return false;
     if (W_.ammo && p.am[W_.ammo] < W_.cost && !this.mode.gg) return false;
+    if (W_.mag) {
+      if (p.relT[w] > this.time) return false;
+      if (p.relT[w]) { p.relT[w] = 0; p.mag[w] = W_.mag; }
+      if (!(p.mag[w] > 0)) { p.relT[w] = this.time + W_.reload * (p.bot ? 1 : .75); return false; }
+    }
     return this.time - p.lastFire >= W_.rate * .7;
   }
-  consume(p, w) { const W_ = WEAPONS[w]; if (W_.ammo && !this.mode.gg) p.am[W_.ammo] -= W_.cost; p.lastFire = this.time; p.w = w; p.dirty = true; }
+  consume(p, w) {
+    const W_ = WEAPONS[w]; if (W_.ammo && !this.mode.gg) p.am[W_.ammo] -= W_.cost;
+    if (W_.mag) { p.mag[w]--; if (p.mag[w] <= 0) p.relT[w] = this.time + W_.reload * (p.bot ? 1 : .75); } p.lastFire = this.time; p.w = w; p.dirty = true; }
   humanFire(p, m) {
     const w = m.w | 0; if (!this.canFire(p, w)) return;
     if (!Array.isArray(m.o) || !Array.isArray(m.d) || !m.o.every(Number.isFinite) || !m.d.every(Number.isFinite)) return;
@@ -1095,7 +1113,7 @@ class Game {
       done.add(t.id);
       const n = clamp(c[1] | 0, 0, W_.pel), hs = clamp(c[2] | 0, 0, n); if (!n) continue;
       if (!this.validHit(o, d, t, W_)) continue;
-      const dmg = W_.type === 'rail' ? W_.dmg * (hs ? 1.5 : 1) : (n + hs) * W_.dmg;
+      const dmg = W_.type === 'rail' ? W_.dmg * (hs ? 1.5 : 1) : W_.head ? W_.dmg * (hs ? W_.head : 1) : (n + hs) * W_.dmg;
       this.damage(t, dmg * this.mult(p), p, w, d, .05, 'frag');
     }
   }
@@ -1140,7 +1158,7 @@ class Game {
       for (const h of tr.hits) { const a = acc.get(h.p) || { n: 0, hs: 0 }; a.n++; if (h.head) a.hs++; acc.set(h.p, a); }
     }
     for (const [t, a] of acc) {
-      const dmg = W_.type === 'rail' ? W_.dmg * (a.hs ? 1.5 : 1) : (a.n + a.hs) * W_.dmg;
+      const dmg = W_.type === 'rail' ? W_.dmg * (a.hs ? 1.5 : 1) : W_.head ? W_.dmg * (a.hs ? W_.head : 1) : (a.n + a.hs) * W_.dmg;
       this.damage(t, dmg * this.mult(p) * this.skill().dmg, p, w, d, .05, 'frag');
     }
   }
@@ -1182,7 +1200,7 @@ class Game {
       if (dist >= W_.rad) continue;
       if (!los(this.W, pr.x, pr.y + .1, pr.z, t.s.x, t.s.y + .9, t.s.z) && !los(this.W, pr.x, pr.y + .1, pr.z, t.s.x, t.s.y + .2, t.s.z)) continue;
       const self = t.id === pr.own;
-      let dmg = W_.dmg * (1 - dist / W_.rad) * pr.q; if (self) dmg *= .5;
+      let dmg = W_.dmg * (1 - .6 * dist / W_.rad) * pr.q; if (self) dmg *= .5;
       const cx = t.s.x - pr.x, cy = t.s.y + .9 - pr.y, cz = t.s.z - pr.z, cl = Math.hypot(cx, cy, cz) || 1;
       const ks = self && !t.bot ? 0 : .16;
       this.damage(t, dmg, own, pr.w, [cx / cl, cy / cl, cz / cl], ks / (self ? 1 : pr.q), self ? 'self' : 'frag');
@@ -1195,7 +1213,7 @@ class Game {
     if (!t.alive || this.state !== 'play' || amt <= 0) return;
     if (this.mode.teams && att && att !== t && att.team === t.team) return; // sin fuego amigo
     let take = amt;
-    if (t.ar > 0) { const save = Math.min(t.ar, Math.ceil(amt * .66)); t.ar -= save; take -= save; }
+    if (t.ar > 0) { const save = Math.min(t.ar, Math.ceil(amt * .5)); t.ar -= save; take -= save; }
     t.hp -= take; t.dirty = true;
     const kick = dir && ks ? [dir[0] * amt * ks, dir[1] * amt * ks, dir[2] * amt * ks] : null;
     if (t.bot) {
@@ -1235,14 +1253,15 @@ class Game {
       if (p.send) p.send({ t: 'ev', e: 'lvl', n: p.lvl, w: GG[p.lvl], down: 1, why });
     };
     if (!att || att === v) { down(v, 'te mataste solo'); return false; }
-    if (w !== GG[att.lvl]) return false; // solo cuenta con el arma del nivel actual
-    if (w === 7) { down(v, 'te humillaron con el machete'); this.bcast({ t: 'ev', e: 'sys', m: att.name + ' humilló a ' + v.name + ' con el machete' }); }
+    // el cuchillo siempre baja de nivel al que muere
+    if (w === 7) { down(v, 'te mataron con cuchillo'); this.bcast({ t: 'ev', e: 'sys', m: att.name + ' acuchilló a ' + v.name + ' y le bajó un nivel' }); }
+    if (w !== GG[att.lvl]) return false; // para subir hay que matar con el arma del nivel actual
     att.lvl++;
     if (att.lvl >= GG.length) return true;
     const nw = GG[att.lvl];
-    if (att.alive) { att.ow = new Array(NW).fill(0); att.ow[nw] = 1; att.w = nw; att.lastFire = this.time - .5; att.dirty = true; }
+    if (att.alive) { att.ow = new Array(NW).fill(0); att.ow[nw] = 1; att.ow[7] = 1; att.w = nw; if (WEAPONS[nw].mag) { att.mag[nw] = WEAPONS[nw].mag; att.relT[nw] = 0; } att.lastFire = this.time - .5; att.dirty = true; }
     if (att.send) att.send({ t: 'ev', e: 'lvl', n: att.lvl, w: nw });
-    if (att.lvl === GG.length - 1) this.bcast({ t: 'ev', e: 'sys', m: att.name + ' llegó al machete: le falta una baja' });
+    if (att.lvl === GG.length - 1) this.bcast({ t: 'ev', e: 'sys', m: att.name + ' llegó al cuchillo: le falta una baja' });
     return false;
   }
   /* ---- captura la bandera ---- */
@@ -1270,6 +1289,17 @@ class Game {
     }
     for (const p of this.players.values()) {
       if (!p.alive || !p.joined || p.team < 0) continue;
+      // capturar: llegar a la base propia con la bandera rival (aunque la tuya no esté)
+      const e = this.flags.find(q => q.st === 1 && q.by === p.id), home = this.W.flags[p.team];
+      if (e && Math.hypot(p.s.x - home.x, p.s.z - home.z) <= 1.6 && p.s.y > home.y - 1.2 && p.s.y < home.y + 2) {
+        this.ts[p.team]++; p.caps++;
+        const b = this.W.flags[e.team]; e.st = 0; e.by = 0; e.x = b.x; e.y = b.y; e.z = b.z;
+        this.credit(p, 500, 'capturaste la bandera');
+        this.flagEv('cap', e, p);
+        this.sendScores();
+        if (this.ts[p.team] >= this.o.caplimit) { this.endMatch(); return; }
+        continue;
+      }
       for (const f of this.flags) {
         if (f.st === 1) continue;
         if (Math.hypot(p.s.x - f.x, p.s.z - f.z) > 1.3 || p.s.y < f.y - 1.2 || p.s.y > f.y + 1.8) continue;
@@ -1278,17 +1308,6 @@ class Game {
           this.flagEv('take', f, p);
           if (p.bot && p.ai) p.ai.replan = 0;
         } else if (f.st === 2) this.returnFlag(f, p);
-        else {
-          const e = this.flags.find(q => q.st === 1 && q.by === p.id);
-          if (e) {
-            this.ts[p.team]++; p.caps++;
-            const b = this.W.flags[e.team]; e.st = 0; e.by = 0; e.x = b.x; e.y = b.y; e.z = b.z;
-            this.credit(p, 500, 'capturaste la bandera');
-            this.flagEv('cap', e, p);
-            this.sendScores();
-            if (this.ts[p.team] >= this.o.caplimit) { this.endMatch(); return; }
-          }
-        }
       }
     }
   }
@@ -1468,9 +1487,9 @@ class Game {
   chooseWeapon(p, dist) {
     if (this.mode.gg) return GG[Math.min(p.lvl, GG.length - 1)];
     const has = w => p.ow[w] && (!WEAPONS[w].ammo || p.am[WEAPONS[w].ammo] >= WEAPONS[w].cost);
-    const order = dist < 7 ? [2, 1, 3, 5, 6, 0] : dist < 22 ? [5, 3, 2, 6, 1, 4, 0] : [6, 3, 5, 0, 1];
-    for (const w of order) if (has(w)) return w;
-    return 0;
+    const order = dist < 2.2 ? [2, 1, 7] : dist < 7 ? [2, 1, 3, 5, 6, 0] : dist < 22 ? [5, 3, 2, 6, 8, 1, 4, 0] : [8, 6, 3, 5, 0, 1];
+    for (const w of order) if (has(w) && !(WEAPONS[w].mag && p.relT[w] > this.time)) return w;
+    return has(1) ? 1 : 0;
   }
   planBot(p) {
     const ai = p.ai, nav = this.nav;
@@ -1579,7 +1598,7 @@ class Game {
       const dx = tgt.s.x - s.x, dz = tgt.s.z - s.z, dist = Math.hypot(dx, dz) || 1;
       ai.strafeT -= dt; if (ai.strafeT <= 0) { ai.strafe *= -1; ai.strafeT = .5 + Math.random() * 1.2; }
       const melee = !!WEAPONS[p.w].melee;
-      const pref = melee ? 0 : p.w === 2 || p.w === 1 ? 5 : p.w === 6 ? 18 : 11;
+      const pref = melee ? 0 : p.w === 2 || p.w === 1 ? 5 : p.w === 6 || p.w === 8 ? 20 : 11;
       const sm = (melee ? .3 : 1) * sk.strafe;
       const ix = dx / dist, iz = dz / dist, sx = -iz * ai.strafe * sm, sz = ix * ai.strafe * sm;
       const approach = melee ? 1.2 : dist > pref + 3 ? .6 : dist < pref - 3 ? -.6 : 0;
@@ -1634,5 +1653,5 @@ class Game {
   }
 }
 
-return { K, WEAPONS, NW, MODES, MODE_IDS, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, SKILL, topAt, pmove, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
+return { K, WEAPONS, NW, AMMO0, MODES, MODE_IDS, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, SKILL, topAt, pmove, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
 });

@@ -1,6 +1,6 @@
 # CuenkArena
 
-Deathmatch online estilo Quake que corre en el navegador. Mapas que rotan al terminar cada partida, entre ellos **dm3 · La Cuenca** (la Universidad de la Cuenca del Plata de Posadas, con la plaza y el edificio para recorrer por dentro),: **dm1 · La Represa** (industrial, con lava) y **dm2 · Pan & Manteca** (un boliche con pista LED, plataformas móviles, ascensores y subwoofers que te lanzan). Siete armas, tienda con créditos, taquilla para personalizar tu personaje, bots y movimiento con *strafe jump* y *bunny hop*.
+Deathmatch online estilo Quake que corre en el navegador. Mapas que rotan al terminar cada partida, entre ellos **dm3 · La Cuenca** (la Universidad de la Cuenca del Plata de Posadas, con la plaza y el edificio para recorrer por dentro), **dm1 · La Represa** (industrial, con lava) y **dm2 · Pan & Manteca** (un boliche con pista LED, plataformas móviles, ascensores y subwoofers que te lanzan). Siete armas, tienda con créditos, taquilla para personalizar tu personaje, bots y movimiento con *strafe jump* y *bunny hop*.
 
 ## Modos de juego
 
@@ -13,7 +13,7 @@ Al tocar **Jugar online** (o **Práctica con bots**) elegís el modo. Cada modo 
 
 ## Armas
 
-Todos arrancan con pistola (automática), escopeta y cuchillo. Las demás se juntan del mapa o se compran.
+Todos arrancan con pistola (automática, 60 balas que comparte con la ametralladora; se recargan juntando cajas de balas), escopeta y cuchillo. En Gungame la munición es infinita. Las demás se juntan del mapa o se compran.
 
 | Arma | Daño | Tiros para matar (100 de vida / con blindaje 100) |
 |---|---|---|
@@ -39,7 +39,7 @@ Se elige al escoger el modo (y en práctica también desde Ajustes, en plena par
 - Al terminar una partida se ve el ganador, el próximo mapa y la cuenta regresiva (25 s), con **Seguir jugando** y **Volver al menú**.
 - Agacharse con **Ctrl** necesita pantalla completa: el juego la pide al empezar (se desactiva en Ajustes). Sin pantalla completa, Ctrl+W cierra la pestaña en el navegador, así que usá **C**; igual el juego pide confirmación antes de cerrar.
 - El rifle de caza se apunta con sus miras de hierro (click derecho), sin mira telescópica.
-- En La Cuenca, las ventanas de los pisos se pasan saltando y agachándote, y hay un ascensor de salto en el pasillo del primer piso: pisá el saltador de la planta baja para subir y tirate por el hueco para bajar.
+- En La Cuenca, las ventanas de los pisos se pasan saltando y agachándote, y hay un ascensor de salto en el pasillo del primer piso: pisá el saltador de la planta baja para subir y tirate por el hueco para bajar. Detrás del edificio, por el pasillo de atrás, una escalera larga sube pegada a la pared hasta la biblioteca del último piso.
 
 ## Créditos y tienda
 
@@ -47,7 +47,37 @@ Cada frag da ¤ 200 (¤ 100 extra si cortás una racha de 3 y ¤ 100 extra con p
 
 ## Taquilla
 
-Desde el menú: color de armadura (o uno a elección), color de visor y accesorio. Se guarda en el navegador y los demás lo ven al instante.
+Desde el menú: color de armadura (o uno a elección), color de visor y accesorio. Se guarda en el navegador (y en tu cuenta si iniciaste sesión) y los demás lo ven al instante.
+
+## Mira
+
+En **Ajustes → Mira** hay 12 formas (cruz, cruz chica, cruz con punto, punto, círculo, círculo con punto, anillo punteado, horizontal, T, más grueso, equis y paréntesis), 8 colores o uno a elección y tamaño de 50 % a 250 %. Todas llevan un borde oscuro para verse sobre cualquier fondo.
+
+## Cuentas, niveles y medallas
+
+Con **Iniciar sesión con Google** se guardan en tu cuenta el nombre, el personaje de la taquilla y la mira, y vas sumando experiencia en las partidas **online** (en práctica no se gana):
+
+| Al terminar la partida | XP |
+|---|---|
+| Por jugarla | 40 |
+| Por cada baja | 10 |
+| Por minuto jugado | 4 |
+| Si ganás (vos o tu equipo) | 40 |
+| Por cada bandera capturada | 30 |
+
+Máximo 600 por partida. Si te vas antes de que termine, te llevás lo de las bajas y los minutos. Cada nivel pide un poco más que el anterior (100 XP el primero, 30 más por nivel, hasta el 100). El nivel aparece como medalla en el menú y al lado de tu nombre en la tabla (Tab). Rangos: Recluta (1), Bronce (5), Plata (10), Oro (20), Platino (35), Diamante (50) y Leyenda (75).
+
+### Activar las cuentas en Render
+
+1. **Google:** en [console.cloud.google.com](https://console.cloud.google.com/) → *APIs y servicios → Credenciales → Crear credenciales → ID de cliente de OAuth*, tipo **Aplicación web**. En *Orígenes de JavaScript autorizados* poné `https://cuenkarena.onrender.com` (y `http://localhost:3000` si querés probar en tu compu). Si te pide configurar la *pantalla de consentimiento*, elegí *Externo* y completá nombre y correo. Copiá el **ID de cliente** (termina en `.apps.googleusercontent.com`).
+2. **Supabase** (donde se guardan los perfiles): el proyecto *CuenkArena* ya tiene la tabla `jugadores`. En el panel de Supabase → *Project Settings → API Keys* copiá la clave **secreta** (`sb_secret_...`, o la `service_role` en las claves antiguas).
+3. **Render** → tu servicio → *Environment* → agregá:
+   - `GOOGLE_CLIENT_ID` = el ID de cliente del paso 1
+   - `SUPABASE_URL` = `https://kknowhfldecqumkmdwoy.supabase.co`
+   - `SUPABASE_KEY` = la clave secreta del paso 2
+   - `SESSION_SECRET` (opcional) = cualquier texto largo al azar
+
+La clave secreta queda solo en el servidor; el navegador nunca la ve, y la tabla tiene RLS activado sin políticas, así que nadie puede leerla ni escribirla desde afuera. Sin `GOOGLE_CLIENT_ID` el botón de Google no aparece y el juego funciona igual. Sin Supabase las cuentas se guardan en `data/cuentas.json`, que Render borra en cada deploy.
 
 No tiene dependencias: solo necesitás **Node.js 18 o más nuevo**.
 
@@ -95,6 +125,9 @@ Variables de entorno opcionales:
 | `MAX_PLAYERS` | 16 | Jugadores máximos, contando bots |
 | `MAP` | represa | Mapa inicial de Arena: `represa` o `panymanteca` |
 | `CAPLIMIT` | 3 | Capturas para ganar en Captura la bandera |
+| `GOOGLE_CLIENT_ID` | — | Activa el inicio de sesión con Google (ver *Cuentas*) |
+| `SUPABASE_URL` / `SUPABASE_KEY` | — | Dónde se guardan las cuentas (clave secreta, solo servidor) |
+| `SESSION_SECRET` | derivada | Clave para firmar las sesiones |
 
 Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 30`, `/caplimit 3` (bandera), `/map pan`, `/restart`. Los comandos afectan solo a la sala del modo en el que estás.
 
@@ -121,7 +154,8 @@ Para ganar velocidad como en Quake: saltá, soltá W, mantené A o D y girá el 
 ## Cómo está armado
 
 ```
-server.js          servidor HTTP + WebSocket propio (sin librerías), corre la partida a 40 Hz con paso fijo
+server.js          servidor HTTP + WebSocket propio (sin librerías), corre la partida a 40 Hz con paso fijo; sirve los archivos comprimidos con gzip y con ETag
+cuentas.js         inicio de sesión con Google, sesiones firmadas y perfiles en Supabase (o archivo local)
 public/index.html  cliente: render con three.js, HUD, menú, sonido sintetizado, red
 public/game.js     núcleo compartido: mapa, física, armas, ítems, reglas y bots
 ```

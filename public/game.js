@@ -27,7 +27,7 @@ const r3a = a => [Math.round(a[0] * 1000) / 1000, Math.round(a[1] * 1000) / 1000
    mag/reload: armas con cargador (la escopeta doble tira 2 y recarga).
    hip: dispersión del francotirador sin mira (con mira usa spread). */
 const WEAPONS = [
-  { name: 'Pistola',        ammo: null,       cost: 0, rate: .17, type: 'hit',  pel: 1,  spread: .005, dmg: 22, range: 300 },
+  { name: 'Pistola',        ammo: 'bullets',  cost: 1, rate: .17, type: 'hit',  pel: 1,  spread: .005, dmg: 22, range: 300 },
   { name: 'Escopeta',       ammo: 'shells',   cost: 1, rate: .85, type: 'hit',  pel: 10, spread: .06,  dmg: 11, range: 120 },
   { name: 'Escopeta doble', ammo: 'shells',   cost: 1, rate: .28, type: 'hit',  pel: 12, spread: .085, dmg: 11, range: 100, mag: 2, reload: 1.7 },
   { name: 'Ametralladora',  ammo: 'bullets',  cost: 1, rate: .085, type: 'hit', pel: 1,  spread: .013, dmg: 16, range: 300 },
@@ -75,7 +75,7 @@ const COLORS = ['#e8542a', '#3fa7ff', '#9ccc3c', '#ffcc33', '#c45cff', '#ff5c8a'
 const ECON = { START: 300, KILL: 200, SHUTDOWN: 100, PISTOL: 100, MAX: 9999 };
 // pack: munición con la que aparecés si desbloqueaste el arma
 const SHOP = [
-  { id: 'w0', cat: 'Pistolas', name: 'Pistola', w: 0, price: 0, free: 1, desc: 'Munición infinita, un tiro por click' },
+  { id: 'w0', cat: 'Pistolas', name: 'Pistola', w: 0, price: 0, free: 1, desc: 'Arrancás con 60 balas; comparte munición con la ametralladora' },
   { id: 'w1', cat: 'Escopetas', name: 'Escopeta', w: 1, price: 0, free: 1, desc: '10 perdigones, ideal de cerca' },
   { id: 'w2', cat: 'Escopetas', name: 'Escopeta doble', w: 2, price: 500, pack: ['shells', 20], desc: '20 perdigones, gasta 2 cartuchos' },
   { id: 'w3', cat: 'Automáticas', name: 'Ametralladora', w: 3, price: 600, pack: ['bullets', 100], desc: 'Fuego continuo a media distancia' },
@@ -105,6 +105,26 @@ const MODE_IDS = Object.keys(MODES);
 // Gungame: arranca con armas fuertes y termina con las difíciles; la última baja es con machete
 const GG = [3, 5, 2, 4, 1, 6, 8, 0, 3, 5, 2, 4, 1, 9, 8, 0, 5, 6, 9, 7];
 const TEAMS = [{ name: 'Rojo', c: '#ff4a3a' }, { name: 'Azul', c: '#3a8bff' }];
+/* ---------- Cuentas: experiencia, niveles y medallas (estilo Team Fortress 2) ----------
+   Se gana jugando online: por terminar la partida, por cada baja, por ganar y por capturar. */
+const XP = { PLAY: 40, KILL: 10, WIN: 40, CAP: 30, PER_MIN: 4, MAX_MATCH: 600 };
+const MAX_LEVEL = 100;
+const xpToNext = L => 100 + 30 * (L - 1);
+function levelInfo(xp) {
+  let L = 1, rest = Math.max(0, xp | 0);
+  while (L < MAX_LEVEL && rest >= xpToNext(L)) { rest -= xpToNext(L); L++; }
+  return { level: L, into: rest, need: L < MAX_LEVEL ? xpToNext(L) : 0 };
+}
+const MEDALS = [
+  { from: 1,  name: 'Recluta',  c: ['#8d8f93', '#5a5c60'] },
+  { from: 5,  name: 'Bronce',   c: ['#d08a4a', '#7a4a20'] },
+  { from: 10, name: 'Plata',    c: ['#e4e8ee', '#8a919b'] },
+  { from: 20, name: 'Oro',      c: ['#ffd65a', '#a9771a'] },
+  { from: 35, name: 'Platino',  c: ['#9ff3ea', '#2f8f88'] },
+  { from: 50, name: 'Diamante', c: ['#b8a6ff', '#5532c8'] },
+  { from: 75, name: 'Leyenda',  c: ['#ff6a4a', '#8f1a10'] }
+];
+const medalOf = L => MEDALS.reduce((a, m) => L >= m.from ? m : a, MEDALS[0]);
 const ACCESSORIES = ['Ninguno', 'Cresta', 'Antena', 'Cuernos', 'Gorra'];
 const BOT_NAMES = ['Yacaré', 'Carpincho', 'Surubí', 'Tatú', 'Coatí', 'Aguará', 'Yaguareté', 'Pacú', 'Dorado', 'Tero', 'Hornero', 'Mbiguá', 'Urutaú', 'Tucán', 'Zorro', 'Lobito'];
 
@@ -488,7 +508,7 @@ function buildLaCuenca() {
   /* ---- suelo, vecinos y límites ---- */
   add(-30, -2, -30, 30, 0, 29, 'brick');
   add(-31, -2, -31, -30, 10, 30, 'block'); add(30, -2, -31, 31, 10, 30, 'block');
-  add(-31, -2, -31, 31, 10, -30, 'block'); add(-31, -2, 29, 31, 9, 30, 'whitewall');
+  add(-31, -2, -31, 31, 18, -30, 'block'); add(-31, -2, 29, 31, 9, 30, 'whitewall');
   add(-30, 0, -30, -24, 5, 10, 'roofTiles');                       // casas vecinas con techo de tejas
   add(24, 0, -30, 30, 7, 10, 'whitewall');
   add(-30, 0, 26, 30, 6, 29, 'block');                              // vereda de enfrente
@@ -545,7 +565,11 @@ function buildLaCuenca() {
   wall(-16, -6.4, 22, -6, 3, 15, [D(-10, -2, 3, 6.6), D(17.5, 21, 3, 5.6),
     D(-14, -11, 7.8, 9.4), D(-7, -4, 7.8, 9.4), D(3, 6, 7.8, 9.4), D(9, 12, 7.8, 9.4), D(15, 15.8, 8.6, 9.4), D(16.6, 17.4, 8.6, 9.4),
     D(-14, -11, 11, 13.4), D(-7, -4, 11.8, 13.4), D(3, 6, 11.8, 13.4), D(9, 12, 11.8, 13.4), D(15, 15.8, 12.6, 13.4), D(16.6, 17.4, 12.6, 13.4)], 'whitewall');
-  wall(-16, -28, 22, -27.6, 3, 15, [D(-8, -4, 7.8, 9.4), D(4, 8, 7.8, 9.4), D(-8, -4, 11.8, 13.4)], 'whitewall');
+  wall(-16, -28, 22, -27.6, 3, 15, [D(-8, -4, 7.8, 9.4), D(4, 8, 7.8, 9.4), D(-8, -4, 11.8, 13.4), D(2.5, 5.5, 11, 13.4)], 'whitewall');
+  // escalera de emergencia por detrás: sube pegada al edificio desde el patio hasta la puerta de la biblioteca
+  stairs(-20, -30, 2, -28, 0, .25, 44, 'x', 1, 'step');
+  add(2, 0, -30, 6, 11, -28, 'metal');
+  add(-20, 0, -30.05, 6, 1, -30, 'rail');
   wall(-16, -27.6, -15.6, -6.4, 3, 15, [D(-12, -9, 3, 5.6), D(-22, -18, 7.8, 9.4), D(-12, -9, 7.8, 9.4), D(-22, -18, 11.8, 13.4)], 'whitewall');
   add(21.6, 3, -27.6, 22, 15, -6.4, 'whitewall');
   // escalera: tres tramos en el lado este (planta baja → 1º → 2º → techo)
@@ -603,7 +627,7 @@ function buildLaCuenca() {
   /* ---- luces ---- */
   lights.push({ x: -2, y: 5.8, z: -13, c: 0xfff2dc, i: .55, d: 18 }, { x: 6, y: 9.8, z: -9, c: 0xfff2dc, i: .5, d: 20 },
     { x: 0, y: 13.6, z: -18, c: 0xffe6c0, i: .55, d: 22 }, { x: 19, y: 9, z: -20, c: 0xfff2dc, i: .45, d: 16 });
-  return finish({ id: 'lacuenca', name: 'dm3 · La Cuenca', bounds: { x0: -27, x1: 27, z0: -29, z1: 28 }, deco,
+  return finish({ id: 'lacuenca', name: 'dm3 · La Cuenca', bounds: { x0: -27, x1: 27, z0: -30, z1: 28 }, deco,
     theme: { sky: 'day', fog: 0xbfd3e6, fogD: .0045, amb: 0xc9d0da, ambI: .48, hemi: [0xbcd8ff, 0x8a7a62, .42], sun: true, sunC: 0xfff1d6, sunI: .72 } });
 }
 const MAPS = { represa: buildRepresa(), panymanteca: buildPanYManteca(), lacuenca: buildLaCuenca(), puente: buildPuente() };
@@ -1090,13 +1114,23 @@ class Game {
     const p = this.players.get(id); if (!p) return;
     this.players.delete(id);
     this.dropCarried(p);
+    if (p.acct && this.state === 'play' && this.o.onXP) { const xp = this.matchXP(p, false, false); if (xp > 0) this.o.onXP(p, xp, { kills: p.kills, partida: 0, victoria: 0 }); }
     if (p.joined) { this.bcast({ t: 'ev', e: 'leave', id, n: p.name }); this.botT = 0; }
   }
   newPlayer(id, name, skin, bot) {
     return { id, name, skin, color: skin.c, bot, send: null, s: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, on: false }, yaw: 0, pitch: 0, w: 1,
       hp: 100, ar: 0, am: AMMO0(0), ow: OW0(), mag: {}, relT: {}, alive: false, deadT: 0,
       frags: 0, deaths: 0, quadT: 0, lavaT: 0, megaT: 0, lastFire: -9, ping: 0, dirty: true, joined: false, ai: null, spawnT: 0, padT: 0,
-      cr: ECON.START, unl: OW0(), perk: { ar: 0, am: 0 }, streak: 0, lvl: 0, team: -1, caps: 0, role: id % 3 === 0 ? 'def' : 'att' };
+      cr: ECON.START, unl: OW0(), perk: { ar: 0, am: 0 }, streak: 0, lvl: 0, team: -1, caps: 0, kills: 0, acct: null, plvl: 0, joinT: 0, role: id % 3 === 0 ? 'def' : 'att' };
+  }
+  // el servidor avisa qué cuenta tiene cada jugador (para su nivel y para sumarle experiencia)
+  setAccount(id, a) { const p = this.players.get(id); if (!p) return; p.acct = a ? a.sub : null; p.plvl = a ? a.level : 0; if (p.joined) this.sendScores(); }
+  matchXP(p, finished, won) {
+    if (!p.acct || p.bot) return 0;
+    const mins = (this.time - p.joinT) / 60;
+    let xp = p.kills * XP.KILL + p.caps * XP.CAP + (finished ? XP.PLAY + (won ? XP.WIN : 0) : Math.min(XP.PLAY, Math.floor(mins) * XP.PER_MIN));
+    if (!finished && mins < 1) xp = Math.min(xp, p.kills * XP.KILL);
+    return Math.min(XP.MAX_MATCH, xp);
   }
   teamCount(t, except) { let n = 0; for (const q of this.players.values()) if (q.joined && q.team === t && q !== except) n++; return n; }
   pickTeam(p) { const a = this.teamCount(0, p), b = this.teamCount(1, p); return a < b ? 0 : b < a ? 1 : (Math.random() < .5 ? 0 : 1); }
@@ -1119,7 +1153,7 @@ class Game {
         p.name = this.uniqueName(cleanName(m.name));
         p.skin = cleanSkin(m.skin || { c: m.color }, p.skin); p.color = p.skin.c;
         if (this.mode.teams) this.setTeam(p, this.pickTeam(p));
-        p.joined = true;
+        p.joined = true; p.joinT = this.time; p.kills = 0;
         if (this.mode.tdm && this.o.online && this.humanCount(false) <= 1 && Number.isInteger(m.fl) && m.fl >= 5 && m.fl <= 500) this.o.fraglimit = m.fl;
         p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), fl: this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts });
         this.bcast({ t: 'ev', e: 'join', id, n: p.name, c: p.color, s: p.skin, tm: p.team }, id);
@@ -1209,7 +1243,7 @@ class Game {
       return;
     }
     const mul = p.perk.am ? 2 : 1;
-    p.ow = OW0(); p.am = AMMO0(0); p.am.shells = 10 * mul;
+    p.ow = OW0(); p.am = AMMO0(0); p.am.shells = 10 * mul; p.am.bullets = 60 * mul;
     for (const it of SHOP) if (it.w != null && it.pack && p.unl[it.w]) { p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n * mul); }
     p.ar = p.perk.ar; this.fillMags(p);
   }
@@ -1245,7 +1279,7 @@ class Game {
     else if (it.id === 'am') { p.perk.am = 1; }
     else if (it.id === 'rf' && p.alive) {
       for (const s of SHOP) if (s.w != null && p.ow[s.w] && s.pack) { const [k, n] = s.pack; p.am[k] = Math.max(p.am[k], Math.min(AMMO_MAX[k], n * 2)); }
-      p.am.shells = Math.max(p.am.shells, 20);
+      p.am.shells = Math.max(p.am.shells, 20); p.am.bullets = Math.max(p.am.bullets, 100);
     }
     p.dirty = true;
     if (p.send) p.send({ t: 'ev', e: 'buy', id, ok: 1 });
@@ -1432,7 +1466,7 @@ class Game {
     const carrier = this.flags.some(f => f.st === 1 && f.by === v.id), scoring = this.state === 'play';
     if (!scoring) { v.deaths--; k = att && att !== v ? att.id : 0; }
     else if (att && att !== v) {
-      att.frags++; k = att.id; att.streak++;
+      att.frags++; att.kills++; k = att.id; att.streak++;
       let n = ECON.KILL; const why = [];
       if (v.streak >= 3) { n += ECON.SHUTDOWN; why.push('cortaste una racha'); }
       if (w === 0) { n += ECON.PISTOL; why.push('con pistola'); }
@@ -1558,7 +1592,7 @@ class Game {
     const gg = this.mode.gg;
     return [...this.players.values()].filter(p => p.joined)
       .sort((a, b) => (gg ? b.lvl - a.lvl : 0) || (this.mode.teams ? b.caps - a.caps : 0) || b.frags - a.frags || a.deaths - b.deaths)
-      .map(p => [p.id, p.name, p.frags, p.deaths, p.bot ? 0 : p.ping, p.bot ? 1 : 0, p.color, p.cr, p.lvl, p.team, p.caps]);
+      .map(p => [p.id, p.name, p.frags, p.deaths, p.bot ? 0 : p.ping, p.bot ? 1 : 0, p.color, p.cr, p.lvl, p.team, p.caps, p.plvl]);
   }
   sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.o.fraglimit, cl: this.o.caplimit, st: this.state, map: this.W.id, mode: this.o.mode, ts: this.ts, fs: this.flagState(), cd: Math.ceil(this.countT), hn: this.humanCount(false), mp: this.mode.minPlayers || 0 }); }
   endMatch() {
@@ -1569,6 +1603,16 @@ class Game {
     this.nextMap = next;
     let w = l.length ? l[0][1] : '';
     if (this.mode.teams) w = this.ts[0] === this.ts[1] ? '' : 'EQUIPO ' + TEAMS[this.ts[0] > this.ts[1] ? 0 : 1].name.toUpperCase();
+    // experiencia para los que tienen cuenta
+    if (this.o.onXP) {
+      const wt = this.mode.teams ? (this.ts[0] === this.ts[1] ? -1 : this.ts[0] > this.ts[1] ? 0 : 1) : -1;
+      for (const p of this.players.values()) {
+        if (!p.joined || p.bot || !p.acct) continue;
+        const won = this.mode.teams ? p.team === wt : !!(l.length && l[0][0] === p.id);
+        const xp = this.matchXP(p, true, won);
+        if (xp > 0) this.o.onXP(p, xp, { kills: p.kills, partida: 1, victoria: won ? 1 : 0 });
+      }
+    }
     this.bcast({ t: 'end', l, w, wt: this.mode.teams ? (this.ts[0] === this.ts[1] ? -1 : this.ts[0] > this.ts[1] ? 0 : 1) : -1, ts: this.ts, next, nextName: MAPS[next].name, secs: this.interT });
     this.projs.length = 0;
   }
@@ -1580,7 +1624,7 @@ class Game {
     for (const it of this.items) { it.up = !it.off; it.t = 0; }
     this.bcast({ t: 'start', map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), tm: this.time, fs: this.flagState(), ts: this.ts });
     for (const p of this.players.values()) if (p.joined) {
-      p.frags = 0; p.deaths = 0; p.cr = ECON.START; p.unl = OW0(); p.perk = { ar: 0, am: 0 }; p.streak = 0; p.lvl = 0; p.caps = 0; p.dirty = true;
+      p.frags = 0; p.deaths = 0; p.cr = ECON.START; p.unl = OW0(); p.perk = { ar: 0, am: 0 }; p.streak = 0; p.lvl = 0; p.caps = 0; p.kills = 0; p.joinT = this.time; p.dirty = true;
       this.spawn(p);
     }
     this.sendScores();
@@ -1700,7 +1744,7 @@ class Game {
     const has = w => p.ow[w] && (!WEAPONS[w].ammo || p.am[WEAPONS[w].ammo] >= WEAPONS[w].cost);
     const order = dist < 2.2 ? [2, 1, 7] : dist < 7 ? [2, 1, 3, 5, 6, 0] : dist < 22 ? [5, 3, 2, 6, 8, 9, 1, 4, 0] : [8, 9, 6, 3, 5, 0, 1];
     for (const w of order) if (has(w) && !(WEAPONS[w].mag && p.relT[w] > this.time)) return w;
-    return has(1) ? 1 : 0;
+    return has(1) ? 1 : has(0) ? 0 : 7;
   }
   planBot(p) {
     const ai = p.ai, nav = this.nav;
@@ -1866,5 +1910,5 @@ class Game {
   }
 }
 
-return { K, padReady, WEAPONS, NW, AMMO0, MODES, MODE_IDS, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, SKILL, topAt, pmove, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
+return { K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, SKILL, topAt, pmove, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
 });

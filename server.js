@@ -7,6 +7,7 @@
      PORT=3000  BOTS=0 (si es mayor a 0, rellena hasta N jugadores con bots)
      BOT_SKILL=1 (0 fácil · 3 pesadilla)  FRAGLIMIT=20  TIMELIMIT=10 (minutos)
      MAX_PLAYERS=16  MAP=represa (mapa inicial de Arena)  CAPLIMIT=3
+   Cuentas (opcional, ver cuentas.js): GOOGLE_CLIENT_ID  SUPABASE_URL  SUPABASE_KEY
    Hay una sala por modo de juego (Arena, Gungame, Captura la bandera);
    el cliente elige con /ws?mode=arena|gungame|ctf
    ===================================================================== */
@@ -15,7 +16,9 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const zlib = require('zlib');
 const { Game, MODES, MODE_IDS } = require('./public/game.js');
+const cuentas = require('./cuentas.js');
 
 const PORT = +process.env.PORT || 3000;
 const PUBLIC = path.join(__dirname, 'public');
@@ -30,14 +33,31 @@ for (const mode of MODE_IDS) games[mode] = new Game({
   fraglimit: num(process.env.FRAGLIMIT, 20),
   caplimit: num(process.env.CAPLIMIT, 3),
   timelimit: num(process.env.TIMELIMIT, 10) * 60,
-  maxPlayers: num(process.env.MAX_PLAYERS, 16)
+  maxPlayers: num(process.env.MAX_PLAYERS, 16),
+  // cuando un jugador con cuenta termina una partida (o se va), se le suma la experiencia
+  onXP: (p, gain, info) => {
+    if (!p.acct) return;
+    cuentas.addXP(p.acct, gain, info).then(r => {
+      if (!r) return;
+      p.plvl = r.perfil.nivel;
+      if (p.send) p.send({ t: 'xp', gain, antes: r.antes, perfil: r.perfil });
+    });
+  }
 });
+if (cuentas.enabled()) console.log('Cuentas con Google activadas' + (cuentas.persistent() ? ' (Supabase)' : ' (archivo local: se borra en cada deploy de Render)'));
 
 /* ---------- archivos estáticos ---------- */
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.svg': 'image/svg+xml' };
 const server = http.createServer((req, res) => {
   const url = decodeURIComponent((req.url || '/').split('?')[0]);
   if (url === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain' }); res.end('ok'); return; }
+  if (url === '/config') { json(res, 200, { googleClientId: cuentas.clientId(), cuentas: cuentas.enabled() }); return; }
+  if (url === '/auth/google' && req.method === 'POST') { readBody(req, res, async b => { try { json(res, 200, await cuentas.login(b.credential)); } catch (e) { json(res, 401, { error: e.message }); } }); return; }
+  if (url === '/me') {
+    const tok = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+    if (req.method === 'GET') { cuentas.me(tok).then(m => m ? json(res, 200, { perfil: m.perfil }) : json(res, 401, { error: 'sesión vencida' })).catch(e => json(res, 500, { error: e.message })); return; }
+    if (req.method === 'POST') { readBody(req, res, async b => { try { const pf = await cuentas.update(tok, b); pf ? json(res, 200, { perfil: pf }) : json(res, 401, { error: 'sesión vencida' }); } catch (e) { json(res, 500, { error: e.message }); } }); return; }
+  }
   if (url === '/status') {
     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
     const salas = {};
@@ -47,15 +67,34 @@ const server = http.createServer((req, res) => {
   }
   let file = path.normalize(path.join(PUBLIC, url === '/' ? 'index.html' : url));
   if (!file.startsWith(PUBLIC)) { res.writeHead(403); res.end(); return; }
-  fs.readFile(file, (err, data) => {
-    if (err) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('No encontrado'); return; }
-    if (path.extname(file) === '.html' && !/^\s*<!doctype/i.test(data.toString('utf8', 0, 64))) {
-      data = Buffer.concat([Buffer.from('<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"></head><body>\n'), data, Buffer.from('\n</body></html>')]);
-    }
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
-    res.end(data);
-  });
+  serveStatic(req, res, file);
 });
+function json(res, code, obj) { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(obj)); }
+function readBody(req, res, fn) {
+  let size = 0; const chunks = [];
+  req.on('data', c => { size += c.length; if (size > 16384) { req.destroy(); return; } chunks.push(c); });
+  req.on('end', () => { let b = {}; try { b = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); } catch (e) { return json(res, 400, { error: 'JSON inválido' }); } fn(b); });
+}
+// archivos comprimidos con gzip y validados con ETag: el navegador solo baja de nuevo lo que cambió
+const fileCache = new Map();
+function serveStatic(req, res, file) {
+  fs.stat(file, (err, st) => {
+    if (err || !st.isFile()) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('No encontrado'); return; }
+    let c = fileCache.get(file);
+    if (!c || c.mtime !== st.mtimeMs) {
+      let data = fs.readFileSync(file);
+      if (path.extname(file) === '.html' && !/^\s*<!doctype/i.test(data.toString('utf8', 0, 64))) {
+        data = Buffer.concat([Buffer.from('<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"></head><body>\n'), data, Buffer.from('\n</body></html>')]);
+      }
+      c = { mtime: st.mtimeMs, raw: data, gz: zlib.gzipSync(data, { level: 9 }), etag: '"' + crypto.createHash('sha1').update(data).digest('base64').slice(0, 20) + '"' };
+      fileCache.set(file, c);
+    }
+    const head = { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache', ETag: c.etag, Vary: 'Accept-Encoding' };
+    if (req.headers['if-none-match'] === c.etag) { res.writeHead(304, head); res.end(); return; }
+    if (/\bgzip\b/.test(req.headers['accept-encoding'] || '')) { head['Content-Encoding'] = 'gzip'; res.writeHead(200, head); res.end(c.gz); }
+    else { res.writeHead(200, head); res.end(c.raw); }
+  });
+}
 
 /* ---------- WebSocket mínimo (RFC 6455) ---------- */
 const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
@@ -138,6 +177,15 @@ server.on('upgrade', (req, sock) => {
     if (now - windowT > 1000) { windowT = now; count = 0; }
     if (++count > 120) return; // límite de mensajes por segundo
     let m; try { m = JSON.parse(text); } catch (e) { return; }
+    if (m && m.t === 'join' && m.tok && cuentas.enabled()) {
+      const tok = m.tok; delete m.tok;
+      cuentas.me(tok).then(acc => {
+        if (acc) { m.name = acc.perfil.nombre; game.setAccount(id, { sub: acc.sub, level: acc.perfil.nivel }); }
+        game.onMessage(id, m);
+        if (acc) game.setAccount(id, { sub: acc.sub, level: acc.perfil.nivel });
+      }).catch(() => game.onMessage(id, m));
+      return;
+    }
     game.onMessage(id, m);
   };
   ws.onclose = () => { sockets.delete(ws); game.removeClient(id); };

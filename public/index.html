@@ -21,10 +21,27 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 #qtint{background:radial-gradient(ellipse at center,rgba(150,80,255,0),rgba(150,80,255,.35));opacity:0}
 #lavatint{background:rgba(255,80,10,.35);opacity:0}
 #hud{position:fixed;inset:0;pointer-events:none}
-#xh{position:fixed;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%)}
-#xh::before,#xh::after{content:"";position:absolute;background:var(--ink);box-shadow:0 0 0 1px rgba(0,0,0,.65)}
-#xh::before{left:10px;top:2px;width:2px;height:18px;clip-path:polygon(0 0,100% 0,100% 35%,0 35%,0 65%,100% 65%,100% 100%,0 100%)}
-#xh::after{top:10px;left:2px;height:2px;width:18px;clip-path:polygon(0 0,35% 0,35% 100%,0 100%,0 0,65% 0,100% 0,100% 100%,65% 100%)}
+#xh{position:fixed;left:50%;top:50%;width:32px;height:32px;transform:translate(-50%,-50%)}
+#xh svg{width:100%;height:100%;overflow:visible;display:block}
+/* ---------- mira y cuenta ---------- */
+.xhgrid{grid-column:2 / 4;display:grid;grid-template-columns:repeat(6,40px);gap:4px}
+.xhgrid button{width:40px;height:40px;background:#0b0907;border:1px solid #000;cursor:pointer;padding:6px}
+.xhgrid button[aria-pressed="true"]{outline:2px solid var(--amber);outline-offset:1px}
+.xhgrid svg{width:100%;height:100%;overflow:visible}
+#xhPrev{width:84px;height:84px;background:linear-gradient(135deg,#5a4e41,#2b231c 60%,#1a1511);border:1px solid #000;display:grid;place-items:center;justify-self:start}
+#xhPrev div{width:32px;height:32px}
+#acctBox{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:linear-gradient(var(--plate-hi),var(--plate));border:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,220,170,.1),0 4px 0 #000;padding:10px 14px}
+#acctBox .an{font-family:var(--display);font-size:20px;color:var(--ink);line-height:1.1}
+#acctBox .al{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+#acctBox .xpbar{width:min(260px,52vw);height:8px;background:#0b0907;border:1px solid #000;margin-top:5px}
+#acctBox .xpbar i{display:block;height:100%;background:linear-gradient(90deg,var(--rust),var(--amber))}
+#acctBox .ax{font-size:11px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
+#acctBox .linkbtn{background:none;border:none;color:var(--muted);text-decoration:underline;cursor:pointer;font-family:var(--mono);font-size:12px;padding:0;margin-left:auto}
+#acctBox .note{margin:0}
+#interXP{text-align:center;font-family:var(--display);font-size:clamp(16px,2.2vw,22px);color:var(--cash);margin-top:6px;min-height:1.2em;display:flex;gap:10px;align-items:center;justify-content:center}
+#interXP .up{color:var(--amber)}
+#board .medal{display:inline-block;vertical-align:-4px;margin-right:6px}
+#board .sw{display:inline-block;width:9px;height:9px;margin-right:8px;border:1px solid #000;vertical-align:1px}
 #hitm{position:fixed;left:50%;top:50%;width:30px;height:30px;transform:translate(-50%,-50%) rotate(45deg);opacity:0}
 #hitm::before,#hitm::after{content:"";position:absolute;background:#fff;box-shadow:0 0 3px #000}
 #hitm::before{left:14px;top:0;width:2px;height:30px;clip-path:polygon(0 0,100% 0,100% 30%,0 30%,0 70%,100% 70%,100% 100%,0 100%)}
@@ -98,7 +115,6 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 #board td:first-child,#board th:first-child{width:28px;color:var(--muted)}
 #board td.cash{color:var(--cash)}
 #board tr.me td{color:var(--amber)}
-#board .sw{display:inline-block;width:9px;height:9px;margin-right:8px;border:1px solid #000;vertical-align:1px}
 #board .tag{font-size:11px;color:var(--muted);margin-left:6px}
 /* ---------- tienda ---------- */
 #shop{position:fixed;inset:0;display:grid;place-items:center;background:rgba(6,5,8,.78);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px;overflow-y:auto}
@@ -268,6 +284,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
   <table><thead><tr><th>#</th><th>Jugador</th><th>Frags</th><th>Muertes</th><th id="thX">Créditos</th><th>Ping</th></tr></thead><tbody id="bBody"></tbody></table>
 </div>
 <div id="inter" hidden><div class="interbox"><div id="interT"></div><div class="note" id="interS" style="text-align:center"></div>
+  <div id="interXP"></div>
   <div id="interC">Próxima partida en <b id="interN">25</b> segundos</div>
   <div class="mrow" style="justify-content:center"><button type="button" class="btn primary" id="bStay">Seguir jugando</button><button type="button" class="btn" id="bQuit">Volver al menú</button></div></div></div>
 <div id="shop" hidden>
@@ -283,6 +300,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
     <div class="kicker" id="mKick">Arena · Gungame · Team Deathmatch · Captura la bandera</div>
     <h1 id="mTitle">CUENK<span>ARENA</span></h1>
     <p id="mSub">Cuatro modos y cuatro mapas: La Cuenca (la universidad, con la plaza y el edificio para recorrer por dentro), la represa industrial, Pan &amp; Manteca (un boliche con pista LED y subwoofers que te tiran por el aire) y El Puente, donde Posadas y Encarnación se disputan la bandera de un lado al otro del río.</p>
+    <div id="acctBox" hidden></div>
     <div class="idrow"><label for="pName">Tu nombre</label><input id="pName" maxlength="16" autocomplete="off" spellcheck="false"></div>
     <div class="mrow">
       <button id="bOnline" class="btn primary" type="button" disabled>Jugar online</button>
@@ -324,6 +342,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
       <div class="srow"><label for="sMus">Música del boliche</label><input type="range" id="sMus" min="0" max="1" step="0.05"><output id="oMus"></output></div>
       <div class="srow"><label for="sInv">Invertir eje vertical</label><input type="checkbox" id="sInv"></div>
       <div class="srow"><label for="sHop">Salto automático (bunny hop)</label><input type="checkbox" id="sHop"></div>
+      <div class="sep"></div>
+      <div class="ptitle">Mira</div>
+      <div class="srow"><span>Forma</span><div class="xhgrid" id="xhGrid" role="group" aria-label="Forma de la mira"></div></div>
+      <div class="srow"><span>Color</span><div class="sw-row" id="xhCols" style="grid-column:2 / 4"></div></div>
+      <div class="srow"><label for="sXz">Tamaño</label><input type="range" id="sXz" min="0.5" max="2.5" step="0.05"><output id="oXz"></output></div>
+      <div class="srow"><span>Vista previa</span><div id="xhPrev"><div id="xhPrevIn"></div></div></div>
+      <div class="sep"></div>
       <div class="srow"><label for="sFs">Pantalla completa al jugar (permite agacharse con Ctrl sin que el navegador cierre la pestaña)</label><input type="checkbox" id="sFs"></div>
       <div class="srow"><span>Calidad gráfica</span><div class="seg" id="sQ" role="group" aria-label="Calidad"><button type="button" data-v="1">Alta</button><button type="button" data-v="0">Liviana</button></div></div>
       <div class="sep"></div>
@@ -359,9 +384,10 @@ const liveState=()=>matchState==='play'||matchState==='lobby'||matchState==='cou
 const GG=C.GG,TEAMS=C.TEAMS;
 
 /* =================== AJUSTES =================== */
-const S={sens:1,fov:95,vol:.5,music:.45,invY:false,hop:true,name:'',skin:{c:C.COLORS[0],v:'#ffffff',a:0},bots:5,skill:1,fl:20,map:'represa',q:1,mode:'arena',tdmLimit:50,fs:true};
+const S={sens:1,fov:95,vol:.5,music:.45,invY:false,hop:true,name:'',skin:{c:C.COLORS[0],v:'#ffffff',a:0},bots:5,skill:1,fl:20,map:'represa',q:1,mode:'arena',tdmLimit:50,fs:true,mira:{s:'cruz',c:'#ffffff',z:1}};
 try{const saved=JSON.parse(localStorage.getItem('cuenk_settings')||'{}');if(saved.color&&!saved.skin)saved.skin={c:saved.color,v:'#ffffff',a:0};Object.assign(S,saved);}catch(e){}
 if(S.map==='sagrado'||S.map==='salvaje')S.map='panymanteca';
+if(!S.mira||typeof S.mira!=='object')S.mira={s:'cruz',c:'#ffffff',z:1};
 if(!S.skin||typeof S.skin!=='object')S.skin={c:C.COLORS[0],v:'#ffffff',a:0};
 function saveS(){try{localStorage.setItem('cuenk_settings',JSON.stringify(S));}catch(e){}}
 if(!S.name)S.name='Jugador'+(100+Math.floor(Math.random()*900));
@@ -1033,7 +1059,7 @@ function startGame(isOnline,mode){
   online=isOnline;myId=0;CLK.off=null;CLK.jit=.02;MODE=mode;myTeam=-1;FL=[];TS=[0,0];me.lvl=0;
   players.forEach((p,id)=>removePlayer(id));projs.forEach(p=>scene.remove(p.m));projs.length=0;
   scores=[];$('feed').innerHTML='';$('chatLog').innerHTML='';
-  const join=()=>{net.send({t:'join',name:S.name,skin:S.skin,skill:S.skill,fl:S.tdmLimit});};
+  const join=()=>{net.send({t:'join',name:S.name,skin:S.skin,skill:S.skill,fl:S.tdmLimit,tok:isOnline&&ACC?ACCTOK:undefined});};
   if(isOnline){
     net=new WSNet(wsURL+'?mode='+mode,join,(wasOk)=>{showMenu();toast(wasOk?'Se cortó la conexión con el servidor':'No se pudo conectar al servidor');net=null;inGame=false;});
   }else{net=new LocalNet(mode);join();}
@@ -1108,6 +1134,7 @@ function onMsg(m){
       $('interT').textContent=m.w?m.w+' GANA LA PARTIDA':teamsMode()?'EMPATE':'FIN DE LA PARTIDA';
       $('interT').style.color=teamsMode()&&m.wt>=0?TEAMS[m.wt].c:'';
       $('interS').textContent='Próximo mapa: '+(m.nextName||'');
+      $('interXP').innerHTML=online?(ACC?'':(GCID?'Iniciá sesión con Google para ganar experiencia':'')):'En práctica no se gana experiencia';
       G.interEnd=performance.now()/1000+(m.secs||25);setTxt('interN',String(m.secs||25));
       $('inter').hidden=false;$('board').hidden=false;renderBoard();SFX.start();
       G.interFree=true;if(document.pointerLockElement)document.exitPointerLock();
@@ -1121,6 +1148,13 @@ function onMsg(m){
       announce(W.name.toUpperCase(),MODE==='ctf'?'primero a '+capLimit+' capturas':MODE==='tdm'?'primer equipo en llegar a '+fragLimit+' bajas':MODE==='gungame'?'primero en completar los '+GG.length+' niveles':'primero a '+fragLimit+' frags');SFX.start();
       break;
     case 'pong': ping=Math.round(performance.now()-m.c);break;
+    case 'xp': {
+      const pf=m.perfil,up=pf.nivel>m.antes;ACC=pf;renderAcct();
+      const html='+'+m.gain+' XP'+(up?' · <span class="up">¡SUBISTE A NIVEL '+pf.nivel+'!</span> '+medalSVG(pf.nivel,40):' · nivel '+pf.nivel+' ('+pf.en+'/'+pf.falta+')');
+      if(!$('inter').hidden)$('interXP').innerHTML=html;else announce('+'+m.gain+' XP',up?'¡Nivel '+pf.nivel+'!':'nivel '+pf.nivel);
+      if(up)SFX.hunt();else SFX.cash();
+      break;
+    }
     case 'ev': onEvent(m);break;
   }
 }
@@ -1417,7 +1451,7 @@ function syncLocker(){
   [...$('segAcc').children].forEach((b,i)=>b.setAttribute('aria-pressed',String(i===S.skin.a)));
   const ci=$('swBodyCustom');if(ci)ci.value=S.skin.c;
 }
-function setSkin(p){Object.assign(S.skin,p);saveS();syncLocker();rebuildLockModel();if(net&&inGame)net.send({t:'skin',s:S.skin});SFX.ui();}
+function setSkin(p){Object.assign(S.skin,p);saveS();syncLocker();rebuildLockModel();acctSave();if(net&&inGame)net.send({t:'skin',s:S.skin});SFX.ui();}
 (function(){
   const mk=(host,cols,key)=>{cols.forEach(c=>{const b=document.createElement('button');b.type='button';b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label','Color '+c);b.addEventListener('click',()=>setSkin({[key]:c}));host.appendChild(b);});};
   mk($('swBody'),BODY_COLS,'c');mk($('swVisor'),VISOR_COLS,'v');
@@ -1604,7 +1638,7 @@ function renderBoard(){
   const goal=ctf?'primero a '+capLimit+' capturas':MODE==='tdm'?'primer equipo a '+fragLimit+' bajas'+(matchState==='play'?'':' · esperando jugadores'):gg?'primero en completar '+GG.length+' niveles':'primero a '+fragLimit+' frags';
   $('bMeta').textContent=(online?'Online':'Práctica')+' · '+goal+' · quedan '+Math.floor(tl/60)+':'+String(tl%60).padStart(2,'0');
   $('thX').textContent=gg?'Nivel':ctf?'Capturas':'Créditos';
-  const row=(s,i)=>'<tr class="'+(s[0]===myId?'me':'')+'"><td>'+(i+1)+'</td><td><span class="sw" style="background:'+esc(s[6])+'"></span>'+esc(s[1])+(s[5]?'<span class="tag">bot</span>':'')+'</td><td>'+s[2]+'</td><td>'+s[3]+'</td>'+
+  const row=(s,i)=>'<tr class="'+(s[0]===myId?'me':'')+'"><td>'+(i+1)+'</td><td>'+(s[11]>0?medalSVG(s[11],20):'')+'<span class="sw" style="background:'+esc(s[6])+'"></span>'+esc(s[1])+(s[5]?'<span class="tag">bot</span>':'')+'</td><td>'+s[2]+'</td><td>'+s[3]+'</td>'+
     (gg?'<td>'+Math.min(GG.length,(s[8]||0)+1)+' · '+WEAPONS[GG[Math.min(GG.length-1,s[8]||0)]].name+'</td>':ctf?'<td>'+(s[10]||0)+'</td>':'<td class="cash">¤ '+(s[7]||0)+'</td>')+
     '<td>'+(s[5]||!online?'–':s[4]||'–')+'</td></tr>';
   if(tm)$('bBody').innerHTML=[0,1].map(t=>'<tr class="team"><td></td><td colspan="5" style="color:'+TEAMS[t].c+'">Equipo '+TEAMS[t].name+' · '+TS[t]+'</td></tr>'+scores.filter(s=>s[9]===t).map(row).join('')).join('');
@@ -1692,6 +1726,109 @@ function updEffects(dt){
   G.fpsN++;G.fpsT+=dt;if(G.fpsT>=.5){setTxt('tFps',String(Math.round(G.fpsN/G.fpsT)));G.fpsN=0;G.fpsT=0;}
 }
 
+/* =================== MIRA PERSONALIZABLE =================== */
+const XH_STYLES=['cruz','cruzgap','cruzpunto','punto','circulo','circulopunto','anillo','fina','t','mas','x','cortes'];
+const XH_NAMES={cruz:'Cruz',cruzgap:'Cruz chica',cruzpunto:'Cruz con punto',punto:'Punto',circulo:'Círculo',circulopunto:'Círculo con punto',anillo:'Anillo punteado',fina:'Horizontal',t:'T',mas:'Más grueso',x:'Equis',cortes:'Paréntesis'};
+const XH_COLS=['#ffffff','#00ff66','#ffe14a','#ff3b3b','#3fd2ff','#ff4fd8','#ff9a1f','#111111'];
+function xhSVG(st,col,z){
+  // cada forma se dibuja dos veces: un borde oscuro para que se vea sobre cualquier fondo y el color encima
+  const L=(x1,y1,x2,y2)=>'<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'"/>',dot='<circle r="1.6" stroke="none" fill="C"/>';
+  let p='',w=2;
+  switch(st){
+    case 'cruz':p=L(-9,0,-3,0)+L(3,0,9,0)+L(0,-9,0,-3)+L(0,3,0,9);break;
+    case 'cruzgap':p=L(-7,0,-3.5,0)+L(3.5,0,7,0)+L(0,-7,0,-3.5)+L(0,3.5,0,7);w=1.6;break;
+    case 'cruzpunto':p=L(-9,0,-4,0)+L(4,0,9,0)+L(0,-9,0,-4)+L(0,4,0,9)+dot;break;
+    case 'punto':p='<circle r="2.2" stroke="none" fill="C"/>';break;
+    case 'circulo':p='<circle r="6" fill="none"/>';w=1.6;break;
+    case 'circulopunto':p='<circle r="7" fill="none"/>'+dot;w=1.4;break;
+    case 'anillo':p='<circle r="7.5" fill="none" stroke-dasharray="3.1 2.8"/>';w=1.6;break;
+    case 'fina':p=L(-12,0,-3,0)+L(3,0,12,0)+L(0,3,0,6);w=1.3;break;
+    case 't':p=L(-9,0,-3,0)+L(3,0,9,0)+L(0,3,0,9);break;
+    case 'mas':p=L(-8,0,8,0)+L(0,-8,0,8);w=3;break;
+    case 'x':p=L(-7,-7,7,7)+L(-7,7,7,-7);w=1.8;break;
+    case 'cortes':p='<path d="M-5 -6 Q-9 0 -5 6" fill="none"/><path d="M5 -6 Q9 0 5 6" fill="none"/>'+dot;w=1.6;break;
+  }
+  const g=(c,ww,o)=>'<g stroke="'+c+'" stroke-width="'+ww+'" stroke-linecap="round" opacity="'+o+'">'+p.replace(/fill="C"/g,'fill="'+c+'"')+'</g>';
+  return '<svg viewBox="-16 -16 32 32" aria-hidden="true"><g transform="scale('+z+')">'+g('#000',w+2,.55)+g(col,w,1)+'</g></svg>';
+}
+function applyCrosshair(){const m=S.mira;$('xh').innerHTML=xhSVG(m.s,m.c,m.z);$('xhPrevIn').innerHTML=xhSVG(m.s,m.c,m.z);
+  [...$('xhGrid').children].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.s===m.s)));
+  [...$('xhCols').querySelectorAll('button')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===m.c)));
+  $('sXz').value=m.z;$('oXz').textContent=Math.round(m.z*100)+'%';const ci=$('xhColC');if(ci)ci.value=m.c;}
+function setMira(p){Object.assign(S.mira,p);saveS();applyCrosshair();acctSave();}
+(function(){
+  $('xhGrid').innerHTML=XH_STYLES.map(st=>'<button type="button" data-s="'+st+'" title="'+XH_NAMES[st]+'" aria-label="'+XH_NAMES[st]+'">'+xhSVG(st,'#ffffff',1)+'</button>').join('');
+  $('xhGrid').addEventListener('click',e=>{const b=e.target.closest('button');if(b){setMira({s:b.dataset.s});SFX.ui();}});
+  XH_COLS.forEach(c=>{const b=document.createElement('button');b.type='button';b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label','Color '+c);b.addEventListener('click',()=>setMira({c}));$('xhCols').appendChild(b);});
+  const ci=document.createElement('input');ci.type='color';ci.id='xhColC';ci.setAttribute('aria-label','Color de la mira a elección');ci.addEventListener('input',e=>setMira({c:e.target.value}));$('xhCols').appendChild(ci);
+  $('sXz').addEventListener('input',e=>setMira({z:+e.target.value}));
+  applyCrosshair();
+})();
+
+/* =================== CUENTA (Google) Y MEDALLAS =================== */
+var ACC=null,ACCTOK=null,GCID="";
+try{ACCTOK=localStorage.getItem('cuenk_tok');}catch(e){}
+var medalN=0;
+function medalSVG(L,size){
+  // medalla estilo "Tour of Duty" de TF2: cinta, disco con el color del rango y el nivel en el centro
+  const m=C.medalOf(L),id='md'+(medalN++),pts=[];for(let k=0;k<10;k++){const r=k%2?5.5:12.5,a=k/10*Math.PI*2-Math.PI/2;pts.push((Math.cos(a)*r).toFixed(2)+','+(Math.sin(a)*r).toFixed(2));}
+  return '<svg class="medal" width="'+size+'" height="'+size+'" viewBox="-20 -26 40 46" role="img" aria-label="Nivel '+L+' · '+m.name+'"><title>Nivel '+L+' · '+m.name+'</title>'+
+    '<defs><radialGradient id="'+id+'" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".35" stop-color="'+m.c[0]+'"/><stop offset="1" stop-color="'+m.c[1]+'"/></radialGradient></defs>'+
+    '<path d="M-9 -26 L-2 -26 L4 -10 L-3 -10Z" fill="#7a1e1e"/><path d="M9 -26 L2 -26 L-4 -10 L3 -10Z" fill="#b8322a"/>'+
+    '<circle r="16" fill="'+m.c[1]+'" stroke="#000" stroke-width="1.4"/><circle r="13.5" fill="url(#'+id+')"/>'+
+    (L>=20?'<polygon points="'+pts.join(' ')+'" fill="'+m.c[0]+'" opacity=".35"/>':'')+
+    '<circle r="13.5" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="1"/>'+
+    '<text y="'+(L>99?4.2:5)+'" text-anchor="middle" font-family="Black Ops One, Impact, sans-serif" font-size="'+(L>99?11:14)+'" fill="#1a1208" stroke="rgba(255,255,255,.35)" stroke-width=".5">'+L+'</text></svg>';
+}
+function renderAcct(){
+  const box=$('acctBox');
+  if(!GCID){box.hidden=true;return;}
+  box.hidden=false;
+  if(ACC){
+    const pct=ACC.falta?Math.round(ACC.en/ACC.falta*100):100,md=C.medalOf(ACC.nivel);
+    box.innerHTML=medalSVG(ACC.nivel,56)+'<div><div class="an">'+esc(ACC.nombre)+'</div><div class="al">Nivel '+ACC.nivel+' · '+md.name+'</div><div class="xpbar"><i style="width:'+pct+'%"></i></div><div class="ax">'+(ACC.falta?ACC.en+' / '+ACC.falta+' XP para el nivel '+(ACC.nivel+1):'Nivel máximo')+' · '+ACC.kills+' bajas · '+ACC.partidas+' partidas</div></div><button type="button" class="linkbtn" id="bLogout">Cerrar sesión</button>';
+    $('bLogout').addEventListener('click',logout);
+  }else{
+    box.innerHTML='<div id="gBtn"></div><p class="note">Iniciá sesión con Google para guardar tu personaje, tu mira y tu nivel. La experiencia se gana en las partidas online.</p>';
+    if(window.google&&google.accounts&&google.accounts.id)google.accounts.id.renderButton($('gBtn'),{theme:'filled_black',size:'large',text:'signin_with',shape:'rectangular',locale:'es'});
+  }
+}
+function applyProfile(pf,fresh){
+  const isNew=fresh&&!pf.xp&&!pf.partidas;ACC=pf;
+  if(isNew){acctSave(true);}               // cuenta nueva: se lleva el personaje y la mira que ya tenías
+  else{
+    if(pf.nombre){S.name=pf.nombre;$('pName').value=S.name;}
+    if(pf.skin&&pf.skin.c){S.skin=Object.assign({c:S.skin.c,v:'#ffffff',a:0},pf.skin);}
+    if(pf.mira&&pf.mira.s){S.mira=Object.assign({},S.mira,pf.mira);}
+    saveS();syncLocker&&syncLocker();rebuildLockModel&&rebuildLockModel();applyCrosshair();
+  }
+  renderAcct();
+}
+var acctT=0;
+function acctSave(now){
+  if(!ACC||!ACCTOK)return;clearTimeout(acctT);
+  acctT=setTimeout(()=>{fetch('/me',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+ACCTOK},body:JSON.stringify({nombre:S.name,skin:S.skin,mira:S.mira})}).then(r=>r.ok?r.json():null).then(j=>{if(j&&j.perfil){ACC=j.perfil;renderAcct();}}).catch(()=>{});},now?0:700);
+}
+function logout(){ACC=null;ACCTOK=null;try{localStorage.removeItem('cuenk_tok');}catch(e){}if(window.google&&google.accounts&&google.accounts.id)google.accounts.id.disableAutoSelect();renderAcct();}
+function onGoogleCredential(resp){
+  fetch('/auth/google',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:resp.credential})}).then(r=>r.json()).then(j=>{
+    if(!j.token){$('netTxt').textContent='No se pudo iniciar sesión: '+(j.error||'error');return;}
+    ACCTOK=j.token;try{localStorage.setItem('cuenk_tok',ACCTOK);}catch(e){}applyProfile(j.perfil,true);SFX.ui();
+  }).catch(()=>{$('netTxt').textContent='No se pudo iniciar sesión';});
+}
+function initAccounts(){
+  if(!/^https?:$/.test(location.protocol))return;
+  fetch('/config',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(cfg=>{
+    if(!cfg||!cfg.googleClientId)return;
+    GCID=cfg.googleClientId;renderAcct();
+    if(ACCTOK)fetch('/me',{headers:{Authorization:'Bearer '+ACCTOK}}).then(r=>r.ok?r.json():Promise.reject(r.status)).then(j=>applyProfile(j.perfil,false)).catch(st=>{if(st===401){ACCTOK=null;try{localStorage.removeItem('cuenk_tok');}catch(e){}renderAcct();}});
+    // el script de Google se baja solo si el inicio de sesión está configurado
+    const sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client';sc.async=true;
+    sc.onload=()=>{google.accounts.id.initialize({client_id:GCID,callback:onGoogleCredential,auto_select:true,cancel_on_tap_outside:true});renderAcct();};
+    document.head.appendChild(sc);
+  }).catch(()=>{});
+}
+
 /* =================== MENÚ =================== */
 function showMenu(){$('menu').hidden=false;$('hud').hidden=true;if(document.pointerLockElement)document.exitPointerLock();}
 function hideMenu(){$('menu').hidden=true;$('hud').hidden=false;['settings','lockerPanel','modePanel','limitPanel'].forEach(id=>$(id).hidden=true);['bSet','bLocker'].forEach(id=>$(id).setAttribute('aria-expanded','false'));updateHUD();}
@@ -1741,7 +1878,7 @@ $('bLeave').addEventListener('click',()=>{leaveGame();$('mKick').textContent='Ar
 function togglePanel(btn,id){const p=$(id),open=p.hidden;['settings','lockerPanel','modePanel'].forEach(x=>$(x).hidden=true);['bSet','bLocker'].forEach(x=>$(x).setAttribute('aria-expanded','false'));p.hidden=!open;$(btn).setAttribute('aria-expanded',String(open));}
 $('bSet').addEventListener('click',()=>togglePanel('bSet','settings'));
 $('bLocker').addEventListener('click',()=>{togglePanel('bLocker','lockerPanel');lockerInit();syncLocker();});
-function saveName(){const n=$('pName').value.trim().slice(0,16);if(n&&n!==S.name){S.name=n;saveS();rebuildLockModel();}}
+function saveName(){const n=$('pName').value.trim().slice(0,16);if(n&&n!==S.name){S.name=n;saveS();rebuildLockModel();acctSave();}}
 $('pName').addEventListener('change',saveName);
 $('pName').addEventListener('keydown',e=>{if(e.key==='Enter'){saveName();e.target.blur();}});
 function syncSettings(){
@@ -1776,7 +1913,7 @@ $('sSkill').addEventListener('click',e=>{const v=e.target.dataset&&e.target.data
 $('sFl').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.fl=+v;saveS();syncSettings();if(net&&!online)net.send({t:'cfg',fl:S.fl});});
 $('sMap').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(!v)return;S.map=v;saveS();syncSettings();if(net&&!online)net.send({t:'cfg',map:v});else if(!inGame)loadMap(v);});
 $('sQ').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.q=+v;saveS();syncSettings();resize();if(level)level.maplights.forEach(m=>m.l.visible=!!S.q);});
-syncSettings();probeServer();loadMap(S.map);
+syncSettings();probeServer();loadMap(S.map);initAccounts();
 if(matchMedia('(pointer: coarse)').matches&&!matchMedia('(pointer: fine)').matches)$('mSub').textContent+=' Se juega con teclado y mouse, desde una computadora.';
 
 /* =================== BUCLE PRINCIPAL =================== */

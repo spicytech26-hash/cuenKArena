@@ -32,15 +32,17 @@ const WEAPONS = [
   { name: 'Lanzagranadas',  ammo: 'grenades', cost: 1, rate: .75, type: 'proj', proj: 'grenade', speed: 26, dmg: 110, rad: 5.5, direct: 40 },
   { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 105, rad: 5, direct: 100 },
   { name: 'Rifle de riel',  ammo: 'slugs',    cost: 1, rate: 1.4, type: 'rail', pel: 1,  dmg: 110, range: 400 },
-  { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 40, back: 1.9, range: 2.1, melee: true },
-  { name: 'Francotirador',  ammo: 'sniper',   cost: 1, rate: 1.25, type: 'hit', pel: 1,  spread: .002, hip: .045, dmg: 115, head: 2, range: 500, scope: true }
+  { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 55, back: 1.8, range: 2.1, melee: true },
+  { name: 'Francotirador',  ammo: 'sniper',   cost: 1, rate: 1.25, type: 'hit', pel: 1,  spread: .002, hip: .045, dmg: 115, head: 2, range: 500, scope: true },
+  // rifle de caza: bala real con viaje y caída; cualquier impacto mata. Premia los tiros bien calculados
+  { name: 'Rifle de caza',  ammo: 'caza',     cost: 1, rate: 1.6, type: 'proj', proj: 'bullet', speed: 80, drop: 9, dmg: 0, rad: 0, direct: 1000, scope: true, zoom: 42 }
 ];
 const NW = WEAPONS.length;
 // arrancás siempre con pistola, escopeta y cuchillo
 const OW0 = () => { const a = new Array(NW).fill(0); a[0] = a[1] = a[7] = 1; return a; };
-const AMMO_MAX = { shells: 50, bullets: 200, grenades: 25, rockets: 25, slugs: 25, sniper: 30 };
-const AMMO_NAME = { shells: 'Cartuchos', bullets: 'Balas', grenades: 'Granadas', rockets: 'Cohetes', slugs: 'Proyectiles de riel', sniper: 'Balas de francotirador' };
-const AMMO0 = n => ({ shells: n, bullets: n, grenades: n, rockets: n, slugs: n, sniper: n });
+const AMMO_MAX = { shells: 50, bullets: 200, grenades: 25, rockets: 25, slugs: 25, sniper: 30, caza: 20 };
+const AMMO_NAME = { shells: 'Cartuchos', bullets: 'Balas', grenades: 'Granadas', rockets: 'Cohetes', slugs: 'Proyectiles de riel', sniper: 'Balas de francotirador', caza: 'Cartuchos de caza' };
+const AMMO0 = n => ({ shells: n, bullets: n, grenades: n, rockets: n, slugs: n, sniper: n, caza: n });
 
 const ITEMS = {
   health: { name: 'Botiquín', respawn: 20 },
@@ -55,6 +57,8 @@ const ITEMS = {
   w5: { weapon: 5, ammo: 'rockets', n: 5, respawn: 10 },
   w6: { weapon: 6, ammo: 'slugs', n: 5, respawn: 10 },
   w8: { weapon: 8, ammo: 'sniper', n: 5, respawn: 15 },
+  w9: { weapon: 9, ammo: 'caza', n: 5, respawn: 20 },
+  caza: { ammo: 'caza', n: 5, respawn: 20 },
   shells:   { ammo: 'shells', n: 10, respawn: 15 },
   bullets:  { ammo: 'bullets', n: 50, respawn: 15 },
   grenades: { ammo: 'grenades', n: 5, respawn: 15 },
@@ -77,7 +81,8 @@ const SHOP = [
   { id: 'w5', cat: 'Explosivas', name: 'Lanzacohetes', w: 5, price: 1300, pack: ['rockets', 10], desc: 'Daño en área y rocket jump' },
   { id: 'w6', cat: 'Precisión', name: 'Rifle de riel', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Atraviesa a todos los que estén en línea' },
   { id: 'w8', cat: 'Precisión', name: 'Francotirador', w: 8, price: 1500, pack: ['sniper', 10], desc: 'Click derecho para apuntar con mira. Mata de un tiro a quien no tiene blindaje' },
-  { id: 'w7', cat: 'Pistolas', name: 'Cuchillo', w: 7, price: 0, free: 1, desc: 'Cuerpo a cuerpo: 40 por tajo, 76 por la espalda' },
+  { id: 'w9', cat: 'Precisión', name: 'Rifle de caza', w: 9, price: 1400, pack: ['caza', 8], desc: 'La bala viaja y cae: cualquier impacto mata. Tiros largos o al aire dan premio' },
+  { id: 'w7', cat: 'Pistolas', name: 'Cuchillo', w: 7, price: 0, free: 1, desc: 'Cuerpo a cuerpo: dos puñaladas matan. No lo frena el blindaje' },
   { id: 'a1', cat: 'Blindaje', name: 'Chaleco', price: 400, armor: 50, desc: 'Aparecés con 50 de blindaje' },
   { id: 'a2', cat: 'Blindaje', name: 'Armadura pesada', price: 900, armor: 100, desc: 'Aparecés con 100 de blindaje' },
   { id: 'am', cat: 'Suministros', name: 'Cartuchera doble', price: 500, desc: 'Aparecés con el doble de munición' },
@@ -85,16 +90,18 @@ const SHOP = [
 ];
 /* ---------- Modos de juego ---------- */
 const MODES = {
-  arena:   { name: 'Arena', maps: ['represa', 'panymanteca'], shop: true,
+  arena:   { name: 'Arena', maps: ['represa', 'panymanteca', 'lacuenca'], shop: true,
              desc: 'Todos contra todos. Cada frag da créditos para la tienda (B).' },
-  gungame: { name: 'Gungame', maps: ['represa', 'panymanteca'], shop: false, gg: true,
+  gungame: { name: 'Gungame', maps: ['represa', 'panymanteca', 'lacuenca'], shop: false, gg: true,
              desc: 'Cada baja te da la siguiente arma de la lista. Munición infinita, sin tienda. Si te matan con cuchillo bajás un nivel. Gana el primero en hacer las 20 bajas; la última es con cuchillo.' },
-  ctf:     { name: 'Captura la bandera', maps: ['puente'], shop: true, teams: true,
+  tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca'], shop: true, teams: true, tdm: true, minPlayers: 4,
+             desc: 'Rojo contra azul: cada baja suma para tu equipo hasta llegar al límite que elijan. Online arranca cuando hay 4 jugadores; mientras tanto, calentamiento.' },
+  ctf:     { name: 'Captura la bandera', maps: ['puente'], shop: true, teams: true, ctf: true,
              desc: 'Rojo contra azul. Robá la bandera rival y llevala hasta tu base. Gana el primero en llegar a 5 capturas.' }
 };
 const MODE_IDS = Object.keys(MODES);
 // Gungame: arranca con armas fuertes y termina con las difíciles; la última baja es con machete
-const GG = [3, 5, 2, 4, 1, 6, 8, 0, 3, 5, 2, 4, 1, 6, 8, 0, 5, 6, 8, 7];
+const GG = [3, 5, 2, 4, 1, 6, 8, 0, 3, 5, 2, 4, 1, 9, 8, 0, 5, 6, 9, 7];
 const TEAMS = [{ name: 'Rojo', c: '#ff4a3a' }, { name: 'Azul', c: '#3a8bff' }];
 const ACCESSORIES = ['Ninguno', 'Cresta', 'Antena', 'Cuernos', 'Gorra'];
 const BOT_NAMES = ['Yacaré', 'Carpincho', 'Surubí', 'Tatú', 'Coatí', 'Aguará', 'Yaguareté', 'Pacú', 'Dorado', 'Tero', 'Hornero', 'Mbiguá', 'Urutaú', 'Tucán', 'Zorro', 'Lobito'];
@@ -441,7 +448,7 @@ function buildPuente() {
     for (const sx of [-1, 1]) {
       const x0 = sx < 0 ? -24 : 20, x1 = x0 + 4;
       A(x0, 0, 24, x1, 6, 28, 'block');
-      SZ(x0 + .5, 28, x1 - .5, 34, .5, 12, -1, 'step');
+      SZ(x0 + .5, 28, x1 - .5, 40, .25, 24, -1, 'step');
     }
     I('w6', 22, 6, s * 26); I('w8', -22, 6, s * 26);
     /* fortín */
@@ -468,8 +475,128 @@ function buildPuente() {
     flags: [{ x: 0, y: .5, z: -42 }, { x: 0, y: .5, z: 42 }],
     theme: { sky: 'dusk', fog: 0x1c1416, fogD: .0085, amb: 0x5a4a48, ambI: .9, hemi: [0x6a5a7a, 0x1a120a, .55], sun: true } });
 }
-const MAPS = { represa: buildRepresa(), panymanteca: buildPanYManteca(), puente: buildPuente() };
-const MAP_ALIAS = { sagrado: 'panymanteca', salvaje: 'panymanteca', pan: 'panymanteca' }; // nombres viejos del boliche
+/* ---------- dm3 · La Cuenca — Universidad de la Cuenca del Plata, Posadas ----------
+   La plaza de baldosas frente al edificio blanco: cantero con la palmera, escaleras al acceso
+   de columnas oscuras, terraza a la derecha, rampa larga con baranda, rampa lateral con alambrado
+   y la vereda de ladrillo. El edificio se recorre por dentro: planta baja, dos pisos de aulas,
+   biblioteca con balcón y terraza en el techo. Norte = -z (el edificio), sur = +z (la calle). */
+function buildLaCuenca() {
+  const { spawns, lights, add, ramp, wall, stairs, D, face, I, finish } = mapKit();
+  const deco = [];
+  /* ---- suelo, vecinos y límites ---- */
+  add(-30, -2, -30, 30, 0, 29, 'brick');
+  add(-31, -2, -31, -30, 10, 30, 'block'); add(30, -2, -31, 31, 10, 30, 'block');
+  add(-31, -2, -31, 31, 10, -30, 'block'); add(-31, -2, 29, 31, 9, 30, 'whitewall');
+  add(-30, 0, -30, -24, 5, 10, 'roofTiles');                       // casas vecinas con techo de tejas
+  add(24, 0, -30, 30, 7, 10, 'whitewall');
+  add(-30, 0, 26, 30, 6, 29, 'block');                              // vereda de enfrente
+  /* ---- plaza de baldosas (1,5 m sobre la calle) ---- */
+  add(-16, 0, -4, 16, 1.5, 13, 'tiles');
+  add(-2.5, 0, -6, 2.5, 1.5, -4, 'tiles');
+  // borde sur: rampa larga con baranda, escalerita, muro y escalera a la vereda
+  ramp(-16, 13, -4, 16, 0, 0, 1.5, 'x', 1, 'smooth');
+  add(-16, 1.5, 12.85, -4, 2.5, 13, 'rail'); add(-16, 0, 15.85, -4, 1.4, 16, 'rail');
+  stairs(-4, 13, -1, 16, 0, .25, 6, 'z', -1, 'step');
+  add(-1, 0, 13, 9, 1.5, 16, 'smooth'); add(-1, 1.5, 15.85, 9, 2.5, 16, 'rail');
+  stairs(9, 13, 13, 16, 0, .25, 6, 'z', -1, 'step');
+  add(13, 0, 13, 16, 1.5, 16, 'smooth');
+  // bancos de hormigón con asiento oscuro
+  add(-2, 1.5, 5, 3, 2.05, 6.2, 'smooth'); add(-2, 2.05, 5, 3, 2.15, 6.2, 'navy');
+  add(8, 1.5, 9, 11.5, 2.05, 10.2, 'smooth'); add(8, 2.05, 9, 11.5, 2.15, 10.2, 'navy');
+  /* ---- cantero con la palmera ---- */
+  add(-16, 1.5, -4, -7, 2.6, 3, 'smooth'); add(-15.6, 2.6, -3.6, -7.4, 2.65, 2.6, 'soil');
+  deco.push({ t: 'palm', x: -12, y: 2.65, z: -.5, h: 10 }, { t: 'bush', x: -9, y: 2.65, z: 1, r: 1.1 }, { t: 'bush', x: -14.5, y: 2.65, z: 1.6, r: .9 },
+    { t: 'bush', x: -9.5, y: 2.65, z: -2.6, r: .8 }, { t: 'bush', x: -14, y: 2.65, z: -2.8, r: 1 });
+  /* ---- acceso: escaleras, descanso y columnas oscuras ---- */
+  stairs(-7, -6, -2.5, -4, 1.5, .25, 6, 'z', -1, 'step');
+  add(-16, 1.5, -6, -7, 3, -4, 'smooth');
+  for (const x of [-10.3, -2.3]) add(x, 1.5, -5.9, x + .6, 6.6, -5.3, 'navy');
+  add(-11, 6.6, -6, -1, 7.1, -4.6, 'whitewall');                   // alero sobre la entrada
+  /* ---- terraza derecha con baranda ---- */
+  add(2.5, 1.5, -6, 16, 3, -1, 'tiles');
+  stairs(3, -1, 6.5, 3, 1.5, .25, 6, 'z', -1, 'step');
+  add(6.5, 3, -1.15, 16, 4, -1, 'rail'); add(2.5, 3, -1.15, 3, 4, -1, 'rail');
+  add(15.85, 3, -6, 16, 4, -1, 'rail');
+  /* ---- rampa lateral derecha con alambrado ---- */
+  add(16, 0, -6, 17, 2.6, 16, 'smooth');
+  ramp(17, -6, 22, 16, 0, 0, 3, 'z', -1, 'smooth');
+  add(22, 0, -6, 22.2, 4, 16, 'fence');
+  deco.push({ t: 'bush', x: 23.2, y: 0, z: 2, r: 1 }, { t: 'bush', x: 23.2, y: 0, z: 10, r: 1.1 }, { t: 'bush', x: 23.2, y: 0, z: -3, r: .9 });
+  /* ---- rampa y pasarela izquierda ---- */
+  ramp(-22, -6, -16, 16, 0, 0, 3, 'z', -1, 'smooth');
+  add(-16.3, 0, -2, -16, 2.5, 13, 'smooth');
+  add(-24, 0, -28, -16, 3, -6, 'smooth');
+  add(-22.2, 3, -14, -22, 4, -6, 'rail');
+  deco.push({ t: 'bush', x: -23, y: 0, z: 4, r: 1 }, { t: 'bush', x: -23, y: 0, z: 11, r: .9 });
+  /* ---- garita y mástiles ---- */
+  add(10.5, 1.5, 2, 12.5, 3.9, 4, 'booth');
+  deco.push({ t: 'roof', x: 11.5, y: 3.9, z: 3, w: 2.8, h: 1 });
+  deco.push({ t: 'pole', x: 14, y: 1.5, z: 6, h: 8, flag: 'ar' }, { t: 'pole', x: 14, y: 1.5, z: 8, h: 8, flag: 'mis' }, { t: 'pole', x: 14, y: 1.5, z: 10, h: 8, flag: 'ucp' });
+  /* ---- calle ---- */
+  add(-10, 0, 20, -7, 1, 22, 'smooth'); add(6, 0, 22, 9, 1, 24, 'smooth');
+  deco.push({ t: 'bush', x: -8.5, y: 1, z: 21, r: .8 }, { t: 'bush', x: 7.5, y: 1, z: 23, r: .8 });
+  /* =========================== EDIFICIO =========================== */
+  // base oscura (zócalo) y piso de baldosas de la planta baja
+  add(-16, 0, -28, 22, 3, -6, 'navy');
+  add(-15.6, 3, -27.6, 21.6, 3.05, -6.4, 'tiles');
+  // fachada con la entrada, puerta lateral, ventanas de aulas, balcón de la biblioteca y ventanitas cuadradas
+  wall(-16, -6.4, 22, -6, 3, 15, [D(-10, -2, 3, 6.6), D(17.5, 21, 3, 5.6),
+    D(-14, -11, 8, 9.6), D(-7, -4, 8, 9.6), D(3, 6, 8, 9.6), D(9, 12, 8, 9.6), D(15, 15.8, 8.6, 9.4), D(16.6, 17.4, 8.6, 9.4),
+    D(-14, -11, 11, 13.4), D(-7, -4, 12, 13.6), D(3, 6, 12, 13.6), D(15, 15.8, 12.6, 13.4), D(16.6, 17.4, 12.6, 13.4)], 'whitewall');
+  wall(-16, -28, 22, -27.6, 3, 15, [D(-8, -4, 8, 9.6), D(4, 8, 8, 9.6), D(-8, -4, 12, 13.6)], 'whitewall');
+  wall(-16, -27.6, -15.6, -6.4, 3, 15, [D(-12, -9, 3, 5.6), D(-22, -18, 8, 9.6), D(-22, -18, 12, 13.6)], 'whitewall');
+  add(21.6, 3, -27.6, 22, 15, -6.4, 'whitewall');
+  // escalera: tres tramos en el lado este (planta baja → 1º → 2º → techo)
+  add(-15.6, 6.6, -27.6, 19.3, 7, -6.4, 'tiles'); add(19.3, 6.6, -27.6, 21.6, 7, -24, 'tiles'); add(19.3, 6.6, -16, 21.6, 7, -6.4, 'tiles');
+  add(-15.6, 10.6, -27.6, 17, 11, -6.4, 'tiles'); add(17, 10.6, -27.6, 19.3, 11, -24, 'tiles'); add(17, 10.6, -16, 19.3, 11, -6.4, 'tiles'); add(19.3, 10.6, -27.6, 21.6, 11, -6.4, 'tiles');
+  add(-16, 14.6, -28, 19.3, 15, -6, 'roof'); add(19.3, 14.6, -28, 22, 15, -24, 'roof'); add(19.3, 14.6, -16, 22, 15, -6, 'roof');
+  stairs(19.3, -24, 21.6, -16, 3, .25, 16, 'z', -1, 'step');
+  stairs(17, -24, 19.3, -16, 7, .25, 16, 'z', 1, 'step');
+  stairs(19.3, -24, 21.6, -16, 11, .25, 16, 'z', -1, 'step');
+  add(19.3, 7, -16.15, 21.6, 8, -16, 'rail'); add(17, 11, -24.15, 19.3, 12, -24, 'rail'); add(19.3, 15, -16.15, 22, 16, -16, 'rail');
+  wall(16.6, -27.6, 17, -6.4, 3, 6.6, [D(-11, -8, 3, 5.6)], 'whitewall');
+  wall(16.6, -27.6, 17, -6.4, 7, 10.6, [D(-27.2, -24.6, 7, 9.6)], 'whitewall');
+  wall(16.6, -27.6, 17, -6.4, 11, 14.6, [D(-11, -8, 11, 13.6)], 'whitewall');
+  // planta baja: hall con recepción y aulas al fondo
+  add(-6, 3.05, -12, 0, 4.1, -11, 'wood');
+  wall(-15.6, -18.2, 16.6, -17.8, 3.05, 6.6, [D(-12, -9, 3, 5.6), D(-1, 2, 3, 5.6), D(9, 12, 3, 5.6)], 'whitewall');
+  add(-4.2, 3.05, -27.6, -3.8, 6.6, -18.2, 'whitewall'); add(5.8, 3.05, -27.6, 6.2, 6.6, -18.2, 'whitewall');
+  for (const [x0, x1] of [[-14, -6], [-2, 4], [8, 15]]) for (const z of [-25, -22]) add(x0, 3.05, z, x1, 3.85, z + .8, 'wood');
+  // primer piso: pasillo sobre la fachada y aulas
+  wall(-15.6, -12.2, 16.6, -11.8, 7, 10.6, [D(-12, -9, 7, 9.6), D(-2, 1, 7, 9.6), D(8, 11, 7, 9.6)], 'whitewall');
+  add(-4.2, 7, -27.6, -3.8, 10.6, -12.2, 'whitewall'); add(5.8, 7, -27.6, 6.2, 10.6, -12.2, 'whitewall');
+  for (const [x0, x1] of [[-14, -6], [-2, 4], [8, 15]]) for (const z of [-24, -20, -16]) add(x0, 7, z, x1, 7.8, z + .8, 'wood');
+  add(-14, 7, -27.5, -6, 9.4, -27.3, 'board'); add(-2, 7, -27.5, 4, 9.4, -27.3, 'board');
+  // segundo piso: biblioteca abierta con estanterías y balcón
+  for (const z of [-25, -21, -17]) { add(-13, 11, z, -3, 13, z + .6, 'wood'); add(1, 11, z, 12, 13, z + .6, 'wood'); }
+  add(-15, 10.6, -6, -10, 11, -3.6, 'whitewall');
+  add(-15, 11, -3.75, -10, 12, -3.6, 'rail'); add(-15, 11, -6, -14.85, 12, -3.6, 'rail'); add(-10.15, 11, -6, -10, 12, -3.6, 'rail');
+  // terraza en el techo con parapeto
+  add(-16, 15, -6.4, 22, 16, -6, 'whitewall'); add(-16, 15, -28, 22, 16, -27.6, 'whitewall');
+  add(-16, 15, -27.6, -15.6, 16, -6.4, 'whitewall'); add(21.6, 15, -27.6, 22, 16, -6.4, 'whitewall');
+  add(4, 15, -22, 10, 17, -18, 'metal');                            // sala de máquinas
+  /* ---- cartel, logo y equipos de aire ---- */
+  deco.push({ t: 'logo', x: 0, y: 5.4, z: -5.92, r: 1.15 });
+  deco.push({ t: 'sign', x: 6.3, y: 5.4, z: -5.92, w: 9, h: 1.9 });
+  for (const [x, y] of [[13.5, 8.8], [16.5, 10.2], [13.5, 12.6], [18.5, 12.2]]) deco.push({ t: 'ac', x, y, z: -5.75 });
+  deco.push({ t: 'lamp', x: -5, y: 5.6, z: -5.92 }, { t: 'lamp', x: 12, y: 5.6, z: -5.92 }, { t: 'lamp', x: 18, y: 2.2, z: -5.92 });
+  /* ---- ítems ---- */
+  I('w2', 3, 1.5, 1); I('w3', 0, 0, 24); I('w4', 13, 3, -3.5); I('w9', -12.5, 11, -4.8); I('w8', 14, 15, -26); I('w5', 0, 15, -12);
+  I('w6', -10, 7, -20); I('w1', -19, 3, -12); I('quad', 2, 11, -19); I('mega', -3, 3.05, -14.5); I('armorH', -12, 11, -26); I('armor', 19, 0, 8);
+  I('health', -6, 1.5, 10); I('health', 15, 0, 20); I('health', 12, 3.05, -25); I('health', 12, 7, -9); I('health', -18, 3, -20);
+  I('shells', -14, 3.05, -14); I('bullets', 6, 3, -4); I('rockets', 10, 15, -10); I('grenades', -10, 7, -9); I('slugs', 0, 7, -26); I('caza', -20, 0, 20);
+  /* ---- apariciones ---- */
+  [[-8, 1.5, 8], [6, 1.5, 6], [0, 1.5, 11], [13, 1.5, 11.5], [-20, 0, 22], [0, 0, 21], [18, 0, 24], [10, 3, -3.5], [-19, 3, -10],
+   [-10, 3.05, -14], [8, 3.05, -14], [-10, 7, -9], [8, 7, -9], [0, 7, -20], [-8, 11, -12], [10, 11, -12]]
+    .forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
+  /* ---- luces ---- */
+  lights.push({ x: -2, y: 5.8, z: -13, c: 0xfff2dc, i: 1.2, d: 20 }, { x: 6, y: 9.8, z: -9, c: 0xfff2dc, i: 1.1, d: 22 },
+    { x: 0, y: 13.6, z: -18, c: 0xffe6c0, i: 1.2, d: 24 }, { x: 19, y: 9, z: -20, c: 0xfff2dc, i: .9, d: 16 });
+  return finish({ id: 'lacuenca', name: 'dm3 · La Cuenca', bounds: { x0: -27, x1: 27, z0: -29, z1: 28 }, deco,
+    theme: { sky: 'day', fog: 0xbfd3e6, fogD: .0045, amb: 0xd6dde8, ambI: .75, hemi: [0xbcd8ff, 0x9a8a70, .6], sun: true, sunC: 0xfff1d6, sunI: .95 } });
+}
+const MAPS = { represa: buildRepresa(), panymanteca: buildPanYManteca(), lacuenca: buildLaCuenca(), puente: buildPuente() };
+const MAP_ALIAS = { sagrado: 'panymanteca', salvaje: 'panymanteca', pan: 'panymanteca', cuenca: 'lacuenca', ucp: 'lacuenca' }; // nombres viejos del boliche
 const mapId = id => MAP_ALIAS[id] || id;
 const MAP_IDS = Object.keys(MAPS);
 const WORLD = MAPS.represa;
@@ -701,13 +828,14 @@ function projLaunch(w, d) {
 function projStep(W, p, dt) {
   p.life -= dt;
   if (p.k === 'grenade') p.v[1] -= 18 * dt;
+  else if (p.k === 'bullet') p.v[1] -= 9 * dt;
   const dx = p.v[0] * dt, dy = p.v[1] * dt, dz = p.v[2] * dt, L = Math.hypot(dx, dy, dz);
   if (L > 1e-6) {
     const h = raycast(W, p.x, p.y, p.z, dx / L, dy / L, dz / L, L);
     if (h) {
       const t = Math.max(0, h.t - .06);
       p.x += dx / L * t; p.y += dy / L * t; p.z += dz / L * t;
-      if (p.k === 'rocket') return { boom: true, n: h.n };
+      if (p.k === 'rocket' || p.k === 'bullet') return { boom: true, n: h.n };
       const n = h.n, dot = p.v[0] * n[0] + p.v[1] * n[1] + p.v[2] * n[2];
       p.v[0] -= 2 * dot * n[0]; p.v[1] -= 2 * dot * n[1]; p.v[2] -= 2 * dot * n[2];
       const damp = n[1] > .7 ? .45 : .6;
@@ -731,14 +859,17 @@ function buildNav(W) {
   for (let cz = 0; cz < NZ; cz++) for (let cx = 0; cx < NX; cx++) {
     const px = X0 + cx + .5, pz = Z0 + cz + .5, tops = [];
     for (const b of W.brushes) {
-      if (b.nc || b.mover || !(b.min[0] < px && b.max[0] > px && b.min[2] < pz && b.max[2] > pz)) continue;
-      const t = topAt(b, px, pz, px, pz);
+      // se mira un poquito corrido del centro para no caer justo en el borde entre dos escalones
+      const qx = px + .013, qz = pz + .017;
+      if (b.nc || b.mover || !(b.min[0] < qx && b.max[0] > qx && b.min[2] < qz && b.max[2] > qz)) continue;
+      const t = topAt(b, qx, qz, qx, qz);
       if (t > 12.5) continue;
       if (!tops.some(q => Math.abs(q - t) < .05)) tops.push(t);
     }
     const list = [];
     for (const t of tops) {
-      if (solidAt(W, px, t + .02, pz, .3, 1.75)) continue;
+      // lo que sobresale menos que un escalón no estorba (escaleras de huella corta)
+      if (solidAt(W, px, t + K.STEP + .01, pz, .3, 1.75 - K.STEP)) continue;
       if (inLava(W, px, t, pz)) continue;
       const n = { id: nodes.length, x: px, y: t, z: pz, c: cx + cz * NX, l: [] };
       nodes.push(n); list.push(n);
@@ -756,7 +887,8 @@ function buildNav(W) {
       const m = near(at(cx + dx, cz + dz), n.y, .6);
       if (m) {
         if (dx && dz && (!near(at(cx + dx, cz), n.y, .6) || !near(at(cx, cz + dz), n.y, .6))) continue;
-        n.l.push([m.id, dx && dz ? 1.414 : 1, 0]);
+        // todos los nodos vecinos a menos de un escalón (en las escaleras puede haber dos en la misma celda)
+        for (const q of at(cx + dx, cz + dz)) if (Math.abs(q.y - n.y) <= .6) n.l.push([q.id, dx && dz ? 1.414 : 1, 0]);
       } else if (!dx || !dz) {
         edge = true;
         let low = null;
@@ -878,12 +1010,13 @@ const SHOP_BY_ID = {}; SHOP.forEach(it => SHOP_BY_ID[it.id] = it);
 
 class Game {
   constructor(o) {
-    this.o = Object.assign({ fraglimit: 20, timelimit: 600, caplimit: 5, bots: null, botFill: 0, botSkill: 1, online: false, maxPlayers: 16, map: 'represa', rotate: true, mode: 'arena' }, o || {});
+    this.o = Object.assign({ fraglimit: 20, timelimit: 600, caplimit: 5, bots: null, botFill: 0, botSkill: 1, online: false, maxPlayers: 16, map: null, rotate: true, mode: 'arena' }, o || {});
     if (!MODES[this.o.mode]) this.o.mode = 'arena';
     this.mode = MODES[this.o.mode];
     this.players = new Map(); this.nextId = 1; this.projs = []; this.pid = 1;
     this.time = 0; this.snapT = 0; this.scT = 0; this.botT = 0; this.state = 'play'; this.left = this.o.timelimit; this.interT = 0;
-    this.ts = [0, 0]; this.flags = [];
+    this.ts = [0, 0]; this.flags = []; this.countT = 0;
+    if (this.mode.minPlayers && this.o.online) this.state = 'lobby';
     this.o.map = mapId(this.o.map);
     this.setMap(this.mode.maps.includes(this.o.map) ? this.o.map : this.mode.maps[0]);
   }
@@ -898,8 +1031,10 @@ class Game {
   }
   resetFlags() {
     this.ts = [0, 0];
-    this.flags = this.mode.teams && this.W.flags ? this.W.flags.map((f, i) => ({ team: i, st: 0, by: 0, x: f.x, y: f.y, z: f.z, t: 0 })) : [];
+    this.flags = this.mode.ctf && this.W.flags ? this.W.flags.map((f, i) => ({ team: i, st: 0, by: 0, x: f.x, y: f.y, z: f.z, t: 0 })) : [];
   }
+  // 'lobby' y 'count' = calentamiento antes de que arranque el Team Deathmatch: se juega pero no se cuenta
+  live() { return this.state === 'play' || this.state === 'lobby' || this.state === 'count'; }
   flagState() { return this.flags.map(f => [f.st, f.by, r2(f.x), r2(f.y), r2(f.z)]); }
   /* ---- conexiones ---- */
   addClient(send) {
@@ -942,7 +1077,8 @@ class Game {
         p.skin = cleanSkin(m.skin || { c: m.color }, p.skin); p.color = p.skin.c;
         if (this.mode.teams) this.setTeam(p, this.pickTeam(p));
         p.joined = true;
-        p.send({ t: 'welcome', id, mode: this.o.mode, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), fl: this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts });
+        if (this.mode.tdm && this.o.online && this.humanCount(false) <= 1 && Number.isInteger(m.fl) && m.fl >= 5 && m.fl <= 500) this.o.fraglimit = m.fl;
+        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), fl: this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts });
         this.bcast({ t: 'ev', e: 'join', id, n: p.name, c: p.color, s: p.skin, tm: p.team }, id);
         this.spawn(p); this.botT = 0; this.sendScores();
         break;
@@ -967,7 +1103,13 @@ class Game {
         this.bcast({ t: 'ev', e: 'skin', id: p.id, s: p.skin });
         break;
       }
-      case 'respawn': if (p.joined && !p.alive && p.deadT > 1 && this.state === 'play') this.spawn(p); break;
+      case 'respawn': if (p.joined && !p.alive && p.deadT > 1 && this.live()) this.spawn(p); break;
+      case 'limit': {
+        const n = m.n | 0;
+        if (!this.mode.tdm || n < 5 || n > 500 || (this.o.online && this.state === 'play')) return;
+        this.o.fraglimit = n; this.bcast({ t: 'ev', e: 'sys', m: p.name + ' puso el límite en ' + n + ' bajas' }); this.sendScores();
+        break;
+      }
       case 'ping': p.send({ t: 'pong', c: m.c, tm: this.time }); if (Number.isFinite(m.r)) p.ping = Math.round(clamp(m.r, 0, 9999)); break;
       case 'chat': {
         const txt = String(m.m || '').replace(/[\u0000-\u001f]/g, '').slice(0, 120).trim();
@@ -997,13 +1139,13 @@ class Game {
       this.botT = 0;
     } else if (cmd === 'skill' && /^[0-3]$/.test(arg || '')) { this.o.botSkill = +arg; this.bcast({ t: 'ev', e: 'sys', m: 'Dificultad de bots: ' + SKILL[+arg].name }); }
     else if (cmd === 'fraglimit' && /^\d+$/.test(arg || '')) { this.o.fraglimit = clamp(+arg, 1, 200); this.sendScores(); this.bcast({ t: 'ev', e: 'sys', m: 'Límite de frags: ' + this.o.fraglimit }); }
-    else if (cmd === 'caplimit' && this.mode.teams && /^\d+$/.test(arg || '')) { this.o.caplimit = clamp(+arg, 1, 50); this.sendScores(); this.bcast({ t: 'ev', e: 'sys', m: 'Capturas para ganar: ' + this.o.caplimit }); }
+    else if (cmd === 'caplimit' && this.mode.ctf && /^\d+$/.test(arg || '')) { this.o.caplimit = clamp(+arg, 1, 50); this.sendScores(); this.bcast({ t: 'ev', e: 'sys', m: 'Capturas para ganar: ' + this.o.caplimit }); }
     else if (cmd === 'map') {
       if (this.mode.maps.includes(arg)) { this.bcast({ t: 'ev', e: 'sys', m: p.name + ' cambió el mapa a ' + MAPS[arg].name }); this.restart(arg); }
       else say('Mapas de ' + this.mode.name + ': ' + this.mode.maps.join(', '));
     }
     else if (cmd === 'restart') { this.bcast({ t: 'ev', e: 'sys', m: p.name + ' reinició la partida' }); this.restart(); }
-    else say('Comandos: /bots N · /bots auto · /skill 0-3 · ' + (this.mode.teams ? '/caplimit N' : '/fraglimit N') + ' · /map ' + this.mode.maps.join('|') + ' · /restart');
+    else say('Comandos: /bots N · /bots auto · /skill 0-3 · ' + (this.mode.ctf ? '/caplimit N' : '/fraglimit N') + ' · /map ' + this.mode.maps.join('|') + ' · /restart');
   }
 
   /* ---- aparición ---- */
@@ -1047,7 +1189,7 @@ class Game {
     const no = why => p.send && p.send({ t: 'ev', e: 'buy', id, ok: 0, why });
     if (!this.mode.shop) return no('En ' + this.mode.name + ' no hay tienda');
     if (!it || it.free || !p.joined) return no('No se puede comprar');
-    if (this.state !== 'play') return no('La partida terminó');
+    if (!this.live()) return no('La partida terminó');
     if (it.w != null && p.unl[it.w]) return no('Ya lo tenés');
     if (it.armor && p.perk.ar >= it.armor) return no('Ya tenés ese blindaje');
     if (it.id === 'am' && p.perk.am) return no('Ya la tenés');
@@ -1067,7 +1209,7 @@ class Game {
     this.sendScores();
   }
   botShop(p) {
-    for (const id of ['w5', 'w8', 'a1', 'w3', 'w2', 'w6', 'a2', 'w4', 'am']) {
+    for (const id of ['w5', 'w8', 'a1', 'w3', 'w9', 'w2', 'w6', 'a2', 'w4', 'am']) {
       const it = SHOP_BY_ID[id];
       if ((it.w != null && p.unl[it.w]) || (it.armor && p.perk.ar >= it.armor) || (id === 'am' && p.perk.am)) continue;
       if (p.cr >= it.price) { p.cr -= it.price; if (it.w != null) p.unl[it.w] = 1; else if (it.armor) p.perk.ar = it.armor; else p.perk.am = 1; }
@@ -1082,7 +1224,7 @@ class Game {
 
   /* ---- disparos ---- */
   canFire(p, w) {
-    const W_ = WEAPONS[w]; if (!W_ || !p.alive || !p.ow[w] || this.state !== 'play') return false;
+    const W_ = WEAPONS[w]; if (!W_ || !p.alive || !p.ow[w] || !this.live()) return false;
     if (W_.ammo && p.am[W_.ammo] < W_.cost && !this.mode.gg) return false;
     if (W_.mag) {
       if (p.relT[w] > this.time) return false;
@@ -1170,13 +1312,13 @@ class Game {
   }
   spawnProj(p, w, o, d) {
     const W_ = WEAPONS[w], v = projLaunch(w, d);
-    const pr = { id: this.pid++, k: W_.proj, w, own: p.id, x: o[0], y: o[1], z: o[2], v, life: W_.proj === 'grenade' ? 2.4 : 6, q: this.mult(p) * (p.bot ? this.skill().dmg : 1), age: 0 };
+    const pr = { id: this.pid++, k: W_.proj, w, own: p.id, x: o[0], y: o[1], z: o[2], o0: o.slice(), v, life: W_.proj === 'grenade' ? 1.8 : W_.proj === 'bullet' ? 3 : 6, q: this.mult(p) * (p.bot ? this.skill().dmg : 1), age: 0 };
     this.projs.push(pr);
     this.bcast({ t: 'ev', e: 'proj', pid: pr.id, k: pr.k, own: p.id, p: r3a(o), v: r3a(v) });
   }
   tickProjs(dt) {
     for (let i = this.projs.length - 1; i >= 0; i--) {
-      if (this.state !== 'play') return; // la partida terminó por una explosión de este mismo tick
+      if (!this.live()) return; // la partida terminó por una explosión de este mismo tick
       const pr = this.projs[i]; if (!pr) continue;
       const ox = pr.x, oy = pr.y, oz = pr.z;
       pr.age += dt;
@@ -1198,7 +1340,8 @@ class Game {
     const W_ = WEAPONS[pr.w], own = this.players.get(pr.own);
     if (direct && W_.direct) {
       const sp = Math.hypot(pr.v[0], pr.v[1], pr.v[2]) || 1;
-      this.damage(direct, W_.direct * pr.q, own, pr.w, [pr.v[0] / sp, pr.v[1] / sp, pr.v[2] / sp], .08, 'frag');
+      if (pr.k === 'bullet' && own) this.huntReward(own, direct, pr);
+      this.damage(direct, W_.direct * pr.q, own, pr.w, [pr.v[0] / sp, pr.v[1] / sp, pr.v[2] / sp], pr.k === 'bullet' ? .02 : .08, 'frag');
     }
     for (const t of this.players.values()) {
       if (!t.alive || !t.joined || t === direct) continue;
@@ -1211,15 +1354,25 @@ class Game {
       const ks = self && !t.bot ? 0 : .16;
       this.damage(t, dmg, own, pr.w, [cx / cl, cy / cl, cz / cl], ks / (self ? 1 : pr.q), self ? 'self' : 'frag');
     }
-    this.bcast({ t: 'ev', e: 'boom', pid: pr.id, own: pr.own, p: r3a([pr.x, pr.y, pr.z]) });
+    this.bcast({ t: 'ev', e: 'boom', pid: pr.id, own: pr.own, k: pr.k, hit: direct ? 1 : 0, p: r3a([pr.x, pr.y, pr.z]) });
   }
 
+  // premio del rifle de caza: cuanto más lejos, más tiempo de vuelo o si el blanco estaba en el aire
+  huntReward(p, t, pr) {
+    if (!t.alive || t === p || (this.mode.teams && t.team === p.team)) return;
+    const d = Math.hypot(pr.x - pr.o0[0], pr.y - pr.o0[1], pr.z - pr.o0[2]), air = !t.s.on, flight = pr.age;
+    if (d < 22 && flight < .3 && !air) return;
+    const n = Math.min(800, 100 + Math.round(d * 6) + (air ? 150 : 0) + (flight > .5 ? 100 : 0));
+    this.credit(p, n, 'tiro de cazador');
+    if (p.send) p.send({ t: 'ev', e: 'hunt', d: Math.round(d), air: air ? 1 : 0, n: this.mode.shop ? n : 0 });
+    this.bcast({ t: 'ev', e: 'sys', m: p.name + ' cazó a ' + t.name + ' a ' + Math.round(d) + ' m' + (air ? ' en pleno salto' : '') });
+  }
   /* ---- daño y muertes ---- */
   damage(t, amt, att, w, dir, ks, how) {
-    if (!t.alive || this.state !== 'play' || amt <= 0) return;
+    if (!t.alive || !this.live() || amt <= 0) return;
     if (this.mode.teams && att && att !== t && att.team === t.team) return; // sin fuego amigo
     let take = amt;
-    if (t.ar > 0) { const save = Math.min(t.ar, Math.ceil(amt / 3)); t.ar -= save; take -= save; }
+    if (t.ar > 0 && !(w != null && WEAPONS[w] && WEAPONS[w].melee)) { const save = Math.min(t.ar, Math.ceil(amt / 3)); t.ar -= save; take -= save; }
     t.hp -= take; t.dirty = true;
     const kick = dir && ks ? [dir[0] * amt * ks, dir[1] * amt * ks, dir[2] * amt * ks] : null;
     if (t.bot) {
@@ -1233,8 +1386,9 @@ class Game {
     const gib = v.hp < -40;
     v.alive = false; v.deadT = 0; v.deaths++; v.dirty = true; v.quadT = 0;
     let k = 0;
-    const carrier = this.flags.some(f => f.st === 1 && f.by === v.id);
-    if (att && att !== v) {
+    const carrier = this.flags.some(f => f.st === 1 && f.by === v.id), scoring = this.state === 'play';
+    if (!scoring) { v.deaths--; k = att && att !== v ? att.id : 0; }
+    else if (att && att !== v) {
       att.frags++; k = att.id; att.streak++;
       let n = ECON.KILL; const why = [];
       if (v.streak >= 3) { n += ECON.SHUTDOWN; why.push('cortaste una racha'); }
@@ -1247,9 +1401,10 @@ class Game {
     this.bcast({ t: 'ev', e: 'kill', k, v: v.id, w: w == null ? -1 : w, how: how || 'frag', gib: gib ? 1 : 0, p: r3a([v.s.x, v.s.y, v.s.z]) });
     if (v.bot && v.ai) v.ai.path = null;
     let won = false;
-    if (this.mode.gg) won = this.ggKill(v, att, w);
+    if (this.mode.gg && scoring) won = this.ggKill(v, att, w);
+    if (this.mode.tdm && scoring && att && att !== v && att.team !== v.team && att.team >= 0) { this.ts[att.team]++; if (this.ts[att.team] >= this.o.fraglimit) won = true; }
     this.sendScores();
-    if (won || (!this.mode.gg && !this.mode.teams && att && att !== v && att.frags >= this.o.fraglimit)) this.endMatch();
+    if (won || (scoring && !this.mode.gg && !this.mode.teams && att && att !== v && att.frags >= this.o.fraglimit)) this.endMatch();
   }
   /* ---- gungame: subir y bajar de nivel ---- */
   ggKill(v, att, w) {
@@ -1361,7 +1516,7 @@ class Game {
       .sort((a, b) => (gg ? b.lvl - a.lvl : 0) || (this.mode.teams ? b.caps - a.caps : 0) || b.frags - a.frags || a.deaths - b.deaths)
       .map(p => [p.id, p.name, p.frags, p.deaths, p.bot ? 0 : p.ping, p.bot ? 1 : 0, p.color, p.cr, p.lvl, p.team, p.caps]);
   }
-  sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.o.fraglimit, cl: this.o.caplimit, st: this.state, map: this.W.id, mode: this.o.mode, ts: this.ts, fs: this.flagState() }); }
+  sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.o.fraglimit, cl: this.o.caplimit, st: this.state, map: this.W.id, mode: this.o.mode, ts: this.ts, fs: this.flagState(), cd: Math.ceil(this.countT), hn: this.humanCount(false), mp: this.mode.minPlayers || 0 }); }
   endMatch() {
     if (this.state !== 'play') return;
     this.state = 'inter'; this.interT = 10;
@@ -1377,6 +1532,7 @@ class Game {
     const id = mapId || this.nextMap || this.W.id; this.nextMap = null;
     if (id !== this.W.id) this.setMap(id); else this.resetFlags();
     this.state = 'play'; this.left = this.o.timelimit; this.projs.length = 0;
+    if (this.mode.minPlayers && this.o.online && this.humanCount(false) < this.mode.minPlayers) this.state = 'lobby';
     for (const it of this.items) { it.up = !it.off; it.t = 0; }
     this.bcast({ t: 'start', map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), tm: this.time, fs: this.flagState(), ts: this.ts });
     for (const p of this.players.values()) if (p.joined) {
@@ -1423,6 +1579,11 @@ class Game {
     if (this.state === 'inter') {
       this.interT -= dt;
       if (this.interT <= 0) this.restart();
+    } else if (this.state === 'lobby') {
+      if (this.humanCount(false) >= this.mode.minPlayers) { this.state = 'count'; this.countT = 6; this.bcast({ t: 'ev', e: 'sys', m: '¡Ya son ' + this.humanCount(false) + '! El Team Deathmatch arranca en 6 segundos' }); this.sendScores(); }
+    } else if (this.state === 'count') {
+      if (this.humanCount(false) < this.mode.minPlayers) { this.state = 'lobby'; this.countT = 0; this.sendScores(); }
+      else { const before = Math.ceil(this.countT); this.countT -= dt; if (Math.ceil(this.countT) !== before) this.sendScores(); if (this.countT <= 0) { this.countT = 0; this.restart(this.W.id); } }
     } else {
       this.left -= dt;
       if (this.left <= 0) { this.left = 0; this.endMatch(); }
@@ -1433,11 +1594,11 @@ class Game {
       if (!p.joined) continue;
       if (!p.alive) {
         p.deadT += dt;
-        if (p.bot && p.deadT > 1.6 && this.state === 'play') this.spawn(p);
-        else if (!p.bot && p.deadT > 6 && this.state === 'play') this.spawn(p);
+        if (p.bot && p.deadT > 1.6 && this.live()) this.spawn(p);
+        else if (!p.bot && p.deadT > (this.state === 'play' ? 6 : 2) && this.live()) this.spawn(p);
         continue;
       }
-      if (this.state !== 'play') continue;
+      if (!this.live()) continue;
       if (p.bot) this.botThink(p, dt);
       if (p.quadT > 0) { p.quadT -= dt; if (p.quadT <= 0) { p.quadT = 0; p.dirty = true; } }
       if (p.hp > 100) { p.megaT += dt; if (p.megaT >= .5) { p.megaT -= .5; p.hp--; p.dirty = true; } }
@@ -1447,7 +1608,7 @@ class Game {
       if (tr.water) this.damage(p, 999, null, null, null, 0, 'water');
       if (p.alive && p.s.y < K.KILLY) this.damage(p, 999, null, null, null, 0, 'void');
     }
-    if (this.state === 'play') { this.tickProjs(dt); this.tickItems(dt); if (this.flags.length) this.tickFlags(dt); }
+    if (this.live()) { this.tickProjs(dt); this.tickItems(dt); if (this.flags.length && this.state === 'play') this.tickFlags(dt); }
     this.snapT -= dt;
     if (this.snapT <= 1e-6) { this.snapT += .05; if (this.snapT < 0) this.snapT = 0; this.snapshot(); }
     this.scT -= dt;
@@ -1493,7 +1654,7 @@ class Game {
   chooseWeapon(p, dist) {
     if (this.mode.gg) return GG[Math.min(p.lvl, GG.length - 1)];
     const has = w => p.ow[w] && (!WEAPONS[w].ammo || p.am[WEAPONS[w].ammo] >= WEAPONS[w].cost);
-    const order = dist < 2.2 ? [2, 1, 7] : dist < 7 ? [2, 1, 3, 5, 6, 0] : dist < 22 ? [5, 3, 2, 6, 8, 1, 4, 0] : [8, 6, 3, 5, 0, 1];
+    const order = dist < 2.2 ? [2, 1, 7] : dist < 7 ? [2, 1, 3, 5, 6, 0] : dist < 22 ? [5, 3, 2, 6, 8, 9, 1, 4, 0] : [8, 9, 6, 3, 5, 0, 1];
     for (const w of order) if (has(w) && !(WEAPONS[w].mag && p.relT[w] > this.time)) return w;
     return has(1) ? 1 : 0;
   }
@@ -1604,7 +1765,7 @@ class Game {
       const dx = tgt.s.x - s.x, dz = tgt.s.z - s.z, dist = Math.hypot(dx, dz) || 1;
       ai.strafeT -= dt; if (ai.strafeT <= 0) { ai.strafe *= -1; ai.strafeT = .5 + Math.random() * 1.2; }
       const melee = !!WEAPONS[p.w].melee;
-      const pref = melee ? 0 : p.w === 2 || p.w === 1 ? 5 : p.w === 6 || p.w === 8 ? 20 : 11;
+      const pref = melee ? 0 : p.w === 2 || p.w === 1 ? 5 : p.w === 6 || p.w === 8 || p.w === 9 ? 20 : 11;
       const sm = (melee ? .3 : 1) * sk.strafe;
       const ix = dx / dist, iz = dz / dist, sx = -iz * ai.strafe * sm, sz = ix * ai.strafe * sm;
       const approach = melee ? 1.2 : dist > pref + 3 ? .6 : dist < pref - 3 ? -.6 : 0;
@@ -1635,6 +1796,7 @@ class Game {
       if (W_.type === 'proj') {
         const tt = dist / W_.speed; tx += tgt.s.vx * tt * .8 * sk.lead; tz += tgt.s.vz * tt * .8 * sk.lead;
         if (W_.proj === 'grenade') ty += dist * .06;
+        if (W_.proj === 'bullet') ty += .5 * 9 * tt * tt * (.6 + .4 * sk.lead);
       }
       const ex = s.x, ey = s.y + K.EYE, ez = s.z;
       const wantYaw = Math.atan2(-(tx - ex), -(tz - ez)), wantPitch = Math.atan2(ty - ey, Math.hypot(tx - ex, tz - ez));

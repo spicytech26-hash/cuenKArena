@@ -1,6 +1,6 @@
 # CuenkArena
 
-Deathmatch online estilo Quake que corre en el navegador. Dos mapas que rotan al terminar cada partida: **dm1 · La Represa** (industrial, con lava) y **dm2 · Pan & Manteca** (un boliche con pista LED, plataformas móviles, ascensores y subwoofers que te lanzan). Siete armas, tienda con créditos, taquilla para personalizar tu personaje, bots y movimiento con *strafe jump* y *bunny hop*.
+Deathmatch online estilo Quake que corre en el navegador. Mapas que rotan al terminar cada partida, entre ellos **dm3 · La Cuenca** (la Universidad de la Cuenca del Plata de Posadas, con la plaza y el edificio para recorrer por dentro),: **dm1 · La Represa** (industrial, con lava) y **dm2 · Pan & Manteca** (un boliche con pista LED, plataformas móviles, ascensores y subwoofers que te lanzan). Siete armas, tienda con créditos, taquilla para personalizar tu personaje, bots y movimiento con *strafe jump* y *bunny hop*.
 
 ## Modos de juego
 
@@ -8,6 +8,7 @@ Al tocar **Jugar online** (o **Práctica con bots**) elegís el modo. Cada modo 
 
 - **Arena**: todos contra todos en La Represa y Pan & Manteca, con créditos y tienda.
 - **Gungame**: todos arrancan con la ametralladora y cada baja te da la siguiente arma de una lista de 20 niveles (armas fuertes primero, pistola, riel y francotirador al final, cuchillo en el último). Munición infinita, sin tienda ni armas tiradas. Además de la del nivel tenés siempre el cuchillo: si te matás solo, o te matan con cuchillo, bajás un nivel. Gana el primero en hacer la baja número 20.
+- **Team Deathmatch**: rojo contra azul, cada baja suma para el equipo hasta llegar al límite. Online la sala espera a tener **4 jugadores** (mientras tanto hay calentamiento y las bajas no cuentan) y arranca con una cuenta regresiva. El límite de bajas lo elige el primero en entrar desde la pantalla de modos, y se puede cambiar desde el menú (Esc) mientras esperan.
 - **Captura la bandera**: rojo (Posadas) contra azul (Encarnación) en **ctf1 · El Puente**. Robá la bandera rival del fortín enemigo y llevala hasta el pedestal de tu base (cuenta aunque tu bandera esté robada). Si matan al que la lleva, la bandera queda tirada 20 segundos: si la toca su equipo vuelve a la base. Gana el primero en llegar a 5 capturas. No hay fuego amigo y los equipos se equilibran solos con los bots.
 
 ## Armas
@@ -23,8 +24,9 @@ Todos arrancan con pistola (automática), escopeta y cuchillo. Las demás se jun
 | Lanzagranadas | 110 de área + 40 directo | 1 / 2 |
 | Lanzacohetes | 100 directo + 105 de área | 1 / 1 |
 | Rifle de riel | 110 (atraviesa) | 1 / 2 |
-| Cuchillo | 40, 76 por la espalda | 3 / 4 |
+| Cuchillo | 55, 99 por la espalda; ignora el blindaje | 2 / 2 |
 | Francotirador | 115, 230 a la cabeza (click derecho: mira) | 1 / 2 |
+| Rifle de caza (tecla 0) | cualquier impacto mata | 1 / 1 — la bala viaja a 80 m/s y cae: de lejos hay que apuntar más arriba y adelantarse. Los tiros de más de 22 m, al aire o con mucho vuelo dan premio en créditos |
 
 El blindaje absorbe un tercio del daño y llega como máximo a 100; la megasalud sube hasta 150.
 
@@ -96,7 +98,7 @@ Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 
 | W A S D | moverse |
 | Espacio | saltar (mantenelo para encadenar saltos) |
 | Mouse / click | apuntar / disparar |
-| 1–9, rueda, Q | armas (Q vuelve a la anterior) |
+| 1–0, rueda, Q | armas (Q vuelve a la anterior) |
 | F o V | cuchillo |
 | R | recargar la escopeta doble |
 | Click derecho | mira del francotirador |
@@ -122,7 +124,7 @@ La práctica con bots del menú corre la misma clase `Game` dentro del navegador
 
 ### Editar el mapa
 
-Los mapas están en `buildRepresa()`, `buildPanYManteca()` y `buildPuente()` dentro de `public/game.js`. Todo son cajas, como los *brushes* de Quake:
+Los mapas están en `buildRepresa()`, `buildPanYManteca()`, `buildLaCuenca()` y `buildPuente()` dentro de `public/game.js`. Todo son cajas, como los *brushes* de Quake:
 
 - `add(x0, y0, z0, x1, y1, z1, 'material')` agrega un bloque sólido.
 - `stairs(...)`, `ramp(...)` y `wall(... , [puertas])` arman escaleras, rampas y paredes con aberturas.

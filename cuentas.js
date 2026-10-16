@@ -15,7 +15,7 @@ const https = require('https');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { levelInfo, ACCESSORIES, censor } = require('./public/game.js');
+const { levelInfo, ACCESSORIES, censor, okChestImg } = require('./public/game.js');
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const SB_URL = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
@@ -131,7 +131,9 @@ async function dbPut(row) {
 const HEX = /^#[0-9a-fA-F]{6}$/;
 function cleanSkin(k) {
   k = k && typeof k === 'object' ? k : {};
-  return { c: HEX.test(k.c) ? k.c : '#e8542a', v: HEX.test(k.v) ? k.v : '#ffffff', a: Number.isInteger(k.a) && k.a >= 0 && k.a < ACCESSORIES.length ? k.a : 0 };
+  const out = { c: HEX.test(k.c) ? k.c : '#e8542a', v: HEX.test(k.v) ? k.v : '#ffffff', a: Number.isInteger(k.a) && k.a >= 0 && k.a < ACCESSORIES.length ? k.a : 0 };
+  if (okChestImg(k.img)) out.img = k.img;
+  return out;
 }
 const MIRAS = ['cruz', 'cruzgap', 'cruzpunto', 'punto', 'circulo', 'circulopunto', 'anillo', 'fina', 't', 'mas', 'x', 'cortes'];
 function cleanMira(m) {

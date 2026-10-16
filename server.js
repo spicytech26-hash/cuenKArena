@@ -74,7 +74,7 @@ const server = http.createServer((req, res) => {
 function json(res, code, obj) { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(obj)); }
 function readBody(req, res, fn) {
   let size = 0; const chunks = [];
-  req.on('data', c => { size += c.length; if (size > 16384) { req.destroy(); return; } chunks.push(c); });
+  req.on('data', c => { size += c.length; if (size > 65536) { req.destroy(); return; } chunks.push(c); });
   req.on('end', () => { let b = {}; try { b = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); } catch (e) { return json(res, 400, { error: 'JSON inválido' }); } fn(b); });
 }
 // archivos comprimidos con gzip y validados con ETag: el navegador solo baja de nuevo lo que cambió

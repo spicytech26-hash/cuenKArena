@@ -41,7 +41,7 @@ const WEAPONS = [
   // rifle de caza: bala real con viaje y caída; cualquier impacto mata. Premia los tiros bien calculados
   { name: 'Rifle de caza',  ammo: 'caza',     cost: 1, rate: 1.6, type: 'proj', proj: 'bullet', speed: 260, drop: 9, dmg: 0, rad: 0, direct: 1000, scope: true, zoom: 58 },
   // bomba molotov: se rompe al primer golpe y deja el piso en llamas unos segundos
-  { name: 'Bomba molotov',  ammo: 'molotov',  cost: 1, rate: .9,  type: 'proj', proj: 'molotov', speed: 17, dmg: 0, rad: 0, direct: 12, fire: { r: 3.4, dur: 6, dps: 22 } }
+  { name: 'Bomba molotov',  ammo: 'molotov',  cost: 1, rate: .9,  type: 'proj', proj: 'molotov', speed: 17, dmg: 0, rad: 0, direct: 12, fire: { r: 3.4, dur: 6, hit: 5.5, every: .1 } }
 ];
 const NW = WEAPONS.length;
 // arrancás siempre con pistola, escopeta y cuchillo
@@ -1110,8 +1110,12 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
 function cleanSkin(k, fallback) {
   const f = fallback || { c: COLORS[0], v: '#ffffff', a: 0 };
   if (!k || typeof k !== 'object') return Object.assign({}, f);
-  return { c: HEX.test(k.c) ? k.c : f.c, v: HEX.test(k.v) ? k.v : f.v, a: Number.isInteger(k.a) && k.a >= 0 && k.a < ACCESSORIES.length ? k.a : 0 };
+  const out = { c: HEX.test(k.c) ? k.c : f.c, v: HEX.test(k.v) ? k.v : f.v, a: Number.isInteger(k.a) && k.a >= 0 && k.a < ACCESSORIES.length ? k.a : 0 };
+  if (okChestImg(k.img)) out.img = k.img;
+  return out;
 }
+// imagen del pecho: JPEG cuadrado chico (el navegador la recorta y achica a 96×96 antes de mandarla)
+const okChestImg = s => typeof s === 'string' && s.length <= 24000 && /^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(s);
 const SHOP_BY_ID = {}; SHOP.forEach(it => SHOP_BY_ID[it.id] = it);
 
 class Game {
@@ -1550,7 +1554,7 @@ class Game {
   startFire(pr, F) {
     const fl = raycast(this.W, pr.x, pr.y + .3, pr.z, 0, -1, 0, 8);
     const y = fl ? pr.y + .3 - fl.t : pr.y;
-    const f = { id: this.pid++, x: pr.x, y, z: pr.z, r: F.r, t: F.dur, dps: F.dps * pr.q, own: pr.own, w: pr.w, tick: 0 };
+    const f = { id: this.pid++, x: pr.x, y, z: pr.z, r: F.r, t: F.dur, hit: F.hit * pr.q, every: F.every, own: pr.own, w: pr.w, tick: 0 };
     this.fires.push(f);
     this.bcast({ t: 'ev', e: 'fire', id: f.id, p: r3a([f.x, f.y, f.z]), r: f.r, d: f.t });
   }
@@ -1559,13 +1563,13 @@ class Game {
       const f = this.fires[i]; f.t -= dt; f.tick -= dt;
       if (f.t <= 0) { this.fires.splice(i, 1); continue; }
       if (f.tick > 0) continue;
-      f.tick = .25;
+      f.tick = f.every;
       const own = this.players.get(f.own);
       for (const t of this.players.values()) {
         if (!t.alive || !t.joined) continue;
         if (Math.hypot(t.s.x - f.x, t.s.z - f.z) > f.r || t.s.y < f.y - 1 || t.s.y > f.y + 1.6) continue;
         const self = t.id === f.own;
-        this.damage(t, f.dps * .25 * (self ? .5 : 1), own || null, f.w, null, 0, self ? 'self' : 'frag');
+        this.damage(t, f.hit * (self ? .5 : 1), own || null, f.w, null, 0, self ? 'self' : 'frag');
         if (!this.live()) return;
       }
     }
@@ -2047,5 +2051,5 @@ class Game {
   }
 }
 
-return { censor, isBad, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, SKILL, topAt, pmove, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
+return { censor, isBad, okChestImg, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, SKILL, topAt, pmove, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
 });

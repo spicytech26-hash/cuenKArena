@@ -341,6 +341,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
           <div class="lab">Armadura</div><div class="sw-row" id="swBody"></div>
           <div class="lab">Visor</div><div class="sw-row" id="swVisor"></div>
           <div class="lab">Accesorio</div><div class="seg" id="segAcc" role="group" aria-label="Accesorio" style="grid-column:auto"></div>
+          <div class="lab">Imagen en el pecho</div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <img id="chestPrev" alt="Imagen del pecho" width="56" height="56" style="width:56px;height:56px;border:1px solid #000;background:#2e2a26;object-fit:cover" hidden>
+            <label class="btn" for="chestFile" style="cursor:pointer">Elegir foto…</label>
+            <input type="file" id="chestFile" accept="image/png,image/jpeg,image/webp" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
+            <button type="button" class="btn" id="chestDel" hidden>Quitar</button>
+          </div>
+          <p class="note" id="chestNote" style="margin:0">PNG o JPG. Se recorta cuadrada al centro y se ajusta al pecho.</p>
           <p class="note">Los cambios se guardan solos. Si estás en una partida online, los demás te ven así al instante.</p>
         </div>
       </div>
@@ -360,6 +368,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
       <div class="srow"><label for="sXz">Tamaño</label><input type="range" id="sXz" min="0.5" max="2.5" step="0.05"><output id="oXz"></output></div>
       <div class="srow"><span>Vista previa</span><div id="xhPrev"><div id="xhPrevIn"></div></div></div>
       <div class="sep"></div>
+      <div class="srow"><label for="sImg">Ver las imágenes que los demás tienen en el pecho</label><input type="checkbox" id="sImg"></div>
       <div class="srow"><label for="sFs">Pantalla completa al jugar (permite agacharse con Ctrl sin que el navegador cierre la pestaña)</label><input type="checkbox" id="sFs"></div>
       <div class="srow"><span>Calidad gráfica</span><div class="seg" id="sQ" role="group" aria-label="Calidad"><button type="button" data-v="1">Alta</button><button type="button" data-v="0">Liviana</button></div></div>
       <div class="sep"></div>
@@ -396,7 +405,7 @@ const liveState=()=>matchState==='play'||matchState==='lobby'||matchState==='cou
 const GG=C.GG,TEAMS=C.TEAMS;
 
 /* =================== AJUSTES =================== */
-const S={sens:1,fov:95,vol:.5,music:.45,invY:false,hop:true,name:'',skin:{c:C.COLORS[0],v:'#ffffff',a:0},bots:5,skill:1,fl:20,map:'represa',q:1,mode:'arena',tdmLimit:50,fs:true,mira:{s:'cruz',c:'#ffffff',z:1}};
+const S={sens:1,fov:95,vol:.5,music:.45,invY:false,hop:true,name:'',skin:{c:C.COLORS[0],v:'#ffffff',a:0},bots:5,skill:1,fl:20,map:'represa',q:1,mode:'arena',tdmLimit:50,fs:true,showImg:true,mira:{s:'cruz',c:'#ffffff',z:1}};
 try{const saved=JSON.parse(localStorage.getItem('cuenk_settings')||'{}');if(saved.color&&!saved.skin)saved.skin={c:saved.color,v:'#ffffff',a:0};Object.assign(S,saved);}catch(e){}
 if(S.map==='sagrado'||S.map==='salvaje')S.map='panymanteca';
 if(!S.mira||typeof S.mira!=='object')S.mira={s:'cruz',c:'#ffffff',z:1};
@@ -948,25 +957,31 @@ function buildGun(i){const g=new THREE.Group();let tip=[0,0,-.5];
   if(i===4){g.add(cy(.062,.48,mDark,0,.02,-.28,0,10),cy(.072,.05,mOlive,0,.02,-.5,0,10),cy(.11,.16,mOlive,0,-.02,.02,Math.PI/2,6),bx(.06,.16,.08,mDark,0,-.15,.1,.3),bx(.08,.1,.22,mDark,0,.02,.18));tip=[0,.02,-.54];}
   if(i===5){g.add(cy(.078,.82,mGun,0,0,-.2,0,10),cy(.092,.06,mDark,0,0,-.6,0,10),cy(.088,.06,mDark,0,0,.2,0,10),cy(.08,.05,mRed,0,0,-.42,0,10),bx(.06,.16,.08,mDark,0,-.14,-.02,.25));tip=[0,0,-.64];}
   if(i===7){
-    // cuchillo mariposa (balisong): hoja recta con punta recortada, dos mangos de acero calados, pernos y traba
-    const L=.2,Wd=.036,sh=new THREE.Shape();
-    sh.moveTo(0,0);sh.lineTo(0,L*.74);sh.lineTo(-Wd*.38,L);sh.quadraticCurveTo(-Wd*1.08,L*.62,-Wd,L*.16);sh.lineTo(-Wd*.8,0);sh.lineTo(0,0);
-    const bg=new THREE.ExtrudeGeometry(sh,{depth:.005,bevelEnabled:true,bevelThickness:.002,bevelSize:.003,bevelSegments:1,curveSegments:8});
+    // cuchillo mariposa al estilo del espía: hoja larga y fina de punta recortada, mangos negros con puntas de acero
+    // y los dos mangos giran sobre sus pernos cuando lo sacás (se abre con un giro)
+    const L=.25,Wd=.03,sh=new THREE.Shape();
+    sh.moveTo(0,0);sh.lineTo(0,L*.8);sh.quadraticCurveTo(-Wd*.1,L*.93,-Wd*.42,L);sh.quadraticCurveTo(-Wd*1.02,L*.7,-Wd*.95,L*.2);sh.lineTo(-Wd*.82,0);sh.lineTo(0,0);
+    const bg=new THREE.ExtrudeGeometry(sh,{depth:.004,bevelEnabled:true,bevelThickness:.0018,bevelSize:.0028,bevelSegments:2,curveSegments:10});
     bg.computeBoundingBox();const bb=bg.boundingBox,uv=bg.attributes.uv,ps=bg.attributes.position;
     for(let k=0;k<uv.count;k++)uv.setXY(k,(ps.getX(k)-bb.min.x)/(bb.max.x-bb.min.x),(ps.getY(k)-bb.min.y)/(bb.max.y-bb.min.y));
-    bg.translate(Wd*.45,0,-.0025);bg.rotateX(-Math.PI/2);bg.rotateZ(Math.PI/2);
-    const blade=new THREE.Mesh(bg,new THREE.MeshPhongMaterial({map:knifeTex,shininess:160,specular:0xffffff,emissive:0x1a1c20}));
-    const hS=new THREE.MeshPhongMaterial({color:0x9aa1a8,shininess:130,specular:0xffffff,flatShading:true});
-    const hD=new THREE.MeshPhongMaterial({color:0x15171a,shininess:30});
-    g.add(blade);
-    // los dos mangos, uno a cada lado del recazo, con sus caladuras
-    for(const sx of [-.0095,.0095]){
-      g.add(bx(.008,.026,.15,hS,sx,-.003,.08));
-      for(let k=0;k<4;k++)g.add(bx(.0086,.012,.022,hD,sx,-.003,.03+k*.034));
-      g.add(cy(.0065,.022,hS,0,-.003,.006,Math.PI/2,10));
-    }
-    g.add(bx(.028,.006,.012,hS,0,-.017,.158),bx(.02,.03,.014,hD,0,-.003,.006),cy(.005,.03,hD,0,-.003,.152,Math.PI/2,8));
-    tip=[0,0,-.2];
+    bg.translate(Wd*.42,0,-.002);bg.rotateX(-Math.PI/2);bg.rotateZ(Math.PI/2);
+    const blade=new THREE.Mesh(bg,new THREE.MeshPhongMaterial({map:knifeTex,shininess:170,specular:0xffffff,emissive:0x1a1c20}));
+    const steel=new THREE.MeshPhongMaterial({color:0xb7bec6,shininess:150,specular:0xffffff,flatShading:true});
+    const black=new THREE.MeshPhongMaterial({color:0x17181b,shininess:55,specular:0x555a60});
+    // recazo y pernos del pivote
+    g.add(blade,bx(.016,.022,.018,steel,0,-.002,.004),cy(.0055,.03,steel,0,-.002,.004,Math.PI/2,12));
+    const handle=(sx,name)=>{
+      const h=new THREE.Group();h.position.set(sx,-.002,.004);h.name=name;
+      h.add(bx(.0085,.024,.14,black,0,0,.075),            // cacha negra
+        bx(.0092,.026,.022,steel,0,0,.011),               // puntera de acero del lado de la hoja
+        bx(.0092,.026,.018,steel,0,0,.147),               // puntera del extremo
+        bx(.0094,.004,.1,steel,0,.0095,.08));             // filete de acero a lo largo
+      return h;
+    };
+    const hA=handle(-.0093,'hA'),hB=handle(.0093,'hB');g.add(hA,hB);
+    // traba del extremo
+    const latch=new THREE.Group();latch.name='latch';latch.position.set(-.0093,-.002,.156);latch.add(bx(.006,.004,.03,steel,.009,-.012,.008));hA.add(latch);latch.position.set(0,0,.152);
+    tip=[0,0,-.25];
   }
   if(i===10){
     // molotov: botella de vidrio con nafta, cuello largo y trapo prendido
@@ -1020,6 +1035,13 @@ function nameSprite(name,color){
 /* ---------- personaje con piel (armadura, visor y accesorio) ---------- */
 const tpCache={};
 function tpGun(w){if(!tpCache[w])tpCache[w]=buildGun(w);return tpCache[w].clone();}
+const chestGeo=new THREE.PlaneGeometry(.25,.25),chestCache=new Map();
+function chestTex(url){
+  let t=chestCache.get(url);if(t)return t;
+  const img=new Image();t=new THREE.Texture(img);t.minFilter=THREE.LinearFilter;img.onload=()=>{t.needsUpdate=true;};img.src=url;
+  chestCache.set(url,t);if(chestCache.size>40)chestCache.delete(chestCache.keys().next().value);
+  return t;
+}
 function buildPlayer(skin,name,noTag){
   const col=new THREE.Color(skin.c),vis=new THREE.Color(skin.v||'#ffffff');
   const mA=new THREE.MeshPhongMaterial({color:col,flatShading:true,shininess:30,specular:0x332a20});
@@ -1029,6 +1051,8 @@ function buildPlayer(skin,name,noTag){
   const g=new THREE.Group(),b=new THREE.Group();g.add(b);
   const legs=[-1,1].map(side=>{const l=new THREE.Group();l.position.set(side*.15,.85,0);l.add(bx(.2,.85,.24,mL,0,-.42,0),bx(.24,.13,.33,mA,0,-.8,.04));b.add(l);return l;});
   b.add(bx(.5,.18,.3,mL,0,.9,0),bx(.6,.62,.38,mA,0,1.26,0),bx(.42,.28,.06,mL,0,1.3,.2),bx(.24,.17,.42,mA,-.4,1.53,0),bx(.24,.17,.42,mA,.4,1.53,0),bx(.08,.08,.02,mV,.18,1.42,.23));
+  // imagen del pecho: un cuadrado sobre la placa oscura del frente
+  if(skin.img&&(noTag||S.showImg)){const pl=new THREE.Mesh(chestGeo,new THREE.MeshBasicMaterial({map:chestTex(skin.img)}));pl.position.set(0,1.3,.2315);b.add(pl);}
   const head=new THREE.Group();head.position.y=1.74;head.add(bx(.3,.3,.3,mH,0,0,0),bx(.27,.07,.04,mV,0,.03,.16));b.add(head);
   const a=skin.a|0;
   if(a===1)head.add(bx(.06,.14,.34,mV,0,.2,-.01));
@@ -1534,7 +1558,27 @@ function syncLocker(){
   [...$('segAcc').children].forEach((b,i)=>b.setAttribute('aria-pressed',String(i===S.skin.a)));
   const ci=$('swBodyCustom');if(ci)ci.value=S.skin.c;
 }
-function setSkin(p){Object.assign(S.skin,p);saveS();syncLocker();rebuildLockModel();acctSave();if(net&&inGame)net.send({t:'skin',s:S.skin});SFX.ui();}
+// la foto se recorta cuadrada al centro, se achica a 96×96 y se pasa a JPEG liviano para mandarla por la red
+function loadChest(file){
+  if(!file||!/^image\/(png|jpeg|webp)$/.test(file.type)){$('chestNote').textContent='Elegí una imagen PNG o JPG.';return;}
+  if(file.size>15e6){$('chestNote').textContent='La imagen es muy pesada (máximo 15 MB).';return;}
+  const url=URL.createObjectURL(file),im=new Image();
+  im.onload=()=>{
+    const c=document.createElement('canvas');c.width=c.height=96;const g=c.getContext('2d');
+    g.fillStyle='#2e2a26';g.fillRect(0,0,96,96);
+    const sq=Math.min(im.naturalWidth,im.naturalHeight),sx=(im.naturalWidth-sq)/2,sy=(im.naturalHeight-sq)/2;
+    g.imageSmoothingQuality='high';g.drawImage(im,sx,sy,sq,sq,0,0,96,96);URL.revokeObjectURL(url);
+    let q=.85,d=c.toDataURL('image/jpeg',q);while(d.length>23000&&q>.3){q-=.15;d=c.toDataURL('image/jpeg',q);}
+    if(!C.okChestImg(d)){$('chestNote').textContent='No se pudo usar esa imagen.';return;}
+    $('chestNote').textContent='Listo. Los demás la ven en tu pecho.';setSkin({img:d});
+  };
+  im.onerror=()=>{URL.revokeObjectURL(url);$('chestNote').textContent='No se pudo abrir esa imagen.';};
+  im.src=url;
+}
+$('chestFile').addEventListener('change',e=>{loadChest(e.target.files[0]);e.target.value='';});
+$('chestDel').addEventListener('click',()=>{delete S.skin.img;setSkin({});$('chestNote').textContent='PNG o JPG. Se recorta cuadrada al centro y se ajusta al pecho.';});
+function syncChest(){const has=!!S.skin.img;$('chestPrev').hidden=!has;$('chestDel').hidden=!has;if(has)$('chestPrev').src=S.skin.img;}
+function setSkin(p){Object.assign(S.skin,p);saveS();syncLocker();syncChest();rebuildLockModel();acctSave();if(net&&inGame)net.send({t:'skin',s:S.skin});SFX.ui();}
 (function(){
   const mk=(host,cols,key)=>{cols.forEach(c=>{const b=document.createElement('button');b.type='button';b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label','Color '+c);b.addEventListener('click',()=>setSkin({[key]:c}));host.appendChild(b);});};
   mk($('swBody'),BODY_COLS,'c');mk($('swVisor'),VISOR_COLS,'v');
@@ -1771,6 +1815,15 @@ function updViewmodel(dt){
   const hs=Math.hypot(me.s.vx,me.s.vz),mv=me.s.on?Math.min(1,hs/10):.3;
   g.position.set(b.x+Math.cos(me.bob)*.014*mv,b.y-Math.abs(Math.sin(me.bob))*.012*mv-me.raise*.35-me.dip*.3+(me.s.on?0:Math.max(-.04,Math.min(.04,-me.s.vy*.003))),b.z+me.kick*.06);
   if(i===7){
+    // al sacarlo, los dos mangos dan la vuelta sobre los pernos y se cierran atrás (como el balisong del espía)
+    if(me.vmW!==7){me.flipT=0;}
+    me.flipT=(me.flipT||0)+dt;
+    const ft=me.flipT,ez=x=>{x=Math.max(0,Math.min(1,x));return 1-Math.pow(1-x,3);};
+    const hA=g.getObjectByName('hA'),hB=g.getObjectByName('hB');
+    if(hA&&hB){hA.rotation.x=Math.PI*(1-ez(ft/.32));hB.rotation.x=-Math.PI*(1-ez((ft-.12)/.32));}
+  }
+  me.vmW=i;
+  if(i===7){
     // cuchillo: amague hacia atrás, tajo rápido cruzado y vuelta suave; alterna de lado en cada golpe
     me.mt+=dt;const D=.46,p=Math.min(1,me.mt/D),dr=me.mdir;
     const ss=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);},out=x=>{x=Math.max(0,Math.min(1,x));return 1-Math.pow(1-x,3);};
@@ -1897,7 +1950,7 @@ function applyProfile(pf,fresh){
     if(pf.nombre){S.name=pf.nombre;$('pName').value=S.name;}
     if(pf.skin&&pf.skin.c){S.skin=Object.assign({c:S.skin.c,v:'#ffffff',a:0},pf.skin);}
     if(pf.mira&&pf.mira.s){S.mira=Object.assign({},S.mira,pf.mira);}
-    saveS();syncLocker&&syncLocker();rebuildLockModel&&rebuildLockModel();applyCrosshair();
+    saveS();syncLocker&&syncLocker();rebuildLockModel&&rebuildLockModel();applyCrosshair();syncChest();
   }
   renderAcct();
 }
@@ -1988,7 +2041,7 @@ function syncSettings(){
   $('sFov').value=S.fov;$('oFov').textContent=S.fov+'°';
   $('sVol').value=S.vol;$('oVol').textContent=Math.round(S.vol*100)+'%';
   $('sMus').value=S.music;$('oMus').textContent=Math.round(S.music*100)+'%';
-  $('sInv').checked=S.invY;$('sHop').checked=S.hop;$('sFs').checked=S.fs;$('oBots').textContent=S.bots;
+  $('sInv').checked=S.invY;$('sHop').checked=S.hop;$('sFs').checked=S.fs;$('sImg').checked=S.showImg!==false;$('oBots').textContent=S.bots;
   [...$('sSkill').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.skill)));
   [...$('mSkill').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.skill)));
   [...$('sFl').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.fl)));
@@ -2002,6 +2055,7 @@ $('sMus').addEventListener('input',e=>{S.music=+e.target.value;if(musicGain)musi
 $('sInv').addEventListener('change',e=>{S.invY=e.target.checked;saveS();});
 $('sHop').addEventListener('change',e=>{S.hop=e.target.checked;saveS();});
 $('sFs').addEventListener('change',e=>{S.fs=e.target.checked;saveS();});
+$('sImg').addEventListener('change',e=>{S.showImg=e.target.checked;saveS();for(const p of players.values())if(p.model){scene.remove(p.model.g);p.model=null;ensurePlayer(p.id);}});
 // pantalla completa + bloqueo de teclado: así Ctrl+W agacha y avanza en vez de cerrar la pestaña
 function goFullscreen(){
   if(!S.fs||document.fullscreenElement||!document.documentElement.requestFullscreen)return;
@@ -2014,7 +2068,7 @@ $('sSkill').addEventListener('click',e=>{const v=e.target.dataset&&e.target.data
 $('sFl').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.fl=+v;saveS();syncSettings();if(net&&!online)net.send({t:'cfg',fl:S.fl});});
 $('sMap').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(!v)return;S.map=v;saveS();syncSettings();if(net&&!online)net.send({t:'cfg',map:v});else if(!inGame)loadMap(v);});
 $('sQ').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.q=+v;saveS();syncSettings();resize();if(level)level.maplights.forEach(m=>m.l.visible=!!S.q);});
-syncSettings();probeServer();loadMap(S.map);initAccounts();
+syncSettings();probeServer();loadMap(S.map);initAccounts();syncChest();
 if(matchMedia('(pointer: coarse)').matches&&!matchMedia('(pointer: fine)').matches)$('mSub').textContent+=' Se juega con teclado y mouse, desde una computadora.';
 
 /* =================== BUCLE PRINCIPAL =================== */

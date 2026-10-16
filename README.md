@@ -26,7 +26,7 @@ Todos arrancan con pistola (automática, 60 balas que comparte con la ametrallad
 | Rifle de plasma | 110 (atraviesa) | 1 / 2 |
 | Cuchillo mariposa | 55, 99 por la espalda; el segundo tajo dentro de 4 s mata siempre; ignora el blindaje; alcance 2,6 m | 2 / 2 |
 | Francotirador | 115, 230 a la cabeza (click derecho: mira) | 1 / 2 |
-| Bomba molotov (tecla G) | se rompe al primer golpe y deja 6 s de fuego en 3,4 m: 22 por segundo (la mitad a vos) | — |
+| Bomba molotov (tecla G) | se rompe al primer golpe y deja 6 s de fuego en 3,4 m: 5,5 cada décima de segundo, unos 55 por segundo (la mitad a vos) | — |
 | Rifle de caza (tecla 0) | cualquier impacto mata | 1 / 1 — la bala viaja a 260 m/s y cae un poco (67 cm a 100 m); click derecho apunta con las miras de hierro. Los tiros de más de 22 m, al aire o con mucho vuelo dan premio en créditos |
 
 El blindaje absorbe un tercio del daño y llega como máximo a 100; la megasalud sube hasta 150.
@@ -48,7 +48,7 @@ Cada frag da ¤ 200 (¤ 100 extra si cortás una racha de 3 y ¤ 100 extra con p
 
 ## Taquilla
 
-Desde el menú: color de armadura (o uno a elección), color de visor y accesorio. Se guarda en el navegador (y en tu cuenta si iniciaste sesión) y los demás lo ven al instante.
+Desde el menú: color de armadura (o uno a elección), color de visor, accesorio e **imagen en el pecho** (una foto PNG o JPG de tu dispositivo, que se recorta cuadrada al centro y se achica a 96×96 para que pese poco). En Ajustes se pueden ocultar las imágenes de los demás. Se guarda en el navegador (y en tu cuenta si iniciaste sesión) y los demás lo ven al instante.
 
 ## Mira
 

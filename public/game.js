@@ -84,7 +84,8 @@ const SHOP = [
   { id: 'w2', cat: 'Escopetas', name: 'Escopeta doble', w: 2, price: 500, pack: ['shells', 20], desc: '20 perdigones, gasta 2 cartuchos' },
   { id: 'w3', cat: 'Automáticas', name: 'Ametralladora', w: 3, price: 600, pack: ['bullets', 100], desc: 'Fuego continuo a media distancia' },
   { id: 'w4', cat: 'Explosivas', name: 'Lanzagranadas', w: 4, price: 900, pack: ['grenades', 10], desc: 'Explotan al segundo. Un impacto directo explota en el acto y da premio' },
-  { id: 'w10', cat: 'Explosivas', name: 'Bomba molotov', w: 10, price: 700, pack: ['molotov', 3], desc: 'Tecla G. Se rompe al golpear y deja el piso en llamas 6 segundos' },
+  // la molotov es de un solo uso: se compra estando vivo y si te matan la perdés
+  { id: 'w10', cat: 'Explosivas', name: 'Bomba molotov', w: 10, price: 700, once: 1, pack: ['molotov', 3], desc: 'Tecla G. 3 molotovs que dejan el piso en llamas 6 s. Si te matan, las perdés' },
   { id: 'w5', cat: 'Explosivas', name: 'Lanzacohetes', w: 5, price: 1300, pack: ['rockets', 10], desc: 'Daño en área y rocket jump' },
   { id: 'w6', cat: 'Precisión', name: 'Rifle de plasma', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Atraviesa a todos los que estén en línea' },
   { id: 'w8', cat: 'Precisión', name: 'Francotirador', w: 8, price: 1500, pack: ['sniper', 10], desc: 'Click derecho para apuntar con mira. Mata de un tiro a quien no tiene blindaje' },
@@ -1372,12 +1373,15 @@ class Game {
     if (!this.mode.shop) return no('En ' + this.mode.name + ' no hay tienda');
     if (!it || it.free || !p.joined) return no('No se puede comprar');
     if (!this.live()) return no('La partida terminó');
-    if (it.w != null && p.unl[it.w]) return no('Ya lo tenés');
+    if (it.once && !p.alive) return no('Comprala cuando estés vivo: si te matan se pierde');
+    if (it.once && p.am[it.pack[0]] >= AMMO_MAX[it.pack[0]]) return no('Ya llevás el máximo');
+    if (it.w != null && !it.once && p.unl[it.w]) return no('Ya lo tenés');
     if (it.armor && p.perk.ar >= it.armor) return no('Ya tenés ese blindaje');
     if (it.id === 'am' && p.perk.am) return no('Ya la tenés');
     if (p.cr < it.price) return no('Te faltan ' + (it.price - p.cr) + ' créditos');
     p.cr -= it.price;
-    if (it.w != null) {
+    if (it.once) { p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n); }
+    else if (it.w != null) {
       p.unl[it.w] = 1;
       if (p.alive) { p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n); }
     } else if (it.armor) { p.perk.ar = it.armor; if (p.alive) p.ar = Math.max(p.ar, it.armor); }

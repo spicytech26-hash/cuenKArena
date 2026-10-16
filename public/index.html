@@ -1454,6 +1454,7 @@ function fire(){
   if(W_.ammo&&MODE!=='gungame')me.am[W_.ammo]-=W_.cost;
   if(W_.mag){me.mag[w]--;}
   if(W_.melee){me.mt=0;me.mdir=-me.mdir;}
+  if(w===10)me.throwT=0;
   me.cool=W_.rate;me.kick=w===2?1.5:w===6||w===9?1.4:w===3?.4:1;me.flash=w===6||W_.melee?0:.06;
   const ex=me.s.x,ey=me.s.y+(me.s.crouch?K.EYEC:K.EYE),ez=me.s.z,d=C.dirFromAngles(me.yaw,me.pitch);
   camera.updateMatrixWorld();rgtV.set(1,0,0).applyQuaternion(camera.quaternion);upV.set(0,1,0).applyQuaternion(camera.quaternion);
@@ -1553,7 +1554,16 @@ function lockerInit(){
   rebuildLockModel();
 }
 function rebuildLockModel(){if(!lock||!lock.r)return;if(lock.model)lock.sc.remove(lock.model.g);lock.model=buildPlayer(S.skin,S.name,true);lock.sc.add(lock.model.g);}
-function renderLocker(dt){if(!lock||!lock.r||$('lockerPanel').hidden||$('menu').hidden)return;lock.rot+=dt*.8;lock.model.g.rotation.y=lock.rot;lock.model.armR.rotation.x=-.2;lock.r.render(lock.sc,lock.cam);}
+// girar al personaje arrastrando (mouse o dedo) o con las flechas; la vuelta sola se pausa un rato
+(function(){
+  const c=$('lockPrev');let drag=false,lx=0;
+  c.style.touchAction='none';c.style.cursor='grab';c.tabIndex=0;c.setAttribute('aria-label','Vista de tu personaje: arrastrá o usá las flechas para girarlo');
+  c.addEventListener('pointerdown',e=>{if(!lock)return;drag=true;lx=e.clientX;c.setPointerCapture(e.pointerId);c.style.cursor='grabbing';lock.hold=3;});
+  c.addEventListener('pointermove',e=>{if(!drag||!lock)return;lock.rot+=(e.clientX-lx)*.014;lx=e.clientX;lock.hold=3;});
+  const up=()=>{drag=false;c.style.cursor='grab';};c.addEventListener('pointerup',up);c.addEventListener('pointercancel',up);
+  c.addEventListener('keydown',e=>{if(!lock)return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();lock.rot+=(e.key==='ArrowLeft'?-1:1)*.35;lock.hold=3;}});
+})();
+function renderLocker(dt){if(!lock||!lock.r||$('lockerPanel').hidden||$('menu').hidden)return;lock.hold=(lock.hold||0)-dt;if(lock.hold<=0)lock.rot+=dt*.8;lock.model.g.rotation.y=lock.rot;lock.model.armR.rotation.x=-.2;lock.r.render(lock.sc,lock.cam);}
 function syncLocker(){
   [...$('swBody').querySelectorAll('button')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===S.skin.c)));
   [...$('swVisor').querySelectorAll('button')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===S.skin.v)));
@@ -1844,8 +1854,19 @@ function updViewmodel(dt){
   if(me.rel>0){me.rel-=dt;if(me.rel<=0){me.rel=0;if(me.relW>=0)me.mag[me.relW]=WEAPONS[me.relW].mag;updateHUD();}}
   const relDip=me.rel>0&&me.relW===i?Math.sin(Math.min(1,me.rel/(WEAPONS[i].reload*.75))*Math.PI)*.18:0;
   g.position.y-=relDip;g.rotation.x-=relDip*2;
-  vms.forEach((v,k)=>v.visible=k===i&&me.alive&&!(me.scope&&WEAPONS[i].scope&&i!==9&&camera.fov<(WEAPONS[i].zoom||22)+8));
-  if(i===10){const f=g.getObjectByName('flame');if(f){const k=.8+Math.random()*.45;f.scale.set(k,.8+Math.random()*.7,k);}}
+  vms.forEach((v,k)=>v.visible=k===i&&me.alive&&!(me.scope&&WEAPONS[i].scope&&i!==9&&camera.fov<(WEAPONS[i].zoom||22)+8)&&!(i===10&&me.throwT<.75&&((me.throwT>.2&&me.throwT<.45)||(me.throwT>=.45&&!hasAmmo(10)))));
+  if(i===10){
+    const f=g.getObjectByName('flame');if(f){const k=.8+Math.random()*.45;f.scale.set(k,.8+Math.random()*.7,k);}
+    // tiro: amague atrás, brazo hacia adelante, la mano vuelve vacía y sube otra botella (si quedan)
+    me.throwT=me.throwT==null?9:me.throwT+dt;const t=me.throwT,sm=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
+    if(t<.75){
+      const back=sm(t/.09)*(1-sm((t-.09)/.1)),fwd=sm((t-.09)/.12),gone=t>.2&&t<.45,rise=sm((t-.45)/.3);
+      g.position.y+=back*.07-fwd*.05;g.position.z+=back*.12-fwd*.28;g.rotation.x+=-back*.9+fwd*1.25;
+      if(gone||(t>=.45&&!hasAmmo(10)))g.visible=false;
+      else if(t>=.45){g.position.y-=(1-rise)*.32;g.position.z+=.28*(1-rise);g.rotation.x-=1.25*(1-rise);}
+      if(t>.5&&!hasAmmo(10)&&!me.throwDone){me.throwDone=true;autoSwitch();}
+    }else me.throwDone=false;
+  }
   me.flash=Math.max(0,me.flash-dt);
   flashMesh.visible=me.flash>0&&me.alive;
   if(flashMesh.visible){const tip=g.userData.tip;flashMesh.position.set(g.position.x+tip.x,g.position.y+tip.y,g.position.z+tip.z-.04);flashMesh.rotation.z=Math.random()*6.28;flashMesh.scale.setScalar(i===0?.7:i===2?1.7:i===1?1.3:1);}

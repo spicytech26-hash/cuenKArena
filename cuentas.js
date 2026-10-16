@@ -26,15 +26,15 @@ const SECRET = process.env.SESSION_SECRET || crypto.createHash('sha256').update(
 const SESSION_DAYS = 30;
 
 /* ---------- utilidades HTTP ---------- */
-function request(url, opt, body) {
+function request(url, opt, body, ms) {
   return new Promise((resolve, reject) => {
-    const req = https.request(url, opt, res => {
+    const req = https.request(url, Object.assign({ family: 4 }, opt), res => {
       const chunks = [];
       res.on('data', c => chunks.push(c));
       res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: Buffer.concat(chunks).toString('utf8') }));
     });
     req.on('error', reject);
-    req.setTimeout(8000, () => req.destroy(new Error('timeout')));
+    req.setTimeout(ms || 15000, () => req.destroy(new Error('timeout')));
     if (body) req.write(body);
     req.end();
   });
@@ -95,8 +95,12 @@ function fileFlush() { if (!fileDb) return; clearTimeout(fileTimer); try { fs.mk
 for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { fileFlush(); process.exit(0); });
 function fileSave() { clearTimeout(fileTimer); fileTimer = setTimeout(() => { try { fs.mkdirSync(path.dirname(FILE), { recursive: true }); fs.writeFileSync(FILE, JSON.stringify(fileDb)); } catch (e) { console.error('No se pudo guardar cuentas.json', e.message); } }, 500); }
 const sbHeaders = extra => Object.assign({ apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' }, extra || {});
-async function fnCall(body) {
-  const r = await request(FN_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-cuenk-secret': FN_SECRET } }, JSON.stringify(body));
+async function fnCall(body, tries = 2) {
+  let r;
+  for (let k = 0; ; k++) {
+    try { r = await request(FN_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-cuenk-secret': FN_SECRET } }, JSON.stringify(body), 20000); break; }
+    catch (e) { if (k + 1 >= tries) throw e; await new Promise(res => setTimeout(res, 1500)); }
+  }
   let j = null; try { j = JSON.parse(r.body); } catch (e) {}
   if (r.status !== 200 || !j) throw new Error('base de datos: ' + r.status + ' ' + r.body.slice(0, 120));
   return j;
@@ -144,7 +148,12 @@ function profile(row) {
 const enabled = () => !!CLIENT_ID;
 const persistent = () => !!((SB_URL && SB_KEY) || (FN_URL && FN_SECRET));
 // al arrancar, prueba la base para que el log de Render diga si quedó bien conectada
-if (FN_URL && FN_SECRET) fnCall({ op: 'get', sub: '__prueba__' }).then(() => console.log('Base de datos de cuentas conectada (Supabase)')).catch(e => console.error('ERROR: no se pudo conectar con la base de cuentas:', e.message));
+if (FN_URL && FN_SECRET) {
+  const t0 = Date.now();
+  fnCall({ op: 'get', sub: '__prueba__' }, 4)
+    .then(() => console.log('Base de datos de cuentas conectada (Supabase, ' + (Date.now() - t0) + ' ms)'))
+    .catch(e => console.error('ERROR: no se pudo conectar con la base de cuentas (' + (Date.now() - t0) + ' ms):', e.message, '· URL:', FN_URL));
+}
 async function login(credential) {
   const g = await verifyGoogle(credential);
   let row = await dbGet(g.sub);

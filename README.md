@@ -128,6 +128,7 @@ Variables de entorno opcionales:
 | `GOOGLE_CLIENT_ID` | — | Activa el inicio de sesión con Google (ver *Cuentas*) |
 | `SUPABASE_URL` / `SUPABASE_KEY` | — | Dónde se guardan las cuentas (clave secreta, solo servidor) |
 | `SESSION_SECRET` | derivada | Clave para firmar las sesiones |
+| `CUENTAS_URL` / `CUENTAS_SECRET` | — | En lugar de `SUPABASE_KEY`: la función `cuentas` de Supabase, que guarda los perfiles sin exponer la clave secreta |
 
 Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 30`, `/caplimit 3` (bandera), `/map pan`, `/restart`. Los comandos afectan solo a la sala del modo en el que estás.
 

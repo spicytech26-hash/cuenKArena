@@ -6,6 +6,8 @@
      GOOGLE_CLIENT_ID   id de cliente OAuth "Aplicación web" de Google
      SUPABASE_URL       https://xxxx.supabase.co
      SUPABASE_KEY       clave secreta del proyecto (nunca va al navegador)
+     CUENTAS_URL        alternativa a SUPABASE_KEY: función intermediaria de Supabase
+     CUENTAS_SECRET     clave del juego para hablar con esa función
      SESSION_SECRET     opcional: clave para firmar sesiones
    ===================================================================== */
 'use strict';
@@ -18,7 +20,9 @@ const { levelInfo, ACCESSORIES } = require('./public/game.js');
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const SB_URL = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_KEY || '';
-const SECRET = process.env.SESSION_SECRET || crypto.createHash('sha256').update('cuenk:' + CLIENT_ID + ':' + SB_KEY).digest('hex');
+const FN_URL = process.env.CUENTAS_URL || '';
+const FN_SECRET = process.env.CUENTAS_SECRET || '';
+const SECRET = process.env.SESSION_SECRET || crypto.createHash('sha256').update('cuenk:' + CLIENT_ID + ':' + SB_KEY + ':' + FN_SECRET).digest('hex');
 const SESSION_DAYS = 30;
 
 /* ---------- utilidades HTTP ---------- */
@@ -91,10 +95,17 @@ function fileFlush() { if (!fileDb) return; clearTimeout(fileTimer); try { fs.mk
 for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { fileFlush(); process.exit(0); });
 function fileSave() { clearTimeout(fileTimer); fileTimer = setTimeout(() => { try { fs.mkdirSync(path.dirname(FILE), { recursive: true }); fs.writeFileSync(FILE, JSON.stringify(fileDb)); } catch (e) { console.error('No se pudo guardar cuentas.json', e.message); } }, 500); }
 const sbHeaders = extra => Object.assign({ apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' }, extra || {});
+async function fnCall(body) {
+  const r = await request(FN_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-cuenk-secret': FN_SECRET } }, JSON.stringify(body));
+  let j = null; try { j = JSON.parse(r.body); } catch (e) {}
+  if (r.status !== 200 || !j) throw new Error('base de datos: ' + r.status + ' ' + r.body.slice(0, 120));
+  return j;
+}
 async function dbGet(sub) {
   if (cache.has(sub)) return cache.get(sub);
   let row = null;
-  if (SB_URL && SB_KEY) {
+  if (FN_URL && FN_SECRET) row = (await fnCall({ op: 'get', sub })).row || null;
+  else if (SB_URL && SB_KEY) {
     const r = await request(SB_URL + '/rest/v1/jugadores?sub=eq.' + encodeURIComponent(sub) + '&select=*', { method: 'GET', headers: sbHeaders() });
     if (r.status !== 200) throw new Error('base de datos: ' + r.status);
     row = JSON.parse(r.body)[0] || null;
@@ -105,7 +116,8 @@ async function dbGet(sub) {
 async function dbPut(row) {
   row.visto = new Date().toISOString();
   cache.set(row.sub, row);
-  if (SB_URL && SB_KEY) {
+  if (FN_URL && FN_SECRET) await fnCall({ op: 'put', row });
+  else if (SB_URL && SB_KEY) {
     const r = await request(SB_URL + '/rest/v1/jugadores', { method: 'POST', headers: sbHeaders({ Prefer: 'resolution=merge-duplicates,return=minimal' }) }, JSON.stringify(row));
     if (r.status >= 300) throw new Error('base de datos: ' + r.status + ' ' + r.body.slice(0, 120));
   } else { fileLoad()[row.sub] = row; fileSave(); }
@@ -130,7 +142,9 @@ function profile(row) {
 
 /* ---------- API ---------- */
 const enabled = () => !!CLIENT_ID;
-const persistent = () => !!(SB_URL && SB_KEY);
+const persistent = () => !!((SB_URL && SB_KEY) || (FN_URL && FN_SECRET));
+// al arrancar, prueba la base para que el log de Render diga si quedó bien conectada
+if (FN_URL && FN_SECRET) fnCall({ op: 'get', sub: '__prueba__' }).then(() => console.log('Base de datos de cuentas conectada (Supabase)')).catch(e => console.error('ERROR: no se pudo conectar con la base de cuentas:', e.message));
 async function login(credential) {
   const g = await verifyGoogle(credential);
   let row = await dbGet(g.sub);

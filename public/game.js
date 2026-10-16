@@ -33,17 +33,17 @@ const WEAPONS = [
   { name: 'Ametralladora',  ammo: 'bullets',  cost: 1, rate: .085, type: 'hit', pel: 1,  spread: .013, dmg: 16, range: 300 },
   { name: 'Lanzagranadas',  ammo: 'grenades', cost: 1, rate: .75, type: 'proj', proj: 'grenade', speed: 26, dmg: 110, rad: 5.5, direct: 40 },
   { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 105, rad: 5, direct: 100 },
-  { name: 'Rifle de riel',  ammo: 'slugs',    cost: 1, rate: 1.4, type: 'rail', pel: 1,  dmg: 110, range: 400 },
+  { name: 'Rifle de plasma', ammo: 'slugs',    cost: 1, rate: 1.4, type: 'rail', pel: 1,  dmg: 110, range: 400 },
   { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 55, back: 1.8, range: 2.1, melee: true },
   { name: 'Francotirador',  ammo: 'sniper',   cost: 1, rate: 1.25, type: 'hit', pel: 1,  spread: .002, hip: .045, dmg: 115, head: 2, range: 500, scope: true },
   // rifle de caza: bala real con viaje y caída; cualquier impacto mata. Premia los tiros bien calculados
-  { name: 'Rifle de caza',  ammo: 'caza',     cost: 1, rate: 1.6, type: 'proj', proj: 'bullet', speed: 80, drop: 9, dmg: 0, rad: 0, direct: 1000, scope: true, zoom: 42 }
+  { name: 'Rifle de caza',  ammo: 'caza',     cost: 1, rate: 1.6, type: 'proj', proj: 'bullet', speed: 260, drop: 9, dmg: 0, rad: 0, direct: 1000, scope: true, zoom: 58 }
 ];
 const NW = WEAPONS.length;
 // arrancás siempre con pistola, escopeta y cuchillo
 const OW0 = () => { const a = new Array(NW).fill(0); a[0] = a[1] = a[7] = 1; return a; };
 const AMMO_MAX = { shells: 50, bullets: 200, grenades: 25, rockets: 25, slugs: 25, sniper: 30, caza: 20 };
-const AMMO_NAME = { shells: 'Cartuchos', bullets: 'Balas', grenades: 'Granadas', rockets: 'Cohetes', slugs: 'Proyectiles de riel', sniper: 'Balas de francotirador', caza: 'Cartuchos de caza' };
+const AMMO_NAME = { shells: 'Cartuchos', bullets: 'Balas', grenades: 'Granadas', rockets: 'Cohetes', slugs: 'Celdas de plasma', sniper: 'Balas de francotirador', caza: 'Cartuchos de caza' };
 const AMMO0 = n => ({ shells: n, bullets: n, grenades: n, rockets: n, slugs: n, sniper: n, caza: n });
 
 const ITEMS = {
@@ -81,7 +81,7 @@ const SHOP = [
   { id: 'w3', cat: 'Automáticas', name: 'Ametralladora', w: 3, price: 600, pack: ['bullets', 100], desc: 'Fuego continuo a media distancia' },
   { id: 'w4', cat: 'Explosivas', name: 'Lanzagranadas', w: 4, price: 900, pack: ['grenades', 10], desc: 'Granadas que rebotan' },
   { id: 'w5', cat: 'Explosivas', name: 'Lanzacohetes', w: 5, price: 1300, pack: ['rockets', 10], desc: 'Daño en área y rocket jump' },
-  { id: 'w6', cat: 'Precisión', name: 'Rifle de riel', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Atraviesa a todos los que estén en línea' },
+  { id: 'w6', cat: 'Precisión', name: 'Rifle de plasma', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Atraviesa a todos los que estén en línea' },
   { id: 'w8', cat: 'Precisión', name: 'Francotirador', w: 8, price: 1500, pack: ['sniper', 10], desc: 'Click derecho para apuntar con mira. Mata de un tiro a quien no tiene blindaje' },
   { id: 'w9', cat: 'Precisión', name: 'Rifle de caza', w: 9, price: 1400, pack: ['caza', 8], desc: 'La bala viaja y cae: cualquier impacto mata. Tiros largos o al aire dan premio' },
   { id: 'w7', cat: 'Pistolas', name: 'Cuchillo', w: 7, price: 0, free: 1, desc: 'Cuerpo a cuerpo: dos puñaladas matan. No lo frena el blindaje' },
@@ -1355,7 +1355,7 @@ class Game {
   }
   spawnProj(p, w, o, d) {
     const W_ = WEAPONS[w], v = projLaunch(w, d);
-    const pr = { id: this.pid++, k: W_.proj, w, own: p.id, x: o[0], y: o[1], z: o[2], o0: o.slice(), v, life: W_.proj === 'grenade' ? 1.8 : W_.proj === 'bullet' ? 3 : 6, q: this.mult(p) * (p.bot ? this.skill().dmg : 1), age: 0 };
+    const pr = { id: this.pid++, k: W_.proj, w, own: p.id, x: o[0], y: o[1], z: o[2], o0: o.slice(), v, life: W_.proj === 'grenade' ? 1.8 : W_.proj === 'bullet' ? 1.6 : 6, q: this.mult(p) * (p.bot ? this.skill().dmg : 1), age: 0 };
     this.projs.push(pr);
     this.bcast({ t: 'ev', e: 'proj', pid: pr.id, k: pr.k, own: p.id, p: r3a(o), v: r3a(v) });
   }
@@ -1404,8 +1404,8 @@ class Game {
   huntReward(p, t, pr) {
     if (!t.alive || t === p || (this.mode.teams && t.team === p.team)) return;
     const d = Math.hypot(pr.x - pr.o0[0], pr.y - pr.o0[1], pr.z - pr.o0[2]), air = !t.s.on, flight = pr.age;
-    if (d < 22 && flight < .3 && !air) return;
-    const n = Math.min(800, 100 + Math.round(d * 6) + (air ? 150 : 0) + (flight > .5 ? 100 : 0));
+    if (d < 22 && !air) return;
+    const n = Math.min(800, 100 + Math.round(d * 6) + (air ? 150 : 0) + (d > 60 ? 100 : 0));
     this.credit(p, n, 'tiro de cazador');
     if (p.send) p.send({ t: 'ev', e: 'hunt', d: Math.round(d), air: air ? 1 : 0, n: this.mode.shop ? n : 0 });
     this.bcast({ t: 'ev', e: 'sys', m: p.name + ' cazó a ' + t.name + ' a ' + Math.round(d) + ' m' + (air ? ' en pleno salto' : '') });

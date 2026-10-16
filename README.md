@@ -23,10 +23,10 @@ Todos arrancan con pistola (automática), escopeta y cuchillo. Las demás se jun
 | Ametralladora | 16 | 7 / 10 |
 | Lanzagranadas | 110 de área + 40 directo | 1 / 2 |
 | Lanzacohetes | 100 directo + 105 de área | 1 / 1 |
-| Rifle de riel | 110 (atraviesa) | 1 / 2 |
+| Rifle de plasma | 110 (atraviesa) | 1 / 2 |
 | Cuchillo | 55, 99 por la espalda; ignora el blindaje | 2 / 2 |
 | Francotirador | 115, 230 a la cabeza (click derecho: mira) | 1 / 2 |
-| Rifle de caza (tecla 0) | cualquier impacto mata | 1 / 1 — la bala viaja a 80 m/s y cae: de lejos hay que apuntar más arriba y adelantarse. Los tiros de más de 22 m, al aire o con mucho vuelo dan premio en créditos |
+| Rifle de caza (tecla 0) | cualquier impacto mata | 1 / 1 — la bala viaja a 260 m/s y cae un poco (67 cm a 100 m); click derecho apunta con las miras de hierro. Los tiros de más de 22 m, al aire o con mucho vuelo dan premio en créditos |
 
 El blindaje absorbe un tercio del daño y llega como máximo a 100; la megasalud sube hasta 150.
 
@@ -38,7 +38,7 @@ Se elige al escoger el modo (y en práctica también desde Ajustes, en plena par
 
 - Al terminar una partida se ve el ganador, el próximo mapa y la cuenta regresiva (25 s), con **Seguir jugando** y **Volver al menú**.
 - Agacharse con **Ctrl** necesita pantalla completa: el juego la pide al empezar (se desactiva en Ajustes). Sin pantalla completa, Ctrl+W cierra la pestaña en el navegador, así que usá **C**; igual el juego pide confirmación antes de cerrar.
-- El rifle de caza tiene su propia mira: retícula dúplex con marcas de caída de bala a 25, 50, 75 y 100 m.
+- El rifle de caza se apunta con sus miras de hierro (click derecho), sin mira telescópica.
 - En La Cuenca, las ventanas de los pisos se pasan saltando y agachándote, y hay un ascensor de salto en el pasillo del primer piso: pisá el saltador de la planta baja para subir y tirate por el hueco para bajar.
 
 ## Créditos y tienda

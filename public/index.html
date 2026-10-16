@@ -1728,7 +1728,7 @@ function updEffects(dt){
 
 /* =================== MIRA PERSONALIZABLE =================== */
 const XH_STYLES=['cruz','cruzgap','cruzpunto','punto','circulo','circulopunto','anillo','fina','t','mas','x','cortes'];
-const XH_NAMES={cruz:'Cruz',cruzgap:'Cruz chica',cruzpunto:'Cruz con punto',punto:'Punto',circulo:'Círculo',circulopunto:'Círculo con punto',anillo:'Anillo punteado',fina:'Horizontal',t:'T',mas:'Más grueso',x:'Equis',cortes:'Paréntesis'};
+const XH_NAMES={cruz:'Cruz',cruzgap:'Cruz chica',cruzpunto:'Cruz con punto',punto:'Punto',circulo:'Círculo',circulopunto:'Círculo con punto',anillo:'Anillo punteado',fina:'Horizontal',t:'T',mas:'Cruz hueca',x:'Equis',cortes:'Paréntesis'};
 const XH_COLS=['#ffffff','#00ff66','#ffe14a','#ff3b3b','#3fd2ff','#ff4fd8','#ff9a1f','#111111'];
 function xhSVG(st,col,z){
   // cada forma se dibuja dos veces: un borde oscuro para que se vea sobre cualquier fondo y el color encima
@@ -1744,7 +1744,7 @@ function xhSVG(st,col,z){
     case 'anillo':p='<circle r="7.5" fill="none" stroke-dasharray="3.1 2.8"/>';w=1.6;break;
     case 'fina':p=L(-12,0,-3,0)+L(3,0,12,0)+L(0,3,0,6);w=1.3;break;
     case 't':p=L(-9,0,-3,0)+L(3,0,9,0)+L(0,3,0,9);break;
-    case 'mas':p=L(-8,0,8,0)+L(0,-8,0,8);w=3;break;
+    case 'mas':p='<path d="M-2.5 -9 H2.5 V-2.5 H9 V2.5 H2.5 V9 H-2.5 V2.5 H-9 V-2.5 H-2.5Z" fill="none" stroke-linejoin="round"/>';w=1.4;break;
     case 'x':p=L(-7,-7,7,7)+L(-7,7,7,-7);w=1.8;break;
     case 'cortes':p='<path d="M-5 -6 Q-9 0 -5 6" fill="none"/><path d="M5 -6 Q9 0 5 6" fill="none"/>'+dot;w=1.6;break;
   }

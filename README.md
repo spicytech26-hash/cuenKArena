@@ -51,7 +51,7 @@ Desde el menú: color de armadura (o uno a elección), color de visor y accesori
 
 ## Mira
 
-En **Ajustes → Mira** hay 12 formas (cruz, cruz chica, cruz con punto, punto, círculo, círculo con punto, anillo punteado, horizontal, T, más grueso, equis y paréntesis), 8 colores o uno a elección y tamaño de 50 % a 250 %. Todas llevan un borde oscuro para verse sobre cualquier fondo.
+En **Ajustes → Mira** hay 12 formas (cruz, cruz chica, cruz con punto, punto, círculo, círculo con punto, anillo punteado, horizontal, T, cruz hueca, equis y paréntesis), 8 colores o uno a elección y tamaño de 50 % a 250 %. Todas llevan un borde oscuro para verse sobre cualquier fondo.
 
 ## Cuentas, niveles y medallas
 

@@ -397,7 +397,7 @@ const LEDC=['#ff2bd6','#2be6ff','#8a4bff','#ffcf3a','#ff4a6a','#3aff9c'];
 function paintLED(beat){const g=ledCanvas.getContext('2d');for(let y=0;y<4;y++)for(let x=0;x<4;x++){const on=((x+y+beat)%3===0)||Math.random()<.25;g.fillStyle=on?LEDC[(x*3+y+beat)%LEDC.length]:'#140f1a';g.fillRect(x*16,y*16,16,16);g.fillStyle='rgba(0,0,0,.55)';g.fillRect(x*16,y*16,16,1);g.fillRect(x*16,y*16,1,16);}ledTex.needsUpdate=true;}
 paintLED(0);
 // --- universidad: revoque blanco, zócalo azul, baldosas, vereda de ladrillo ---
-T.whitewall=tex(cv(64,64,(g)=>{g.fillStyle='#eceeec';g.fillRect(0,0,64,64);for(let i=0;i<500;i++){const v=225+rnd()*30|0;g.fillStyle='rgba('+v+','+v+','+(v-2)+',.5)';g.fillRect(rnd()*64|0,rnd()*64|0,1+rnd()*2|0,1+rnd()*2|0);}g.fillStyle='rgba(0,0,0,.04)';g.fillRect(0,62,64,2);}));
+T.whitewall=tex(cv(64,64,(g)=>{g.fillStyle='#dcdedc';g.fillRect(0,0,64,64);for(let i=0;i<500;i++){const v=200+rnd()*30|0;g.fillStyle='rgba('+v+','+v+','+(v-2)+',.5)';g.fillRect(rnd()*64|0,rnd()*64|0,1+rnd()*2|0,1+rnd()*2|0);}g.fillStyle='rgba(0,0,0,.04)';g.fillRect(0,62,64,2);}));
 T.navy=tex(cv(32,32,(g)=>{g.fillStyle='#1d2737';g.fillRect(0,0,32,32);g.fillStyle='#253246';g.fillRect(0,0,32,1);grain(g,32,32,8);}));
 T.tiles=tex(cv(64,64,(g)=>{for(let y=0;y<64;y+=16)for(let x=0;x<64;x+=16){const v=rnd()*14|0;g.fillStyle='rgb('+(200+v)+','+(172+v)+','+(132+v)+')';g.fillRect(x,y,16,16);g.fillStyle='#a2876a';g.fillRect(x,y,16,1);g.fillRect(x,y,1,16);}grain(g,64,64,10);}));
 T.brick=tex(cv(64,64,(g)=>{g.fillStyle='#7a3e2e';g.fillRect(0,0,64,64);for(let y=0;y<64;y+=8)for(let x=(y/8)%2?-8:0;x<64;x+=16){const v=rnd()*20|0;g.fillStyle='rgb('+(165+v)+','+(84+v/2)+','+(62+v/3)+')';g.fillRect(x+1,y+1,14,6);}grain(g,64,64,10);}));

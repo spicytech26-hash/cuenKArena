@@ -587,15 +587,30 @@ function buildLaCuenca() {
   I('shells', -14, 3.05, -14); I('bullets', 6, 3, -4); I('rockets', 10, 15, -10); I('grenades', -10, 7, -9); I('slugs', 0, 7, -26); I('caza', -20, 0, 20);
   /* ---- apariciones ---- */
   [[-8, 1.5, 8], [6, 1.5, 6], [0, 1.5, 11], [13, 1.5, 11.5], [-20, 0, 22], [0, 0, 21], [18, 0, 24], [10, 3, -3.5], [-19, 3, -10],
-   [-10, 3.05, -14], [8, 3.05, -14], [-10, 7, -9], [8, 7, -9], [0, 7, -20], [-8, 11, -12], [10, 11, -12]]
+   [-10, 3.05, -14], [8, 3.05, -14], [-10, 7, -9], [8, 7, -9], [1, 7, -13.2], [-8, 11, -12], [10, 11, -12]]
     .forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
   /* ---- luces ---- */
-  lights.push({ x: -2, y: 5.8, z: -13, c: 0xfff2dc, i: 1.2, d: 20 }, { x: 6, y: 9.8, z: -9, c: 0xfff2dc, i: 1.1, d: 22 },
-    { x: 0, y: 13.6, z: -18, c: 0xffe6c0, i: 1.2, d: 24 }, { x: 19, y: 9, z: -20, c: 0xfff2dc, i: .9, d: 16 });
+  lights.push({ x: -2, y: 5.8, z: -13, c: 0xfff2dc, i: .55, d: 18 }, { x: 6, y: 9.8, z: -9, c: 0xfff2dc, i: .5, d: 20 },
+    { x: 0, y: 13.6, z: -18, c: 0xffe6c0, i: .55, d: 22 }, { x: 19, y: 9, z: -20, c: 0xfff2dc, i: .45, d: 16 });
   return finish({ id: 'lacuenca', name: 'dm3 · La Cuenca', bounds: { x0: -27, x1: 27, z0: -29, z1: 28 }, deco,
-    theme: { sky: 'day', fog: 0xbfd3e6, fogD: .0045, amb: 0xd6dde8, ambI: .75, hemi: [0xbcd8ff, 0x9a8a70, .6], sun: true, sunC: 0xfff1d6, sunI: .95 } });
+    theme: { sky: 'day', fog: 0xbfd3e6, fogD: .0045, amb: 0xc9d0da, ambI: .48, hemi: [0xbcd8ff, 0x8a7a62, .42], sun: true, sunC: 0xfff1d6, sunI: .72 } });
 }
 const MAPS = { represa: buildRepresa(), panymanteca: buildPanYManteca(), lacuenca: buildLaCuenca(), puente: buildPuente() };
+// ninguna aparición puede quedar dentro de un mueble o pared: si pasa, se sube encima o se descarta
+function safeSpawns(W) {
+  if (W._safe) return; W._safe = true;
+  const fix = list => list.filter(sp => {
+    for (let k = 0; k < 6 && solidAt(W, sp.x, sp.y + .02, sp.z, K.R, K.H); k++) {
+      let top = sp.y;
+      for (const b of W.brushes) if (!b.nc && !b.mover && overlapXZ(b, sp.x - K.R, sp.z - K.R, sp.x + K.R, sp.z + K.R) && b.min[1] < sp.y + K.H && b.max[1] > sp.y) top = Math.max(top, topAt(b, sp.x - K.R, sp.z - K.R, sp.x + K.R, sp.z + K.R));
+      if (top - sp.y > 1.2) return false;
+      sp.y = top;
+    }
+    return !solidAt(W, sp.x, sp.y + .02, sp.z, K.R, K.H);
+  });
+  W.spawns = fix(W.spawns);
+  if (W.tspawns) W.tspawns = W.tspawns.map(fix);
+}
 const MAP_ALIAS = { sagrado: 'panymanteca', salvaje: 'panymanteca', pan: 'panymanteca', cuenca: 'lacuenca', ucp: 'lacuenca' }; // nombres viejos del boliche
 const mapId = id => MAP_ALIAS[id] || id;
 const MAP_IDS = Object.keys(MAPS);
@@ -1021,7 +1036,7 @@ class Game {
     this.setMap(this.mode.maps.includes(this.o.map) ? this.o.map : this.mode.maps[0]);
   }
   setMap(id) {
-    this.W = MAPS[id]; this.nav = getNav(this.W);
+    this.W = MAPS[id]; this.nav = getNav(this.W); safeSpawns(this.W);
     // en gungame no hay armas ni munición tiradas: cada uno tiene la de su nivel
     const off = t => !!(this.mode.gg && (ITEMS[t].weapon != null || ITEMS[t].ammo));
     this.items = this.W.items.map((it, i) => ({ i, type: it.type, x: it.x, y: it.y, z: it.z, off: off(it.type), up: !off(it.type), t: 0 }));

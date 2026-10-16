@@ -14,19 +14,19 @@ Al tocar **Jugar online** (o **Práctica con bots**) elegís el modo. Cada modo 
 
 Todos arrancan con pistola (automática), escopeta y cuchillo. Las demás se juntan del mapa o se compran.
 
-| Arma | Daño | Notas |
+| Arma | Daño | Tiros para matar (100 de vida / con blindaje 100) |
 |---|---|---|
-| Pistola | 18 por tiro | munición infinita, dispara manteniendo el click |
-| Escopeta | 10 perdigones de 9 | |
-| Escopeta doble | 12 perdigones de 9 por tiro | dos tiros y recarga (R) |
-| Ametralladora | 12 por bala | fuego continuo y preciso |
-| Lanzagranadas | 110 de área + 40 directo | radio 5,5 m, explota al tocar a alguien |
-| Lanzacohetes | 100 directo + 105 de área | cohete rápido, sirve para rocket jump |
-| Rifle de riel | 100 (150 a la cabeza) | atraviesa a todos en línea |
-| Cuchillo | 40 por tajo (76 por la espalda) | cuerpo a cuerpo, nunca mata de un golpe a alguien sano |
-| Francotirador | 95 (209 a la cabeza) | click derecho para la mira; sin mira es impreciso |
+| Pistola | 22 | 5 / 8 |
+| Escopeta | 10 perdigones de 11 | 1–2 / 2–3 de cerca |
+| Escopeta doble | 12 perdigones de 11 por tiro, dos tiros y recarga (R) | 1 / 2 de cerca |
+| Ametralladora | 16 | 7 / 10 |
+| Lanzagranadas | 110 de área + 40 directo | 1 / 2 |
+| Lanzacohetes | 100 directo + 105 de área | 1 / 1 |
+| Rifle de riel | 110 (atraviesa) | 1 / 2 |
+| Cuchillo | 40, 76 por la espalda | 3 / 4 |
+| Francotirador | 115, 230 a la cabeza (click derecho: mira) | 1 / 2 |
 
-El blindaje absorbe la mitad del daño.
+El blindaje absorbe un tercio del daño y llega como máximo a 100; la megasalud sube hasta 150.
 
 ## Dificultad de los bots
 

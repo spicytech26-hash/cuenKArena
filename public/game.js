@@ -25,15 +25,15 @@ const r3a = a => [Math.round(a[0] * 1000) / 1000, Math.round(a[1] * 1000) / 1000
    mag/reload: armas con cargador (la escopeta doble tira 2 y recarga).
    hip: dispersión del francotirador sin mira (con mira usa spread). */
 const WEAPONS = [
-  { name: 'Pistola',        ammo: null,       cost: 0, rate: .17, type: 'hit',  pel: 1,  spread: .005, dmg: 18, range: 300 },
-  { name: 'Escopeta',       ammo: 'shells',   cost: 1, rate: .85, type: 'hit',  pel: 10, spread: .06,  dmg: 9,  range: 120 },
-  { name: 'Escopeta doble', ammo: 'shells',   cost: 1, rate: .28, type: 'hit',  pel: 12, spread: .085, dmg: 9,  range: 100, mag: 2, reload: 1.7 },
-  { name: 'Ametralladora',  ammo: 'bullets',  cost: 1, rate: .085, type: 'hit', pel: 1,  spread: .013, dmg: 12, range: 300 },
+  { name: 'Pistola',        ammo: null,       cost: 0, rate: .17, type: 'hit',  pel: 1,  spread: .005, dmg: 22, range: 300 },
+  { name: 'Escopeta',       ammo: 'shells',   cost: 1, rate: .85, type: 'hit',  pel: 10, spread: .06,  dmg: 11, range: 120 },
+  { name: 'Escopeta doble', ammo: 'shells',   cost: 1, rate: .28, type: 'hit',  pel: 12, spread: .085, dmg: 11, range: 100, mag: 2, reload: 1.7 },
+  { name: 'Ametralladora',  ammo: 'bullets',  cost: 1, rate: .085, type: 'hit', pel: 1,  spread: .013, dmg: 16, range: 300 },
   { name: 'Lanzagranadas',  ammo: 'grenades', cost: 1, rate: .75, type: 'proj', proj: 'grenade', speed: 26, dmg: 110, rad: 5.5, direct: 40 },
   { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 105, rad: 5, direct: 100 },
-  { name: 'Rifle de riel',  ammo: 'slugs',    cost: 1, rate: 1.4, type: 'rail', pel: 1,  dmg: 100, range: 400 },
+  { name: 'Rifle de riel',  ammo: 'slugs',    cost: 1, rate: 1.4, type: 'rail', pel: 1,  dmg: 110, range: 400 },
   { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 40, back: 1.9, range: 2.1, melee: true },
-  { name: 'Francotirador',  ammo: 'sniper',   cost: 1, rate: 1.25, type: 'hit', pel: 1,  spread: .002, hip: .045, dmg: 95, head: 2.2, range: 500, scope: true }
+  { name: 'Francotirador',  ammo: 'sniper',   cost: 1, rate: 1.25, type: 'hit', pel: 1,  spread: .002, hip: .045, dmg: 115, head: 2, range: 500, scope: true }
 ];
 const NW = WEAPONS.length;
 // arrancás siempre con pistola, escopeta y cuchillo
@@ -76,7 +76,7 @@ const SHOP = [
   { id: 'w4', cat: 'Explosivas', name: 'Lanzagranadas', w: 4, price: 900, pack: ['grenades', 10], desc: 'Granadas que rebotan' },
   { id: 'w5', cat: 'Explosivas', name: 'Lanzacohetes', w: 5, price: 1300, pack: ['rockets', 10], desc: 'Daño en área y rocket jump' },
   { id: 'w6', cat: 'Precisión', name: 'Rifle de riel', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Atraviesa a todos los que estén en línea' },
-  { id: 'w8', cat: 'Precisión', name: 'Francotirador', w: 8, price: 1500, pack: ['sniper', 10], desc: 'Click derecho para apuntar con mira. A la cabeza mata de un tiro' },
+  { id: 'w8', cat: 'Precisión', name: 'Francotirador', w: 8, price: 1500, pack: ['sniper', 10], desc: 'Click derecho para apuntar con mira. Mata de un tiro a quien no tiene blindaje' },
   { id: 'w7', cat: 'Pistolas', name: 'Cuchillo', w: 7, price: 0, free: 1, desc: 'Cuerpo a cuerpo: 40 por tajo, 76 por la espalda' },
   { id: 'a1', cat: 'Blindaje', name: 'Chaleco', price: 400, armor: 50, desc: 'Aparecés con 50 de blindaje' },
   { id: 'a2', cat: 'Blindaje', name: 'Armadura pesada', price: 900, armor: 100, desc: 'Aparecés con 100 de blindaje' },
@@ -1219,7 +1219,7 @@ class Game {
     if (!t.alive || this.state !== 'play' || amt <= 0) return;
     if (this.mode.teams && att && att !== t && att.team === t.team) return; // sin fuego amigo
     let take = amt;
-    if (t.ar > 0) { const save = Math.min(t.ar, Math.ceil(amt * .5)); t.ar -= save; take -= save; }
+    if (t.ar > 0) { const save = Math.min(t.ar, Math.ceil(amt / 3)); t.ar -= save; take -= save; }
     t.hp -= take; t.dirty = true;
     const kick = dir && ks ? [dir[0] * amt * ks, dir[1] * amt * ks, dir[2] * amt * ks] : null;
     if (t.bot) {
@@ -1323,9 +1323,9 @@ class Game {
     const info = ITEMS[it.type]; if (!info) return false;
     switch (it.type) {
       case 'health': if (p.hp >= 100) return false; p.hp = Math.min(100, p.hp + 25); break;
-      case 'mega': if (p.hp >= 200) return false; p.hp = Math.min(200, p.hp + 100); break;
-      case 'armor': if (p.ar >= 150) return false; p.ar = Math.min(150, p.ar + 50); break;
-      case 'armorH': if (p.ar >= 200) return false; p.ar = Math.min(200, p.ar + 100); break;
+      case 'mega': if (p.hp >= 150) return false; p.hp = Math.min(150, p.hp + 50); break;
+      case 'armor': if (p.ar >= 100) return false; p.ar = Math.min(100, p.ar + 50); break;
+      case 'armorH': if (p.ar >= 100) return false; p.ar = 100; break;
       case 'quad': p.quadT = 30; break;
       default:
         if (info.weapon != null) {
@@ -1440,7 +1440,7 @@ class Game {
       if (this.state !== 'play') continue;
       if (p.bot) this.botThink(p, dt);
       if (p.quadT > 0) { p.quadT -= dt; if (p.quadT <= 0) { p.quadT = 0; p.dirty = true; } }
-      if (p.hp > 100) { p.megaT += dt; if (p.megaT >= 1) { p.megaT -= 1; p.hp--; p.dirty = true; } }
+      if (p.hp > 100) { p.megaT += dt; if (p.megaT >= .5) { p.megaT -= .5; p.hp--; p.dirty = true; } }
       const tr = triggers(this.W, p.s);
       if (tr.lava && !tr.water) { p.lavaT -= dt; if (p.lavaT <= 0) { p.lavaT = .25; this.damage(p, tr.lava * .25, null, null, null, 0, 'lava'); } }
       else p.lavaT = 0;

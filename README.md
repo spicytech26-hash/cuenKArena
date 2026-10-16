@@ -21,11 +21,12 @@ Todos arrancan con pistola (automática, 60 balas que comparte con la ametrallad
 | Escopeta | 10 perdigones de 11 | 1–2 / 2–3 de cerca |
 | Escopeta doble | 12 perdigones de 11 por tiro, dos tiros y recarga (R) | 1 / 2 de cerca |
 | Ametralladora | 16 | 7 / 10 |
-| Lanzagranadas | 110 de área + 40 directo | 1 / 2 |
+| Lanzagranadas | 110 de área + 40 directo; explota al segundo. Si le pega de lleno a alguien antes de rebotar: 100 directo, explota en el acto y da ¤ 150 | 1 / 2 |
 | Lanzacohetes | 100 directo + 105 de área | 1 / 1 |
 | Rifle de plasma | 110 (atraviesa) | 1 / 2 |
-| Cuchillo | 55, 99 por la espalda; ignora el blindaje | 2 / 2 |
+| Cuchillo mariposa | 55, 99 por la espalda; el segundo tajo dentro de 4 s mata siempre; ignora el blindaje; alcance 2,6 m | 2 / 2 |
 | Francotirador | 115, 230 a la cabeza (click derecho: mira) | 1 / 2 |
+| Bomba molotov (tecla G) | se rompe al primer golpe y deja 6 s de fuego en 3,4 m: 22 por segundo (la mitad a vos) | — |
 | Rifle de caza (tecla 0) | cualquier impacto mata | 1 / 1 — la bala viaja a 260 m/s y cae un poco (67 cm a 100 m); click derecho apunta con las miras de hierro. Los tiros de más de 22 m, al aire o con mucho vuelo dan premio en créditos |
 
 El blindaje absorbe un tercio del daño y llega como máximo a 100; la megasalud sube hasta 150.
@@ -111,6 +112,14 @@ La máquina más chica cuesta unos pocos dólares por mes y se apaga sola cuando
 
 Vercel y Netlify **no** sirven para el servidor porque no mantienen conexiones WebSocket abiertas.
 
+## Votación para echar a un jugador
+
+En las partidas online, desde el menú de pausa (**Esc**) → *Votar para echar a un jugador*, o con `/echar NOMBRE` en el chat. Todos ven el cartel y votan con **Y** o **N** durante 30 segundos. Pasa si vota que sí más de la mitad de los demás jugadores (hacen falta 3 personas como mínimo). El echado no puede volver a esa sala por 10 minutos. Cada jugador puede iniciar una votación cada 90 segundos.
+
+## Palabras censuradas
+
+En el chat y en los nombres (también los de las cuentas) se tapan con asteriscos FATI, FATIMA, FATY, ANA, VANI, VANINA, VAGINA y BRENDA, con sus variantes: mayúsculas, tildes, letras repetidas, números en lugar de letras (4N4, F4T1), letras separadas (a n a, f.a.t.i), diminutivos y plurales. Se comparan palabras enteras, así que *banana*, *mañana* o *Anabel* no se tocan. La lista está en `BAD_WORDS` dentro de `public/game.js`.
+
 ## Configuración
 
 Variables de entorno opcionales:
@@ -143,7 +152,9 @@ Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 
 | F o V | cuchillo |
 | Ctrl o C | agacharse (más lento y más bajo; saltá y agachate para pasar por ventanas) |
 | R | recargar la escopeta doble |
-| Click derecho | mira del francotirador |
+| Click derecho | mira del francotirador: un toque la deja puesta, otro la saca; si lo mantenés, se saca al soltar |
+| G | bomba molotov |
+| Y / N | votar sí o no cuando hay una votación para echar a alguien |
 | B | tienda |
 | Tab | tabla de frags |
 | T o Enter | chat |

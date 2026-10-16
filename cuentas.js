@@ -15,7 +15,7 @@ const https = require('https');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { levelInfo, ACCESSORIES } = require('./public/game.js');
+const { levelInfo, ACCESSORIES, censor } = require('./public/game.js');
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const SB_URL = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
@@ -138,7 +138,7 @@ function cleanMira(m) {
   m = m && typeof m === 'object' ? m : {};
   return { s: MIRAS.includes(m.s) ? m.s : 'cruz', c: HEX.test(m.c) ? m.c : '#ffffff', z: typeof m.z === 'number' && m.z >= .5 && m.z <= 2.5 ? Math.round(m.z * 100) / 100 : 1 };
 }
-const cleanName = n => String(n || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 16) || 'Jugador';
+const cleanName = n => censor(String(n || '').replace(/[\u0000-\u001f<>]/g, '')).replace(/\*+/g, '').replace(/\s+/g, ' ').trim().slice(0, 16) || 'Jugador';
 function profile(row) {
   const L = levelInfo(row.xp);
   return { nombre: row.nombre, skin: row.skin, mira: row.mira, xp: row.xp, nivel: L.level, en: L.into, falta: L.need, kills: row.kills, partidas: row.partidas, victorias: row.victorias };

@@ -25,7 +25,9 @@ const PUBLIC = path.join(__dirname, 'public');
 const num = (v, d) => (v === undefined || v === '' || isNaN(+v)) ? d : +v;
 
 const games = {};
+const kickers = new Map(); // id de jugador → función que corta su conexión (para la votación)
 for (const mode of MODE_IDS) games[mode] = new Game({
+  onKick: id => { const k = kickers.get(mode + ':' + id); if (k) k(); },
   online: true, mode,
   map: mode === 'arena' ? (process.env.MAP || 'represa') : undefined,
   botFill: num(process.env.BOTS, 0),
@@ -172,6 +174,11 @@ server.on('upgrade', (req, sock) => {
     ws.send(cacheStr);
   });
   if (!id) { setTimeout(() => ws.close(), 200); return; }
+  // IP real detrás del proxy de Render, para que un jugador echado no vuelva enseguida
+  const ip = String(req.headers['x-forwarded-for'] || sock.remoteAddress || '').split(',')[0].trim();
+  const gp = game.players.get(id); if (gp) gp.ip = ip;
+  const gmode = Object.keys(games).find(k => games[k] === game);
+  kickers.set(gmode + ':' + id, () => setTimeout(() => ws.close(), 300));
   ws.onmessage = text => {
     const now = Date.now();
     if (now - windowT > 1000) { windowT = now; count = 0; }
@@ -188,7 +195,7 @@ server.on('upgrade', (req, sock) => {
     }
     game.onMessage(id, m);
   };
-  ws.onclose = () => { sockets.delete(ws); game.removeClient(id); };
+  ws.onclose = () => { sockets.delete(ws); kickers.delete(gmode + ':' + id); game.removeClient(id); };
 });
 
 /* ---------- bucle del juego a 40 Hz con paso fijo ----------

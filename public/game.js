@@ -31,20 +31,24 @@ const WEAPONS = [
   { name: 'Escopeta',       ammo: 'shells',   cost: 1, rate: .85, type: 'hit',  pel: 10, spread: .06,  dmg: 11, range: 120 },
   { name: 'Escopeta doble', ammo: 'shells',   cost: 1, rate: .28, type: 'hit',  pel: 12, spread: .085, dmg: 11, range: 100, mag: 2, reload: 1.7 },
   { name: 'Ametralladora',  ammo: 'bullets',  cost: 1, rate: .085, type: 'hit', pel: 1,  spread: .013, dmg: 16, range: 300 },
-  { name: 'Lanzagranadas',  ammo: 'grenades', cost: 1, rate: .75, type: 'proj', proj: 'grenade', speed: 26, dmg: 110, rad: 5.5, direct: 40 },
+  // granada: explota al segundo; si le pega de lleno a alguien antes de rebotar, explota en el acto con daño extra y premio
+  { name: 'Lanzagranadas',  ammo: 'grenades', cost: 1, rate: .75, type: 'proj', proj: 'grenade', speed: 26, dmg: 110, rad: 5.5, direct: 40, clean: 100, fuse: 1 },
   { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 105, rad: 5, direct: 100 },
   { name: 'Rifle de plasma', ammo: 'slugs',    cost: 1, rate: 1.4, type: 'rail', pel: 1,  dmg: 110, range: 400 },
-  { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 55, back: 1.8, range: 2.1, melee: true },
+  // cuchillo mariposa: el segundo tajo sobre la misma víctima (dentro de 4 s) mata siempre
+  { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 55, back: 1.8, range: 2.6, melee: true },
   { name: 'Francotirador',  ammo: 'sniper',   cost: 1, rate: 1.25, type: 'hit', pel: 1,  spread: .002, hip: .045, dmg: 115, head: 2, range: 500, scope: true },
   // rifle de caza: bala real con viaje y caída; cualquier impacto mata. Premia los tiros bien calculados
-  { name: 'Rifle de caza',  ammo: 'caza',     cost: 1, rate: 1.6, type: 'proj', proj: 'bullet', speed: 260, drop: 9, dmg: 0, rad: 0, direct: 1000, scope: true, zoom: 58 }
+  { name: 'Rifle de caza',  ammo: 'caza',     cost: 1, rate: 1.6, type: 'proj', proj: 'bullet', speed: 260, drop: 9, dmg: 0, rad: 0, direct: 1000, scope: true, zoom: 58 },
+  // bomba molotov: se rompe al primer golpe y deja el piso en llamas unos segundos
+  { name: 'Bomba molotov',  ammo: 'molotov',  cost: 1, rate: .9,  type: 'proj', proj: 'molotov', speed: 17, dmg: 0, rad: 0, direct: 12, fire: { r: 3.4, dur: 6, dps: 22 } }
 ];
 const NW = WEAPONS.length;
 // arrancás siempre con pistola, escopeta y cuchillo
 const OW0 = () => { const a = new Array(NW).fill(0); a[0] = a[1] = a[7] = 1; return a; };
-const AMMO_MAX = { shells: 50, bullets: 200, grenades: 25, rockets: 25, slugs: 25, sniper: 30, caza: 20 };
-const AMMO_NAME = { shells: 'Cartuchos', bullets: 'Balas', grenades: 'Granadas', rockets: 'Cohetes', slugs: 'Celdas de plasma', sniper: 'Balas de francotirador', caza: 'Cartuchos de caza' };
-const AMMO0 = n => ({ shells: n, bullets: n, grenades: n, rockets: n, slugs: n, sniper: n, caza: n });
+const AMMO_MAX = { shells: 50, bullets: 200, grenades: 25, rockets: 25, slugs: 25, sniper: 30, caza: 20, molotov: 6 };
+const AMMO_NAME = { shells: 'Cartuchos', bullets: 'Balas', grenades: 'Granadas', rockets: 'Cohetes', slugs: 'Celdas de plasma', sniper: 'Balas de francotirador', caza: 'Cartuchos de caza', molotov: 'Molotovs' };
+const AMMO0 = n => ({ shells: n, bullets: n, grenades: n, rockets: n, slugs: n, sniper: n, caza: n, molotov: n });
 
 const ITEMS = {
   health: { name: 'Botiquín', respawn: 20 },
@@ -79,12 +83,13 @@ const SHOP = [
   { id: 'w1', cat: 'Escopetas', name: 'Escopeta', w: 1, price: 0, free: 1, desc: '10 perdigones, ideal de cerca' },
   { id: 'w2', cat: 'Escopetas', name: 'Escopeta doble', w: 2, price: 500, pack: ['shells', 20], desc: '20 perdigones, gasta 2 cartuchos' },
   { id: 'w3', cat: 'Automáticas', name: 'Ametralladora', w: 3, price: 600, pack: ['bullets', 100], desc: 'Fuego continuo a media distancia' },
-  { id: 'w4', cat: 'Explosivas', name: 'Lanzagranadas', w: 4, price: 900, pack: ['grenades', 10], desc: 'Granadas que rebotan' },
+  { id: 'w4', cat: 'Explosivas', name: 'Lanzagranadas', w: 4, price: 900, pack: ['grenades', 10], desc: 'Explotan al segundo. Un impacto directo explota en el acto y da premio' },
+  { id: 'w10', cat: 'Explosivas', name: 'Bomba molotov', w: 10, price: 700, pack: ['molotov', 3], desc: 'Tecla G. Se rompe al golpear y deja el piso en llamas 6 segundos' },
   { id: 'w5', cat: 'Explosivas', name: 'Lanzacohetes', w: 5, price: 1300, pack: ['rockets', 10], desc: 'Daño en área y rocket jump' },
   { id: 'w6', cat: 'Precisión', name: 'Rifle de plasma', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Atraviesa a todos los que estén en línea' },
   { id: 'w8', cat: 'Precisión', name: 'Francotirador', w: 8, price: 1500, pack: ['sniper', 10], desc: 'Click derecho para apuntar con mira. Mata de un tiro a quien no tiene blindaje' },
   { id: 'w9', cat: 'Precisión', name: 'Rifle de caza', w: 9, price: 1400, pack: ['caza', 8], desc: 'La bala viaja y cae: cualquier impacto mata. Tiros largos o al aire dan premio' },
-  { id: 'w7', cat: 'Pistolas', name: 'Cuchillo', w: 7, price: 0, free: 1, desc: 'Cuerpo a cuerpo: dos puñaladas matan. No lo frena el blindaje' },
+  { id: 'w7', cat: 'Pistolas', name: 'Cuchillo', w: 7, price: 0, free: 1, desc: 'Cuchillo mariposa: dos puñaladas matan siempre. No lo frena el blindaje' },
   { id: 'a1', cat: 'Blindaje', name: 'Chaleco', price: 400, armor: 50, desc: 'Aparecés con 50 de blindaje' },
   { id: 'a2', cat: 'Blindaje', name: 'Armadura pesada', price: 900, armor: 100, desc: 'Aparecés con 100 de blindaje' },
   { id: 'am', cat: 'Suministros', name: 'Cartuchera doble', price: 500, desc: 'Aparecés con el doble de munición' },
@@ -894,7 +899,7 @@ function projLaunch(w, d) {
 }
 function projStep(W, p, dt) {
   p.life -= dt;
-  if (p.k === 'grenade') p.v[1] -= 18 * dt;
+  if (p.k === 'grenade' || p.k === 'molotov') p.v[1] -= 18 * dt;
   else if (p.k === 'bullet') p.v[1] -= 9 * dt;
   const dx = p.v[0] * dt, dy = p.v[1] * dt, dz = p.v[2] * dt, L = Math.hypot(dx, dy, dz);
   if (L > 1e-6) {
@@ -902,7 +907,7 @@ function projStep(W, p, dt) {
     if (h) {
       const t = Math.max(0, h.t - .06);
       p.x += dx / L * t; p.y += dy / L * t; p.z += dz / L * t;
-      if (p.k === 'rocket' || p.k === 'bullet') return { boom: true, n: h.n };
+      if (p.k === 'rocket' || p.k === 'bullet' || p.k === 'molotov') return { boom: true, n: h.n };
       const n = h.n, dot = p.v[0] * n[0] + p.v[1] * n[1] + p.v[2] * n[2];
       p.v[0] -= 2 * dot * n[0]; p.v[1] -= 2 * dot * n[1]; p.v[2] -= 2 * dot * n[2];
       const damp = n[1] > .7 ? .45 : .6;
@@ -1066,7 +1071,41 @@ const SKILL = [
   { name: 'Difícil',   react: .3,  err: .05,  turn: 8.5, track: 14,  lead: .8,  fire: 1.1, dmg: 1,   fov: -.2, range: 68, strafe: 1,   hop: .3 },
   { name: 'Pesadilla', react: .14, err: .02,  turn: 15,  track: 28,  lead: 1,   fire: 1,   dmg: 1.1, fov: -.5, range: 80, strafe: 1.15, hop: .45 }
 ];
-function cleanName(n) { n = String(n || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 16); return n || 'Jugador'; }
+/* ---------- palabras censuradas (chat y nombres) ----------
+   Se comparan palabras enteras después de normalizar: sin tildes, números y símbolos como letras (4→a, 1→i, 0→o…),
+   y→i, b→v, th→t, letras repetidas juntas una sola vez y sin puntos ni guiones entre letras. "banana" o "mañana" no se tocan. */
+const BAD_WORDS = ['fati', 'fatima', 'fatimita', 'fatita', 'fatii', 'ana', 'anita', 'anana', 'vani', 'vanina', 'vaninita', 'vanita', 'vagina', 'vajina', 'vrenda', 'vrendita'];
+const BAD_SET = new Set(BAD_WORDS.flatMap(w => [w, w + 's']));
+const LEET = { '4': 'a', '@': 'a', '1': 'i', '!': 'i', '|': 'i', '3': 'e', '0': 'o', '5': 's', '$': 's', '7': 't', '8': 'v', '6': 'g', '9': 'g' };
+function normWord(w) {
+  let x = w.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  x = x.replace(/[4@1!|30$56789]/g, c => LEET[c] || c).replace(/[^a-zñ]/g, '').replace(/ñ/g, 'n');
+  x = x.replace(/th/g, 't').replace(/y/g, 'i').replace(/b/g, 'v').replace(/(.)\1+/g, '$1');
+  return x;
+}
+function isBad(w) {
+  const t = n => n.length >= 3 && BAD_SET.has(n);
+  // con y sin los signos de los bordes ("vanina!!", "¡ana!")
+  const edge = String(w).replace(/^[^\p{L}\d]+|[^\p{L}\d]+$/gu, '');
+  return t(normWord(w)) || t(normWord(edge)) || t(normWord(edge.replace(/^\d+|\d+$/g, '')));
+}
+function censor(text) {
+  text = String(text || '');
+  // palabras separadas por espacios o signos
+  let out = text.replace(/[^\s]+/g, tok => {
+    if (isBad(tok)) return '*'.repeat(Math.min(8, tok.length));
+    // dentro de un token con signos (fati_ana, ana-123): cada pedazo de letras por separado
+    return tok.replace(/[a-zA-ZÀ-ÿñÑ0-9@$!|]+/g, part => isBad(part) ? '*'.repeat(Math.min(8, part.length)) : part);
+  });
+  // letras sueltas separadas por espacios: "a n a", "f a t i"
+  out = out.replace(/(?:^|(?<=\s))((?:\S\s+){2,}\S)(?=\s|$)/g, seq => {
+    const letters = seq.split(/\s+/);
+    if (letters.every(l => l.length === 1) && isBad(letters.join(''))) return '*'.repeat(letters.length);
+    return seq;
+  });
+  return out;
+}
+function cleanName(n) { n = censor(String(n || '').replace(/[\u0000-\u001f<>]/g, '')).replace(/\*+/g, '').replace(/\s+/g, ' ').trim().slice(0, 16); return n || 'Jugador'; }
 const HEX = /^#[0-9a-fA-F]{6}$/;
 function cleanSkin(k, fallback) {
   const f = fallback || { c: COLORS[0], v: '#ffffff', a: 0 };
@@ -1080,7 +1119,7 @@ class Game {
     this.o = Object.assign({ fraglimit: 20, timelimit: 600, caplimit: 3, bots: null, botFill: 0, botSkill: 1, online: false, maxPlayers: 16, map: null, rotate: true, mode: 'arena' }, o || {});
     if (!MODES[this.o.mode]) this.o.mode = 'arena';
     this.mode = MODES[this.o.mode];
-    this.players = new Map(); this.nextId = 1; this.projs = []; this.pid = 1;
+    this.players = new Map(); this.nextId = 1; this.projs = []; this.fires = []; this.pid = 1; this.vote = null; this.bans = new Map();
     this.time = 0; this.snapT = 0; this.scT = 0; this.botT = 0; this.state = 'play'; this.left = this.o.timelimit; this.interT = 0;
     this.ts = [0, 0]; this.flags = []; this.countT = 0;
     if (this.mode.minPlayers && this.o.online) this.state = 'lobby';
@@ -1092,7 +1131,7 @@ class Game {
     // en gungame no hay armas ni munición tiradas: cada uno tiene la de su nivel
     const off = t => !!this.mode.gg; // en gungame no hay nada tirado: cada arma se gana con bajas
     this.items = this.W.items.map((it, i) => ({ i, type: it.type, x: it.x, y: it.y, z: it.z, off: off(it.type), up: !off(it.type), t: 0 }));
-    this.projs.length = 0;
+    this.projs.length = 0; this.fires = [];
     this.resetFlags();
     updateMovers(this.W, this.time);
   }
@@ -1116,6 +1155,7 @@ class Game {
     this.dropCarried(p);
     if (p.acct && this.state === 'play' && this.o.onXP) { const xp = this.matchXP(p, false, false); if (xp > 0) this.o.onXP(p, xp, { kills: p.kills, partida: 0, victoria: 0 }); }
     if (p.joined) { this.bcast({ t: 'ev', e: 'leave', id, n: p.name }); this.botT = 0; }
+    if (this.vote) this.checkVote();
   }
   newPlayer(id, name, skin, bot) {
     return { id, name, skin, color: skin.c, bot, send: null, s: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, on: false }, yaw: 0, pitch: 0, w: 1,
@@ -1146,6 +1186,7 @@ class Game {
     switch (m.t) {
       case 'join': {
         if (p.joined) return;
+        if (this.isBanned(cleanName(m.name), p.acct, p.ip)) { p.send({ t: 'kicked', again: 1 }); if (this.o.onKick) this.o.onKick(p.id); return; }
         // si la sala estaba vacía, el primero que entra arranca una partida nueva
         if (this.o.online && this.humanCount(false) === 0 && (this.left < this.o.timelimit - 5 || this.state !== 'play')) this.restart(this.W.id);
         // el primero que entra a una sala vacía elige la dificultad de los bots
@@ -1191,11 +1232,65 @@ class Game {
       case 'chat': {
         const txt = String(m.m || '').replace(/[\u0000-\u001f]/g, '').slice(0, 120).trim();
         if (!txt) return;
-        if (txt[0] === '/') this.command(p, txt); else this.bcast({ t: 'ev', e: 'chat', id: p.id, n: p.name, m: txt });
+        if (txt[0] === '/') this.command(p, txt); else this.bcast({ t: 'ev', e: 'chat', id: p.id, n: p.name, m: censor(txt) });
         break;
       }
       case 'cfg': if (!this.o.online) this.configure(m); break;
+      case 'kick': this.startKick(p, m.id | 0); break;
+      case 'vote': this.castVote(p, !!m.y); break;
     }
+  }
+  /* ---- votación para echar a un jugador (solo online, entre personas) ---- */
+  voters(except) { return [...this.players.values()].filter(q => q.joined && !q.bot && q !== except); }
+  startKick(p, id) {
+    const say = s => p.send && p.send({ t: 'ev', e: 'sys', m: s });
+    if (!this.o.online) return say('La votación es solo en partidas online');
+    if (this.vote) return say('Ya hay una votación en curso');
+    const t = this.players.get(id);
+    if (!t || !t.joined || t.bot || t === p) return say('Elegí a otro jugador (los bots se sacan con /bots)');
+    if (this.voters(t).length < 2) return say('Hacen falta al menos 3 jugadores para votar');
+    if ((p.voteCd || 0) > this.time) return say('Esperá ' + Math.ceil(p.voteCd - this.time) + ' s para iniciar otra votación');
+    p.voteCd = this.time + 90;
+    this.vote = { target: t.id, name: t.name, by: p.name, yes: new Set([p.id]), no: new Set(), end: this.time + 30 };
+    this.bcast({ t: 'ev', e: 'sys', m: p.name + ' inició una votación para echar a ' + t.name + ' (Y = sí · N = no)' });
+    this.sendVote();
+  }
+  castVote(p, yes) {
+    const v = this.vote; if (!v || !p.joined || p.bot || p.id === v.target) return;
+    v.yes.delete(p.id); v.no.delete(p.id); (yes ? v.yes : v.no).add(p.id);
+    this.sendVote(); this.checkVote();
+  }
+  sendVote() {
+    const v = this.vote;
+    if (!v) { this.bcast({ t: 'vote', on: 0 }); return; }
+    const el = this.voters(this.players.get(v.target)).length, need = Math.floor(el / 2) + 1;
+    for (const q of this.players.values()) if (q.send && q.joined)
+      q.send({ t: 'vote', on: 1, target: v.target, name: v.name, by: v.by, y: v.yes.size, n: v.no.size, need, left: Math.max(0, Math.ceil(v.end - this.time)), me: q.id === v.target ? 2 : v.yes.has(q.id) ? 1 : v.no.has(q.id) ? -1 : 0 });
+  }
+  checkVote() {
+    const v = this.vote; if (!v) return;
+    const t = this.players.get(v.target);
+    if (!t) { this.vote = null; this.bcast({ t: 'ev', e: 'sys', m: v.name + ' se fue: votación cancelada' }); this.sendVote(); return; }
+    const el = this.voters(t), ids = new Set(el.map(q => q.id));
+    for (const s of [v.yes, v.no]) for (const id of [...s]) if (!ids.has(id)) s.delete(id);
+    const need = Math.floor(el.length / 2) + 1;
+    if (v.yes.size >= need) {
+      this.vote = null; this.sendVote();
+      this.bcast({ t: 'ev', e: 'sys', m: t.name + ' fue echado de la partida por votación' });
+      // no puede volver a esta sala por 10 minutos (por cuenta y por nombre)
+      const until = Date.now() + 10 * 60e3; this.bans.set('n:' + t.name.toLowerCase(), until); if (t.acct) this.bans.set('a:' + t.acct, until); if (t.ip) this.bans.set('i:' + t.ip, until);
+      if (t.send) t.send({ t: 'kicked' });
+      if (this.o.onKick) this.o.onKick(t.id); else this.removeClient(t.id);
+      return;
+    }
+    if (v.no.size > el.length - need || this.time >= v.end) {
+      this.vote = null; this.sendVote();
+      this.bcast({ t: 'ev', e: 'sys', m: 'La votación para echar a ' + v.name + ' no pasó (' + v.yes.size + ' sí, ' + v.no.size + ' no)' });
+    }
+  }
+  isBanned(name, acct, ip) {
+    const now = Date.now(), chk = k => { const u = this.bans.get(k); if (!u) return false; if (u < now) { this.bans.delete(k); return false; } return true; };
+    return chk('n:' + String(name || '').toLowerCase()) || (acct && chk('a:' + acct)) || (ip && chk('i:' + ip));
   }
   uniqueName(n) { let name = n, k = 2; const used = new Set([...this.players.values()].filter(p => p.joined).map(p => p.name)); while (used.has(name)) name = n.slice(0, 13) + ' ' + (k++); return name; }
   configure(m) {
@@ -1209,6 +1304,12 @@ class Game {
   command(p, txt) {
     const parts = txt.slice(1).split(/\s+/), cmd = parts[0], arg = cmd === 'map' ? mapId(parts[1]) : parts[1];
     const say = s => p.send && p.send({ t: 'ev', e: 'sys', m: s });
+    if (cmd === 'kick' || cmd === 'echar') {
+      const q = parts.slice(1).join(' ').toLowerCase(), t = [...this.players.values()].find(x => x.joined && !x.bot && x.name.toLowerCase() === q) || [...this.players.values()].find(x => x.joined && !x.bot && q && x.name.toLowerCase().startsWith(q));
+      if (!t) return say('Uso: /echar NOMBRE (o desde el menú de pausa)');
+      return this.startKick(p, t.id);
+    }
+    if (cmd === 'si' || cmd === 'sí' || cmd === 'no') return this.castVote(p, cmd !== 'no');
     if (cmd === 'bots') {
       if (arg === 'auto') { this.o.bots = null; this.bcast({ t: 'ev', e: 'sys', m: p.name + ' activó el relleno automático de bots' }); }
       else if (/^\d+$/.test(arg || '')) { this.o.bots = clamp(+arg, 0, 15); this.bcast({ t: 'ev', e: 'sys', m: p.name + ' puso ' + this.o.bots + ' bots' }); }
@@ -1222,7 +1323,7 @@ class Game {
       else say('Mapas de ' + this.mode.name + ': ' + this.mode.maps.join(', '));
     }
     else if (cmd === 'restart') { this.bcast({ t: 'ev', e: 'sys', m: p.name + ' reinició la partida' }); this.restart(); }
-    else say('Comandos: /bots N · /bots auto · /skill 0-3 · ' + (this.mode.ctf ? '/caplimit N' : '/fraglimit N') + ' · /map ' + this.mode.maps.join('|') + ' · /restart');
+    else say('Comandos: /echar NOMBRE · /bots N · /bots auto · /skill 0-3 · ' + (this.mode.ctf ? '/caplimit N' : '/fraglimit N') + ' · /map ' + this.mode.maps.join('|') + ' · /restart');
   }
 
   /* ---- aparición ---- */
@@ -1338,6 +1439,9 @@ class Game {
   }
   // cuchillo como en Counter-Strike: tajo de 40; por la espalda hace casi el doble, pero nunca mata de un golpe a alguien sano
   meleeDmg(p, t, W_) {
+    // segundo tajo del mismo atacante dentro de 4 segundos: muerte segura (aunque tenga megasalud)
+    if (t.knifeBy === p.id && this.time - t.knifeT < 4) { t.knifeBy = 0; return 999; }
+    t.knifeBy = p.id; t.knifeT = this.time;
     const ax = p.s.x - t.s.x, az = p.s.z - t.s.z, al = Math.hypot(ax, az) || 1;
     const behind = (-Math.sin(t.yaw) * ax - Math.cos(t.yaw) * az) / al < -.4;
     return W_.dmg * (behind ? W_.back : 1);
@@ -1389,7 +1493,7 @@ class Game {
   }
   spawnProj(p, w, o, d) {
     const W_ = WEAPONS[w], v = projLaunch(w, d);
-    const pr = { id: this.pid++, k: W_.proj, w, own: p.id, x: o[0], y: o[1], z: o[2], o0: o.slice(), v, life: W_.proj === 'grenade' ? 1.8 : W_.proj === 'bullet' ? 1.6 : 6, q: this.mult(p) * (p.bot ? this.skill().dmg : 1), age: 0 };
+    const pr = { id: this.pid++, k: W_.proj, w, own: p.id, x: o[0], y: o[1], z: o[2], o0: o.slice(), v, life: W_.fuse || (W_.proj === 'bullet' ? 1.6 : 6), q: this.mult(p) * (p.bot ? this.skill().dmg : 1), age: 0 };
     this.projs.push(pr);
     this.bcast({ t: 'ev', e: 'proj', pid: pr.id, k: pr.k, own: p.id, p: r3a(o), v: r3a(v) });
   }
@@ -1418,8 +1522,16 @@ class Game {
     if (direct && W_.direct) {
       const sp = Math.hypot(pr.v[0], pr.v[1], pr.v[2]) || 1;
       if (pr.k === 'bullet' && own) this.huntReward(own, direct, pr);
-      this.damage(direct, W_.direct * pr.q, own, pr.w, [pr.v[0] / sp, pr.v[1] / sp, pr.v[2] / sp], pr.k === 'bullet' ? .02 : .08, 'frag');
+      // granada de lleno, sin rebotar antes: más daño y premio para el que la tiró
+      const clean = pr.k === 'grenade' && !pr.bounced && W_.clean && own && direct !== own && !(this.mode.teams && direct.team === own.team);
+      if (clean) {
+        this.credit(own, 150, 'granada directa');
+        if (own.send) own.send({ t: 'ev', e: 'gdirect', n: this.mode.shop ? 150 : 0 });
+        this.bcast({ t: 'ev', e: 'sys', m: own.name + ' le metió una granada directa a ' + direct.name });
+      }
+      this.damage(direct, (clean ? W_.clean : W_.direct) * pr.q, own, pr.w, [pr.v[0] / sp, pr.v[1] / sp, pr.v[2] / sp], pr.k === 'bullet' ? .02 : .08, 'frag');
     }
+    if (W_.fire) this.startFire(pr, W_.fire);
     for (const t of this.players.values()) {
       if (!t.alive || !t.joined || t === direct) continue;
       const dist = boxDist(pr.x, pr.y, pr.z, t.s.x, t.s.y, t.s.z);
@@ -1434,6 +1546,30 @@ class Game {
     this.bcast({ t: 'ev', e: 'boom', pid: pr.id, own: pr.own, k: pr.k, hit: direct ? 1 : 0, p: r3a([pr.x, pr.y, pr.z]) });
   }
 
+  // fuego de la molotov: busca el piso debajo del impacto y quema a todos los que estén dentro
+  startFire(pr, F) {
+    const fl = raycast(this.W, pr.x, pr.y + .3, pr.z, 0, -1, 0, 8);
+    const y = fl ? pr.y + .3 - fl.t : pr.y;
+    const f = { id: this.pid++, x: pr.x, y, z: pr.z, r: F.r, t: F.dur, dps: F.dps * pr.q, own: pr.own, w: pr.w, tick: 0 };
+    this.fires.push(f);
+    this.bcast({ t: 'ev', e: 'fire', id: f.id, p: r3a([f.x, f.y, f.z]), r: f.r, d: f.t });
+  }
+  tickFires(dt) {
+    for (let i = this.fires.length - 1; i >= 0; i--) {
+      const f = this.fires[i]; f.t -= dt; f.tick -= dt;
+      if (f.t <= 0) { this.fires.splice(i, 1); continue; }
+      if (f.tick > 0) continue;
+      f.tick = .25;
+      const own = this.players.get(f.own);
+      for (const t of this.players.values()) {
+        if (!t.alive || !t.joined) continue;
+        if (Math.hypot(t.s.x - f.x, t.s.z - f.z) > f.r || t.s.y < f.y - 1 || t.s.y > f.y + 1.6) continue;
+        const self = t.id === f.own;
+        this.damage(t, f.dps * .25 * (self ? .5 : 1), own || null, f.w, null, 0, self ? 'self' : 'frag');
+        if (!this.live()) return;
+      }
+    }
+  }
   // premio del rifle de caza: cuanto más lejos, más tiempo de vuelo o si el blanco estaba en el aire
   huntReward(p, t, pr) {
     if (!t.alive || t === p || (this.mode.teams && t.team === p.team)) return;
@@ -1696,7 +1832,8 @@ class Game {
       if (tr.water) this.damage(p, 999, null, null, null, 0, 'water');
       if (p.alive && p.s.y < K.KILLY) this.damage(p, 999, null, null, null, 0, 'void');
     }
-    if (this.live()) { this.tickProjs(dt); this.tickItems(dt); if (this.flags.length && this.state === 'play') this.tickFlags(dt); }
+    if (this.vote) { this.voteT = (this.voteT || 0) - dt; if (this.voteT <= 0) { this.voteT = 1; this.checkVote(); if (this.vote) this.sendVote(); } }
+    if (this.live()) { this.tickProjs(dt); this.tickFires(dt); this.tickItems(dt); if (this.flags.length && this.state === 'play') this.tickFlags(dt); }
     this.snapT -= dt;
     if (this.snapT <= 1e-6) { this.snapT += .05; if (this.snapT < 0) this.snapT = 0; this.snapshot(); }
     this.scT -= dt;
@@ -1910,5 +2047,5 @@ class Game {
   }
 }
 
-return { K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, SKILL, topAt, pmove, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
+return { censor, isBad, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, SKILL, topAt, pmove, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
 });

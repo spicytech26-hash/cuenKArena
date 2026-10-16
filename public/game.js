@@ -195,7 +195,7 @@ function mapKit() {
 
 /* ---------- dm1 · La Represa ---------- */
 function buildRepresa() {
-  const { pads, teles, lava, spawns, lights, add, ramp, wall, stairs, D, face, I, finish } = mapKit();
+  const { pads, teles, lava, spawns, lights, add, ramp, wall, stairs, D, face, I, mover, finish } = mapKit();
 
   /* ---- Límites del mundo ---- */
   add(-41, -6, -41, 41, 24, -40, 'block');
@@ -212,8 +212,14 @@ function buildRepresa() {
   add(-5, -6, -5, 5, -4, 5, 'rock');
   add(-6, -6, -6, 6, -1, -5, 'trim'); add(-6, -6, 5, 6, -1, 6, 'trim');
   add(-6, -6, -5, -5, -1, 5, 'trim'); add(5, -6, -5, 6, -1, 5, 'trim');
-  lava.push({ min: [-5, -6, -5], max: [5, -3.6, 5], dps: 40 });
-  pads.push({ x: 3, y: -4, z: -3, r: 1, t: [14, 6, -6], apex: 1.5 });
+  lava.push({ min: [-5, -6, -5], max: [5, -3.6, 5], dps: 25 });
+  // salidas del pozo:
+  // · géiser de magma en el centro: cada 3,6 s erupciona y te tira arriba, justo sobre el saltador del sur del atrio
+  pads.push({ x: 0, y: -4, z: 0, r: 2.1, t: [0, 0, -9.5], apex: 3, geyser: { period: 3.6, on: .9, phase: 0 } });
+  // · piedras de basalto que suben y bajan por turnos: abajo quedan a ras de la lava (se pisan caminando),
+  //   te suben hasta casi el borde y de ahí saltás afuera. Siempre hay una subiendo.
+  [[-3.5, -3.5, 0], [3.5, -3.5, 1], [3.5, 3.5, 2], [-3.5, 3.5, 3]].forEach(([x, z, k]) =>
+    mover(x - .9, -4.7, z - .9, x + .9, -3.75, z + .9, 'basalt', 1, 3.2, 4.8, k * Math.PI / 2));
   // plataforma del daño cuádruple y piedras para llegar
   add(-2, 6.6, -2, 2, 7, 2, 'metal');
   [[6.5, 0], [-6.5, 0], [0, 6.5], [0, -6.5]].forEach(([x, z]) => add(x - 1, 6.1, z - 1, x + 1, 6.5, z + 1, 'metal'));
@@ -663,6 +669,7 @@ function moverOff(m, t) {
   return m.amp * u * u * (3 - 2 * u);
 }
 function updateMovers(W, t) {
+  W.t = t;
   for (const b of W.movers) {
     const m = b.mover, o = moverOff(m, t);
     b.off = o;
@@ -807,6 +814,9 @@ function pmove(W, s, cmd, dt) {
   }
   return out;
 }
+// géiser: cuánto falta para la erupción (0..1 del ciclo) y si está soplando ahora
+function geyserPhase(p, t) { const g = p.geyser, c = ((t + g.phase) % g.period + g.period) % g.period; return c; }
+function geyserOn(p, t) { return geyserPhase(p, t) < p.geyser.on; }
 function padReady(s, pad, landed) {
   if (!pad) { s.padArm = true; return false; }
   if (!pad.soft) return true;
@@ -816,7 +826,7 @@ function padReady(s, pad, landed) {
 }
 function triggers(W, s) {
   const out = { pad: null, tele: null, lava: 0 };
-  for (const p of W.pads) if (Math.abs(s.y - p.y) < .35 && Math.hypot(s.x - p.x, s.z - p.z) < p.r) out.pad = p;
+  for (const p of W.pads) if (Math.abs(s.y - p.y) < .35 && Math.hypot(s.x - p.x, s.z - p.z) < p.r && (!p.geyser || geyserOn(p, W.t || 0))) out.pad = p;
   for (const t of W.teles) if (Math.abs(s.y - t.y) < .6 && Math.hypot(s.x - t.x, s.z - t.z) < t.r) out.tele = t;
   for (const l of W.lava) if (s.x > l.min[0] && s.x < l.max[0] && s.z > l.min[2] && s.z < l.max[2] && s.y < l.max[1] && s.y > l.min[1] - 1) { out.lava = l.dps; if (l.water) out.water = 1; }
   return out;
@@ -2055,5 +2065,5 @@ class Game {
   }
 }
 
-return { censor, isBad, okChestImg, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, SKILL, topAt, pmove, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
+return { censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, SKILL, topAt, pmove, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
 });

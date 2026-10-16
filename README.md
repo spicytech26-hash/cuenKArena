@@ -40,6 +40,7 @@ Se elige al escoger el modo (y en práctica también desde Ajustes, en plena par
 - Al terminar una partida se ve el ganador, el próximo mapa y la cuenta regresiva (25 s), con **Seguir jugando** y **Volver al menú**.
 - Agacharse con **Ctrl** necesita pantalla completa: el juego la pide al empezar (se desactiva en Ajustes). Sin pantalla completa, Ctrl+W cierra la pestaña en el navegador, así que usá **C**; igual el juego pide confirmación antes de cerrar.
 - El rifle de caza se apunta con sus miras de hierro (click derecho), sin mira telescópica.
+- En La Represa, si caés al pozo de lava del centro hay dos salidas: el **géiser de magma** del medio, que burbujea para avisar y cada 3,6 s erupciona y te tira afuera (justo sobre el saltador que lleva al balcón), y **cuatro piedras de basalto** que suben y bajan por turnos: abajo quedan a ras de la lava, te subís caminando y desde arriba saltás al borde.
 - En La Cuenca, las ventanas de los pisos se pasan saltando y agachándote, y hay un ascensor de salto en el pasillo del primer piso: pisá el saltador de la planta baja para subir y tirate por el hueco para bajar. Detrás del edificio, por el pasillo de atrás, una escalera larga sube pegada a la pared hasta la biblioteca del último piso.
 
 ## Créditos y tienda

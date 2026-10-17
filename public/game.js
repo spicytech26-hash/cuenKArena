@@ -90,7 +90,7 @@ const SHOP = [
   { id: 'w3', cat: 'Automáticas', name: 'Ametralladora', w: 3, price: 600, pack: ['bullets', 100], desc: 'Fuego continuo a media distancia' },
   { id: 'w4', cat: 'Explosivas', name: 'Lanzagranadas', w: 4, price: 900, pack: ['grenades', 10], desc: 'Explotan al segundo. Un impacto directo explota en el acto y da premio' },
   // la molotov es de un solo uso: se compra estando vivo y si te matan la perdés
-  { id: 'w10', cat: 'Explosivas', name: 'Bomba molotov', w: 10, price: 500, once: 1, pack: ['molotov', 3], desc: 'Tecla G. 3 molotovs que dejan el piso en llamas 6 s. Si te matan, las perdés' },
+  { id: 'w10', cat: 'Explosivas', name: 'Bomba molotov', w: 10, price: 300, once: 1, pack: ['molotov', 3], desc: 'Tecla G. 3 molotovs que dejan el piso en llamas 6 s. Si te matan, las perdés' },
   { id: 'w5', cat: 'Explosivas', name: 'Lanzacohetes', w: 5, price: 1300, pack: ['rockets', 10], desc: 'Daño en área y rocket jump' },
   { id: 'w6', cat: 'Precisión', name: 'Rifle de plasma', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Atraviesa a todos los que estén en línea' },
   { id: 'w8', cat: 'Precisión', name: 'Francotirador', w: 8, price: 1500, pack: ['sniper', 10], desc: 'Click derecho para apuntar con mira. Mata de un tiro a quien no tiene blindaje' },
@@ -117,8 +117,9 @@ const MODE_IDS = Object.keys(MODES);
 const GG = [3, 5, 2, 4, 1, 6, 8, 0, 3, 5, 2, 4, 1, 9, 8, 0, 5, 6, 9, 7];
 const TEAMS = [{ name: 'Rojo', c: '#ff4a3a' }, { name: 'Azul', c: '#3a8bff' }];
 /* ---------- Cuentas: experiencia, niveles y medallas (estilo Team Fortress 2) ----------
-   Se gana jugando online: por terminar la partida, por cada baja, por ganar y por capturar. */
-const XP = { PLAY: 40, KILL: 10, WIN: 40, CAP: 30, PER_MIN: 4, MAX_MATCH: 600 };
+   Se gana jugando online: por terminar la partida, por minuto jugado, por cada baja, por aguantar vivo
+   (la vida más larga de la partida), por ganar y por capturar. Una partida normal de 10 minutos da unos 200-300. */
+const XP = { PLAY: 50, KILL: 12, WIN: 50, CAP: 40, PER_MIN: 5, MAX_MIN: 15, SURVIVE: 10, MAX_SURVIVE: 50, MAX_MATCH: 700 };
 const MAX_LEVEL = 100;
 // cada nivel pide 220 XP más 60 por nivel ya alcanzado (el 10 queda a ~25 partidas, el 20 a ~80)
 // OJO: el nivel se calcula con la XP total guardada, así que cambiar esta curva le cambia el nivel a TODAS las cuentas
@@ -1285,11 +1286,25 @@ class Game {
   }
   // el servidor avisa qué cuenta tiene cada jugador (para su nivel y para sumarle experiencia)
   setAccount(id, a) { const p = this.players.get(id); if (!p) return; p.acct = a ? a.sub : null; p.plvl = a ? a.level : 0; if (p.joined) this.sendScores(); }
+  // experiencia de la partida, con el detalle para mostrarlo en la pantalla final
+  xpParts(p, finished, won) {
+    const mins = (this.time - p.joinT) / 60;
+    const life = Math.max(p.bestLife || 0, p.alive && p.lifeT0 != null ? this.time - p.lifeT0 : 0);
+    const parts = {
+      partida: finished ? XP.PLAY : 0,
+      minutos: Math.min(XP.MAX_MIN, Math.floor(mins)) * XP.PER_MIN,
+      bajas: p.kills * XP.KILL,
+      aguante: Math.min(XP.MAX_SURVIVE, Math.floor(life / 60) * XP.SURVIVE),
+      victoria: finished && won ? XP.WIN : 0,
+      capturas: p.caps * XP.CAP
+    };
+    if (!finished && mins < 1) { parts.minutos = 0; parts.aguante = 0; parts.capturas = 0; } // irse enseguida solo deja lo de las bajas
+    return parts;
+  }
   matchXP(p, finished, won) {
     if (!p.acct || p.bot) return 0;
-    const mins = (this.time - p.joinT) / 60;
-    let xp = p.kills * XP.KILL + p.caps * XP.CAP + (finished ? XP.PLAY + (won ? XP.WIN : 0) : Math.min(XP.PLAY, Math.floor(mins) * XP.PER_MIN));
-    if (!finished && mins < 1) xp = Math.min(xp, p.kills * XP.KILL);
+    const parts = this.xpParts(p, finished, won); let xp = 0; for (const k in parts) xp += parts[k];
+    p.xpParts = parts;
     return Math.min(XP.MAX_MATCH, xp);
   }
   teamCount(t, except) { let n = 0; for (const q of this.players.values()) if (q.joined && q.team === t && q !== except) n++; return n; }
@@ -1315,7 +1330,7 @@ class Game {
         p.name = this.uniqueName(cleanName(m.name));
         p.skin = cleanSkin(m.skin || { c: m.color }, p.skin); p.color = p.skin.c;
         if (this.mode.teams) this.setTeam(p, this.pickTeam(p));
-        p.joined = true; p.joinT = this.time; p.kills = 0; p.dmg = 0;
+        p.joined = true; p.joinT = this.time; p.kills = 0; p.dmg = 0; p.bestLife = 0;
         if (this.mode.tdm && this.o.online && this.humanCount(false) <= 1 && Number.isInteger(m.fl) && m.fl >= 5 && m.fl <= 500) this.o.fraglimit = m.fl;
         p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts });
         this.bcast({ t: 'ev', e: 'join', id, n: p.name, c: p.color, s: p.skin, tm: p.team }, id);
@@ -1510,7 +1525,7 @@ class Game {
   spawn(p) {
     const sp = this.pickSpawn(p);
     p.s = { x: sp.x, y: sp.y, z: sp.z, vx: 0, vy: 0, vz: 0, on: true };
-    p.yaw = sp.yaw; p.pitch = 0; p.hp = 100; p.w = 1; p.quadT = 0; p.megaT = 0;
+    p.yaw = sp.yaw; p.pitch = 0; p.hp = 100; p.w = 1; p.quadT = 0; p.megaT = 0; p.lifeT0 = this.time;
     if (p.bot && this.mode.shop) this.botShop(p);
     this.loadout(p);
     p.alive = true; p.dirty = true; p.spawnT = this.time; p.lavaT = 0;
@@ -1775,6 +1790,7 @@ class Game {
   kill(v, att, w, how) {
     const gib = v.hp < -40;
     v.alive = false; v.deadT = 0; v.deaths++; v.dirty = true; v.quadT = 0;
+    if (v.lifeT0 != null) { v.bestLife = Math.max(v.bestLife || 0, this.time - v.lifeT0); v.lifeT0 = null; }
     let k = 0;
     const carrier = this.flags.some(f => f.st === 1 && f.by === v.id), scoring = this.state === 'play';
     if (!scoring) { v.deaths--; k = att && att !== v ? att.id : 0; }
@@ -1943,7 +1959,7 @@ class Game {
     for (const it of this.items) { it.up = !it.off; it.t = 0; it.type = it.base; }
     this.bcast({ t: 'start', map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), tm: this.time, fs: this.flagState(), ts: this.ts });
     for (const p of this.players.values()) if (p.joined) {
-      p.ready = false; p.frags = 0; p.deaths = 0; p.cr = ECON.START; p.unl = OW0(); p.perk = { ar: 0, am: 0 }; p.streak = 0; p.lvl = 0; p.caps = 0; p.kills = 0; p.dmg = 0; p.joinT = this.time; p.dirty = true;
+      p.ready = false; p.frags = 0; p.deaths = 0; p.cr = ECON.START; p.unl = OW0(); p.perk = { ar: 0, am: 0 }; p.streak = 0; p.lvl = 0; p.caps = 0; p.kills = 0; p.dmg = 0; p.bestLife = 0; p.lifeT0 = p.alive ? this.time : null; p.joinT = this.time; p.dirty = true;
       this.spawn(p);
     }
     this.sendScores();

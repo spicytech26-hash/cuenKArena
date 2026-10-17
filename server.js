@@ -45,7 +45,7 @@ for (const mode of MODE_IDS) games[mode] = new Game({
     cuentas.addXP(p.acct, gain, info).then(r => {
       if (!r) return;
       p.plvl = r.perfil.nivel;
-      if (p.send) p.send({ t: 'xp', gain, antes: r.antes, perfil: r.perfil });
+      if (p.send) p.send({ t: 'xp', gain, antes: r.antes, perfil: r.perfil, parts: p.xpParts || null });
     }).catch(e => console.error('Error al mandar la experiencia:', e.message));
   }
 });

@@ -68,6 +68,8 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 #voteBox .vfoot{font-size:11px;color:#9fb6d8;margin-top:6px;text-align:center}
 #voteBox b{color:#ff9a7a}#voteBox .k{display:inline-block;border:1px solid #8fd0ff;padding:0 5px;margin-right:4px;color:#fff;font-size:11px}
 #interXP{width:100%;margin-top:12px}
+#interXP .xpParts{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:8px;font-size:12px;color:var(--muted)}
+#interXP .xpParts span{animation:rowIn .35s ease-out both}#interXP .xpParts b{color:var(--cash);font-weight:400}
 #interXP .xpNote{text-align:center;font-family:var(--display);font-size:clamp(15px,2vw,19px);color:var(--cash)}
 .xpCard{display:flex;gap:14px;align-items:center;background:linear-gradient(90deg,rgba(40,28,14,.92),rgba(20,14,9,.92));border:1px solid #5a3d1c;box-shadow:0 4px 0 #000;padding:12px 16px;position:relative;overflow:hidden}
 .xpCard.lvup{animation:lvFlash .9s ease-out}
@@ -2346,6 +2348,10 @@ function animXP(m){
     if(k<1)xpAnim=requestAnimationFrame(step);else SFX.cash();
   };
   xpAnim=requestAnimationFrame(step);
+  // detalle: de dónde salió la experiencia
+  if(m.parts){const N={partida:'Partida',minutos:'Minutos jugados',bajas:'Bajas',aguante:'Aguante (vida más larga)',victoria:'Victoria',capturas:'Capturas'};
+    const rows=Object.keys(N).filter(k=>m.parts[k]>0).map((k,i)=>'<span style="animation-delay:'+(.15+i*.12)+'s">'+N[k]+' <b>+'+m.parts[k]+'</b></span>').join('');
+    let d=card.parentElement.querySelector('.xpParts');if(!d){d=document.createElement('div');d.className='xpParts';card.after(d);}d.innerHTML=rows;}
 }
 function medalSVG(L,size){
   // medalla estilo "Tour of Duty" de TF2: cinta, disco con el color del rango y el nivel en el centro

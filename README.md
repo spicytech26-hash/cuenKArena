@@ -26,7 +26,7 @@ Como en Counter-Strike llevás **una sola arma principal** (ranura 1): arrancás
 | Rifle de plasma | 110 (atraviesa) | 1 / 2 |
 | Cuchillo mariposa | 55, 99 por la espalda; el segundo tajo dentro de 4 s mata siempre; ignora el blindaje; alcance 2,6 m | 2 / 2 |
 | Francotirador | 115, 230 a la cabeza (click derecho: mira) | 1 / 2 |
-| Bomba molotov (tecla 4 o G) | se rompe al primer golpe y deja 6 s de fuego en 5 m de radio: 5,5 cada décima de segundo, unos 55 por segundo (la mitad a vos). Es de un solo uso: se compra estando vivo por ¤ 500 (3 por compra, hasta 6) y si te matan la perdés | — |
+| Bomba molotov (tecla 4 o G) | se rompe al primer golpe y deja 6 s de fuego en 5 m de radio: 5,5 cada décima de segundo, unos 55 por segundo (la mitad a vos). Es de un solo uso: se compra estando vivo por ¤ 300 (3 por compra, hasta 6) y si te matan la perdés | — |
 | Rifle de caza | cualquier impacto mata | 1 / 1 — la bala viaja a 260 m/s y cae un poco (67 cm a 100 m); click derecho apunta con las miras de hierro. Los tiros de más de 22 m, al aire o con mucho vuelo dan premio en créditos |
 
 El blindaje absorbe un tercio del daño y llega como máximo a 100; la megasalud sube hasta 150.
@@ -68,13 +68,14 @@ Con **Iniciar sesión con Google** se guardan en tu cuenta el nombre, el persona
 
 | Al terminar la partida | XP |
 |---|---|
-| Por jugarla | 40 |
-| Por cada baja | 10 |
-| Por minuto jugado | 4 |
-| Si ganás (vos o tu equipo) | 40 |
-| Por cada bandera capturada | 30 |
+| Por jugarla hasta el final | 50 |
+| Por minuto jugado (hasta 15) | 5 |
+| Por cada baja | 12 |
+| Aguante: por cada minuto de tu vida más larga sin morir (hasta 50) | 10 |
+| Si ganás (vos o tu equipo) | 50 |
+| Por cada bandera capturada | 40 |
 
-Máximo 600 por partida. Si te vas antes de que termine, te llevás lo de las bajas y los minutos. Cada nivel pide más que el anterior (220 XP el primero y 60 más por cada nivel, hasta el 100): el nivel 10 queda a unas 25 partidas y el 20 a unas 80. El nivel aparece como medalla en el menú y al lado de tu nombre en la tabla (Tab). Rangos: Recluta (1), Bronce (5), Plata (10), Oro (20), Platino (35), Diamante (50) y Leyenda (75).
+Máximo 700 por partida. Una partida normal de 10 minutos da unos 200-300 XP (10 bajas y aguantar 2 minutos vivo son 240), así que el primer nivel sale en una partida, el 5 en unas 5 y el 10 en unas 17. Si te vas antes de que termine, te llevás todo menos lo de terminarla y ganar (si te vas antes del primer minuto, solo las bajas). En la pantalla final se ve el detalle de dónde salió cada punto. Cada nivel pide más que el anterior (220 XP el primero y 60 más por cada nivel, hasta el 100). El nivel aparece como medalla en el menú y al lado de tu nombre en la tabla (Tab). Rangos: Recluta (1), Bronce (5), Plata (10), Oro (20), Platino (35), Diamante (50) y Leyenda (75).
 
 ### Activar las cuentas en Render
 

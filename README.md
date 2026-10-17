@@ -13,7 +13,7 @@ Al tocar **Jugar online** (o **Práctica con bots**) elegís el modo. Cada modo 
 
 ## Armas
 
-Como en Counter-Strike llevás **una sola arma principal** (ranura 2): arrancás con la escopeta, y si comprás otra, la reemplaza (aparecés con la comprada hasta que termina la partida; la escopeta se puede volver a elegir gratis en la tienda). Las armas tiradas en el mapa solo se levantan si todavía tenés la escopeta de base. Todos arrancan con pistola (automática, 60 balas que comparte con la ametralladora; se recargan juntando cajas de balas), escopeta y cuchillo. En Gungame la munición es infinita. Las demás se juntan del mapa o se compran.
+Como en Counter-Strike llevás **una sola arma principal** (ranura 1): arrancás con la escopeta, y si comprás otra, la reemplaza (aparecés con la comprada hasta que termina la partida; la escopeta se puede volver a elegir gratis en la tienda). Las armas tiradas en el mapa se levantan solas si todavía tenés la escopeta de base; si ya compraste otra, parate al lado y apretá **E** para cambiarla. Todos arrancan con pistola (automática, 60 balas que comparte con la ametralladora; se recargan juntando cajas de balas), escopeta y cuchillo. En Gungame la munición es infinita. Las demás se juntan del mapa o se compran.
 
 | Arma | Daño | Tiros para matar (100 de vida / con blindaje 100) |
 |---|---|---|
@@ -113,6 +113,10 @@ La máquina más chica cuesta unos pocos dólares por mes y se apaga sola cuando
 
 Vercel y Netlify **no** sirven para el servidor porque no mantienen conexiones WebSocket abiertas.
 
+## Daño
+
+Cada impacto muestra al lado de la mira cuánto le sacaste (con un "ding" como en TF2) y suma la ráfaga; cuando dejás de pegarle aparece el **total** que le sacaste.
+
 ## Al morir
 
 Como en Team Fortress 2: la cámara vuela hasta quedar enfrente del que te eliminó y lo muestra unos segundos (*Te eliminó X con Y · Reaparecés en 3*), y reaparecés solo a los 3,6 s. Mientras tanto podés abrir la tienda con B. Si te mata la lava, una caída o tu propia explosión, la cámara da una vuelta sobre donde caíste.
@@ -159,7 +163,8 @@ Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 
 | W A S D | moverse |
 | Espacio | saltar (mantenelo para encadenar saltos) |
 | Mouse / click | apuntar / disparar |
-| 1 · 2 · 3 · 4, rueda, Q | como en Counter-Strike: 1 pistola, 2 arma principal, 3 cuchillo (también V), 4 molotov. Q vuelve al arma que tenías antes |
+| 1 · 2 · 3 · 4, rueda, Q | 1 arma principal, 2 pistola, 3 cuchillo (también V), 4 molotov. Q vuelve al arma que tenías antes. En Gungame: 1 el arma del nivel y 3 el cuchillo (acuchillar baja un nivel al otro) |
+| E | agarrar el arma tirada al lado: reemplaza tu principal hasta que morís (al reaparecer volvés a tener la comprada) |
 | F | inspeccionar el arma (como en CS o Valorant) |
 | F o V | cuchillo |
 | Ctrl o C | agacharse (más lento y más bajo; saltá y agachate para pasar por ventanas) |

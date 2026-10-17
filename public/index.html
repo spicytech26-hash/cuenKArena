@@ -39,6 +39,17 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 #acctBox .linkbtn{background:none;border:none;color:var(--muted);text-decoration:underline;cursor:pointer;font-family:var(--mono);font-size:12px;padding:0;margin-left:auto}
 #acctBox .note{margin:0}
 .legal{margin:6px 0 0;font-size:12px;color:var(--muted)}.legal a{color:var(--muted)}.legal a:hover{color:var(--ink)}
+#grabHint{position:fixed;left:50%;top:calc(50% + 46px);transform:translateX(-50%);font-size:14px;color:var(--ink);background:rgba(11,9,7,.72);border:1px solid #000;padding:4px 12px;text-shadow:0 1px 0 #000;white-space:nowrap}
+#grabHint kbd{border:1px solid var(--amber);color:var(--amber);padding:0 6px;margin-right:6px;font-family:var(--mono)}
+/* daño hecho: cada impacto salta al lado de la mira y al terminar la ráfaga se muestra el total */
+#dmgPop,#dmgTot{position:fixed;left:calc(50% + 26px);font-family:var(--display);pointer-events:none;text-shadow:0 2px 0 #000,0 0 6px rgba(0,0,0,.6);opacity:0}
+#dmgPop{top:calc(50% - 34px);font-size:22px;color:#ffe14a}
+#dmgPop.show{animation:dmgpop .6s ease-out forwards}
+@keyframes dmgpop{0%{opacity:1;transform:translateY(0) scale(1.15)}70%{opacity:1}100%{opacity:0;transform:translateY(-26px) scale(1)}}
+#dmgTot{top:calc(50% + 6px);font-size:16px;color:#fff;letter-spacing:.06em}
+#dmgTot b{font-size:26px;color:#ff8a3a;font-weight:400}
+#dmgTot.on{opacity:1}#dmgTot.done{opacity:1;animation:dmgtot 1.4s ease-in forwards}
+@keyframes dmgtot{0%,60%{opacity:1}100%{opacity:0}}
 #voteBox{position:fixed;left:50%;top:calc(64px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:rgba(10,24,52,.92);border:1px solid #3d7fd8;box-shadow:0 4px 0 #000;padding:9px 16px;font-size:14px;color:#e8f2ff;text-align:center;z-index:5;max-width:min(560px,92vw)}
 #voteBox b{color:#8fd0ff}#voteBox .k{display:inline-block;border:1px solid #8fd0ff;padding:0 6px;margin:0 3px;color:#fff}
 #interXP{text-align:center;font-family:var(--display);font-size:clamp(16px,2.2vw,22px);color:var(--cash);margin-top:6px;min-height:1.2em;display:flex;gap:10px;align-items:center;justify-content:center}
@@ -285,6 +296,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
   <div id="shopHint">B · TIENDA</div>
   <div id="slots"></div>
   <div id="voteBox" hidden role="status" aria-live="polite"></div>
+  <div id="grabHint" hidden></div>
+  <div id="dmgPop" aria-hidden="true"></div><div id="dmgTot" aria-hidden="true"></div>
   <div id="chat"><div id="chatLog"></div><input id="chatIn" maxlength="120" placeholder="Escribí y apretá Enter · /map pan · /bots N" hidden autocomplete="off"></div>
 </div>
 <div id="board" hidden>
@@ -302,7 +315,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
     <div class="shophead"><h2>TIENDA</h2><div class="wallet"><small>Tus créditos</small><span id="shopCr">¤ 0</span></div></div>
     <div id="shopMsg"></div>
     <div class="shopgrid" id="shopGrid"></div>
-    <div class="shopfoot">Ganás ¤ 200 por frag, ¤ 100 extra si cortás una racha de 3 y ¤ 100 extra con pistola. Como en Counter-Strike llevás una sola <b>arma principal</b> (tecla 2): la que comprás reemplaza a la anterior y aparecés con ella hasta que termina la partida. Pistola en el 1, cuchillo en el 3 y molotov en el 4. <b>B</b> o <b>Esc</b> para cerrar.</div>
+    <div class="shopfoot">Ganás ¤ 200 por frag, ¤ 100 extra si cortás una racha de 3 y ¤ 100 extra con pistola. Como en Counter-Strike llevás una sola <b>arma principal</b> (tecla 1): la que comprás reemplaza a la anterior y aparecés con ella hasta que termina la partida. Pistola en el 2, cuchillo en el 3 y molotov en el 4. Con <b>E</b> cambiás tu principal por un arma tirada en el piso. <b>B</b> o <b>Esc</b> para cerrar.</div>
   </div>
 </div>
 <div id="menu">
@@ -385,7 +398,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
     </div>
     <div class="keys" id="mKeys">
       <kbd>W A S D</kbd><span>moverse</span><kbd>Espacio</kbd><span>saltar (mantené para bunny hop)</span>
-      <kbd>Click</kbd><span>disparar (click derecho: mira del francotirador)</span><kbd>1 · 2 · 3 · 4</kbd><span>pistola · arma principal · cuchillo · molotov · Q arma anterior · F inspeccionar · R recargar</span>
+      <kbd>Click</kbd><span>disparar (click derecho: mira del francotirador)</span><kbd>1 · 2 · 3 · 4</kbd><span>arma principal · pistola · cuchillo · molotov · Q arma anterior · E agarrar arma del piso · F inspeccionar · R recargar</span>
       <kbd>Ctrl · C</kbd><span>agacharse (saltá y agachate para pasar por ventanas)</span>
       <kbd>B</kbd><span>tienda</span><kbd>Tab</kbd><span>tabla de frags</span>
       <kbd>T · Enter</kbd><span>chat</span><kbd>Esc</kbd><span>menú</span>
@@ -1253,6 +1266,7 @@ function onMsg(m){
       if(MODE==='gungame'&&(me.lvlSwitch||!me.ow[me.w])&&me.ow[GG[Math.min(me.lvl,GG.length-1)]]){me.lvlSwitch=false;const nw=GG[Math.min(me.lvl,GG.length-1)];if(nw!==me.w){me.w=nw;me.raise=1;me.scope=false;me.cool=Math.max(me.cool,.25);if(WEAPONS[nw].mag){me.mag[nw]=WEAPONS[nw].mag;me.rel=0;}showWeapon();}}
       else if(!me.ow[me.w]){const i=me.ow.findIndex(Boolean);if(i>=0){me.w=i;me.raise=1;me.cool=Math.max(me.cool,.25);showWeapon();}}
       else if(MODE!=='gungame')for(let i=WEAPONS.length-1;i>=2;i--)if(me.ow[i]&&!before[i]&&me.alive&&i>me.w&&!mouseDown){selectWeapon(i,true);break;}
+      if(me.grabW!=null&&me.ow[me.grabW]&&me.alive){const g=me.grabW;me.grabW=null;selectWeapon(g,true);}
       updateHUD();if(!$('shop').hidden)renderShop();break;
     }
     case 'sn': {
@@ -1312,6 +1326,7 @@ function onEvent(m){
     case 'team': ensurePlayer(m.id,null,m.c,undefined,undefined,m.tm);feedLine('<b style="color:'+m.c+'">'+esc(nameOf(m.id))+'</b> <i>pasó al equipo '+TEAMS[m.tm].name.toLowerCase()+'</i>');break;
     case 'flag': FL=m.fs;TS=m.ts;onFlag(m);break;
     case 'fire': fxFire(m);break;
+    case 'grab': me.grabW=m.w;break;
     case 'gdirect': announce('¡GRANADA DIRECTA!',m.n?'+'+m.n+' ¤':'');SFX.hunt();break;
     case 'hunt': announce('¡TIRO DE CAZADOR!',m.d+' m'+(m.air?' · en pleno salto':'')+(m.n?' · +'+m.n+' ¤':''));SFX.hunt();break;
     case 'lvl': {
@@ -1357,6 +1372,7 @@ function onEvent(m){
       if(Math.random()<.7||m.n>15)SFX.hurt();
       break;
     case 'hit':{
+      showDamage(m.n,!!m.k);
       G.hitT=.18;$('hitm').classList.toggle('kill',!!m.k);if(!(G.predHit>0)||m.k)SFX.hit(m.n);
       const t=players.get(m.id);if(t&&t.model)t.pain=.12;
       break;}
@@ -1394,7 +1410,7 @@ function onKill(m){
   else if(!m.k||m.k===m.v)line=vn+' <i>se voló a sí mismo</i>';
   else if(m.ns)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>mató</i> <b class="ns">SIN USAR MIRA</b> <i>a</i> '+vn;
   else line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>'+(W_?W_.name:'')+'</i> '+vn;
-  if(m.ns&&m.k!==myId)sysChat(nameOf(m.k)+' mató SIN USAR MIRA a '+nameOf(m.v));
+  if(m.ns)sysChat(nameOf(m.k)+' mató SIN USAR MIRA a '+nameOf(m.v));
   feedLine(line,m.k===myId||m.v===myId);
   if(m.v===myId){
     me.alive=false;me.deadT=0;me.killer=m.k;me.respawnAsk=false;me.deathPos=[me.s.x,me.s.y,me.s.z];
@@ -1436,6 +1452,15 @@ function onPickup(type){
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function feedLine(html,mine){const d=document.createElement('div');d.innerHTML=html;if(mine)d.className='me';const f=$('feed');f.appendChild(d);while(f.children.length>6)f.firstChild.remove();setTimeout(()=>d.remove(),5200);}
 function chatLine(html,cls){const d=document.createElement('div');d.innerHTML=html;if(cls)d.className=cls;const f=$('chatLog');f.appendChild(d);while(f.children.length>8)f.firstChild.remove();}
+// cada impacto suma; si en 0,9 s no le volvés a pegar, aparece el total de la ráfaga
+const DMG={sum:0,t:0,timer:0};
+function showDamage(n,kill){
+  if(!n)return;DMG.sum+=n;
+  const p=$('dmgPop');p.textContent='-'+n;p.classList.remove('show');void p.offsetWidth;p.classList.add('show');
+  const t=$('dmgTot');t.className='on';t.innerHTML='<b>'+DMG.sum+'</b>';
+  clearTimeout(DMG.timer);
+  DMG.timer=setTimeout(()=>{t.className='';void t.offsetWidth;t.innerHTML='TOTAL <b>'+DMG.sum+'</b>'+(kill?' · ELIMINADO':'');t.className='done';DMG.sum=0;},kill?150:900);
+}
 function sysChat(t){chatLine(esc(t),'sys');}
 function announce(t,s){const a=$('cMsg'),b=$('cSub');a.textContent=t;b.textContent=s||'';[a,b].forEach(e=>{e.classList.remove('show');void e.offsetWidth;e.classList.add('show');});}
 
@@ -1721,16 +1746,18 @@ function openChat(){chatOpen=true;$('chat').classList.add('open');const i=$('cha
 function closeChat(send,relock=true){if(!chatOpen)return;const i=$('chatIn');const txt=i.value.trim();if(send&&txt&&net)net.send({t:'chat',m:txt});chatDraft=send?'':i.value;chatOpen=false;i.hidden=true;$('chat').classList.remove('open');i.blur();if(inGame&&relock)lockPointer();}
 // si el chat pierde el foco (clic afuera, Alt+Tab) se cierra solo: nunca te deja trabado
 $('chatIn').addEventListener('blur',()=>{if(chatOpen)setTimeout(()=>{if(chatOpen&&document.activeElement!==$('chatIn'))closeChat(false,false);},0);});
-$('chatIn').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();closeChat(true);}else if(e.key==='Escape'){e.preventDefault();closeChat(false);}});
+$('chatIn').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();closeChat(true);}else if(e.key==='Escape'){e.preventDefault();closeChat(false,false);if(inGame)announce('','Hacé click para volver al juego');}});
 addEventListener('keydown',e=>{
   if(chatOpen){if(document.activeElement===$('chatIn'))return;closeChat(false);}
-  if(!$('shop').hidden){if(e.code==='KeyB'||e.code==='Escape'){e.preventDefault();closeShop();}return;}
+  if(!$('shop').hidden){if(e.code==='KeyB'){e.preventDefault();closeShop();}else if(e.code==='Escape'){e.preventDefault();closeShop(true);SFX.ui();if(inGame)announce('','Hacé click para volver al juego');}return;}
   if(!inGame||!$('menu').hidden){if(e.code==='Escape'&&inGame&&!$('menu').hidden&&document.activeElement!==$('pName')){e.preventDefault();resumeGame();}return;}
   if(e.code==='Escape'){e.preventDefault();if(!$('inter').hidden)return;if(document.pointerLockElement)document.exitPointerLock();openPause();return;}
   keys[e.code]=true;
   if(['Space','Tab','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)||e.ctrlKey)e.preventDefault();
-  // como en Counter-Strike: 1 pistola · 2 arma principal · 3 cuchillo · 4 molotov
-  const n=MODE==='gungame'?undefined:{Digit1:0,Digit2:C.primaryOf(me.ow),Digit3:7,Digit4:10,Numpad1:0,Numpad2:C.primaryOf(me.ow),Numpad3:7,Numpad4:10}[e.code];
+  // 1 arma principal · 2 pistola · 3 cuchillo · 4 molotov (en Gungame: 1 el arma del nivel, 3 el cuchillo)
+  const ggW=MODE==='gungame'?me.ow.findIndex((v,i)=>v&&i!==7):-1;
+  const n=MODE==='gungame'?{Digit1:ggW,Digit3:7,Numpad1:ggW,Numpad3:7}[e.code]:{Digit1:C.primaryOf(me.ow),Digit2:0,Digit3:7,Digit4:10,Numpad1:C.primaryOf(me.ow),Numpad2:0,Numpad3:7,Numpad4:10}[e.code];
+  if(e.code==='KeyE'&&!e.repeat&&net&&me.alive&&MODE!=='gungame')net.send({t:'grab'});
   if(e.code==='KeyR')startReload(me.w);
   if(e.code==='KeyV')selectWeapon(7);if(n!==undefined&&n>=0)selectWeapon(n);
   if(e.code==='KeyG')selectWeapon(10);
@@ -1750,6 +1777,11 @@ function changeBots(d){S.bots=Math.max(0,Math.min(15,S.bots+d));saveS();syncSett
 
 /* =================== SIMULACIÓN LOCAL =================== */
 function updMe(dt){
+  // aviso "E · agarrar" si hay un arma principal tirada al lado y no es la tuya
+  G.grabT=(G.grabT||0)-dt;if(G.grabT<=0){G.grabT=.15;let txt='';
+    if(me.alive&&MODE!=='gungame'&&level)for(const o of level.items){const inf=C.ITEMS[o.it.type];if(!o.g.visible||!inf||inf.weapon==null||!C.PRIMARY.includes(inf.weapon)||me.ow[inf.weapon])continue;
+      if(Math.hypot(me.s.x-o.it.x,me.s.z-o.it.z)<2.2&&Math.abs(me.s.y-o.it.y)<1.6){txt='<kbd>E</kbd>agarrar '+esc(inf.name)+(C.primaryOf(me.ow)>=0?' (deja '+esc(WEAPONS[C.primaryOf(me.ow)].name)+')':'');break;}}
+    const h=$('grabHint');if(h.dataset.t!==txt){h.dataset.t=txt;h.innerHTML=txt;h.hidden=!txt;}}
   if(!me.alive){me.deadT+=dt;
     // como en TF2: unos segundos mirando al que te mató y reaparecés solo
     const left=Math.max(0,DEATH_T-me.deadT);
@@ -1876,9 +1908,9 @@ function updateHUD(){
   const tl=Math.max(0,timeLeft);setTxt('tTime',Math.floor(tl/60)+':'+String(tl%60).padStart(2,'0'));
   setTxt('tPing',ping?ping+' ms':'–');
   $('quadChip').hidden=!(me.q>0&&me.alive);setTxt('quadT',String(me.q));
-  // cuatro ranuras como en CS: 1 pistola, 2 principal, 3 cuchillo, 4 molotov (solo si tenés)
+  // cuatro ranuras: 1 principal, 2 pistola, 3 cuchillo, 4 molotov (solo si tenés)
   const sl=$('slots');if(sl.children.length!==4)sl.innerHTML=[1,2,3,4].map(k=>'<div class="slot"><i>'+k+'</i><span></span><span></span></div>').join('');
-  const prim=C.primaryOf(me.ow),ws=gg?[-1,me.w,7,-1]:[0,prim,7,10];
+  const prim=C.primaryOf(me.ow),ws=gg?[me.ow.findIndex((v,i)=>v&&i!==7),-1,7,-1]:[prim,0,7,10];
   ws.forEach((w,k)=>{const d=sl.children[k],W_=WEAPONS[w],has=w>=0&&!!me.ow[w];d.hidden=!has;if(!has)return;
     d.children[1].textContent=W_.name;d.classList.add('own');d.classList.toggle('on',w===me.w);d.lastChild.textContent=W_.ammo&&!gg?me.am[W_.ammo]:'∞';});
 }

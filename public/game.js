@@ -1272,9 +1272,25 @@ class Game {
       }
       case 'cfg': if (!this.o.online) this.configure(m); break;
       case 'kick': this.startKick(p, m.id | 0); break;
+      case 'grab': this.grab(p); break;
       case 'ready': if (this.state === 'inter' && p.joined && !p.bot && !p.ready) { p.ready = true; this.checkReady(); } break;
       case 'vote': this.castVote(p, !!m.y); break;
     }
+  }
+  // E: cambiar tu arma principal por la que está tirada al lado (como en CS); al reaparecer volvés a tener la comprada
+  grab(p) {
+    if (!p.alive || !p.joined || this.mode.gg || !this.live()) return;
+    let best = null, bd = 2.2;
+    for (const it of this.items) {
+      const info = ITEMS[it.type]; if (!it.up || it.off || !info || info.weapon == null || !isPrimary(info.weapon) || p.ow[info.weapon]) continue;
+      const d = Math.hypot(p.s.x - it.x, p.s.z - it.z); if (d < bd && Math.abs(p.s.y - it.y) < 1.6) { bd = d; best = it; }
+    }
+    if (!best) return;
+    const info = ITEMS[best.type];
+    setPrimary(p, info.weapon); p.am[info.ammo] = Math.min(AMMO_MAX[info.ammo], p.am[info.ammo] + info.n); p.dirty = true;
+    best.up = false; best.t = info.respawn;
+    this.bcast({ t: 'ev', e: 'item', i: best.i, up: 0, by: p.id });
+    if (p.send) p.send({ t: 'ev', e: 'grab', w: info.weapon });
   }
   // fin de partida: si todas las personas apretaron "Jugar de nuevo", arranca la próxima sin esperar
   checkReady() {

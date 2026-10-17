@@ -120,7 +120,8 @@ const TEAMS = [{ name: 'Rojo', c: '#ff4a3a' }, { name: 'Azul', c: '#3a8bff' }];
    Se gana jugando online: por terminar la partida, por cada baja, por ganar y por capturar. */
 const XP = { PLAY: 40, KILL: 10, WIN: 40, CAP: 30, PER_MIN: 4, MAX_MATCH: 600 };
 const MAX_LEVEL = 100;
-const xpToNext = L => 100 + 30 * (L - 1);
+// cada nivel pide 220 XP más 60 por nivel ya alcanzado (el 10 queda a ~25 partidas, el 20 a ~80)
+const xpToNext = L => 220 + 60 * (L - 1);
 function levelInfo(xp) {
   let L = 1, rest = Math.max(0, xp | 0);
   while (L < MAX_LEVEL && rest >= xpToNext(L)) { rest -= xpToNext(L); L++; }
@@ -1094,13 +1095,14 @@ const SKILL = [
    Se comparan palabras enteras después de normalizar: sin tildes, números y símbolos como letras (4→a, 1→i, 0→o…),
    y→i, b→v, th→t, letras repetidas juntas una sola vez y sin puntos ni guiones entre letras. "banana" o "mañana" no se tocan. */
 const BAD_WORDS = ['fati', 'fatima', 'fatimita', 'fatita', 'fatii', 'ana', 'anita', 'anana', 'vani', 'vanina', 'vaninita', 'vanita', 'vagina', 'vajina', 'vrenda', 'vrendita',
-  'varvie', 'varvi', 'varvara', 'varvarita', 'varvita', 'varvis'];   // barbie, barbi, barbara (la b se compara como v)
+  'varvie', 'varvi', 'varvara', 'varvarita', 'varvita', 'varvis',
+  'agasoni', 'agason', 'agasonis', 'leguisamon', 'legisamon', 'leguisamones', 'leguisa'];   // agazzoni, leguizamón (la z se compara como s)   // barbie, barbi, barbara (la b se compara como v)
 const BAD_SET = new Set(BAD_WORDS.flatMap(w => [w, w + 's']));
 const LEET = { '4': 'a', '@': 'a', '1': 'i', '!': 'i', '|': 'i', '3': 'e', '0': 'o', '5': 's', '$': 's', '7': 't', '8': 'v', '6': 'g', '9': 'g' };
 function normWord(w) {
   let x = w.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   x = x.replace(/[4@1!|30$56789]/g, c => LEET[c] || c).replace(/[^a-zñ]/g, '').replace(/ñ/g, 'n');
-  x = x.replace(/th/g, 't').replace(/y/g, 'i').replace(/b/g, 'v').replace(/(.)\1+/g, '$1');
+  x = x.replace(/th/g, 't').replace(/y/g, 'i').replace(/b/g, 'v').replace(/z/g, 's').replace(/(.)\1+/g, '$1');
   return x;
 }
 function isBad(w) {
@@ -1117,6 +1119,14 @@ function censor(text) {
     // dentro de un token con signos (fati_ana, ana-123): cada pedazo de letras por separado
     return tok.replace(/[a-zA-ZÀ-ÿñÑ0-9@$!|]+/g, part => isBad(part) ? '*'.repeat(Math.min(8, part.length)) : part);
   });
+  // palabras partidas en dos o tres pedazos: "fat i", "aga zzoni", "le gui zamon"
+  const toks = out.split(/(\s+)/);
+  for (let i = 0; i < toks.length; i += 2) for (const n of [2, 3]) {
+    const idx = []; for (let k = 0; k < n && i + 2 * k < toks.length; k++) idx.push(i + 2 * k);
+    if (idx.length < n || idx.some(j => /^\*+$/.test(toks[j]))) continue;
+    if (isBad(idx.map(j => toks[j]).join(''))) idx.forEach(j => toks[j] = '*'.repeat(Math.min(8, toks[j].length)));
+  }
+  out = toks.join('');
   // letras sueltas separadas por espacios: "a n a", "f a t i"
   out = out.replace(/(?:^|(?<=\s))((?:\S\s+){2,}\S)(?=\s|$)/g, seq => {
     const letters = seq.split(/\s+/);
@@ -1246,7 +1256,7 @@ class Game {
         this.bcast({ t: 'ev', e: 'skin', id: p.id, s: p.skin });
         break;
       }
-      case 'respawn': if (p.joined && !p.alive && p.deadT > 1 && this.live()) this.spawn(p); break;
+      case 'respawn': if (p.joined && !p.alive && p.deadT > 3 && this.live()) this.spawn(p); break;
       case 'limit': {
         const n = m.n | 0;
         if (!this.mode.tdm || n < 5 || n > 500 || (this.o.online && this.state === 'play')) return;
@@ -1467,8 +1477,10 @@ class Game {
     if (Math.hypot(o[0] - ex, o[1] - ey, o[2] - ez) > 3) o = [ex, ey, ez];
     this.consume(p, w);
     const W_ = WEAPONS[w];
-    if (W_.type === 'proj') { this.spawnProj(p, w, o, d); return; }
+    const ns = !!W_.scope && !m.sc; // arma con mira disparada sin apuntar
+    if (W_.type === 'proj') { this.spawnProj(p, w, o, d); this.projs[this.projs.length - 1].ns = ns; return; }
     this.bcast({ t: 'ev', e: 'shot', id: p.id, w, o: r3a(o), d: r3a(d) }, p.id);
+    this.curNS = ns;
     const claims = Array.isArray(m.h) ? m.h.slice(0, 16) : [];
     const done = new Set();
     for (const c of claims) {
@@ -1480,6 +1492,7 @@ class Game {
       const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? W_.dmg * (hs ? 1.5 : 1) : W_.head ? W_.dmg * (hs ? W_.head : 1) : (n + hs) * W_.dmg;
       this.damage(t, dmg * this.mult(p), p, w, d, .05, 'frag');
     }
+    this.curNS = false;
   }
   // cuchillo como en Counter-Strike: tajo de 40; por la espalda hace casi el doble, pero nunca mata de un golpe a alguien sano
   meleeDmg(p, t, W_) {
@@ -1573,8 +1586,10 @@ class Game {
         if (own.send) own.send({ t: 'ev', e: 'gdirect', n: this.mode.shop ? 150 : 0 });
         this.bcast({ t: 'ev', e: 'sys', m: own.name + ' le metió una granada directa a ' + direct.name });
       }
+      this.curNS = !!pr.ns;
       this.damage(direct, (clean ? W_.clean : W_.direct) * pr.q, own, pr.w, [pr.v[0] / sp, pr.v[1] / sp, pr.v[2] / sp], pr.k === 'bullet' ? .02 : .08, 'frag');
     }
+    this.curNS = false;
     if (W_.fire) this.startFire(pr, W_.fire);
     for (const t of this.players.values()) {
       if (!t.alive || !t.joined || t === direct) continue;
@@ -1655,7 +1670,8 @@ class Game {
     } else v.frags--;
     v.streak = 0;
     this.dropCarried(v);
-    this.bcast({ t: 'ev', e: 'kill', k, v: v.id, w: w == null ? -1 : w, how: how || 'frag', gib: gib ? 1 : 0, p: r3a([v.s.x, v.s.y, v.s.z]) });
+    const ns = !!(this.curNS && k && k !== v.id && w != null && WEAPONS[w] && WEAPONS[w].scope);
+    this.bcast({ t: 'ev', e: 'kill', k, v: v.id, w: w == null ? -1 : w, how: how || 'frag', gib: gib ? 1 : 0, ns: ns ? 1 : 0, p: r3a([v.s.x, v.s.y, v.s.z]) });
     if (v.bot && v.ai) v.ai.path = null;
     let won = false;
     if (this.mode.gg && scoring) won = this.ggKill(v, att, w);
@@ -1866,7 +1882,7 @@ class Game {
       if (!p.alive) {
         p.deadT += dt;
         if (p.bot && p.deadT > 1.6 && this.live()) this.spawn(p);
-        else if (!p.bot && p.deadT > (this.state === 'play' ? 6 : 2) && this.live()) this.spawn(p);
+        else if (!p.bot && p.deadT > (this.state === 'play' ? 4.5 : 2) && this.live()) this.spawn(p);
         continue;
       }
       if (!this.live()) continue;

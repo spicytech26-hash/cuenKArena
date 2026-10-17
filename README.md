@@ -67,7 +67,7 @@ Con **Iniciar sesión con Google** se guardan en tu cuenta el nombre, el persona
 | Si ganás (vos o tu equipo) | 40 |
 | Por cada bandera capturada | 30 |
 
-Máximo 600 por partida. Si te vas antes de que termine, te llevás lo de las bajas y los minutos. Cada nivel pide un poco más que el anterior (100 XP el primero, 30 más por nivel, hasta el 100). El nivel aparece como medalla en el menú y al lado de tu nombre en la tabla (Tab). Rangos: Recluta (1), Bronce (5), Plata (10), Oro (20), Platino (35), Diamante (50) y Leyenda (75).
+Máximo 600 por partida. Si te vas antes de que termine, te llevás lo de las bajas y los minutos. Cada nivel pide más que el anterior (220 XP el primero y 60 más por cada nivel, hasta el 100): el nivel 10 queda a unas 25 partidas y el 20 a unas 80. El nivel aparece como medalla en el menú y al lado de tu nombre en la tabla (Tab). Rangos: Recluta (1), Bronce (5), Plata (10), Oro (20), Platino (35), Diamante (50) y Leyenda (75).
 
 ### Activar las cuentas en Render
 
@@ -113,6 +113,12 @@ La máquina más chica cuesta unos pocos dólares por mes y se apaga sola cuando
 
 Vercel y Netlify **no** sirven para el servidor porque no mantienen conexiones WebSocket abiertas.
 
+## Al morir
+
+Como en Team Fortress 2: la cámara vuela hasta quedar enfrente del que te eliminó y lo muestra unos segundos (*Te eliminó X con Y · Reaparecés en 3*), y reaparecés solo a los 3,6 s. Mientras tanto podés abrir la tienda con B. Si te mata la lava, una caída o tu propia explosión, la cámara da una vuelta sobre donde caíste.
+
+Las bajas con francotirador o rifle de caza **sin apuntar con la mira** se anuncian para todos: *JUGADOR mató SIN USAR MIRA a JUGADOR2*.
+
 ## Fin de partida
 
 Al terminar aparece la tabla con la cuenta regresiva a la próxima partida. **Jugar de nuevo** en práctica arranca otra al instante; online marca que estás listo (se ve *2/3 jugadores listos*) y, cuando todos los que están en la sala lo apretaron, arranca sin esperar la cuenta.
@@ -123,7 +129,7 @@ En las partidas online, desde el menú de pausa (**Esc**) → *Votar para echar 
 
 ## Palabras censuradas
 
-En el chat y en los nombres (también los de las cuentas) se tapan con asteriscos FATI, FATIMA, FATY, ANA, VANI, VANINA, VAGINA, BRENDA, BARBIE, BARBI y BARBARA, con sus variantes: mayúsculas, tildes, letras repetidas, números en lugar de letras (4N4, F4T1), letras separadas (a n a, f.a.t.i), diminutivos y plurales. Se comparan palabras enteras, así que *banana*, *mañana* o *Anabel* no se tocan. La lista está en `BAD_WORDS` dentro de `public/game.js`.
+En el chat y en los nombres (también los de las cuentas) se tapan con asteriscos FATI, FATIMA, FATY, ANA, VANI, VANINA, VAGINA, BRENDA, BARBIE, BARBI, BARBARA, AGAZZONI, LEGUIZAMÓN y FAT I, con sus variantes: mayúsculas, tildes, letras repetidas, números en lugar de letras (4N4, F4T1), letras separadas (a n a, f.a.t.i), palabras partidas en dos o tres pedazos (fat i, aga zzoni), diminutivos y plurales. Se comparan palabras enteras, así que *banana*, *mañana* o *Anabel* no se tocan. La lista está en `BAD_WORDS` dentro de `public/game.js`.
 
 ## Configuración
 

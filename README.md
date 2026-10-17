@@ -135,7 +135,7 @@ Al terminar aparece la tabla con la cuenta regresiva a la próxima partida. **Ju
 
 ## Votación para echar a un jugador
 
-En las partidas online, desde el menú de pausa (**Esc**) → *Votar para echar a un jugador*, o con `/echar NOMBRE` en el chat. Todos ven el cartel y votan con **Y** o **N** durante 30 segundos. Pasa si vota que sí más de la mitad de los demás jugadores (hacen falta 3 personas como mínimo). El echado no puede volver a esa sala por 10 minutos. Cada jugador puede iniciar una votación cada 90 segundos.
+En las partidas online, desde el menú de pausa (**Esc**) → el enlace chiquito *Votar para echar a alguien* (abajo de los botones), o con `/echar NOMBRE` en el chat. Todos ven el cartel y votan con **Y** o **N** durante 30 segundos. Pasa si vota que sí más de la mitad de los demás jugadores (hacen falta 3 personas como mínimo). El echado no puede volver a esa sala por 10 minutos: se lo reconoce por su cuenta de Google o por su navegador, nunca por la IP ni por el nombre, así los que juegan en el mismo wifi o se llaman igual no quedan afuera. Cada jugador puede iniciar una votación cada 90 segundos.
 
 ## Palabras censuradas
 
@@ -221,3 +221,8 @@ Los bots generan su mapa de navegación solos a partir de las cajas, así que no
 ### Seguridad
 
 El servidor confía en la posición que manda cada cliente, así que alguien con conocimientos podría hacer trampa moviéndose donde quiera. Para jugar con amigos alcanza; para un servidor público grande convendría validar el movimiento del lado del servidor.
+
+## Rendimiento
+
+- Los rayos (disparos, línea de visión de los bots, explosiones) primero descartan con una prueba rápida que no crea objetos, así no se llena la memoria de basura ni hay pausas del recolector.
+- La navegación de los bots se arma varias veces más rápido, y el servidor la prepara para todos los mapas al arrancar. Antes, cada cambio de mapa congelaba la partida un par de segundos para todos. En la práctica se arma la del próximo mapa mientras se ve la tabla final.

@@ -17,7 +17,10 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const zlib = require('zlib');
-const { Game, MODES, MODE_IDS } = require('./public/game.js');
+const { Game, MODES, MODE_IDS, MAPS, MAP_IDS, getNav } = require('./public/game.js');
+// la navegación de los bots de todos los mapas se arma al arrancar: si no, el servidor se congelaba
+// un par de segundos (para todos) cada vez que una partida pasaba a un mapa nuevo
+{ const t0 = Date.now(); for (const id of MAP_IDS) getNav(MAPS[id]); console.log('Mapas listos en ' + (Date.now() - t0) + ' ms'); }
 const cuentas = require('./cuentas.js');
 
 const PORT = +process.env.PORT || 3000;
@@ -174,9 +177,6 @@ server.on('upgrade', (req, sock) => {
     ws.send(cacheStr);
   });
   if (!id) { setTimeout(() => ws.close(), 200); return; }
-  // IP real detrás del proxy de Render, para que un jugador echado no vuelva enseguida
-  const ip = String(req.headers['x-forwarded-for'] || sock.remoteAddress || '').split(',')[0].trim();
-  const gp = game.players.get(id); if (gp) gp.ip = ip;
   const gmode = Object.keys(games).find(k => games[k] === game);
   kickers.set(gmode + ':' + id, () => setTimeout(() => ws.close(), 300));
   ws.onmessage = text => {

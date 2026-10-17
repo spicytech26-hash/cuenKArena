@@ -121,6 +121,13 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 #chat{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(120px + env(safe-area-inset-bottom,0px));width:min(440px,calc(100vw - 32px));display:flex;flex-direction:column;gap:2px;font-size:14px}
 #chatLog div{text-shadow:0 1px 0 #000,0 0 4px #000;animation:fade 9s forwards;overflow-wrap:anywhere}
 #chatLog b{font-weight:400}
+#kickPanel{margin:6px 0 0;font-family:var(--mono);font-size:12px;color:#9c907c}
+#kickPanel summary{cursor:pointer;display:inline-block;padding:2px 0;user-select:none}
+#kickPanel summary:hover{color:var(--ink)}
+#kickPanel .kRow{display:flex;gap:6px;margin-top:6px}
+#kickPanel select,#kickPanel button{font-family:var(--mono);font-size:12px;background:#120e0b;color:var(--ink);border:1px solid #000;padding:3px 6px}
+#kickPanel button{cursor:pointer;background:#3a1a12}#kickPanel button:hover{background:#5a2416}
+#kickPanel .kNote{margin-top:4px;font-size:11px;opacity:.8;max-width:420px}
 #chatLog .tdot{display:inline-block;width:8px;height:8px;margin-right:5px;border:1px solid #000;vertical-align:1px}
 #chatLog .sys{color:var(--rail)}
 #chat.open #chatLog div{animation:none;opacity:1}
@@ -337,6 +344,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
       <button id="bSet" class="btn" type="button" aria-expanded="false" aria-controls="settings">Ajustes</button>
       <button id="bLeave" class="btn" type="button" hidden>Salir de la partida</button>
     </div>
+    <details id="kickPanel" hidden>
+      <summary>Votar para echar a alguien</summary>
+      <div class="kRow"><select id="kickSel" aria-label="Jugador"></select><button type="button" id="bKick">Votar</button></div>
+      <div class="kNote">Pasa si vota que sí más de la mitad de los demás (Y sí · N no). El echado no puede volver a esta sala por 10 minutos.</div>
+    </details>
     <div id="modePanel" class="panel" hidden>
       <div class="ptitle" id="modeTitle">Elegí el modo</div>
       <div class="srow" id="modeLimitRow"><span>Bajas para ganar (Team Deathmatch)</span><div class="seg" id="mLimit" role="group" aria-label="Bajas para ganar"><button type="button" data-v="25">25</button><button type="button" data-v="50">50</button><button type="button" data-v="75">75</button><button type="button" data-v="100">100</button><input type="number" id="mLimitN" min="5" max="500" step="1" aria-label="Otra cantidad" style="width:70px;font-family:var(--mono);font-size:14px;background:#120e0b;color:var(--ink);border:1px solid #000;padding:5px 6px"></div></div>
@@ -345,11 +357,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
       <p class="note" id="modeNote"></p>
     </div>
     <div id="netNote"><span class="dot" id="netDot"></span><span id="netTxt">Buscando servidor…</span></div>
-    <div id="kickPanel" class="panel" hidden>
-      <div class="ptitle">Votar para echar a un jugador</div>
-      <div class="srow"><label for="kickSel">Jugador</label><select id="kickSel" style="grid-column:2 / 4;font-family:var(--mono);font-size:14px;background:#120e0b;color:var(--ink);border:1px solid #000;padding:6px"></select></div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button type="button" class="btn" id="bKick">Iniciar votación</button><span class="note" style="margin:0">Pasa si vota que sí más de la mitad de los demás. Durante la votación: <b>Y</b> sí · <b>N</b> no.</span></div>
-    </div>
     <div id="limitPanel" class="panel" hidden>
       <div class="ptitle">Team Deathmatch · bajas para ganar</div>
       <div class="srow"><span>Límite del equipo</span><div class="seg" id="pLimit" role="group" aria-label="Bajas para ganar"><button type="button" data-v="25">25</button><button type="button" data-v="50">50</button><button type="button" data-v="75">75</button><button type="button" data-v="100">100</button><input type="number" id="pLimitN" min="5" max="500" step="1" aria-label="Otra cantidad" style="width:70px;font-family:var(--mono);font-size:14px;background:#120e0b;color:var(--ink);border:1px solid #000;padding:5px 6px"></div></div>
@@ -432,6 +439,8 @@ try{const saved=JSON.parse(localStorage.getItem('cuenk_settings')||'{}');if(save
 if(S.map==='sagrado'||S.map==='salvaje')S.map='panymanteca';
 if(!S.mira||typeof S.mira!=='object')S.mira={s:'cruz',c:'#ffffff',z:1};
 if(!S.skin||typeof S.skin!=='object')S.skin={c:C.COLORS[0],v:'#ffffff',a:0};
+// identificador al azar de este navegador (solo sirve para que un jugador echado por votación no vuelva enseguida)
+let CID='';try{CID=localStorage.getItem('cuenk_cid')||'';if(!CID){CID=Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem('cuenk_cid',CID);}}catch(e){CID=Math.random().toString(36).slice(2);}
 function saveS(){try{localStorage.setItem('cuenk_settings',JSON.stringify(S));}catch(e){}}
 if(!S.name)S.name='Jugador'+(100+Math.floor(Math.random()*900));
 
@@ -1232,7 +1241,7 @@ function startGame(isOnline,mode){
   online=isOnline;myId=0;CLK.off=null;CLK.jit=.02;MODE=mode;myTeam=-1;FL=[];TS=[0,0];me.lvl=0;
   players.forEach((p,id)=>removePlayer(id));projs.forEach(p=>scene.remove(p.m));projs.length=0;
   scores=[];$('feed').innerHTML='';$('chatLog').innerHTML='';
-  const join=()=>{net.send({t:'join',name:S.name,skin:S.skin,skill:S.skill,fl:S.tdmLimit,tok:isOnline&&ACC?ACCTOK:undefined});};
+  const join=()=>{net.send({t:'join',cid:CID,name:S.name,skin:S.skin,skill:S.skill,fl:S.tdmLimit,tok:isOnline&&ACC?ACCTOK:undefined});};
   if(isOnline){
     net=new WSNet(wsURL+'?mode='+mode,join,(wasOk)=>{showMenu();toast(wasOk?'Se cortó la conexión con el servidor':'No se pudo conectar al servidor');net=null;inGame=false;});
   }else{net=new LocalNet(mode);join();}

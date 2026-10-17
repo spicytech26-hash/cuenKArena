@@ -875,18 +875,39 @@ function rayBrush(b, ox, oy, oz, dx, dy, dz) {
   }
   return { t: t0, n };
 }
+// prueba rápida de la caja (sin crear objetos): devuelve dónde entra el rayo o -1. Así se descartan casi todos los bloques
+// sin generar basura, y solo se hace la cuenta completa (rampas, normal) con los que de verdad pueden pegar
+function slab(b, ox, oy, oz, ix, iy, iz, maxT) {
+  let t0 = 0, t1 = maxT + 1e-6, ta, tb, q;
+  if (ix === Infinity || ix === -Infinity) { if (ox < b.min[0] || ox > b.max[0]) return -1; }
+  else { ta = (b.min[0] - ox) * ix; tb = (b.max[0] - ox) * ix; if (ta > tb) { q = ta; ta = tb; tb = q; } if (ta > t0) t0 = ta; if (tb < t1) t1 = tb; if (t0 > t1 + 1e-6) return -1; }
+  if (iy === Infinity || iy === -Infinity) { if (oy < b.min[1] || oy > b.max[1]) return -1; }
+  else { ta = (b.min[1] - oy) * iy; tb = (b.max[1] - oy) * iy; if (ta > tb) { q = ta; ta = tb; tb = q; } if (ta > t0) t0 = ta; if (tb < t1) t1 = tb; if (t0 > t1 + 1e-6) return -1; }
+  if (iz === Infinity || iz === -Infinity) { if (oz < b.min[2] || oz > b.max[2]) return -1; }
+  else { ta = (b.min[2] - oz) * iz; tb = (b.max[2] - oz) * iz; if (ta > tb) { q = ta; ta = tb; tb = q; } if (ta > t0) t0 = ta; if (tb < t1) t1 = tb; if (t0 > t1 + 1e-6) return -1; }
+  return t0;
+}
+const inv = v => Math.abs(v) < 1e-9 ? Infinity : 1 / v;
 function raycast(W, ox, oy, oz, dx, dy, dz, maxT) {
   let best = maxT, n = null;
+  const ix = inv(dx), iy = inv(dy), iz = inv(dz);
   for (const b of W.brushes) {
-    if (b.nc) continue;
+    if (b.nc || slab(b, ox, oy, oz, ix, iy, iz, best) < 0) continue;
     const h = rayBrush(b, ox, oy, oz, dx, dy, dz);
     if (h && h.t < best) { best = h.t; n = h.n; }
   }
   return n ? { t: best, n } : null;
 }
+// línea de visión: alcanza con que algo la corte (no hace falta buscar el más cercano)
 function los(W, ax, ay, az, bx, by, bz) {
-  const dx = bx - ax, dy = by - ay, dz = bz - az, d = Math.hypot(dx, dy, dz) || 1e-6;
-  return !raycast(W, ax, ay, az, dx / d, dy / d, dz / d, d - .05);
+  const dx = bx - ax, dy = by - ay, dz = bz - az, d = Math.hypot(dx, dy, dz) || 1e-6, L = d - .05;
+  const ux = dx / d, uy = dy / d, uz = dz / d, ix = inv(ux), iy = inv(uy), iz = inv(uz);
+  for (const b of W.brushes) {
+    if (b.nc || slab(b, ax, ay, az, ix, iy, iz, L) < 0) continue;
+    const h = rayBrush(b, ax, ay, az, ux, uy, uz);
+    if (h && h.t < L) return false;
+  }
+  return true;
 }
 
 /* ---------- Jugadores como objetivos ---------- */
@@ -947,9 +968,12 @@ function airtime(dy) { const disc = K.JUMP * K.JUMP - 2 * K.GRAV * dy; if (disc 
 function buildNav(W) {
   const X0 = Math.floor(W.bounds.x0), Z0 = Math.floor(W.bounds.z0), NX = Math.ceil(W.bounds.x1) - X0, NZ = Math.ceil(W.bounds.z1) - Z0;
   const cells = new Array(NX * NZ), nodes = [];
+  // bloques agrupados por columna (x) para no recorrer todo el mapa en cada celda: el armado tarda varias veces menos
+  const cols = [];
+  for (let cx = 0; cx < NX; cx++) { const qx = X0 + cx + .5 + .013; cols.push(W.brushes.filter(b => !b.nc && !b.mover && b.min[0] < qx && b.max[0] > qx)); }
   for (let cz = 0; cz < NZ; cz++) for (let cx = 0; cx < NX; cx++) {
     const px = X0 + cx + .5, pz = Z0 + cz + .5, tops = [];
-    for (const b of W.brushes) {
+    for (const b of cols[cx]) {
       // se mira un poquito corrido del centro para no caer justo en el borde entre dos escalones
       const qx = px + .013, qz = pz + .017;
       if (b.nc || b.mover || !(b.min[0] < qx && b.max[0] > qx && b.min[2] < qz && b.max[2] > qz)) continue;
@@ -991,8 +1015,13 @@ function buildNav(W) {
     if (edge) edges.push(n);
   }
   // saltos entre bordes (huecos y plataformas)
+  const EG = new Map(), ek = (x, z) => Math.floor(x / 7) + ',' + Math.floor(z / 7);
+  for (const m of edges) { const k = ek(m.x, m.z); if (!EG.has(k)) EG.set(k, []); EG.get(k).push(m); }
   for (const n of edges) {
-    for (const m of edges) {
+    const gx = Math.floor(n.x / 7), gz = Math.floor(n.z / 7), cand = [];
+    for (let a = -1; a <= 1; a++) for (let c = -1; c <= 1; c++) { const l = EG.get((gx + a) + ',' + (gz + c)); if (l) for (const m of l) cand.push(m); }
+    cand.sort((p, q) => p.id - q.id);
+    for (const m of cand) {
       if (m === n) continue;
       const dx = m.x - n.x, dz = m.z - n.z, d = Math.hypot(dx, dz);
       if (d < 1.9 || d > 6.3) continue;
@@ -1223,7 +1252,8 @@ class Game {
     switch (m.t) {
       case 'join': {
         if (p.joined) return;
-        if (this.isBanned(cleanName(m.name), p.acct, p.ip)) { p.send({ t: 'kicked', again: 1 }); if (this.o.onKick) this.o.onKick(p.id); return; }
+        p.cid = typeof m.cid === 'string' ? m.cid.replace(/[^a-z0-9]/gi, '').slice(0, 32) : '';
+        if (this.isBanned(p.acct, p.cid)) { p.send({ t: 'kicked', again: 1 }); if (this.o.onKick) this.o.onKick(p.id); return; }
         // si la sala estaba vacía, el primero que entra arranca una partida nueva
         if (this.o.online && this.humanCount(false) === 0 && (this.left < this.o.timelimit - 5 || this.state !== 'play')) this.restart(this.W.id);
         // el primero que entra a una sala vacía elige la dificultad de los bots
@@ -1344,8 +1374,9 @@ class Game {
     if (v.yes.size >= need) {
       this.vote = null; this.sendVote();
       this.bcast({ t: 'ev', e: 'sys', m: t.name + ' fue echado de la partida por votación' });
-      // no puede volver a esta sala por 10 minutos (por cuenta y por nombre)
-      const until = Date.now() + 10 * 60e3; this.bans.set('n:' + t.name.toLowerCase(), until); if (t.acct) this.bans.set('a:' + t.acct, until); if (t.ip) this.bans.set('i:' + t.ip, until);
+      // no puede volver a esta sala por 10 minutos: se lo reconoce por su cuenta de Google o por su navegador.
+      // NO por IP ni por nombre: varios amigos en el mismo wifi comparten IP, y muchos se llaman "Jugador"
+      const until = Date.now() + 10 * 60e3; if (t.acct) this.bans.set('a:' + t.acct, until); if (t.cid) this.bans.set('c:' + t.cid, until);
       if (t.send) t.send({ t: 'kicked' });
       if (this.o.onKick) this.o.onKick(t.id); else this.removeClient(t.id);
       return;
@@ -1355,9 +1386,9 @@ class Game {
       this.bcast({ t: 'ev', e: 'sys', m: 'La votación para echar a ' + v.name + ' no pasó (' + v.yes.size + ' sí, ' + v.no.size + ' no)' });
     }
   }
-  isBanned(name, acct, ip) {
+  isBanned(acct, cid) {
     const now = Date.now(), chk = k => { const u = this.bans.get(k); if (!u) return false; if (u < now) { this.bans.delete(k); return false; } return true; };
-    return chk('n:' + String(name || '').toLowerCase()) || (acct && chk('a:' + acct)) || (ip && chk('i:' + ip));
+    return !!((acct && chk('a:' + acct)) || (cid && chk('c:' + cid)));
   }
   uniqueName(n) { let name = n, k = 2; const used = new Set([...this.players.values()].filter(p => p.joined).map(p => p.name)); while (used.has(name)) name = n.slice(0, 13) + ' ' + (k++); return name; }
   configure(m) {
@@ -1891,6 +1922,7 @@ class Game {
     updateMovers(this.W, this.time);
     if (this.state === 'inter') {
       this.interT -= dt;
+      if (this.nextMap && this.interT < 23 && !NAVS[this.nextMap]) getNav(MAPS[this.nextMap]);
       if (this.interT <= 0) this.restart();
     } else if (this.state === 'lobby') {
       if (this.humanCount(false) >= this.mode.minPlayers) { this.state = 'count'; this.countT = 6; this.bcast({ t: 'ev', e: 'sys', m: '¡Ya son ' + this.humanCount(false) + '! El Team Deathmatch arranca en 6 segundos' }); this.sendScores(); }

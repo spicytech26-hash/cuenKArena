@@ -135,7 +135,7 @@ Al terminar aparece la tabla con la cuenta regresiva a la próxima partida. **Ju
 
 ## Votación para echar a un jugador
 
-En las partidas online, desde el menú de pausa (**Esc**) → el enlace chiquito *Votar para echar a alguien* (abajo de los botones), o con `/echar NOMBRE` en el chat. Todos ven el cartel y votan con **Y** o **N** durante 30 segundos. Pasa si vota que sí más de la mitad de los demás jugadores (hacen falta 3 personas como mínimo). La primera vez que echan a alguien en una partida puede volver a entrar enseguida, y le aparece un cartel avisándole que una segunda echada no lo dejará entrar hasta que termine la partida. Si lo echan por segunda vez, el cartel le muestra cuánto falta para que termine la partida (con cuenta regresiva) y recién ahí puede volver. Al terminar la partida se borra todo y se empieza de cero. Al echado se lo reconoce por su cuenta de Google o por su navegador, nunca por la IP ni por el nombre, así los que juegan en el mismo wifi o se llaman igual no quedan afuera. Cada jugador puede iniciar una votación cada 90 segundos.
+En las partidas online, con **Y** (el cartel *Y · KICKEAR* está arriba de *B · TIENDA*) se abre un menú con las personas de la partida: elegís a una con el número o un click y confirmás con Enter. A todos los demás les aparece a la izquierda un panel de votación con barras de sí y no, la marca de cuántos votos hacen falta y una barra del tiempo que queda. También se puede desde el menú de pausa (**Esc**) → el enlace chiquito *Votar para echar a alguien* (abajo de los botones), o con `/echar NOMBRE` en el chat. Todos ven el cartel y votan con **Y** o **N** durante 30 segundos. Pasa si vota que sí más de la mitad de los demás jugadores (hacen falta 3 personas como mínimo). La primera vez que echan a alguien en una partida puede volver a entrar enseguida, y le aparece un cartel avisándole que una segunda echada no lo dejará entrar hasta que termine la partida. Si lo echan por segunda vez, el cartel le muestra cuánto falta para que termine la partida (con cuenta regresiva) y recién ahí puede volver. Al terminar la partida se borra todo y se empieza de cero. Al echado se lo reconoce por su cuenta de Google o por su navegador, nunca por la IP ni por el nombre, así los que juegan en el mismo wifi o se llaman igual no quedan afuera. Cada jugador puede iniciar una votación cada 90 segundos.
 
 ## Palabras censuradas
 
@@ -177,7 +177,8 @@ Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 
 | R | recargar la escopeta doble |
 | Click derecho | mira del francotirador: un toque la deja puesta, otro la saca; si lo mantenés, se saca al soltar |
 | G | bomba molotov |
-| Y / N | votar sí o no cuando hay una votación para echar a alguien |
+| Y | online: abre el menú para elegir a quién echar (número o click, Enter confirma). Si hay una votación en la que no votaste, Y es *sí* |
+| N | votar *no* en la votación para echar |
 | B | tienda |
 | Tab | tabla de frags |
 | T o Enter | chat |

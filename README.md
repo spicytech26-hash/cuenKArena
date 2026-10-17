@@ -194,6 +194,13 @@ Los mapas están en `buildRepresa()`, `buildPanYManteca()`, `buildLaCuenca()` y 
 
 Los bots generan su mapa de navegación solos a partir de las cajas, así que no hace falta marcar caminos a mano.
 
+### Fluidez
+
+- El mouse se lee **crudo** (`requestPointerLock({ unadjustedMovement: true })`, sin la aceleración del sistema) cuando el navegador lo permite, y se descartan los saltos falsos que a veces manda Chrome con el puntero bloqueado (un movimiento enorme y aislado que hacía "teletransportar" la mira).
+- Los sombreadores de armas, jugadores, explosiones, rayos y proyectiles se preparan al cargar el mapa, y las explosiones y rayos se reutilizan: así no hay un microcorte la primera vez que aparece cada cosa.
+- En la práctica, los bots buscan camino de a uno por paso y reutilizan memoria, y si un cuadro se atrasa no se encadenan pasos extra.
+- Si igual notás tirones: activá la *aceleración por hardware* del navegador, probá con las extensiones apagadas, y si tu mouse permite 4000/8000 Hz, bajalo a 1000 Hz (los navegadores todavía no se llevan bien con esas tasas).
+
 ### Seguridad
 
 El servidor confía en la posición que manda cada cliente, así que alguien con conocimientos podría hacer trampa moviéndose donde quiera. Para jugar con amigos alcanza; para un servidor público grande convendría validar el movimiento del lado del servidor.

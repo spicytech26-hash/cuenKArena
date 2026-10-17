@@ -639,6 +639,23 @@ function loadMap(id){
   if(MODE==='ctf'&&M.flags)L.flags=M.flags.map((f,i)=>buildFlag(group,i,f));
   level=L;
   $('bTitle').textContent=M.name;
+  warmShaders();
+}
+// la primera vez que aparece cada material la placa de video arma su sombreador y el juego se congela un instante:
+// se arman todos al cargar el mapa (armas, jugadores, explosión, rayo, proyectiles, fuego)
+function warmShaders(){
+  if(typeof renderer==='undefined'||!renderer.compile)return;
+  try{
+    const tmp=[];const add=o=>{o.position.set(camera.position.x,camera.position.y,camera.position.z-3);scene.add(o);tmp.push(o);};
+    fxExplosion(0,-999,0);fxRail([0,-999,0],[1,-999,0],0xffffff);
+    add(buildPlayer({c:'#e8542a',v:'#ffffff',a:1},'x',true).g);
+    for(const k of ['rocket','grenade','bullet','molotov']){spawnProjVis(k,[0,-999,0],[0,0,0],false,-1,0);}
+    const vis=vms.map(v=>v.visible);vms.forEach(v=>v.visible=true);
+    renderer.compile(scene,camera);renderer.compile(wScene,wCam);
+    vms.forEach((v,i)=>v.visible=vis[i]);
+    tmp.forEach(o=>scene.remove(o));
+    for(let i=projs.length-1;i>=0;i--)if(projs[i].pid===-1){scene.remove(projs[i].m);projs.splice(i,1);}
+  }catch(e){}
 }
 
 /* ---------- decoración de La Cuenca: nada de esto choca, es solo visual ---------- */
@@ -869,9 +886,10 @@ const expGeo=new THREE.SphereGeometry(1,12,8);
 const booms=[],beams=[];
 const dynLights=[0,1].map(()=>{const l=new THREE.PointLight(0xff7a20,0,24,1.5);scene.add(l);return {l,t:0,max:1};});
 function flashLight(x,y,z,color,t){if(!S.q)return;const L=dynLights.reduce((a,b)=>a.t<b.t?a:b);L.l.position.set(x,y,z);L.l.color.setHex(color);L.t=L.max=t;}
+const boomPool=[],beamPool=[];
 function fxExplosion(x,y,z){
-  const m=new THREE.Mesh(expGeo,new THREE.MeshBasicMaterial({color:0xff8a2a,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
-  m.position.set(x,y,z);scene.add(m);booms.push({m,t:0});
+  const m=boomPool.pop()||new THREE.Mesh(expGeo,new THREE.MeshBasicMaterial({color:0xff8a2a,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
+  m.visible=true;m.position.set(x,y,z);if(!m.parent)scene.add(m);booms.push({m,t:0});
   flashLight(x,y+.5,z,0xff7a20,.45);
   for(let i=0;i<70;i++)emit(sparks,x,y,z,R(14),R(10)+3,R(14),.4+Math.random()*.5,1,.55+Math.random()*.3,.15,6);
   for(let i=0;i<30;i++)emit(gore,x,y,z,R(4),Math.random()*3,R(4),1+Math.random(),.25,.22,.2,-.6);
@@ -897,9 +915,10 @@ function updFires(dt){
   }
 }
 function fxRail(a,b,color){
-  const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(a[0],a[1],a[2]),new THREE.Vector3(b[0],b[1],b[2])]);
-  const line=new THREE.Line(geo,new THREE.LineBasicMaterial({color:color||0xa8e6ff,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
-  scene.add(line);beams.push({line,t:0,life:.8});
+  let line=beamPool.pop();
+  if(!line){const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(6),3));line=new THREE.Line(geo,new THREE.LineBasicMaterial({transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));line.frustumCulled=false;}
+  const pa=line.geometry.attributes.position;pa.setXYZ(0,a[0],a[1],a[2]);pa.setXYZ(1,b[0],b[1],b[2]);pa.needsUpdate=true;
+  line.material.color.setHex(color||0xa8e6ff);line.material.opacity=1;line.visible=true;if(!line.parent)scene.add(line);beams.push({line,t:0,life:.8});
   const dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2],L=Math.hypot(dx,dy,dz)||1,n=Math.min(220,L*3|0);
   const ux=dx/L,uy=dy/L,uz=dz/L;let px=-uz,pz=ux;const pl=Math.hypot(px,pz)||1;px/=pl;pz/=pl;const py=0;
   const qx=uy*pz-uz*py,qy=uz*px-ux*pz,qz=ux*py-uy*px;
@@ -1144,7 +1163,7 @@ const colorOf=id=>id===myId?(teamsMode()&&myTeam>=0?TEAMS[myTeam].c:S.skin.c):(p
 class LocalNet{
   constructor(mode){const md=C.MODES[mode];this.game=new C.Game({online:false,mode,bots:S.bots,botSkill:S.skill,fraglimit:mode==='tdm'?S.tdmLimit:S.fl,timelimit:1200,map:md.maps.includes(S.map)?S.map:md.maps[0]});this.acc=0;this.id=this.game.addClient(m=>onMsg(m));}
   send(m){this.game.onMessage(this.id,m);}
-  update(dt){if(paused)return;this.acc+=dt;let n=0;while(this.acc>=1/40&&n<6){this.game.tick(1/40);this.acc-=1/40;n++;}if(n===6)this.acc=0;}
+  update(dt){if(paused)return;this.acc+=dt;let n=0;while(this.acc>=1/40&&n<3){this.game.tick(1/40);this.acc-=1/40;n++;}if(this.acc>1/40)this.acc=0;} // si un cuadro se atrasa, no se encadenan pasos extra
   close(){}
 }
 class WSNet{
@@ -1629,7 +1648,24 @@ function setSkin(p){Object.assign(S.skin,p);saveS();syncLocker();syncChest();reb
 })();
 
 /* =================== ENTRADA =================== */
-function lockPointer(){try{const r=canvas.requestPointerLock();if(r&&r.catch)r.catch(()=>{});}catch(e){}}
+// movimiento crudo del mouse (sin la aceleración de Windows/macOS) cuando el navegador lo permite; si no, el bloqueo común
+let rawOK=true;
+function lockPointer(){
+  try{
+    const r=rawOK?canvas.requestPointerLock({unadjustedMovement:true}):canvas.requestPointerLock();
+    if(r&&r.catch)r.catch(err=>{if(rawOK&&err&&err.name==='NotSupportedError'){rawOK=false;lockPointer();}});
+  }catch(e){try{canvas.requestPointerLock();}catch(_){}}
+}
+// Chrome a veces manda un movimiento falso enorme con el mouse bloqueado (la mira "se teletransporta"):
+// se descarta si es mucho más grande que lo que venía moviéndose y que cualquier movimiento humano posible en un evento
+const mouseF={ema:0,skip:0,t:0};
+function mouseSpike(dx,dy){
+  const m=Math.abs(dx)+Math.abs(dy),now=performance.now();
+  if(now-mouseF.t>120)mouseF.ema=0;mouseF.t=now;           // después de una pausa, empieza de cero
+  const lim=Math.min(1500,Math.max(rawOK?420:260,mouseF.ema*6));
+  if(m>lim&&mouseF.skip<2){mouseF.skip++;return true;}     // nunca más de 2 seguidos: un giro rápido real pasa igual
+  mouseF.skip=0;mouseF.ema=mouseF.ema*.8+m*.2;return false;
+}
 document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement!==canvas&&inGame&&$('menu').hidden&&!chatOpen&&$('shop').hidden&&$('inter').hidden)openPause();});
 $('bStay').addEventListener('click',()=>{
   // en el fin de partida: avisa que estás listo; en práctica arranca otra al instante
@@ -1650,6 +1686,7 @@ addEventListener('mouseup',e=>{if(e.button===0)mouseDown=false;if(e.button===2&&
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('mousemove',e=>{
   if(!inGame||document.pointerLockElement!==canvas||!me.alive)return;
+  if(mouseSpike(e.movementX,e.movementY))return;
   // con mira, la sensibilidad baja en proporción al zoom: el movimiento en pantalla se siente igual que sin mira
   const sc=me.scope&&WEAPONS[me.w].scope?Math.tan((WEAPONS[me.w].zoom||22)*Math.PI/360)/Math.tan(S.fov*Math.PI/360):1;
   const k=.0022*S.sens*sc;me.yaw-=e.movementX*k;me.pitch=Math.max(-1.55,Math.min(1.55,me.pitch-e.movementY*k*(S.invY?-1:1)));
@@ -1922,18 +1959,20 @@ function updViewmodel(dt){
   wMuz.color.setHex(me.q>0?0xb46cff:0xffaa44);
   muzzleWorld.intensity=me.flash>0&&S.q?2.4:0;
 }
+const opCache={},elCache={};
+function setOp(id,v){v=Math.round(v*50)/50;if(opCache[id]===v)return;opCache[id]=v;(elCache[id]||(elCache[id]=$(id))).style.opacity=v;}
 function updEffects(dt){
-  for(let i=booms.length-1;i>=0;i--){const b=booms[i];b.t+=dt;const k=b.t/.38;b.m.scale.setScalar(.4+k*3.4);b.m.material.opacity=Math.max(0,1-k);b.m.material.color.setHSL(.08-k*.06,1,.6-k*.3);if(k>=1){scene.remove(b.m);b.m.material.dispose();booms.splice(i,1);}}
-  for(let i=beams.length-1;i>=0;i--){const b=beams[i];b.t+=dt;b.line.material.opacity=Math.max(0,1-b.t/b.life);if(b.t>b.life){scene.remove(b.line);b.line.geometry.dispose();b.line.material.dispose();beams.splice(i,1);}}
+  for(let i=booms.length-1;i>=0;i--){const b=booms[i];b.t+=dt;const k=b.t/.38;b.m.scale.setScalar(.4+k*3.4);b.m.material.opacity=Math.max(0,1-k);b.m.material.color.setHSL(.08-k*.06,1,.6-k*.3);if(k>=1){b.m.visible=false;boomPool.push(b.m);booms.splice(i,1);}}
+  for(let i=beams.length-1;i>=0;i--){const b=beams[i];b.t+=dt;b.line.material.opacity=Math.max(0,1-b.t/b.life);if(b.t>b.life){b.line.visible=false;beamPool.push(b.line);beams.splice(i,1);}}
   dynLights.forEach(L=>{L.t=Math.max(0,L.t-dt);L.l.intensity=L.max?L.t/L.max*3:0;});
   updSys(sparks,dt);updSys(gore,dt);
   if(!$('inter').hidden&&G.interEnd)setTxt('interN',String(Math.max(0,Math.ceil(G.interEnd-performance.now()/1000))));
   G.hurt=Math.max(0,G.hurt-dt*1.6);G.predHit=(G.predHit||0)-dt;G.pick=Math.max(0,G.pick-dt*2.5);G.hitT=Math.max(0,G.hitT-dt);G.dmgT=Math.max(0,G.dmgT-dt*1.2);
-  $('flash').style.opacity=!inGame?0:!me.alive?Math.min(.7,.3+me.deadT*.25):Math.min(.85,G.hurt+(me.hp<25?.12+Math.sin(G.time*5)*.05:0));
-  $('pflash').style.opacity=G.pick*.8;$('lavatint').style.opacity=G.lava;
-  $('qtint').style.opacity=me.q>0&&me.alive?.6+Math.sin(G.time*6)*.15:0;
-  $('hitm').style.opacity=G.hitT>0?1:0;
-  const dd=$('dmgdir');dd.style.opacity=G.dmgT;if(G.dmgT>0)dd.style.transform='rotate('+(-(G.dmgAng-me.yaw))+'rad)';
+  setOp('flash',!inGame?0:!me.alive?Math.min(.7,.3+me.deadT*.25):Math.min(.85,G.hurt+(me.hp<25?.12+Math.sin(G.time*5)*.05:0)));
+  setOp('pflash',G.pick*.8);setOp('lavatint',G.lava);
+  setOp('qtint',me.q>0&&me.alive?.6+Math.sin(G.time*6)*.15:0);
+  setOp('hitm',G.hitT>0?1:0);
+  setOp('dmgdir',G.dmgT);if(G.dmgT>0)$('dmgdir').style.transform='rotate('+(-(G.dmgAng-me.yaw)).toFixed(3)+'rad)';
   const sp=Math.round(Math.hypot(me.s.vx,me.s.vz)*32);setTxt('spdV',String(sp));$('speed').className=sp>500?'vfast':sp>360?'fast':'';
   $('xh').hidden=!me.alive;
   if(level){

@@ -1044,11 +1044,14 @@ function findNode(nav, x, y, z) {
   return best;
 }
 function dijkstra(nav, start) {
-  const N = nav.nodes.length, dist = new Float64Array(N).fill(Infinity), prev = new Int32Array(N).fill(-1);
+  // los arreglos se reutilizan entre búsquedas (menos basura = menos pausas del recolector)
+  const N = nav.nodes.length;
+  if (!nav._dist) { nav._dist = new Float64Array(N); nav._prev = new Int32Array(N); nav._hk = new Float64Array(1024); nav._hv = new Int32Array(1024); }
+  const dist = nav._dist.fill(Infinity), prev = nav._prev.fill(-1);
   const off = nav.off, to = nav.to, cost = nav.cost;
-  let cap = 1024, hk = new Float64Array(cap), hv = new Int32Array(cap), size = 0;
+  let cap = nav._hk.length, hk = nav._hk, hv = nav._hv, size = 0;
   const push = (i, d) => {
-    if (size === cap) { cap *= 2; const a = new Float64Array(cap), b = new Int32Array(cap); a.set(hk); b.set(hv); hk = a; hv = b; }
+    if (size === cap) { cap *= 2; const a = new Float64Array(cap), b = new Int32Array(cap); a.set(hk); b.set(hv); hk = nav._hk = a; hv = nav._hv = b; }
     let c = size++;
     while (c > 0) { const p = (c - 1) >> 1; if (hk[p] <= d) break; hk[c] = hk[p]; hv[c] = hv[p]; c = p; }
     hk[c] = d; hv[c] = i;
@@ -1842,7 +1845,7 @@ class Game {
     }
   }
   tick(dt) {
-    this.time += dt;
+    this.time += dt; this.planBudget = 1;
     updateMovers(this.W, this.time);
     if (this.state === 'inter') {
       this.interT -= dt;
@@ -1997,7 +2000,7 @@ class Game {
       if (t) { if (t.id !== ai.tgt) { ai.seeT = 0; ai.replan = Math.min(ai.replan, .2); } ai.tgt = t.id; ai.last = [t.s.x, t.s.y, t.s.z]; ai.lostT = 3; }
       else if (ai.tgt) { ai.tgt = 0; ai.replan = 0; }
     }
-    if (ai.replan <= 0 && s.on) { ai.replan = .7 + Math.random() * .5; this.planBot(p); }
+    if (ai.replan <= 0 && s.on) { if (this.planBudget > 0) { this.planBudget--; ai.replan = .7 + Math.random() * .5; this.planBot(p); } else ai.replan = .03; }
     const tgt = ai.tgt ? this.players.get(ai.tgt) : null;
     if (tgt) ai.seeT += dt;
     // --- movimiento ---

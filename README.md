@@ -135,7 +135,7 @@ Al terminar aparece la tabla con la cuenta regresiva a la próxima partida. **Ju
 
 ## Votación para echar a un jugador
 
-En las partidas online, desde el menú de pausa (**Esc**) → el enlace chiquito *Votar para echar a alguien* (abajo de los botones), o con `/echar NOMBRE` en el chat. Todos ven el cartel y votan con **Y** o **N** durante 30 segundos. Pasa si vota que sí más de la mitad de los demás jugadores (hacen falta 3 personas como mínimo). El echado no puede volver a esa sala por 10 minutos: se lo reconoce por su cuenta de Google o por su navegador, nunca por la IP ni por el nombre, así los que juegan en el mismo wifi o se llaman igual no quedan afuera. Cada jugador puede iniciar una votación cada 90 segundos.
+En las partidas online, desde el menú de pausa (**Esc**) → el enlace chiquito *Votar para echar a alguien* (abajo de los botones), o con `/echar NOMBRE` en el chat. Todos ven el cartel y votan con **Y** o **N** durante 30 segundos. Pasa si vota que sí más de la mitad de los demás jugadores (hacen falta 3 personas como mínimo). La primera vez que echan a alguien en una partida puede volver a entrar enseguida, y le aparece un cartel avisándole que una segunda echada no lo dejará entrar hasta que termine la partida. Si lo echan por segunda vez, el cartel le muestra cuánto falta para que termine la partida (con cuenta regresiva) y recién ahí puede volver. Al terminar la partida se borra todo y se empieza de cero. Al echado se lo reconoce por su cuenta de Google o por su navegador, nunca por la IP ni por el nombre, así los que juegan en el mismo wifi o se llaman igual no quedan afuera. Cada jugador puede iniciar una votación cada 90 segundos.
 
 ## Palabras censuradas
 

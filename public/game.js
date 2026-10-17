@@ -1184,7 +1184,7 @@ class Game {
     this.o = Object.assign({ fraglimit: 20, timelimit: 600, caplimit: 3, bots: null, botFill: 0, botSkill: 1, online: false, maxPlayers: 16, map: null, rotate: true, mode: 'arena' }, o || {});
     if (!MODES[this.o.mode]) this.o.mode = 'arena';
     this.mode = MODES[this.o.mode];
-    this.players = new Map(); this.nextId = 1; this.projs = []; this.fires = []; this.pid = 1; this.vote = null; this.bans = new Map();
+    this.players = new Map(); this.nextId = 1; this.projs = []; this.fires = []; this.pid = 1; this.vote = null; this.bans = new Map(); this.kickN = new Map();
     this.time = 0; this.snapT = 0; this.scT = 0; this.botT = 0; this.state = 'play'; this.left = this.o.timelimit; this.interT = 0;
     this.ts = [0, 0]; this.flags = []; this.countT = 0;
     if (this.mode.minPlayers && this.o.online) this.state = 'lobby';
@@ -1253,7 +1253,7 @@ class Game {
       case 'join': {
         if (p.joined) return;
         p.cid = typeof m.cid === 'string' ? m.cid.replace(/[^a-z0-9]/gi, '').slice(0, 32) : '';
-        if (this.isBanned(p.acct, p.cid)) { p.send({ t: 'kicked', again: 1 }); if (this.o.onKick) this.o.onKick(p.id); return; }
+        if (this.isBanned(p.acct, p.cid)) { p.send({ t: 'kicked', again: 1, n: 2, left: this.kickLeft() }); if (this.o.onKick) this.o.onKick(p.id); return; }
         // si la sala estaba vacía, el primero que entra arranca una partida nueva
         if (this.o.online && this.humanCount(false) === 0 && (this.left < this.o.timelimit - 5 || this.state !== 'play')) this.restart(this.W.id);
         // el primero que entra a una sala vacía elige la dificultad de los bots
@@ -1374,10 +1374,14 @@ class Game {
     if (v.yes.size >= need) {
       this.vote = null; this.sendVote();
       this.bcast({ t: 'ev', e: 'sys', m: t.name + ' fue echado de la partida por votación' });
-      // no puede volver a esta sala por 10 minutos: se lo reconoce por su cuenta de Google o por su navegador.
-      // NO por IP ni por nombre: varios amigos en el mismo wifi comparten IP, y muchos se llaman "Jugador"
-      const until = Date.now() + 10 * 60e3; if (t.acct) this.bans.set('a:' + t.acct, until); if (t.cid) this.bans.set('c:' + t.cid, until);
-      if (t.send) t.send({ t: 'kicked' });
+      // primera echada en esta partida: puede volver a entrar. Segunda: no entra hasta que termine la partida.
+      // Se lo reconoce por su cuenta de Google o por su navegador; NO por IP ni por nombre
+      // (varios amigos en el mismo wifi comparten IP, y muchos se llaman "Jugador")
+      const keys = []; if (t.acct) keys.push('a:' + t.acct); if (t.cid) keys.push('c:' + t.cid);
+      let n = 1; for (const k of keys) n = Math.max(n, (this.kickN.get(k) || 0) + 1);
+      for (const k of keys) this.kickN.set(k, n);
+      if (n >= 2) for (const k of keys) this.bans.set(k, 1);
+      if (t.send) t.send({ t: 'kicked', n: Math.min(n, 2), left: this.kickLeft() });
       if (this.o.onKick) this.o.onKick(t.id); else this.removeClient(t.id);
       return;
     }
@@ -1386,9 +1390,10 @@ class Game {
       this.bcast({ t: 'ev', e: 'sys', m: 'La votación para echar a ' + v.name + ' no pasó (' + v.yes.size + ' sí, ' + v.no.size + ' no)' });
     }
   }
+  // segundos que faltan para que termine la partida (cuando termina se levantan los bloqueos)
+  kickLeft() { return this.state === 'play' ? Math.max(0, Math.ceil(this.left)) : 0; }
   isBanned(acct, cid) {
-    const now = Date.now(), chk = k => { const u = this.bans.get(k); if (!u) return false; if (u < now) { this.bans.delete(k); return false; } return true; };
-    return !!((acct && chk('a:' + acct)) || (cid && chk('c:' + cid)));
+    return !!((acct && this.bans.has('a:' + acct)) || (cid && this.bans.has('c:' + cid)));
   }
   uniqueName(n) { let name = n, k = 2; const used = new Set([...this.players.values()].filter(p => p.joined).map(p => p.name)); while (used.has(name)) name = n.slice(0, 13) + ' ' + (k++); return name; }
   configure(m) {
@@ -1854,6 +1859,7 @@ class Game {
   endMatch() {
     if (this.state !== 'play') return;
     this.state = 'inter'; this.interT = 25;
+    this.bans.clear(); this.kickN.clear(); // la partida terminó: los echados pueden volver y se empieza la cuenta de cero
     const l = this.scores(), ms = this.mode.maps;
     const next = this.o.rotate ? ms[(ms.indexOf(this.W.id) + 1) % ms.length] : this.W.id;
     this.nextMap = next;
@@ -1873,6 +1879,7 @@ class Game {
     this.projs.length = 0;
   }
   restart(mapId) {
+    this.bans.clear(); this.kickN.clear();
     const id = mapId || this.nextMap || this.W.id; this.nextMap = null;
     if (id !== this.W.id) this.setMap(id); else this.resetFlags();
     this.state = 'play'; this.left = this.o.timelimit; this.projs.length = 0;

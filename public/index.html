@@ -121,6 +121,12 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 #chat{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(120px + env(safe-area-inset-bottom,0px));width:min(440px,calc(100vw - 32px));display:flex;flex-direction:column;gap:2px;font-size:14px}
 #chatLog div{text-shadow:0 1px 0 #000,0 0 4px #000;animation:fade 9s forwards;overflow-wrap:anywhere}
 #chatLog b{font-weight:400}
+#kickNote{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:60;max-width:min(560px,calc(100vw - 32px));background:#1d1410;border:2px solid #e8703a;box-shadow:0 8px 30px rgba(0,0,0,.6);padding:12px 40px 12px 16px;font-family:var(--mono);color:var(--ink);animation:knIn .25s ease-out}
+#kickNote .kt{font-size:15px;color:#ffb53a;font-weight:bold}
+#kickNote .ks{font-size:13px;margin-top:4px;color:#d6c9b2}
+#kickNote .ks:empty{display:none}
+#kickNote button{position:absolute;top:6px;right:8px;background:none;border:0;color:#9c907c;font-size:20px;cursor:pointer;line-height:1}
+@keyframes knIn{from{opacity:0;transform:translate(-50%,-10px)}to{opacity:1;transform:translate(-50%,0)}}
 #kickPanel{margin:6px 0 0;font-family:var(--mono);font-size:12px;color:#9c907c}
 #kickPanel summary{cursor:pointer;display:inline-block;padding:2px 0;user-select:none}
 #kickPanel summary:hover{color:var(--ink)}
@@ -344,10 +350,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
       <button id="bSet" class="btn" type="button" aria-expanded="false" aria-controls="settings">Ajustes</button>
       <button id="bLeave" class="btn" type="button" hidden>Salir de la partida</button>
     </div>
+    <div id="kickNote" role="status" aria-live="polite" hidden><div class="kt"></div><div class="ks"></div><button type="button" aria-label="Cerrar">×</button></div>
     <details id="kickPanel" hidden>
       <summary>Votar para echar a alguien</summary>
       <div class="kRow"><select id="kickSel" aria-label="Jugador"></select><button type="button" id="bKick">Votar</button></div>
-      <div class="kNote">Pasa si vota que sí más de la mitad de los demás (Y sí · N no). El echado no puede volver a esta sala por 10 minutos.</div>
+      <div class="kNote">Pasa si vota que sí más de la mitad de los demás (Y sí · N no). La 1ª vez el echado puede volver; la 2ª no entra hasta que termine la partida.</div>
     </details>
     <div id="modePanel" class="panel" hidden>
       <div class="ptitle" id="modeTitle">Elegí el modo</div>
@@ -1253,6 +1260,25 @@ function leaveGame(){
   inGame=false;me.alive=false;$('bLeave').hidden=true;$('hud').hidden=true;$('board').hidden=true;$('inter').hidden=true;closeShop(true);
   if(level)for(const o of level.items)o.g.visible=true;
 }
+// cartel flotante cuando te echan por votación (1ª vez: podés volver; 2ª: cuenta regresiva hasta que termina la partida)
+let kickTimer=0;
+function kickNotice(m){
+  const el=$('kickNote');clearInterval(kickTimer);el.hidden=false;
+  const close=()=>{clearInterval(kickTimer);el.hidden=true;};el.querySelector('button').onclick=close;
+  const tx=el.querySelector('.kt'),sub=el.querySelector('.ks');
+  if((m.n||1)<2){
+    tx.textContent='Te echaron por primera vez: podés volver a unirte';
+    sub.textContent='Una segunda echada no te dejará entrar hasta que termine la partida.';
+    toast('Te echaron de la partida por votación');kickTimer=setTimeout(close,12000);return;
+  }
+  const end=performance.now()+(m.left||0)*1000;
+  const tick=()=>{const s=Math.max(0,Math.ceil((end-performance.now())/1000));
+    if(s<=0){clearInterval(kickTimer);tx.textContent='La partida terminó: ya podés volver a entrar';sub.textContent='';toast('Ya podés volver a la partida online');kickTimer=setTimeout(close,8000);return;}
+    tx.textContent=(m.again?'Todavía no podés entrar: ':'Te echaron por segunda vez: ')+'no podés volver hasta que termine la partida';
+    sub.textContent='Faltan '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')+' para que termine (puede terminar antes si alguien llega al límite de bajas).';
+    toast('Echado hasta que termine la partida');};
+  tick();kickTimer=setInterval(tick,250);
+}
 function toast(t){$('netTxt').textContent=t;$('netDot').className='dot no';}
 
 /* ---------- mensajes del servidor ---------- */
@@ -1272,7 +1298,7 @@ function onMsg(m){
       break;
     case 'full': toast('El servidor está lleno');leaveGame();showMenu();break;
     case 'vote': renderVote(m);break;
-    case 'kicked': renderVote(null);toast(m.again?'Te echaron de esta sala hace poco: probá en un rato':'Te echaron de la partida por votación');leaveGame();showMenu();break;
+    case 'kicked': renderVote(null);leaveGame();showMenu();kickNotice(m);break;
     case 'spawn':
       me.s={x:m.p[0],y:m.p[1],z:m.p[2],vx:0,vy:0,vz:0,on:true};me.yaw=m.yaw;me.pitch=0;me.alive=true;me.deadT=0;me.raise=1;me.hp=100;
       if(m.ow)me.ow=m.ow.slice();if(m.am)me.am=Object.assign({},m.am);if(m.ar!=null)me.ar=m.ar;

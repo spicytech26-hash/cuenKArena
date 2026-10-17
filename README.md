@@ -227,3 +227,9 @@ El servidor confía en la posición que manda cada cliente, así que alguien con
 
 - Los rayos (disparos, línea de visión de los bots, explosiones) primero descartan con una prueba rápida que no crea objetos, así no se llena la memoria de basura ni hay pausas del recolector.
 - La navegación de los bots se arma varias veces más rápido, y el servidor la prepara para todos los mapas al arrancar. Antes, cada cambio de mapa congelaba la partida un par de segundos para todos. En la práctica se arma la del próximo mapa mientras se ve la tabla final.
+
+## Fin de partida
+
+Al terminar aparece la pantalla final con el ganador en grande, un **podio** con los tres primeros, y una **tabla** con las bajas, muertes, daño hecho (lo que de verdad le sacaste a los demás) y K/D de cada jugador; lo mejor de cada columna se marca. Si tenés cuenta, abajo está tu **tarjeta de experiencia**: la barra se llena con animación desde la XP que tenías hasta la nueva, cuenta los puntos ganados y, si subís de nivel, cambia la medalla con un destello y "¡NIVEL N!".
+
+Si se corta la conexión en medio de una partida online (por ejemplo cuando el servidor se reinicia al publicar una actualización), el juego intenta reconectarse solo durante un minuto.

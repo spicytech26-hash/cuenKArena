@@ -46,7 +46,7 @@ for (const mode of MODE_IDS) games[mode] = new Game({
       if (!r) return;
       p.plvl = r.perfil.nivel;
       if (p.send) p.send({ t: 'xp', gain, antes: r.antes, perfil: r.perfil });
-    });
+    }).catch(e => console.error('Error al mandar la experiencia:', e.message));
   }
 });
 if (cuentas.enabled()) console.log('Cuentas con Google activadas' + (cuentas.persistent() ? ' (Supabase)' : ' (archivo local: se borra en cada deploy de Render)'));
@@ -222,6 +222,10 @@ setInterval(() => {
     ws.alive = false; ws.frame(0x9, Buffer.alloc(0));
   }
 }, 20000);
+
+// un error suelto nunca debe tirar el servidor (cortaría a todos los jugadores de golpe)
+process.on('uncaughtException', e => console.error('Error no atrapado:', e));
+process.on('unhandledRejection', e => console.error('Promesa rechazada sin atrapar:', e));
 
 server.listen(PORT, () => {
   console.log('CuenkArena corriendo en http://localhost:' + PORT);

@@ -67,8 +67,45 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 #voteBox .vbar .need{position:absolute;top:-2px;bottom:-2px;width:2px;background:#ffe066}
 #voteBox .vfoot{font-size:11px;color:#9fb6d8;margin-top:6px;text-align:center}
 #voteBox b{color:#ff9a7a}#voteBox .k{display:inline-block;border:1px solid #8fd0ff;padding:0 5px;margin-right:4px;color:#fff;font-size:11px}
-#interXP{text-align:center;font-family:var(--display);font-size:clamp(16px,2.2vw,22px);color:var(--cash);margin-top:6px;min-height:1.2em;display:flex;gap:10px;align-items:center;justify-content:center}
-#interXP .up{color:var(--amber)}
+#interXP{width:100%;margin-top:12px}
+#interXP .xpNote{text-align:center;font-family:var(--display);font-size:clamp(15px,2vw,19px);color:var(--cash)}
+.xpCard{display:flex;gap:14px;align-items:center;background:linear-gradient(90deg,rgba(40,28,14,.92),rgba(20,14,9,.92));border:1px solid #5a3d1c;box-shadow:0 4px 0 #000;padding:12px 16px;position:relative;overflow:hidden}
+.xpCard.lvup{animation:lvFlash .9s ease-out}
+@keyframes lvFlash{0%{box-shadow:0 0 0 0 rgba(255,181,58,.9),0 4px 0 #000}100%{box-shadow:0 0 0 18px rgba(255,181,58,0),0 4px 0 #000}}
+.xpCard .xpM{flex:none;transition:transform .3s}.xpCard.lvup .xpM{animation:mPop .6s ease-out}
+@keyframes mPop{0%{transform:scale(1)}40%{transform:scale(1.35) rotate(-8deg)}100%{transform:scale(1)}}
+.xpCard .xpI{flex:1;min-width:0}
+.xpCard .xpL{font-family:var(--display);font-size:20px;color:var(--ink)}.xpCard .xpL small{font-family:var(--mono);font-size:12px;color:var(--muted);margin-left:8px}
+.xpCard .xpBar{height:14px;background:#120c08;border:1px solid #000;margin:6px 0 4px;position:relative;overflow:hidden}
+.xpCard .xpBar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#c9781e,#ffcf5a);box-shadow:0 0 12px rgba(255,181,58,.6)}
+.xpCard .xpBar i::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);animation:xpShine 1.4s linear infinite}
+@keyframes xpShine{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.xpCard .xpN{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.xpCard .xpG{flex:none;font-family:var(--display);font-size:clamp(26px,4vw,38px);color:var(--cash);text-shadow:0 0 16px rgba(127,224,160,.4);font-variant-numeric:tabular-nums;min-width:3.4em;text-align:right}
+.xpCard .xpUp{position:absolute;right:16px;top:4px;font-family:var(--display);font-size:13px;color:var(--amber);letter-spacing:.12em;opacity:0}
+.xpCard.lvup .xpUp{animation:upTxt 2.2s ease-out forwards}
+@keyframes upTxt{0%{opacity:0;transform:translateY(8px)}15%{opacity:1;transform:none}80%{opacity:1}100%{opacity:.85}}
+#interPod{display:flex;gap:10px;justify-content:center;align-items:flex-end;margin:10px 0 6px}
+.pod{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:110px;animation:podIn .5s cubic-bezier(.2,1.3,.4,1) both}
+.pod .pn{font-family:var(--display);font-size:16px;color:var(--ink);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pod .pb{width:100%;display:grid;place-items:center;font-family:var(--display);font-size:26px;color:#1a1008;border:1px solid #000;box-shadow:0 4px 0 #000}
+.pod .ps{font-size:11px;color:var(--muted)}
+.pod.p1 .pb{height:74px;background:linear-gradient(#ffe08a,#e0a228)}.pod.p2 .pb{height:54px;background:linear-gradient(#e8edf2,#9aa6b2)}.pod.p3 .pb{height:40px;background:linear-gradient(#f0b07a,#a8642c)}
+.pod.p1{order:2;animation-delay:.25s}.pod.p2{order:1;animation-delay:.1s}.pod.p3{order:3;animation-delay:.4s}
+@keyframes podIn{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}
+#interTabW{width:100%;max-height:min(34vh,300px);overflow-y:auto;background:rgba(14,10,8,.88);border:1px solid #3a2a1a;box-shadow:0 4px 0 #000}
+#interTab{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+#interTab th{position:sticky;top:0;background:#1c140e;font-size:10px;letter-spacing:.2em;color:var(--muted);font-weight:400;text-align:right;padding:7px 10px}
+#interTab th:nth-child(2),#interTab td:nth-child(2){text-align:left}
+#interTab td{padding:6px 10px;text-align:right;border-top:1px solid rgba(255,255,255,.05);color:var(--ink)}
+#interTab tr.r{animation:rowIn .35s ease-out both}
+@keyframes rowIn{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+#interTab tr.me td{background:rgba(255,181,58,.12);color:#ffd27a}
+#interTab tr.team td{font-family:var(--display);font-size:15px;text-align:left;background:rgba(255,255,255,.03)}
+#interTab .sw{display:inline-block;width:10px;height:10px;margin-right:7px;border:1px solid #000;vertical-align:-1px}
+#interTab .tag{font-size:10px;color:var(--muted);margin-left:6px}
+#interTab .best{color:var(--amber)}
+#interTab td.dm{color:#ff9a6a}
 #board .medal{display:inline-block;vertical-align:-4px;margin-right:6px}
 #board .sw{display:inline-block;width:9px;height:9px;margin-right:8px;border:1px solid #000;vertical-align:1px}
 #hitm{position:fixed;left:50%;top:50%;width:30px;height:30px;transform:translate(-50%,-50%) rotate(45deg);opacity:0}
@@ -289,9 +326,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
 #interReady{text-align:center;font-size:15px;color:var(--muted);margin:-6px 0 12px;min-height:1.2em;font-variant-numeric:tabular-nums}
 #interReady b{color:var(--cash)}
 #interC b{font-weight:400;color:var(--amber);font-variant-numeric:tabular-nums}
-.interbox{display:flex;flex-direction:column;align-items:center;margin-top:min(46vh,420px)}
+.interbox{display:flex;flex-direction:column;align-items:center;width:min(820px,100%);padding:16px 0}
 #inter .btn{pointer-events:auto}
-#inter{position:fixed;inset:0;display:grid;place-items:center;background:rgba(8,6,5,.55)}
+#inter{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(ellipse at center,rgba(20,12,6,.82),rgba(4,3,2,.94));overflow-y:auto;padding:0 max(16px,env(safe-area-inset-left,0px));z-index:40}
 #interT{font-family:var(--display);font-size:clamp(28px,6vw,56px);color:var(--amber);text-align:center;text-shadow:0 4px 0 #2a1205;margin-bottom:8px}
 @media (max-width:900px){#ctfBox{top:auto;bottom:calc(96px + env(safe-area-inset-bottom,0px))}#ctfBox .mid{display:none}}
 @media (max-width:620px){.keys{grid-template-columns:auto 1fr}.cell{min-width:80px}.cell .num{font-size:30px}#slots,#shopHint,#kickHint{display:none}.srow{grid-template-columns:1fr 1fr 44px}.locker{grid-template-columns:1fr}}
@@ -356,6 +393,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
   <table><thead><tr><th>#</th><th>Jugador</th><th>Frags</th><th>Muertes</th><th id="thX">Créditos</th><th>Ping</th></tr></thead><tbody id="bBody"></tbody></table>
 </div>
 <div id="inter" hidden><div class="interbox"><div id="interT"></div><div class="note" id="interS" style="text-align:center"></div>
+  <div id="interPod"></div>
+  <div id="interTabW"><table id="interTab"></table></div>
   <div id="interXP"></div>
   <div id="interC">Próxima partida en <b id="interN">25</b> segundos</div>
   <div id="interReady" aria-live="polite"></div>
@@ -1284,7 +1323,8 @@ function probeServer(){
 function setNet(ok){serverOK=ok;$('bOnline').disabled=!ok;$('netDot').className='dot '+(ok?'ok':'no');
   $('netTxt').innerHTML=ok?'Servidor en línea. Compartí esta dirección con tus amigos: <b>'+location.host+'</b>':'No hay servidor online desde acá. Probá la <b>práctica con bots</b>; para jugar con amigos, entrá desde la dirección de tu servidor de CuenkArena.';}
 
-function startGame(isOnline,mode){
+function startGame(isOnline,mode,auto){
+  if(!auto){clearTimeout(G.reT);G.reTry=0;}
   audioInit();if(AC&&AC.state==='suspended')AC.resume();
   leaveGame();
   mode=C.MODES[mode]?mode:'arena';S.mode=mode;saveS();
@@ -1295,7 +1335,13 @@ function startGame(isOnline,mode){
   scores=[];$('feed').innerHTML='';$('chatLog').innerHTML='';
   const join=()=>{net.send({t:'join',cid:CID,name:S.name,skin:S.skin,skill:S.skill,fl:S.tdmLimit,tok:isOnline&&ACC?ACCTOK:undefined});};
   if(isOnline){
-    net=new WSNet(wsURL+'?mode='+mode,join,(wasOk)=>{showMenu();toast(wasOk?'Se cortó la conexión con el servidor':'No se pudo conectar al servidor');net=null;inGame=false;});
+    const tries=G.reTry||0;G.reTry=0;
+    net=new WSNet(wsURL+'?mode='+mode,()=>{G.reTry=0;join();},(wasOk)=>{
+      net=null;inGame=false;
+      // si se corta en medio de la partida (el servidor se reinicia al publicar una actualización), se reintenta solo
+      if((wasOk||tries)&&tries<20){showMenu();toast('Se cortó la conexión · reconectando'+(tries?' (intento '+(tries+1)+')':'')+'…');
+        clearTimeout(G.reT);G.reT=setTimeout(()=>{if(!inGame&&!$('menu').hidden){G.reTry=tries+1;startGame(true,mode,true);}},tries?3000:1200);return;}
+      showMenu();toast(wasOk?'Se cortó la conexión con el servidor':'No se pudo conectar al servidor');});
   }else{net=new LocalNet(mode);join();}
   inGame=true;paused=false;$('bLeave').hidden=false;$('tPingBox').hidden=!isOnline;
   hideMenu();lockPointer();
@@ -1390,9 +1436,11 @@ function onMsg(m){
       $('interT').textContent=m.w?m.w+' GANA LA PARTIDA':teamsMode()?'EMPATE':'FIN DE LA PARTIDA';
       $('interT').style.color=teamsMode()&&m.wt>=0?TEAMS[m.wt].c:'';
       $('interS').textContent='Próximo mapa: '+(m.nextName||'');
-      $('interXP').innerHTML=online?(ACC?'':(GCID?'Iniciá sesión con Google para ganar experiencia':'')):'En práctica no se gana experiencia';
+      renderEnd(m);
+      if(online&&ACC){xpCard(ACC);if(G.pendXP){animXP(G.pendXP);G.pendXP=null;}}
+      else $('interXP').innerHTML='<div class="xpNote">'+(online?(GCID?'Iniciá sesión con Google para ganar experiencia y subir de nivel':''):'En práctica no se gana experiencia')+'</div>';
       G.interEnd=performance.now()/1000+(m.secs||25);setTxt('interN',String(m.secs||25));
-      $('inter').hidden=false;$('board').hidden=false;renderBoard();SFX.start();
+      $('inter').hidden=false;$('board').hidden=true;SFX.start();
       $('bStay').disabled=false;$('bStay').textContent='Jugar de nuevo';$('interReady').textContent=online?'Si todos aprietan «Jugar de nuevo», arranca enseguida':'';
       G.interFree=true;selfUnlock();
       break;
@@ -1407,10 +1455,11 @@ function onMsg(m){
       break;
     case 'pong': ping=Math.round(performance.now()-m.c);break;
     case 'xp': {
-      const pf=m.perfil,up=pf.nivel>m.antes;ACC=pf;renderAcct();
-      const html='+'+m.gain+' XP'+(up?' · <span class="up">¡SUBISTE A NIVEL '+pf.nivel+'!</span> '+medalSVG(pf.nivel,40):' · nivel '+pf.nivel+' ('+pf.en+'/'+pf.falta+')');
-      if(!$('inter').hidden)$('interXP').innerHTML=html;else announce('+'+m.gain+' XP',up?'¡Nivel '+pf.nivel+'!':'nivel '+pf.nivel);
-      if(up)SFX.hunt();else SFX.cash();
+      const pf=m.perfil,up=pf.nivel>m.antes;
+      if(!$('inter').hidden){if(!$('interXP').querySelector('.xpCard'))xpCard(ACC||pf);animXP(m);}
+      else if(matchState==='inter')G.pendXP=m;
+      else{announce('+'+m.gain+' XP',up?'¡Nivel '+pf.nivel+'!':'nivel '+pf.nivel);if(up)SFX.hunt();else SFX.cash();}
+      ACC=pf;renderAcct();
       break;
     }
     case 'ev': onEvent(m);break;
@@ -2259,6 +2308,45 @@ function setMira(p){Object.assign(S.mira,p);saveS();applyCrosshair();acctSave();
 var ACC=null,ACCTOK=null,GCID="";
 try{ACCTOK=localStorage.getItem('cuenk_tok');}catch(e){}
 var medalN=0;
+/* ---------- pantalla de fin de partida: podio, tabla con daño y tarjeta de experiencia animada ---------- */
+function renderEnd(m){
+  const l=m.l||scores,gg=MODE==='gungame',ctf=MODE==='ctf',tm=teamsMode();
+  const pod=l.slice(0,3);
+  $('interPod').innerHTML=tm?'':pod.map((s,i)=>'<div class="pod p'+(i+1)+'"><div class="pn">'+(s[11]>0?medalSVG(s[11],18)+' ':'')+esc(s[1])+'</div><div class="pb">'+(i+1)+'</div><div class="ps">'+(gg?'nivel '+Math.min(GG.length,(s[8]||0)+1):s[2]+' bajas')+'</div></div>').join('');
+  const bestD=Math.max(1,...l.map(s=>s[12]||0)),bestK=Math.max(1,...l.map(s=>s[2]));
+  const xh=gg?'NIVEL':ctf?'CAPTURAS':'';
+  $('interTab').innerHTML='<thead><tr><th>#</th><th>JUGADOR</th><th>BAJAS</th><th>MUERTES</th><th>DAÑO</th><th>K/D</th>'+(xh?'<th>'+xh+'</th>':'')+'</tr></thead><tbody></tbody>';
+  let k=0;const row=(s,i)=>'<tr class="r'+(s[0]===myId?' me':'')+'" style="animation-delay:'+(.05*k++)+'s"><td>'+(i+1)+'</td><td>'+(s[11]>0?medalSVG(s[11],18)+' ':'')+'<span class="sw" style="background:'+esc(s[6])+'"></span>'+esc(s[1])+(s[5]?'<span class="tag">bot</span>':'')+'</td>'
+    +'<td'+(s[2]===bestK&&s[2]>0?' class="best"':'')+'>'+s[2]+'</td><td>'+s[3]+'</td><td class="dm'+((s[12]||0)===bestD?' best':'')+'">'+(s[12]||0)+'</td><td>'+(s[3]?(s[2]/s[3]).toFixed(2):s[2].toFixed(2))+'</td>'
+    +(gg?'<td>'+Math.min(GG.length,(s[8]||0)+1)+'</td>':ctf?'<td>'+(s[10]||0)+'</td>':'')+'</tr>';
+  const body=$('interTab').querySelector('tbody');
+  if(tm)body.innerHTML=[0,1].map(t=>'<tr class="team"><td></td><td colspan="'+(xh?6:5)+'" style="color:'+TEAMS[t].c+'">Equipo '+TEAMS[t].name+' · '+(TS[t]||0)+(m.wt===t?' · GANADOR':'')+'</td></tr>'+l.filter(s=>s[9]===t).map(row).join('')).join('');
+  else body.innerHTML=l.map(row).join('');
+}
+let xpAnim=0;
+function xpCard(pf){
+  const L=pf.nivel||1,md=C.medalOf(L),pct=pf.falta?pf.en/pf.falta*100:100;
+  $('interXP').innerHTML='<div class="xpCard"><div class="xpM">'+medalSVG(L,64)+'</div><div class="xpI"><div class="xpL">Nivel <b class="xL">'+L+'</b><small class="xMd">'+esc(md.name)+'</small></div>'
+    +'<div class="xpBar"><i style="width:'+pct+'%"></i></div><div class="xpN">'+(pf.falta?pf.en+' / '+pf.falta+' XP':'Nivel máximo')+' · sumando experiencia…</div></div><div class="xpG">+0</div><div class="xpUp">¡SUBISTE DE NIVEL!</div></div>';
+}
+// la barra se llena desde la XP que tenías hasta la nueva, pasando por cada nivel que subas
+function animXP(m){
+  const card=$('interXP').querySelector('.xpCard');if(!card)return;
+  const total=m.perfil.xp|0,gain=m.gain|0,from=Math.max(0,total-gain),t0=performance.now(),dur=Math.min(2600,900+gain*4);
+  let lastL=C.levelInfo(from).level;cancelAnimationFrame(xpAnim);
+  const bar=card.querySelector('.xpBar i'),nT=card.querySelector('.xpN'),gT=card.querySelector('.xpG'),lT=card.querySelector('.xL'),mT=card.querySelector('.xMd'),mI=card.querySelector('.xpM');
+  let tick=0;
+  const step=now=>{
+    const k=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-k,3),v=Math.round(from+gain*e),li=C.levelInfo(v);
+    bar.style.width=(li.need?li.into/li.need*100:100)+'%';
+    nT.textContent=(li.need?li.into+' / '+li.need+' XP para el nivel '+(li.level+1):'Nivel máximo');
+    gT.textContent='+'+Math.round(gain*e);
+    if(li.level!==lastL){lastL=li.level;lT.textContent=li.level;mT.textContent=C.medalOf(li.level).name;mI.innerHTML=medalSVG(li.level,64);card.classList.remove('lvup');void card.offsetWidth;card.classList.add('lvup');card.querySelector('.xpUp').textContent='¡NIVEL '+li.level+'!';SFX.hunt();}
+    if(++tick%4===0&&k<1)tn({type:'triangle',f0:900+600*e,f1:900+600*e,dur:.03,vol:.04});
+    if(k<1)xpAnim=requestAnimationFrame(step);else SFX.cash();
+  };
+  xpAnim=requestAnimationFrame(step);
+}
 function medalSVG(L,size){
   // medalla estilo "Tour of Duty" de TF2: cinta, disco con el color del rango y el nivel en el centro
   const m=C.medalOf(L),id='md'+(medalN++),pts=[];for(let k=0;k<10;k++){const r=k%2?5.5:12.5,a=k/10*Math.PI*2-Math.PI/2;pts.push((Math.cos(a)*r).toFixed(2)+','+(Math.sin(a)*r).toFixed(2));}

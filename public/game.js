@@ -121,6 +121,8 @@ const TEAMS = [{ name: 'Rojo', c: '#ff4a3a' }, { name: 'Azul', c: '#3a8bff' }];
 const XP = { PLAY: 40, KILL: 10, WIN: 40, CAP: 30, PER_MIN: 4, MAX_MATCH: 600 };
 const MAX_LEVEL = 100;
 // cada nivel pide 220 XP más 60 por nivel ya alcanzado (el 10 queda a ~25 partidas, el 20 a ~80)
+// OJO: el nivel se calcula con la XP total guardada, así que cambiar esta curva le cambia el nivel a TODAS las cuentas
+// que ya existen (pasó el 17/10/2026: al hacerla más lenta, quien era nivel 10-11 quedó en 4-6). No tocarla sin convertir la XP guardada.
 const xpToNext = L => 220 + 60 * (L - 1);
 function levelInfo(xp) {
   let L = 1, rest = Math.max(0, xp | 0);

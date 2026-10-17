@@ -298,7 +298,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
   <div id="voteBox" hidden role="status" aria-live="polite"></div>
   <div id="grabHint" hidden></div>
   <div id="dmgPop" aria-hidden="true"></div><div id="dmgTot" aria-hidden="true"></div>
-  <div id="chat"><div id="chatLog"></div><input id="chatIn" maxlength="120" placeholder="Escribí y apretá Enter · /map pan · /bots N" hidden autocomplete="off"></div>
+  <div id="chat"><div id="chatLog"></div><input id="chatIn" maxlength="1000" placeholder="Escribí y apretá Enter · /map pan · /bots N" hidden autocomplete="off"></div>
 </div>
 <div id="board" hidden>
   <h2 id="bTitle">dm1 · La Represa</h2>
@@ -1264,7 +1264,7 @@ function onMsg(m){
       if(m.lvl!=null)me.lvl=m.lvl;
       if(!m.al&&me.alive)me.alive=false;
       if(MODE==='gungame'&&(me.lvlSwitch||!me.ow[me.w])&&me.ow[GG[Math.min(me.lvl,GG.length-1)]]){me.lvlSwitch=false;const nw=GG[Math.min(me.lvl,GG.length-1)];if(nw!==me.w){me.w=nw;me.raise=1;me.scope=false;me.cool=Math.max(me.cool,.25);if(WEAPONS[nw].mag){me.mag[nw]=WEAPONS[nw].mag;me.rel=0;}showWeapon();}}
-      else if(!me.ow[me.w]){const i=me.ow.findIndex(Boolean);if(i>=0){me.w=i;me.raise=1;me.cool=Math.max(me.cool,.25);showWeapon();}}
+      else if(!me.ow[me.w]){const pr=C.primaryOf(me.ow),i=pr>=0?pr:me.ow.findIndex(Boolean);if(i>=0){me.lastW=me.w;me.w=i;me.raise=1;me.scope=false;me.cool=Math.max(me.cool,.25);showWeapon();}}
       else if(MODE!=='gungame')for(let i=WEAPONS.length-1;i>=2;i--)if(me.ow[i]&&!before[i]&&me.alive&&i>me.w&&!mouseDown){selectWeapon(i,true);break;}
       if(me.grabW!=null&&me.ow[me.grabW]&&me.alive){const g=me.grabW;me.grabW=null;selectWeapon(g,true);}
       updateHUD();if(!$('shop').hidden)renderShop();break;
@@ -1451,7 +1451,7 @@ function onPickup(type){
 }
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function feedLine(html,mine){const d=document.createElement('div');d.innerHTML=html;if(mine)d.className='me';const f=$('feed');f.appendChild(d);while(f.children.length>6)f.firstChild.remove();setTimeout(()=>d.remove(),5200);}
-function chatLine(html,cls){const d=document.createElement('div');d.innerHTML=html;if(cls)d.className=cls;const f=$('chatLog');f.appendChild(d);while(f.children.length>8)f.firstChild.remove();}
+function chatLine(html,cls){const d=document.createElement('div');d.innerHTML=html;if(cls)d.className=cls;const L=d.textContent.length;if(L>80)d.style.animationDuration=Math.min(22,9+L/25)+'s';const f=$('chatLog');f.appendChild(d);while(f.children.length>8)f.firstChild.remove();}
 // cada impacto suma; si en 0,9 s no le volvés a pegar, aparece el total de la ráfaga
 const DMG={sum:0,t:0,timer:0};
 function showDamage(n,kill){

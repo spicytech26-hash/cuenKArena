@@ -1265,7 +1265,7 @@ class Game {
       }
       case 'ping': p.send({ t: 'pong', c: m.c, tm: this.time }); if (Number.isFinite(m.r)) p.ping = Math.round(clamp(m.r, 0, 9999)); break;
       case 'chat': {
-        const txt = String(m.m || '').replace(/[\u0000-\u001f]/g, '').slice(0, 120).trim();
+        const txt = String(m.m || '').replace(/[\r\n\t]+/g, ' ').replace(/[\u0000-\u001f]/g, '').replace(/ {2,}/g, ' ').slice(0, 1000).trim();
         if (!txt) return;
         if (txt[0] === '/') this.command(p, txt); else this.bcast({ t: 'ev', e: 'chat', id: p.id, n: p.name, m: censor(txt) });
         break;

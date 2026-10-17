@@ -41,6 +41,10 @@ Se elige al escoger el modo (y en práctica también desde Ajustes, en plena par
 - Agacharse con **Ctrl** necesita pantalla completa: el juego la pide al empezar (se desactiva en Ajustes). Sin pantalla completa, Ctrl+W cierra la pestaña en el navegador, así que usá **C**; igual el juego pide confirmación antes de cerrar.
 - El rifle de caza se apunta con sus miras de hierro (click derecho), sin mira telescópica.
 - En La Represa, si caés al pozo de lava del centro hay dos salidas: el **géiser de magma** del medio, que burbujea para avisar y cada 3,6 s erupciona y te tira afuera (justo sobre el saltador que lleva al balcón), y **cuatro piedras de basalto** que suben y bajan por turnos: abajo quedan a ras de la lava, te subís caminando y desde arriba saltás al borde.
+- La Represa renovada:
+  - **Sala de compuertas (ala oeste):** la compuerta gigante de la represa en la pared, una **pasarela de la grúa** a 9,5 m que cruza toda la sala (se sube por una escalera nueva desde el nivel alto o con un **ascensor** en el pasillo del medio), con blindaje y celdas de plasma arriba, y cajas para cubrirse.
+  - **Patio norte:** una **vagoneta de carga** va y viene sobre rieles cruzando el patio. Sirve de cobertura que se mueve, y si te subís te lleva.
+  - **Sala de turbinas (sótano sur):** carcasas de turbinas contra el fondo y **dos pistones** que suben y bajan por turnos al lado del lanzacohetes, así la cobertura cambia todo el tiempo.
 - En La Cuenca, las ventanas de los pisos se pasan saltando y agachándote, y hay un ascensor de salto en el pasillo del primer piso: pisá el saltador de la planta baja para subir y tirate por el hueco para bajar. Detrás del edificio, por el pasillo de atrás, una escalera larga sube pegada a la pared hasta la biblioteca del último piso.
 
 ## Créditos y tienda

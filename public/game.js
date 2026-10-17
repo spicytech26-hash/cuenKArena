@@ -267,6 +267,10 @@ function buildRepresa() {
   add(14.5, 0, -23.5, 17.5, 2, -20.5, 'crate');
   add(-17.5, 0, -27, -14.5, 1.5, -23, 'crate');
   add(-21, 0, -37, -19, 2.5, -35, 'crate'); add(-19, 0, -37, -17, 1.25, -35, 'crate');
+  // vagoneta de carga: va y viene sobre rieles cruzando el patio (cobertura que se mueve y te lleva encima)
+  add(-26, 0, -22.2, 12, .06, -21.9, 'rail', { nc: 1 }); add(-26, 0, -21.1, 12, .06, -20.8, 'rail', { nc: 1 });
+  add(-27, 0, -23, -26, 1, -20, 'metal'); add(12, 0, -23, 13, 1, -20, 'metal');        // topes de los rieles
+  mover(-25, 0, -22.5, -22, 1.3, -20.5, 'crate', 0, 33, 28, 0);
 
   /* ---- ALA OESTE: andén de tres niveles ---- */
   add(-40, -1, -16, -17, 0, 16, 'floor');
@@ -278,8 +282,22 @@ function buildRepresa() {
   stairs(-33, 4, -30, 10, 0, .5, 6, 'z', -1);
   ramp(-33, -14, -26, -11, 2.5, 3, 6, 'x', 1, 'grate');
   [-8, 0, 8].forEach(z => { add(-34, 0, z - .5, -33, 2.5, z + .5, 'metal'); add(-26, 0, z - .5, -25, 5.5, z + .5, 'metal'); });
-  pads.push({ x: -29.5, y: 0, z: -4, r: 1, t: [-21, 6, -4], apex: 2.5 });
+  pads.push({ x: -29.5, y: 0, z: -4, r: 1, t: [-21, 6, -8], apex: 2.5 });
   add(-39.9, 9, -12, -39.7, 9.4, 12, 'light', { nc: 1 });
+  // sala de compuertas: la compuerta gigante de la represa en la pared, con sus vigas
+  add(-40, 3, -7, -39.5, 8.6, 7, 'metal');
+  [-7.4, -2.6, 2.2, 6.6].forEach(z => add(-40, 3, z, -39.2, 8.6, z + .8, 'trim'));
+  add(-40, 8.6, -7.6, -39, 9, 7.6, 'trim');
+  // pasarela de la grúa a 9,5 m: se sube por la escalera del nivel alto o con el ascensor del medio
+  add(-39, 9.1, 3, -21, 9.5, 6, 'grate');
+  add(-39, 9.1, 2, -35, 9.5, 3, 'grate');                                          // ensanche sobre el entrepiso
+  stairs(-24, 6, -21, 13, 6, .5, 7, 'z', -1);
+  add(-39, 9.5, 2.9, -21, 10.4, 3, 'rail', { nc: 1 }); add(-39, 9.5, 6, -24, 10.4, 6.1, 'rail', { nc: 1 });
+  mover(-29.5, -.1, 0, -26.5, .3, 3, 'lift', 1, 9.2, 9, 0);                         // ascensor hasta la pasarela
+  // cajas para cubrirse en el pasillo del medio y en el nivel alto
+  add(-31, 0, -9, -28, 1.5, -6.5, 'crate'); add(-30.5, 1.5, -8.5, -28.5, 2.6, -7, 'crate');
+  add(-32.5, 0, 13, -30.5, 2, 15.5, 'crate'); add(-28, 0, 13.5, -26.5, 1.2, 15, 'crate');
+  add(-20, 6, 7.5, -17.5, 7.3, 9.5, 'crate');
 
   /* ---- ALA ESTE: sala de lava con pasarelas ---- */
   add(17, -4, -16, 21, 0, 16, 'floor');                 // andén de entrada
@@ -308,6 +326,12 @@ function buildRepresa() {
   add(-1.5, -3, 30.5, 1.5, -2.5, 33.5, 'trim');          // pedestal
   add(-11.5, -3, 26.5, -8.5, -1, 29.5, 'crate');
   add(-14, -3, 33, -12, -2, 35, 'crate');
+  // turbinas: carcasas contra la pared del fondo y dos pistones que suben y bajan por turnos (cobertura que cambia)
+  add(-16, -3, 36.2, -11, 1, 38, 'pillar'); add(-16.2, 1, 36, -10.8, 1.4, 38, 'trim');
+  add(-9.5, -3, 36.6, -6.5, -.5, 38, 'pillar'); add(-9.7, -.5, 36.4, -6.3, -.1, 38, 'trim');
+  mover(-7, -3.6, 30.5, -4, -2.5, 33.5, 'metal', 1, 3, 5, 0);
+  mover(4, -3.6, 30.5, 7, -2.5, 33.5, 'metal', 1, 3, 5, Math.PI);
+  add(-16, 3.2, 26, 16, 3.6, 26.5, 'metal', { nc: 1 }); add(-16, 3.2, 34.5, 16, 3.6, 35, 'metal', { nc: 1 });   // caños del techo
   add(10.5, -3, 36.5, 11, 1, 37, 'metal'); add(13, -3, 36.5, 13.5, 1, 37, 'metal'); add(10.5, 1, 36.5, 13.5, 1.5, 37, 'metal');
   teles.push({ x: 12, y: -3, z: 35, r: .9, to: [0, 12, -29.5], yaw: 0 });
   // pasillo al ala este
@@ -323,13 +347,14 @@ function buildRepresa() {
   I('health', -8, 0, 10); I('health', 8, 0, -10); I('shells', 14, 6, -14); I('bullets', -14, 6, 14); I('armor', 14, 6, 14);
   I('w6', 0, 12, -31); I('slugs', 3, 12, -32.5); I('armor', -20, 2.5, -36); I('health', 20, 0, -36);
   I('w4', -16, 1.5, -25); I('grenades', 16, 2, -22); I('shells', 0, 0, -24);
-  I('w2', -37, 3, 0); I('w3', -29, 0, 12); I('bullets', -37, 3, -12); I('armorH', -21, 6, -12); I('health', -21, 6, 12); I('shells', -37, 0, 13);
+  I('w2', -37, 3, 0); I('w3', -29, 0, 12); I('bullets', -37, 3, -12); I('armorH', -21, 6, -12); I('health', -19, 6, 12.5); I('shells', -37, 0, 13);
   I('mega', 37, 4, 0); I('rockets', 37, 4, 4); I('health', 31.5, 2.5, -10.5); I('shells', 19, 0, 12); I('bullets', 19, 0, -12); I('grenades', 31.5, 2.5, 10.5);
   I('w5', 0, -2.5, 32); I('rockets', -13, -3, 30); I('armor', 12, -3, 28); I('health', -10, -1, 28); I('w1', -8, -3, 35);
   I('health', 10, 5, 30); I('bullets', -10, 5, 30); I('w8', 0, 5, 35); I('rockets', -10, 5, 20);
+  I('armor', -37, 9.5, 4.5); I('slugs', -30, 9.5, 4.5); I('health', -5.5, .5, 32);
 
   /* ---- Puntos de aparición ---- */
-  [[6, 0, -13], [-6, 0, 13], [-14, 6, 4], [14, 6, -4], [-12, 0, -22], [20, 0, -28], [-30, 0, -10], [-37, 3, 8], [-21, 6, 4],
+  [[6, 0, -13], [-6, 0, 13], [-14, 6, 4], [14, 6, -4], [-12, 0, -26], [-33, 9.5, 4.5], [20, 0, -28], [-30, 0, -12], [-37, 3, 8], [-21, 6, -2],
    [19, 0, -6], [-6, -3, 35], [8, -3, 27], [0, 5, 28], [37, 4, -3], [-8, 0, -36], [12, 0, -36]]
     .forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
 
@@ -341,7 +366,9 @@ function buildRepresa() {
     { x: -29, y: 10, z: 0, c: 0xffc080, i: 1.3, d: 34 },
     { x: 30, y: 1, z: 0, c: 0xff5a14, i: 2.0, d: 30 },
     { x: 0, y: 3, z: 31, c: 0xff4a3a, i: 1.4, d: 26 },
-    { x: 0, y: -2, z: 0, c: 0xff4a10, i: 1.4, d: 12 }
+    { x: 0, y: -2, z: 0, c: 0xff4a10, i: 1.4, d: 12 },
+    { x: -32, y: 11, z: 4.5, c: 0x6fd8ff, i: 1.1, d: 16 },
+    { x: -38, y: 6, z: 0, c: 0xffa040, i: 1.0, d: 14 }
   );
 
   return finish({ id: 'represa', name: 'dm1 · La Represa', bounds: { x0: -41, x1: 41, z0: -41, z1: 39 },

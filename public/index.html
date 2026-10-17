@@ -2439,7 +2439,7 @@ $('mLimit').addEventListener('click',e=>{const v=e.target.dataset&&e.target.data
 $('mLimitN').addEventListener('change',e=>setLimit(e.target.value,false));
 $('pLimit').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v)setLimit(v,true);});
 $('pLimitN').addEventListener('change',e=>setLimit(e.target.value,true));
-function resumeGame(){paused=false;hideMenu();if(document.fullscreenElement&&navigator.keyboard&&navigator.keyboard.lock)navigator.keyboard.lock().catch(()=>{});lockPointer();setTimeout(()=>{if(inGame&&$('menu').hidden&&document.pointerLockElement!==canvas)announce('','Hacé click para seguir jugando');},250);}
+function resumeGame(){paused=false;hideMenu();if(document.fullscreenElement&&navigator.keyboard&&navigator.keyboard.lock)navigator.keyboard.lock(LOCK_KEYS).catch(()=>{});lockPointer();setTimeout(()=>{if(inGame&&$('menu').hidden&&document.pointerLockElement!==canvas)announce('','Hacé click para seguir jugando');},250);}
 document.addEventListener('pointerlockerror',()=>{if(inGame&&$('menu').hidden)announce('','Hacé click para seguir jugando');});
 let pickOnline=true;
 function openModePicker(isOnline){
@@ -2486,9 +2486,13 @@ $('sHop').addEventListener('change',e=>{S.hop=e.target.checked;saveS();});
 $('sFs').addEventListener('change',e=>{S.fs=e.target.checked;saveS();});
 $('sImg').addEventListener('change',e=>{S.showImg=e.target.checked;saveS();for(const p of players.values())if(p.model){scene.remove(p.model.g);p.model=null;ensurePlayer(p.id);}});
 // pantalla completa + bloqueo de teclado: así Ctrl+W agacha y avanza en vez de cerrar la pestaña
+// teclas que se bloquean en pantalla completa (Esc no saca de la pantalla completa, abre el menú; Ctrl+W no cierra la pestaña).
+// F11 NO está en la lista: siempre sale de la pantalla completa
+const LOCK_KEYS=['Escape','Tab','Space','KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE','KeyR','KeyF','KeyT','KeyN','KeyB','KeyG','KeyV','KeyY','KeyC','ControlLeft','ShiftLeft','Digit1','Digit2','Digit3','Digit4'];
+addEventListener('keydown',e=>{if(e.code==='F11'&&document.fullscreenElement){e.preventDefault();e.stopImmediatePropagation();try{if(navigator.keyboard&&navigator.keyboard.unlock)navigator.keyboard.unlock();}catch(_){}document.exitFullscreen().catch(()=>{});}},true);
 function goFullscreen(){
   if(!S.fs||document.fullscreenElement||!document.documentElement.requestFullscreen)return;
-  try{const pr=document.documentElement.requestFullscreen({navigationUI:'hide'});if(pr&&pr.then)pr.then(()=>{if(navigator.keyboard&&navigator.keyboard.lock)navigator.keyboard.lock().catch(()=>{});}).catch(()=>{});}catch(e){}
+  try{const pr=document.documentElement.requestFullscreen({navigationUI:'hide'});if(pr&&pr.then)pr.then(()=>{if(navigator.keyboard&&navigator.keyboard.lock)navigator.keyboard.lock(LOCK_KEYS).catch(()=>{});}).catch(()=>{});}catch(e){}
 }
 // si igual se aprieta Ctrl+W fuera de pantalla completa, el navegador pregunta antes de cerrar
 addEventListener('beforeunload',e=>{if(inGame){e.preventDefault();e.returnValue='';}});

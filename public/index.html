@@ -653,7 +653,7 @@ function loadMap(id){
     const disc=new THREE.Mesh(new THREE.CircleGeometry(t.r,24),new THREE.MeshBasicMaterial({color:0x2a8cff,transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false}));disc.rotation.x=-Math.PI/2;disc.position.set(t.x,t.y+.04,t.z);group.add(disc);
     L.teles.push(t);
   }
-  L.items=M.items.map(it=>{const g=buildItem(it.type);g.position.set(it.x,it.y+.6,it.z);group.add(g);return {g,it,ph:Math.random()*6};});
+  L.items=M.items.map(it=>{const g=buildItem(it.type);g.position.set(it.x,it.y+.6,it.z);group.add(g);return {g,it,ty:it.type,ph:Math.random()*6};});
   if(th.club)L.club=buildClub(group);
   if(MODE==='ctf'&&M.flags)L.flags=M.flags.map((f,i)=>buildFlag(group,i,f));
   level=L;
@@ -1136,6 +1136,10 @@ function buildPlayer(skin,name,noTag){
 
 /* ---------- ítems ---------- */
 const healthTex=new THREE.CanvasTexture(cv(32,32,g=>{g.fillStyle='#d9d2c4';g.fillRect(0,0,32,32);g.fillStyle='#a9a092';g.fillRect(0,30,32,2);g.fillRect(30,0,2,32);g.fillStyle='#c41a12';g.fillRect(12,5,8,22);g.fillRect(5,12,22,8);}));healthTex.magFilter=THREE.NearestFilter;
+// un arma tirada puede cambiar (al agarrar con E queda la tuya en su lugar): se rearma el modelo
+function setItemType(o,ty){if(!ty||o.ty===ty)return;const par=o.g.parent,ng=buildItem(ty);ng.position.copy(o.g.position);ng.rotation.copy(o.g.rotation);ng.visible=o.g.visible;
+  if(par){par.remove(o.g);par.add(ng);}o.g=ng;o.ty=ty;}
+function syncItems(m){m.items.forEach((u,i)=>{const o=level.items[i];if(!o)return;if(m.ity)setItemType(o,m.ity[i]);o.g.visible=!!u;});}
 function buildItem(t){const g=new THREE.Group();
   if(t==='health')g.add(new THREE.Mesh(new THREE.BoxGeometry(.6,.45,.6),new THREE.MeshPhongMaterial({map:healthTex,emissive:0x221414})));
   if(t==='mega'){const m=new THREE.Mesh(new THREE.IcosahedronGeometry(.42,1),new THREE.MeshPhongMaterial({color:0x4aa8ff,emissive:0x0a3a8a,flatShading:true,shininess:90}));g.add(m);const c=new THREE.Mesh(new THREE.BoxGeometry(.2,.6,.06),new THREE.MeshBasicMaterial({color:0xffffff}));const c2=c.clone();c2.rotation.z=Math.PI/2;c.position.z=c2.position.z=.4;g.add(c,c2);}
@@ -1251,7 +1255,7 @@ function onMsg(m){
       loadMap(m.map);applyMode();
       if(typeof m.tm==='number'&&online)CLK.off=m.tm-performance.now()/1000-.05;
       m.roster.forEach(r=>{if(r[0]!==myId)ensurePlayer(r[0],r[1],r[2],r[3],r[4],r[5]);});
-      m.items.forEach((u,i)=>{if(level.items[i])level.items[i].g.visible=!!u;});
+      syncItems(m);
       sysChat((online?'Conectado a '+location.host:'Práctica · '+S.bots+' bots')+' · '+C.MODES[MODE].name+' · '+W.name+(MODE==='gungame'?'':' · B abre la tienda'));
       if(MODE==='ctf'&&myTeam>=0)announce('EQUIPO '+TEAMS[myTeam].name.toUpperCase(),'Robá la bandera rival y traela a tu base');
       else if(MODE==='tdm'&&myTeam>=0)announce('EQUIPO '+TEAMS[myTeam].name.toUpperCase(),m.state==='play'?'Cada baja suma para tu equipo':'Esperando jugadores · calentamiento');
@@ -1318,7 +1322,7 @@ function onMsg(m){
       if(!document.pointerLockElement&&$('menu').hidden&&inGame){announce('¡ARRANCÓ!','Hacé click para jugar');}
       if(m.fs)FL=m.fs;if(m.ts)TS=m.ts;me.lvl=0;
       if(m.map&&m.map!==W.id){loadMap(m.map);projs.forEach(p=>scene.remove(p.m));projs.length=0;}
-      m.items.forEach((u,i)=>{if(level.items[i])level.items[i].g.visible=!!u;});
+      syncItems(m);
       announce(W.name.toUpperCase(),MODE==='ctf'?'primero a '+capLimit+' capturas':MODE==='tdm'?'primer equipo en llegar a '+fragLimit+' bajas':MODE==='gungame'?'primero en completar los '+GG.length+' niveles':'primero a '+fragLimit+' frags');SFX.start();
       break;
     case 'pong': ping=Math.round(performance.now()-m.c);break;
@@ -1400,9 +1404,10 @@ function onEvent(m){
       break;
     }
     case 'item': {
-      const o=level.items[m.i];if(!o)break;o.g.visible=!!m.up;
+      const o=level.items[m.i];if(!o)break;setItemType(o,m.ty);o.g.visible=!!m.up;
+      if(m.sw){if(m.by===myId)SFX.pick&&SFX.pick();break;}
       if(m.up)fxTele(o.it.x,o.it.y,o.it.z,1,.8,.4);
-      if(!m.up&&m.by===myId)onPickup(o.it.type);
+      if(!m.up&&m.by===myId)onPickup(o.ty);
       else if(!m.up){const v=vAt(o.it.x,o.it.y,o.it.z);if(v>.3)tn({type:'square',f0:600,f1:1250,dur:.1,vol:.05*v});}
       break;
     }
@@ -1801,7 +1806,7 @@ function changeBots(d){S.bots=Math.max(0,Math.min(15,S.bots+d));saveS();syncSett
 function updMe(dt){
   // aviso "E · agarrar" si hay un arma principal tirada al lado y no es la tuya
   G.grabT=(G.grabT||0)-dt;if(G.grabT<=0){G.grabT=.15;let txt='';
-    if(me.alive&&MODE!=='gungame'&&level)for(const o of level.items){const inf=C.ITEMS[o.it.type];if(!o.g.visible||!inf||inf.weapon==null||!C.PRIMARY.includes(inf.weapon)||me.ow[inf.weapon])continue;
+    if(me.alive&&MODE!=='gungame'&&level)for(const o of level.items){const inf=C.ITEMS[o.ty];if(!o.g.visible||!inf||inf.weapon==null||!C.PRIMARY.includes(inf.weapon)||me.ow[inf.weapon])continue;
       if(Math.hypot(me.s.x-o.it.x,me.s.z-o.it.z)<2.2&&Math.abs(me.s.y-o.it.y)<1.6){txt='<kbd>E</kbd>agarrar '+esc(inf.name)+(C.primaryOf(me.ow)>=0?' (deja '+esc(WEAPONS[C.primaryOf(me.ow)].name)+')':'');break;}}
     const h=$('grabHint');if(h.dataset.t!==txt){h.dataset.t=txt;h.innerHTML=txt;h.hidden=!txt;}}
   if(!me.alive){me.deadT+=dt;

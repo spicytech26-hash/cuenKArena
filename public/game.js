@@ -41,7 +41,7 @@ const WEAPONS = [
   // rifle de caza: bala real con viaje y caída; cualquier impacto mata. Premia los tiros bien calculados
   { name: 'Rifle de caza',  ammo: 'caza',     cost: 1, rate: 1.6, type: 'proj', proj: 'bullet', speed: 260, drop: 9, dmg: 0, rad: 0, direct: 1000, scope: true, zoom: 58 },
   // bomba molotov: se rompe al primer golpe y deja el piso en llamas unos segundos
-  { name: 'Bomba molotov',  ammo: 'molotov',  cost: 1, rate: .9,  type: 'proj', proj: 'molotov', speed: 17, dmg: 0, rad: 0, direct: 12, fire: { r: 3.4, dur: 6, hit: 5.5, every: .1 } }
+  { name: 'Bomba molotov',  ammo: 'molotov',  cost: 1, rate: .9,  type: 'proj', proj: 'molotov', speed: 17, dmg: 0, rad: 0, direct: 12, fire: { r: 5, dur: 6, hit: 5.5, every: .1 } }
 ];
 const NW = WEAPONS.length;
 // como en Counter-Strike: una sola arma principal a la vez (ranura 2); pistola en la 1, cuchillo en la 3, molotov en la 4
@@ -90,7 +90,7 @@ const SHOP = [
   { id: 'w3', cat: 'Automáticas', name: 'Ametralladora', w: 3, price: 600, pack: ['bullets', 100], desc: 'Fuego continuo a media distancia' },
   { id: 'w4', cat: 'Explosivas', name: 'Lanzagranadas', w: 4, price: 900, pack: ['grenades', 10], desc: 'Explotan al segundo. Un impacto directo explota en el acto y da premio' },
   // la molotov es de un solo uso: se compra estando vivo y si te matan la perdés
-  { id: 'w10', cat: 'Explosivas', name: 'Bomba molotov', w: 10, price: 700, once: 1, pack: ['molotov', 3], desc: 'Tecla G. 3 molotovs que dejan el piso en llamas 6 s. Si te matan, las perdés' },
+  { id: 'w10', cat: 'Explosivas', name: 'Bomba molotov', w: 10, price: 500, once: 1, pack: ['molotov', 3], desc: 'Tecla G. 3 molotovs que dejan el piso en llamas 6 s. Si te matan, las perdés' },
   { id: 'w5', cat: 'Explosivas', name: 'Lanzacohetes', w: 5, price: 1300, pack: ['rockets', 10], desc: 'Daño en área y rocket jump' },
   { id: 'w6', cat: 'Precisión', name: 'Rifle de plasma', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Atraviesa a todos los que estén en línea' },
   { id: 'w8', cat: 'Precisión', name: 'Francotirador', w: 8, price: 1500, pack: ['sniper', 10], desc: 'Click derecho para apuntar con mira. Mata de un tiro a quien no tiene blindaje' },
@@ -1166,7 +1166,7 @@ class Game {
     this.W = MAPS[id]; this.nav = getNav(this.W); safeSpawns(this.W);
     // en gungame no hay armas ni munición tiradas: cada uno tiene la de su nivel
     const off = t => !!this.mode.gg; // en gungame no hay nada tirado: cada arma se gana con bajas
-    this.items = this.W.items.map((it, i) => ({ i, type: it.type, x: it.x, y: it.y, z: it.z, off: off(it.type), up: !off(it.type), t: 0 }));
+    this.items = this.W.items.map((it, i) => ({ i, type: it.type, base: it.type, x: it.x, y: it.y, z: it.z, off: off(it.type), up: !off(it.type), t: 0 }));
     this.projs.length = 0; this.fires = [];
     this.resetFlags();
     updateMovers(this.W, this.time);
@@ -1233,7 +1233,7 @@ class Game {
         if (this.mode.teams) this.setTeam(p, this.pickTeam(p));
         p.joined = true; p.joinT = this.time; p.kills = 0;
         if (this.mode.tdm && this.o.online && this.humanCount(false) <= 1 && Number.isInteger(m.fl) && m.fl >= 5 && m.fl <= 500) this.o.fraglimit = m.fl;
-        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), fl: this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts });
+        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts });
         this.bcast({ t: 'ev', e: 'join', id, n: p.name, c: p.color, s: p.skin, tm: p.team }, id);
         this.spawn(p); this.botT = 0; this.sendScores();
         break;
@@ -1288,10 +1288,16 @@ class Game {
       const d = Math.hypot(p.s.x - it.x, p.s.z - it.z); if (d < bd && Math.abs(p.s.y - it.y) < 1.6) { bd = d; best = it; }
     }
     if (!best) return;
-    const info = ITEMS[best.type];
+    const info = ITEMS[best.type], old = primaryOf(p.ow);
     setPrimary(p, info.weapon); p.am[info.ammo] = Math.min(AMMO_MAX[info.ammo], p.am[info.ammo] + info.n); p.dirty = true;
-    best.up = false; best.t = info.respawn;
-    this.bcast({ t: 'ev', e: 'item', i: best.i, up: 0, by: p.id });
+    // si tenías un arma principal (que no sea la escopeta de base), queda tirada en el lugar de la que agarraste
+    if (old >= 0 && old !== 1 && ITEMS['w' + old]) {
+      best.type = 'w' + old;
+      this.bcast({ t: 'ev', e: 'item', i: best.i, up: 1, ty: best.type, sw: 1, by: p.id });
+    } else {
+      best.up = false; best.t = info.respawn;
+      this.bcast({ t: 'ev', e: 'item', i: best.i, up: 0, by: p.id });
+    }
     if (p.send) p.send({ t: 'ev', e: 'grab', w: info.weapon });
   }
   // fin de partida: si todas las personas apretaron "Jugar de nuevo", arranca la próxima sin esperar
@@ -1793,7 +1799,7 @@ class Game {
   tickItems(dt) {
     for (const it of this.items) {
       if (it.off) continue;
-      if (!it.up) { it.t -= dt; if (it.t <= 0) { it.up = true; this.bcast({ t: 'ev', e: 'item', i: it.i, up: 1 }); } continue; }
+      if (!it.up) { it.t -= dt; if (it.t <= 0) { it.up = true; const ty = it.type !== it.base ? (it.type = it.base) : undefined; this.bcast({ t: 'ev', e: 'item', i: it.i, up: 1, ty }); } continue; }
       for (const p of this.players.values()) {
         if (!p.alive || !p.joined) continue;
         if (Math.abs(p.s.x - it.x) < 1 && Math.abs(p.s.z - it.z) < 1 && p.s.y > it.y - 1 && p.s.y < it.y + 1.3 && this.give(p, it)) {
@@ -1840,8 +1846,8 @@ class Game {
     if (id !== this.W.id) this.setMap(id); else this.resetFlags();
     this.state = 'play'; this.left = this.o.timelimit; this.projs.length = 0;
     if (this.mode.minPlayers && this.o.online && this.humanCount(false) < this.mode.minPlayers) this.state = 'lobby';
-    for (const it of this.items) { it.up = !it.off; it.t = 0; }
-    this.bcast({ t: 'start', map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), tm: this.time, fs: this.flagState(), ts: this.ts });
+    for (const it of this.items) { it.up = !it.off; it.t = 0; it.type = it.base; }
+    this.bcast({ t: 'start', map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), tm: this.time, fs: this.flagState(), ts: this.ts });
     for (const p of this.players.values()) if (p.joined) {
       p.ready = false; p.frags = 0; p.deaths = 0; p.cr = ECON.START; p.unl = OW0(); p.perk = { ar: 0, am: 0 }; p.streak = 0; p.lvl = 0; p.caps = 0; p.kills = 0; p.joinT = this.time; p.dirty = true;
       this.spawn(p);

@@ -26,7 +26,7 @@ Como en Counter-Strike llevás **una sola arma principal** (ranura 1): arrancás
 | Rifle de plasma | 110 (atraviesa) | 1 / 2 |
 | Cuchillo mariposa | 55, 99 por la espalda; el segundo tajo dentro de 4 s mata siempre; ignora el blindaje; alcance 2,6 m | 2 / 2 |
 | Francotirador | 115, 230 a la cabeza (click derecho: mira) | 1 / 2 |
-| Bomba molotov (tecla 4 o G) | se rompe al primer golpe y deja 6 s de fuego en 3,4 m: 5,5 cada décima de segundo, unos 55 por segundo (la mitad a vos). Es de un solo uso: se compra estando vivo (3 por compra, hasta 6) y si te matan la perdés | — |
+| Bomba molotov (tecla 4 o G) | se rompe al primer golpe y deja 6 s de fuego en 5 m de radio: 5,5 cada décima de segundo, unos 55 por segundo (la mitad a vos). Es de un solo uso: se compra estando vivo por ¤ 500 (3 por compra, hasta 6) y si te matan la perdés | — |
 | Rifle de caza | cualquier impacto mata | 1 / 1 — la bala viaja a 260 m/s y cae un poco (67 cm a 100 m); click derecho apunta con las miras de hierro. Los tiros de más de 22 m, al aire o con mucho vuelo dan premio en créditos |
 
 El blindaje absorbe un tercio del daño y llega como máximo a 100; la megasalud sube hasta 150.
@@ -170,7 +170,7 @@ Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 
 | Espacio | saltar (mantenelo para encadenar saltos) |
 | Mouse / click | apuntar / disparar |
 | 1 · 2 · 3 · 4, rueda, Q | 1 arma principal, 2 pistola, 3 cuchillo (también V), 4 molotov. Q vuelve al arma que tenías antes. En Gungame: 1 el arma del nivel y 3 el cuchillo (acuchillar baja un nivel al otro) |
-| E | agarrar el arma tirada al lado: reemplaza tu principal hasta que morís (al reaparecer volvés a tener la comprada) |
+| E | agarrar el arma tirada al lado: reemplaza tu principal hasta que morís (al reaparecer volvés a tener la comprada). Si tenías un arma principal (comprada o levantada, no la escopeta de base), queda tirada en el mismo lugar donde estaba la que agarraste, para que otro la levante o la vuelvas a cambiar |
 | F | inspeccionar el arma (como en CS o Valorant) |
 | F o V | cuchillo |
 | Ctrl o C | agacharse (más lento y más bajo; saltá y agachate para pasar por ventanas) |

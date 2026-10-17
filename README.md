@@ -117,6 +117,12 @@ Vercel y Netlify **no** sirven para el servidor porque no mantienen conexiones W
 
 Cada impacto muestra al lado de la mira cuánto le sacaste (con un "ding" como en TF2) y suma la ráfaga; cuando dejás de pegarle aparece el **total** que le sacaste.
 
+**Tiro a la cabeza:** cuando le pegás en la cabeza suena una campanita metálica (como el "dink" de Counter-Strike o el ding de TF2) en lugar del ding normal, y el número de daño sale en rojo con "¡CABEZA!".
+
+**Rocket jump (lanzacohetes estilo Soldier de TF2):** a los enemigos les hace el mismo daño de siempre, pero tu propio cohete te saca mucho menos (más o menos 27 de vida si explota a tus pies) y te empuja fuerte hacia arriba y hacia adelante. Disparando al piso quieto subís unos 4 m; si saltás y disparás al piso en el mismo momento (mejor agachado) llegás a unos 7 m, ideal para subir a lugares altos o cruzar el mapa rápido.
+
+**Chat:** cada jugador tiene su propio color de nombre en el chat (claro y fácil de leer, sin importar el color de su armadura). En los modos por equipos, un cuadradito al lado del nombre muestra de qué equipo es.
+
 ## Al morir
 
 Como en Team Fortress 2: la cámara vuela hasta quedar enfrente del que te eliminó y lo muestra unos segundos (*Te eliminó X con Y · Reaparecés en 3*), y reaparecés solo a los 3,6 s. Mientras tanto podés abrir la tienda con B. Si te mata la lava, una caída o tu propia explosión, la cámara da una vuelta sobre donde caíste.

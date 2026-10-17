@@ -47,6 +47,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 /* daño hecho: cada impacto salta al lado de la mira y al terminar la ráfaga se muestra el total */
 #dmgPop,#dmgTot{position:fixed;left:calc(50% + 26px);font-family:var(--display);pointer-events:none;text-shadow:0 2px 0 #000,0 0 6px rgba(0,0,0,.6);opacity:0}
 #dmgPop{top:calc(50% - 34px);font-size:22px;color:#ffe14a}
+#dmgPop.hs{color:#ff5a3a}
 #dmgPop.show{animation:dmgpop .6s ease-out forwards}
 @keyframes dmgpop{0%{opacity:1;transform:translateY(0) scale(1.15)}70%{opacity:1}100%{opacity:0;transform:translateY(-26px) scale(1)}}
 #dmgTot{top:calc(50% + 6px);font-size:16px;color:#fff;letter-spacing:.06em}
@@ -120,6 +121,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 #chat{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(120px + env(safe-area-inset-bottom,0px));width:min(440px,calc(100vw - 32px));display:flex;flex-direction:column;gap:2px;font-size:14px}
 #chatLog div{text-shadow:0 1px 0 #000,0 0 4px #000;animation:fade 9s forwards;overflow-wrap:anywhere}
 #chatLog b{font-weight:400}
+#chatLog .tdot{display:inline-block;width:8px;height:8px;margin-right:5px;border:1px solid #000;vertical-align:1px}
 #chatLog .sys{color:var(--rail)}
 #chat.open #chatLog div{animation:none;opacity:1}
 #chatIn{pointer-events:auto;font-family:var(--mono);font-size:14px;background:rgba(11,9,7,.85);color:var(--ink);border:1px solid var(--amber);padding:6px 8px;outline:none}
@@ -843,6 +845,8 @@ const SFX={
   armor:()=>{nz({dur:.25,f0:4000,f1:900,type:'bandpass',vol:.3});tn({type:'square',f0:300,f1:500,dur:.2,vol:.1});},
   hurt:()=>tn({type:'sawtooth',f0:230,f1:90,dur:.22,vol:.28}),
   // impacto estilo TF2: un "ding" corto y limpio; cuanto más daño, más grave
+  // tiro a la cabeza: campanita metálica corta (como el "dink" de CS o el ding de TF2), por encima del impacto normal
+  head:()=>{const at=AC?AC.currentTime:0;[[2093,.22,.55],[3322,.1,.35],[5274,.06,.22],[1046,.07,.3]].forEach(([f,v,d])=>tn({type:'sine',f0:f,f1:f*.995,dur:d,vol:v,at}));nz({dur:.03,f0:9000,f1:6000,type:'highpass',vol:.12,at});},
   hit:n=>{const f=1500-Math.min(700,(n||10)*6);tn({type:'triangle',f0:f,f1:f*.98,dur:.11,vol:.2});tn({type:'sine',f0:f*2,f1:f*2,dur:.05,vol:.05});},
   body:w=>{const k=[.55,1,1.15,.45,.6,.7,.5,0,1,1.1,0][w]||0;if(!k)return;
     tn({type:'sine',f0:150*(1.2-k*.3),f1:38,dur:.09+k*.08,vol:.5*k});
@@ -1179,6 +1183,10 @@ function ensurePlayer(id,name,color,bot,skin,team){
 }
 function removePlayer(id){const p=players.get(id);if(!p)return;if(p.model)scene.remove(p.model.g);players.delete(id);}
 const nameOf=id=>id===myId?S.name:(players.get(id)||{}).name||'¿?';
+// color del nombre en el chat: uno distinto para cada jugador (en el orden en que van hablando), siempre legible
+const CHAT_COLS=['#ffb547','#5fd0ff','#8cf06a','#ff7aa8','#c39bff','#ffe066','#4ff0c8','#ff8f5a','#9fb6ff','#f2a5ff','#b6f2a0','#7fe0ff','#ffd0a0','#ff6b6b'];
+const chatCols=new Map();
+function chatColor(id,name){const k=name||id;if(!chatCols.has(k))chatCols.set(k,CHAT_COLS[chatCols.size%CHAT_COLS.length]);return chatCols.get(k);}
 const colorOf=id=>id===myId?(teamsMode()&&myTeam>=0?TEAMS[myTeam].c:S.skin.c):(players.get(id)||{}).color||'#eadcc4';
 
 /* =================== RED =================== */
@@ -1375,7 +1383,8 @@ function onEvent(m){
       if(Math.random()<.7||m.n>15)SFX.hurt();
       break;
     case 'hit':{
-      showDamage(m.n,!!m.k);
+      showDamage(m.n,!!m.k,!!m.h);
+      if(m.h&&!(G.predHit>0&&G.predHS))SFX.head();
       G.hitT=.18;$('hitm').classList.toggle('kill',!!m.k);if(!(G.predHit>0)||m.k)SFX.hit(m.n);
       const t=players.get(m.id);if(t&&t.model)t.pain=.12;
       break;}
@@ -1399,7 +1408,8 @@ function onEvent(m){
     }
     case 'tp': fxTele(m.p[0],m.p[1],m.p[2]);SFX.tele(vAt(m.p[0],m.p[1],m.p[2])*.7);break;
     case 'pad': SFX.pad(vAt(m.p[0],m.p[1],m.p[2]));break;
-    case 'chat': chatLine('<b style="color:'+colorOf(m.id)+'">'+esc(m.n)+':</b> '+esc(m.m));SFX.chat();break;
+    case 'chat': {const p=players.get(m.id),tm=teamsMode()?(m.id===myId?myTeam:p?p.team:-1):-1;
+      chatLine((tm>=0?'<span class="tdot" style="background:'+TEAMS[tm].c+'"></span>':'')+'<b style="color:'+chatColor(m.id,m.n)+'">'+esc(m.n)+':</b> '+esc(m.m));SFX.chat();break;}
     case 'sys': sysChat(m.m);break;
   }
 }
@@ -1457,9 +1467,9 @@ function feedLine(html,mine){const d=document.createElement('div');d.innerHTML=h
 function chatLine(html,cls){const d=document.createElement('div');d.innerHTML=html;if(cls)d.className=cls;const L=d.textContent.length;if(L>80)d.style.animationDuration=Math.min(22,9+L/25)+'s';const f=$('chatLog');f.appendChild(d);while(f.children.length>8)f.firstChild.remove();}
 // cada impacto suma; si en 0,9 s no le volvés a pegar, aparece el total de la ráfaga
 const DMG={sum:0,t:0,timer:0};
-function showDamage(n,kill){
+function showDamage(n,kill,head){
   if(!n)return;DMG.sum+=n;
-  const p=$('dmgPop');p.textContent='-'+n;p.classList.remove('show');void p.offsetWidth;p.classList.add('show');
+  const p=$('dmgPop');p.textContent=(head?'¡CABEZA! ':'')+'-'+n;p.classList.toggle('hs',head);p.classList.remove('show');void p.offsetWidth;p.classList.add('show');
   const t=$('dmgTot');t.className='on';t.innerHTML='<b>'+DMG.sum+'</b>';
   clearTimeout(DMG.timer);
   DMG.timer=setTimeout(()=>{t.className='';void t.offsetWidth;t.innerHTML='TOTAL <b>'+DMG.sum+'</b>'+(kill?' · ELIMINADO':'');t.className='done';DMG.sum=0;},kill?150:900);
@@ -1509,7 +1519,12 @@ function selfBlast(p){
   if(d>=W_.rad)return;
   if(!C.los(W,p.x,p.y+.1,p.z,me.s.x,me.s.y+.9,me.s.z)&&!C.los(W,p.x,p.y+.1,p.z,me.s.x,me.s.y+.2,me.s.z))return;
   const dmg=W_.dmg*(1-d/W_.rad),cx=me.s.x-p.x,cyy=me.s.y+.9-p.y,cz=me.s.z-p.z,cl=Math.hypot(cx,cyy,cz)||1;
-  me.s.vx+=cx/cl*dmg*.16;me.s.vy+=cyy/cl*dmg*.16;me.s.vz+=cz/cl*dmg*.16;if(cyy>0)me.s.on=false;
+  if(p.k==='rocket'){
+    // rocket jump estilo Soldier: buen empuje hacia arriba y hacia adelante; si ya saltaste, se suma al salto
+    const k=dmg*.17,up=Math.max(0,cyy/cl);
+    me.s.vx+=cx/cl*k*1.15;me.s.vz+=cz/cl*k*1.15;me.s.vy=Math.min(Math.max(me.s.vy,0)+up*k*1.05+(me.s.crouch?1.2:0),19);
+    if(up>.2)me.s.on=false;
+  }else{me.s.vx+=cx/cl*dmg*.16;me.s.vy+=cyy/cl*dmg*.16;me.s.vz+=cz/cl*dmg*.16;if(cyy>0)me.s.on=false;}
 }
 
 /* =================== ARMAS DEL JUGADOR =================== */
@@ -1574,7 +1589,7 @@ function fire(){
     }
     if(w===3)me.heat=Math.min(1.5,me.heat+.12);
     // respuesta inmediata: marcador de impacto y sonido sin esperar al servidor
-    if(claims.size){let n=0;claims.forEach(c=>n+=c[1]);G.hitT=.18;G.predHit=.35;$('hitm').classList.remove('kill');SFX.hit(n*(W_.dmg||10));claims.forEach(c=>{const t=players.get(c[0]);if(t)t.pain=.12;});}
+    if(claims.size){let n=0;claims.forEach(c=>n+=c[1]);G.hitT=.18;G.predHit=.35;$('hitm').classList.remove('kill');let hs=0;claims.forEach(c=>hs+=c[2]);if(hs&&!W_.melee)SFX.head();else SFX.hit(n*(W_.dmg||10));G.predHS=hs>0;claims.forEach(c=>{const t=players.get(c[0]);if(t)t.pain=.12;});}
     net.send({t:'fire',w,o:r3([ex,ey,ez]),d:r3(d),h:[...claims.values()],sc:me.scope?1:0});
     if(W_.mag&&me.mag[w]<=0)startReload(w);
   }

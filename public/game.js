@@ -1506,7 +1506,9 @@ class Game {
       const n = clamp(c[1] | 0, 0, W_.pel), hs = clamp(c[2] | 0, 0, n); if (!n) continue;
       if (!this.validHit(o, d, t, W_)) continue;
       const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? W_.dmg * (hs ? 1.5 : 1) : W_.head ? W_.dmg * (hs ? W_.head : 1) : (n + hs) * W_.dmg;
+      this.curHS = hs > 0 && !W_.melee;
       this.damage(t, dmg * this.mult(p), p, w, d, .05, 'frag');
+      this.curHS = false;
     }
     this.curNS = false;
   }
@@ -1583,7 +1585,7 @@ class Game {
         for (const t of this.players.values()) {
           if (!t.alive || !t.joined || (t.id === pr.own && pr.age < .3)) continue;
           const h = rayPlayer(t.s.x, t.s.y, t.s.z, ox, oy, oz, dx / L, dy / L, dz / L, t.s.crouch);
-          if (h && h.t <= L + .15 && h.t < bt) { bt = h.t; direct = t; }
+          if (h && h.t <= L + .15 && h.t < bt) { bt = h.t; direct = t; pr.hs = !!h.head; }
         }
       }
       if (direct) { pr.x = ox + dx / L * bt; pr.y = oy + dy / L * bt; pr.z = oz + dz / L * bt; this.explode(pr, direct); this.projs.splice(i, 1); }
@@ -1602,10 +1604,10 @@ class Game {
         if (own.send) own.send({ t: 'ev', e: 'gdirect', n: this.mode.shop ? 150 : 0 });
         this.bcast({ t: 'ev', e: 'sys', m: own.name + ' le metió una granada directa a ' + direct.name });
       }
-      this.curNS = !!pr.ns;
+      this.curNS = !!pr.ns; this.curHS = pr.k === 'bullet' && !!pr.hs;
       this.damage(direct, (clean ? W_.clean : W_.direct) * pr.q, own, pr.w, [pr.v[0] / sp, pr.v[1] / sp, pr.v[2] / sp], pr.k === 'bullet' ? .02 : .08, 'frag');
     }
-    this.curNS = false;
+    this.curNS = false; this.curHS = false;
     if (W_.fire) this.startFire(pr, W_.fire);
     for (const t of this.players.values()) {
       if (!t.alive || !t.joined || t === direct) continue;
@@ -1613,7 +1615,7 @@ class Game {
       if (dist >= W_.rad) continue;
       if (!los(this.W, pr.x, pr.y + .1, pr.z, t.s.x, t.s.y + .9, t.s.z) && !los(this.W, pr.x, pr.y + .1, pr.z, t.s.x, t.s.y + .2, t.s.z)) continue;
       const self = t.id === pr.own;
-      let dmg = W_.dmg * (1 - .6 * dist / W_.rad) * pr.q; if (self) dmg *= .5;
+      let dmg = W_.dmg * (1 - .6 * dist / W_.rad) * pr.q; if (self) dmg *= pr.k === 'rocket' ? .28 : .5;
       const cx = t.s.x - pr.x, cy = t.s.y + .9 - pr.y, cz = t.s.z - pr.z, cl = Math.hypot(cx, cy, cz) || 1;
       const ks = self && !t.bot ? 0 : .16;
       this.damage(t, dmg, own, pr.w, [cx / cl, cy / cl, cz / cl], ks / (self ? 1 : pr.q), self ? 'self' : 'frag');
@@ -1667,7 +1669,7 @@ class Game {
       if (kick) { t.s.vx += kick[0]; t.s.vy += kick[1]; t.s.vz += kick[2]; if (kick[1] > 0) t.s.on = false; }
       if (att && att !== t && t.ai) { t.ai.hurtBy = att.id; t.ai.hurtT = 2; }
     } else if (t.send) t.send({ t: 'ev', e: 'dmg', a: att ? att.id : 0, n: Math.round(amt), k: kick ? r3a(kick) : null, from: att && att !== t ? r3a([att.s.x, att.s.y + 1, att.s.z]) : null });
-    if (att && att !== t && att.send) att.send({ t: 'ev', e: 'hit', id: t.id, n: Math.round(amt), k: t.hp <= 0 ? 1 : 0 });
+    if (att && att !== t && att.send) att.send({ t: 'ev', e: 'hit', id: t.id, n: Math.round(amt), k: t.hp <= 0 ? 1 : 0, h: this.curHS ? 1 : 0 });
     if (t.hp <= 0) this.kill(t, att, w, how, amt);
   }
   kill(v, att, w, how) {

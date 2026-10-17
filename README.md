@@ -119,7 +119,7 @@ En las partidas online, desde el menú de pausa (**Esc**) → *Votar para echar 
 
 ## Palabras censuradas
 
-En el chat y en los nombres (también los de las cuentas) se tapan con asteriscos FATI, FATIMA, FATY, ANA, VANI, VANINA, VAGINA y BRENDA, con sus variantes: mayúsculas, tildes, letras repetidas, números en lugar de letras (4N4, F4T1), letras separadas (a n a, f.a.t.i), diminutivos y plurales. Se comparan palabras enteras, así que *banana*, *mañana* o *Anabel* no se tocan. La lista está en `BAD_WORDS` dentro de `public/game.js`.
+En el chat y en los nombres (también los de las cuentas) se tapan con asteriscos FATI, FATIMA, FATY, ANA, VANI, VANINA, VAGINA, BRENDA, BARBIE, BARBI y BARBARA, con sus variantes: mayúsculas, tildes, letras repetidas, números en lugar de letras (4N4, F4T1), letras separadas (a n a, f.a.t.i), diminutivos y plurales. Se comparan palabras enteras, así que *banana*, *mañana* o *Anabel* no se tocan. La lista está en `BAD_WORDS` dentro de `public/game.js`.
 
 ## Configuración
 

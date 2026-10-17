@@ -271,6 +271,10 @@ function buildRepresa() {
   add(-26, 0, -22.2, 12, .06, -21.9, 'rail', { nc: 1 }); add(-26, 0, -21.1, 12, .06, -20.8, 'rail', { nc: 1 });
   add(-27, 0, -23, -26, 1, -20, 'metal'); add(12, 0, -23, 13, 1, -20, 'metal');        // topes de los rieles
   mover(-25, 0, -22.5, -22, 1.3, -20.5, 'crate', 0, 33, 28, 0);
+  // subestación: dos transformadores en la parte este del patio, con sus aisladores
+  [[19, -29], [23.5, -29]].forEach(([x, z]) => { add(x, 0, z, x + 3, 2.6, z + 3, 'metal'); add(x - .1, 2.6, z - .1, x + 3.1, 2.9, z + 3.1, 'trim');
+    [.6, 1.5, 2.4].forEach(d => add(x + d - .15, 2.9, z + 1.35, x + d + .15, 4, z + 1.65, 'pillar', { nc: 1 })); });
+  add(18.5, 0, -33, 27.5, .8, -32, 'concrete');                                    // murito bajo
 
   /* ---- ALA OESTE: andén de tres niveles ---- */
   add(-40, -1, -16, -17, 0, 16, 'floor');
@@ -342,6 +346,24 @@ function buildRepresa() {
   add(17, 1, 33, 21, 14, 36, 'block'); add(18, 3, 17, 21, 14, 33, 'block');
   add(-15.9, 3.5, 37.8, 15.9, 3.8, 38, 'light', { nc: 1 });
 
+  /* ---- MIRADOR en el techo del sótano (antes era una terraza vacía) ---- */
+  // puesto de vigía del francotirador: plataforma a 9 m con escalera al frente y barandas
+  add(-3, 8.6, 31, 3, 9, 37, 'grate');
+  [[-3, 31], [2.5, 31], [-3, 36.5], [2.5, 36.5]].forEach(([x, z]) => add(x, 5, z, x + .5, 8.6, z + .5, 'metal'));
+  stairs(-1.5, 25, 1.5, 31, 5, .5, 8, 'z', 1);
+  add(-3, 9, 36.9, 3, 10, 37, 'rail', { nc: 1 }); add(-3, 9, 31, -2.9, 10, 37, 'rail', { nc: 1 }); add(2.9, 9, 31, 3, 10, 37, 'rail', { nc: 1 });
+  // equipos de refrigeración (cobertura alta) y pretiles bajos
+  add(-12, 5, 23.5, -8, 7, 27, 'metal'); add(-12.2, 7, 23.3, -7.8, 7.3, 27.2, 'trim');
+  add(8, 5, 23.5, 12, 7, 27, 'metal'); add(7.8, 7, 23.3, 12.2, 7.3, 27.2, 'trim');
+  add(-14, 5, 32.5, -6, 6.2, 33.1, 'concrete'); add(6, 5, 32.5, 14, 6.2, 33.1, 'concrete');
+  add(-6, 5, 19, -3, 6.3, 21, 'crate'); add(4, 5, 20, 6.5, 6.6, 22.5, 'crate'); add(4.5, 6.6, 20.5, 6, 7.6, 22, 'crate');
+  // tanque de agua sobre patas en la esquina, con un saltador para subir
+  add(-15.5, 8, 34, -11.5, 10.6, 37.5, 'pillar'); add(-15.7, 10.6, 33.8, -11.3, 10.9, 37.7, 'trim');
+  [[-15.5, 34], [-12, 34], [-15.5, 37], [-12, 37]].forEach(([x, z]) => add(x, 5, z, x + .5, 8, z + .5, 'metal'));
+  pads.push({ x: -13.5, y: 5, z: 30, r: 1, t: [-13.5, 10.9, 35.6], apex: 2 });
+  // antena
+  add(13.3, 5, 36.3, 13.7, 14, 36.7, 'metal'); add(12.6, 13.2, 36.4, 14.4, 13.4, 36.6, 'metal', { nc: 1 });
+
   /* ---- Ítems ---- */
   I('quad', 0, 7, 0);
   I('health', -8, 0, 10); I('health', 8, 0, -10); I('shells', 14, 6, -14); I('bullets', -14, 6, 14); I('armor', 14, 6, 14);
@@ -350,11 +372,14 @@ function buildRepresa() {
   I('w2', -37, 3, 0); I('w3', -29, 0, 12); I('bullets', -37, 3, -12); I('armorH', -21, 6, -12); I('health', -19, 6, 12.5); I('shells', -37, 0, 13);
   I('mega', 37, 4, 0); I('rockets', 37, 4, 4); I('health', 31.5, 2.5, -10.5); I('shells', 19, 0, 12); I('bullets', 19, 0, -12); I('grenades', 31.5, 2.5, 10.5);
   I('w5', 0, -2.5, 32); I('rockets', -13, -3, 30); I('armor', 12, -3, 28); I('health', -10, -1, 28); I('w1', -8, -3, 35);
-  I('health', 10, 5, 30); I('bullets', -10, 5, 30); I('w8', 0, 5, 35); I('rockets', -10, 5, 20);
-  I('armor', -37, 9.5, 4.5); I('slugs', -30, 9.5, 4.5); I('health', -5.5, .5, 32);
+  I('health', 10, 5, 30); I('bullets', -10, 5, 30); I('w8', 0, 9, 34); I('rockets', -10, 5, 20);
+  I('armor', -37, 9.5, 4.5); I('slugs', -30, 9.5, 4.5); I('health', -2.5, -3, 27);
+  // más curación repartida
+  I('health', -13.5, 10.9, 35.6); I('health', -14, 5, 20); I('health', 14, 5, 20); I('health', -24, 0, -30); I('health', 24, 0, -36.5);
+  I('health', 19, 0, 0); I('health', -29.5, 0, 9.5); I('health', -37, 3, 0); I('health', 0, 0, 13);
 
   /* ---- Puntos de aparición ---- */
-  [[6, 0, -13], [-6, 0, 13], [-14, 6, 4], [14, 6, -4], [-12, 0, -26], [-33, 9.5, 4.5], [20, 0, -28], [-30, 0, -12], [-37, 3, 8], [-21, 6, -2],
+  [[6, 0, -13], [-6, 0, 13], [-14, 6, 4], [14, 6, -4], [-12, 0, -26], [-33, 9.5, 4.5], [22, 0, -34], [-30, 0, -12], [-37, 3, 8], [-21, 6, -2],
    [19, 0, -6], [-6, -3, 35], [8, -3, 27], [0, 5, 28], [37, 4, -3], [-8, 0, -36], [12, 0, -36]]
     .forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
 
@@ -368,7 +393,9 @@ function buildRepresa() {
     { x: 0, y: 3, z: 31, c: 0xff4a3a, i: 1.4, d: 26 },
     { x: 0, y: -2, z: 0, c: 0xff4a10, i: 1.4, d: 12 },
     { x: -32, y: 11, z: 4.5, c: 0x6fd8ff, i: 1.1, d: 16 },
-    { x: -38, y: 6, z: 0, c: 0xffa040, i: 1.0, d: 14 }
+    { x: -38, y: 6, z: 0, c: 0xffa040, i: 1.0, d: 14 },
+    { x: 0, y: 11, z: 34, c: 0x6fd8ff, i: 1.0, d: 18 },
+    { x: 23, y: 5, z: -27.5, c: 0x8fe0ff, i: 1.0, d: 12 }
   );
 
   return finish({ id: 'represa', name: 'dm1 · La Represa', bounds: { x0: -41, x1: 41, z0: -41, z1: 39 },

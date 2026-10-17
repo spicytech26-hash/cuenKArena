@@ -44,6 +44,9 @@ Se elige al escoger el modo (y en práctica también desde Ajustes, en plena par
 - La Represa renovada:
   - **Sala de compuertas (ala oeste):** la compuerta gigante de la represa en la pared, una **pasarela de la grúa** a 9,5 m que cruza toda la sala (se sube por una escalera nueva desde el nivel alto o con un **ascensor** en el pasillo del medio), con blindaje y celdas de plasma arriba, y cajas para cubrirse.
   - **Patio norte:** una **vagoneta de carga** va y viene sobre rieles cruzando el patio. Sirve de cobertura que se mueve, y si te subís te lleva.
+  - **Mirador (techo del sótano):** la terraza vacía ahora tiene un **puesto de vigía** a 9 m con escalera, donde está el francotirador; un **tanque de agua** sobre patas con un saltador para subir (con botiquín arriba); equipos de refrigeración, pretiles y cajas para cubrirse, y una antena.
+  - **Subestación (patio norte, lado este):** dos transformadores con aisladores y un murito bajo.
+  - **Más curación:** nueve botiquines nuevos repartidos (mirador, patio norte, entrada a la sala de lava, sala de compuertas, entrepiso y atrio).
   - **Sala de turbinas (sótano sur):** carcasas de turbinas contra el fondo y **dos pistones** que suben y bajan por turnos al lado del lanzacohetes, así la cobertura cambia todo el tiempo.
 - En La Cuenca, las ventanas de los pisos se pasan saltando y agachándote, y hay un ascensor de salto en el pasillo del primer piso: pisá el saltador de la planta baja para subir y tirate por el hueco para bajar. Detrás del edificio, por el pasillo de atrás, una escalera larga sube pegada a la pared hasta la biblioteca del último piso.
 

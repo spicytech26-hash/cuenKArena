@@ -1,4 +1,7 @@
 <title>CuenkArena</title>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" as="script" crossorigin>
+<link rel="preload" href="game.js" as="script">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -407,7 +410,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin></script>
 <script src="game.js"></script>
 <script>
 (function(){
@@ -1299,7 +1302,7 @@ function onMsg(m){
       G.interEnd=performance.now()/1000+(m.secs||25);setTxt('interN',String(m.secs||25));
       $('inter').hidden=false;$('board').hidden=false;renderBoard();SFX.start();
       $('bStay').disabled=false;$('bStay').textContent='Jugar de nuevo';$('interReady').textContent=online?'Si todos aprietan «Jugar de nuevo», arranca enseguida':'';
-      G.interFree=true;if(document.pointerLockElement)document.exitPointerLock();
+      G.interFree=true;selfUnlock();
       break;
     case 'ready': if(online)$('interReady').innerHTML='<b>'+m.n+'/'+m.of+'</b> jugadores listos';break;
     case 'start':
@@ -1543,7 +1546,7 @@ function fire(){
   muzzleWorld.position.set(ex+d[0],ey+d[1],ez+d[2]);
   SFX[w](1);if(me.q>0)SFX.quadfire();SFX.body(w);
   // retroceso: la mira sube un poco y vuelve, sacudida chica y un golpe de campo de visión según el arma
-  const RC=[.014,.04,.05,.008,.022,.026,.024,0,.055,.06,0][w]||0,SH=[.06,.22,.3,.05,.1,.14,.12,0,.24,.26,0][w]||0;
+  const RC=[.014,.04,.05,.008,.022,.026,.024,0,.055,.06,0][w]||0,SH=[0,.07,.09,0,.04,.05,.03,0,.06,.07,0][w]||0;
   me.recP=(me.recP||0)+RC*(.85+Math.random()*.3);me.recY=(me.recY||0)+(Math.random()-.5)*RC*.6;shake=Math.max(shake,SH);me.fovPunch=Math.max(me.fovPunch||0,RC*55);
   if(RC){wMuz.intensity=Math.max(wMuz.intensity,2.2+RC*30);}
   if(W_.type==='proj'){
@@ -1604,7 +1607,7 @@ function openShop(){
   if(!inGame||!liveState())return;
   if(MODE==='gungame'){announce('SIN TIENDA','En Gungame cada baja te da el arma siguiente');SFX.deny();return;}
   $('shop').hidden=false;mouseDown=false;for(const k in keys)keys[k]=false;
-  if(document.pointerLockElement)document.exitPointerLock();
+  selfUnlock();
   shopMsg('');renderShop();SFX.ui();
 }
 function closeShop(silent){if($('shop').hidden)return;$('shop').hidden=true;if(!silent&&inGame){lockPointer();SFX.ui();}}
@@ -1696,14 +1699,18 @@ function lockPointer(){
 // Chrome a veces manda un movimiento falso enorme con el mouse bloqueado (la mira "se teletransporta"):
 // se descarta si es mucho más grande que lo que venía moviéndose y que cualquier movimiento humano posible en un evento
 const mouseF={ema:0,skip:0,t:0};
+// Chrome junta en un solo evento todo lo que se movió el mouse en el cuadro, así que un giro rápido real puede
+// traer cientos de píxeles: solo se descarta algo absurdo (más de 1200 px y 8 veces lo que venía) y nunca dos seguidos.
 function mouseSpike(dx,dy){
   const m=Math.abs(dx)+Math.abs(dy),now=performance.now();
-  if(now-mouseF.t>120)mouseF.ema=0;mouseF.t=now;           // después de una pausa, empieza de cero
-  const lim=Math.min(1500,Math.max(rawOK?420:260,mouseF.ema*6));
-  if(m>lim&&mouseF.skip<2){mouseF.skip++;return true;}     // nunca más de 2 seguidos: un giro rápido real pasa igual
-  mouseF.skip=0;mouseF.ema=mouseF.ema*.8+m*.2;return false;
+  if(now-mouseF.t>250){mouseF.t=now;mouseF.ema=m;mouseF.skip=0;return false;}   // después de una pausa, se acepta tal cual
+  mouseF.t=now;
+  if(m>1200&&m>mouseF.ema*8&&mouseF.skip<1){mouseF.skip++;return true;}
+  mouseF.skip=0;mouseF.ema=mouseF.ema*.7+m*.3;return false;
 }
-document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement!==canvas&&inGame&&$('menu').hidden&&!chatOpen&&$('shop').hidden&&$('inter').hidden)openPause();});
+// las sueltas de mouse que provoca el propio juego (abrir chat o tienda, fin de partida) no abren la pausa
+let selfUnlockT=0;function selfUnlock(){selfUnlockT=performance.now();if(document.pointerLockElement)document.exitPointerLock();}
+document.addEventListener('pointerlockchange',()=>{if(performance.now()-selfUnlockT<800)return;if(document.pointerLockElement!==canvas&&inGame&&$('menu').hidden&&!chatOpen&&$('shop').hidden&&$('inter').hidden)openPause();});
 $('bStay').addEventListener('click',()=>{
   // en el fin de partida: avisa que estás listo; en práctica arranca otra al instante
   if(matchState==='inter'&&net){net.send({t:'ready'});$('bStay').disabled=true;$('bStay').textContent='¡Listo!';if(!online)$('interReady').textContent='Arrancando…';SFX.ui();return;}
@@ -1741,7 +1748,7 @@ function renderVote(m){
   b.innerHTML='¿Echar a <b>'+esc(m.name)+'</b>? <span style="opacity:.75">(lo pidió '+esc(m.by)+')</span><br>Sí '+m.y+' · No '+m.n+' · hacen falta '+m.need+' · '+m.left+' s · '+mine;
 }
 let chatDraft='';
-function openChat(){chatOpen=true;$('chat').classList.add('open');const i=$('chatIn');i.hidden=false;i.value=chatDraft;i.focus();for(const k in keys)keys[k]=false;mouseDown=false;if(document.pointerLockElement)document.exitPointerLock();}
+function openChat(){chatOpen=true;$('chat').classList.add('open');const i=$('chatIn');i.hidden=false;i.value=chatDraft;i.focus();for(const k in keys)keys[k]=false;mouseDown=false;selfUnlock();}
 // relock=false cuando el que cierra es un clic en el juego (ese mismo clic ya pide el mouse)
 function closeChat(send,relock=true){if(!chatOpen)return;const i=$('chatIn');const txt=i.value.trim();if(send&&txt&&net)net.send({t:'chat',m:txt});chatDraft=send?'':i.value;chatOpen=false;i.hidden=true;$('chat').classList.remove('open');i.blur();if(inGame&&relock)lockPointer();}
 // si el chat pierde el foco (clic afuera, Alt+Tab) se cierra solo: nunca te deja trabado
@@ -1964,7 +1971,7 @@ function updCamera(dt){
   let eye=me.eyeC+bobY-me.dip;
   if(!me.alive)eye=Math.max(.35,K.EYE-me.deadT*2.2);
   const sh=shake*shake;
-  camera.position.set(me.s.x+R(sh*.3),me.s.y+eye+R(sh*.3),me.s.z+R(sh*.3));
+  const st=G.time*38;camera.position.set(me.s.x+Math.sin(st)*sh*.22,me.s.y+eye+Math.sin(st*1.31+1.7)*sh*.22,me.s.z+Math.sin(st*.87+3.1)*sh*.22);
   me.recP=(me.recP||0)*Math.exp(-dt*11);me.recY=(me.recY||0)*Math.exp(-dt*11);me.fovPunch=(me.fovPunch||0)*Math.exp(-dt*12);
   camera.rotation.set(me.pitch-me.kick*.025+me.recP,me.yaw+me.recY,me.tilt+me.roll+(me.alive?0:Math.min(.5,me.deadT*.6)));
   const scoped=me.scope&&me.alive&&WEAPONS[me.w].scope,zoom=WEAPONS[me.w].zoom||22;

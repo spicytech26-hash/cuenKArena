@@ -207,7 +207,7 @@ Los bots generan su mapa de navegación solos a partir de las cajas, así que no
 
 ### Fluidez
 
-- El mouse se lee **crudo** (`requestPointerLock({ unadjustedMovement: true })`, sin la aceleración del sistema) cuando el navegador lo permite, y se descartan los saltos falsos que a veces manda Chrome con el puntero bloqueado (un movimiento enorme y aislado que hacía "teletransportar" la mira).
+- El mouse se lee **crudo** (`requestPointerLock({ unadjustedMovement: true })`, sin la aceleración del sistema) cuando el navegador lo permite, y solo se descarta un salto absurdo y aislado (más de 1200 px en un evento y 8 veces lo que venía), que es lo que a veces manda Chrome con el puntero bloqueado. Los giros rápidos reales nunca se descartan: Chrome junta en un solo evento todo lo que se movió el mouse en el cuadro.
 - Los sombreadores de armas, jugadores, explosiones, rayos y proyectiles se preparan al cargar el mapa, y las explosiones y rayos se reutilizan: así no hay un microcorte la primera vez que aparece cada cosa.
 - En la práctica, los bots buscan camino de a uno por paso y reutilizan memoria, y si un cuadro se atrasa no se encadenan pasos extra.
 - Si igual notás tirones: activá la *aceleración por hardware* del navegador, probá con las extensiones apagadas, y si tu mouse permite 4000/8000 Hz, bajalo a 1000 Hz (los navegadores todavía no se llevan bien con esas tasas).

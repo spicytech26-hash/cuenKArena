@@ -113,6 +113,10 @@ La máquina más chica cuesta unos pocos dólares por mes y se apaga sola cuando
 
 Vercel y Netlify **no** sirven para el servidor porque no mantienen conexiones WebSocket abiertas.
 
+## Fin de partida
+
+Al terminar aparece la tabla con la cuenta regresiva a la próxima partida. **Jugar de nuevo** en práctica arranca otra al instante; online marca que estás listo (se ve *2/3 jugadores listos*) y, cuando todos los que están en la sala lo apretaron, arranca sin esperar la cuenta.
+
 ## Votación para echar a un jugador
 
 En las partidas online, desde el menú de pausa (**Esc**) → *Votar para echar a un jugador*, o con `/echar NOMBRE` en el chat. Todos ven el cartel y votan con **Y** o **N** durante 30 segundos. Pasa si vota que sí más de la mitad de los demás jugadores (hacen falta 3 personas como mínimo). El echado no puede volver a esa sala por 10 minutos. Cada jugador puede iniciar una votación cada 90 segundos.
@@ -149,7 +153,8 @@ Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 
 | W A S D | moverse |
 | Espacio | saltar (mantenelo para encadenar saltos) |
 | Mouse / click | apuntar / disparar |
-| 1 · 2 · 3 · 4, rueda, Q | como en Counter-Strike: 1 pistola, 2 arma principal, 3 cuchillo, 4 molotov (Q vuelve a la anterior) |
+| 1 · 2 · 3 · 4, rueda, Q | como en Counter-Strike: 1 pistola, 2 arma principal, 3 cuchillo (también V), 4 molotov. Q vuelve al arma que tenías antes |
+| F | inspeccionar el arma (como en CS o Valorant) |
 | F o V | cuchillo |
 | Ctrl o C | agacharse (más lento y más bajo; saltá y agachate para pasar por ventanas) |
 | R | recargar la escopeta doble |

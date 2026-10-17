@@ -225,6 +225,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
 #carry{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);font-family:var(--display);font-size:20px;color:#fff;padding:4px 16px;border:2px solid #000;box-shadow:0 3px 0 #000;white-space:nowrap;animation:blink 1s steps(2) infinite}
 #board tr.team td{font-family:var(--display);font-size:16px;color:#fff;padding-top:10px}
 #interC{text-align:center;font-family:var(--display);font-size:clamp(18px,2.6vw,26px);color:var(--ink);margin:10px 0 14px;text-shadow:0 2px 0 #000}
+#interReady{text-align:center;font-size:15px;color:var(--muted);margin:-6px 0 12px;min-height:1.2em;font-variant-numeric:tabular-nums}
+#interReady b{color:var(--cash)}
 #interC b{font-weight:400;color:var(--amber);font-variant-numeric:tabular-nums}
 .interbox{display:flex;flex-direction:column;align-items:center;margin-top:min(46vh,420px)}
 #inter .btn{pointer-events:auto}
@@ -292,7 +294,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
 <div id="inter" hidden><div class="interbox"><div id="interT"></div><div class="note" id="interS" style="text-align:center"></div>
   <div id="interXP"></div>
   <div id="interC">Próxima partida en <b id="interN">25</b> segundos</div>
-  <div class="mrow" style="justify-content:center"><button type="button" class="btn primary" id="bStay">Seguir jugando</button><button type="button" class="btn" id="bQuit">Volver al menú</button></div></div></div>
+  <div id="interReady" aria-live="polite"></div>
+  <div class="mrow" style="justify-content:center"><button type="button" class="btn primary" id="bStay">Jugar de nuevo</button><button type="button" class="btn" id="bQuit">Volver al menú</button></div></div></div>
 <div id="shop" hidden>
   <div class="shopbox">
     <div class="shophead"><h2>TIENDA</h2><div class="wallet"><small>Tus créditos</small><span id="shopCr">¤ 0</span></div></div>
@@ -381,7 +384,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
     </div>
     <div class="keys" id="mKeys">
       <kbd>W A S D</kbd><span>moverse</span><kbd>Espacio</kbd><span>saltar (mantené para bunny hop)</span>
-      <kbd>Click</kbd><span>disparar (click derecho: mira del francotirador)</span><kbd>1 · 2 · 3 · 4</kbd><span>pistola · arma principal · cuchillo · molotov (Rueda o Q para alternar) · R recargar</span>
+      <kbd>Click</kbd><span>disparar (click derecho: mira del francotirador)</span><kbd>1 · 2 · 3 · 4</kbd><span>pistola · arma principal · cuchillo · molotov · Q arma anterior · F inspeccionar · R recargar</span>
       <kbd>Ctrl · C</kbd><span>agacharse (saltá y agachate para pasar por ventanas)</span>
       <kbd>B</kbd><span>tienda</span><kbd>Tab</kbd><span>tabla de frags</span>
       <kbd>T · Enter</kbd><span>chat</span><kbd>Esc</kbd><span>menú</span>
@@ -1211,7 +1214,7 @@ function onMsg(m){
     case 'spawn':
       me.s={x:m.p[0],y:m.p[1],z:m.p[2],vx:0,vy:0,vz:0,on:true};me.yaw=m.yaw;me.pitch=0;me.alive=true;me.deadT=0;me.raise=1;me.hp=100;
       if(m.ow)me.ow=m.ow.slice();if(m.am)me.am=Object.assign({},m.am);if(m.ar!=null)me.ar=m.ar;
-      me.mag={2:2};me.rel=0;me.scope=false;
+      me.mag={2:2};me.rel=0;me.scope=false;me.inspT=9;me.lastW=me.w===0?C.primaryOf(m.ow||me.ow):0;
       if(MODE==='gungame'&&m.w!=null)me.w=m.w;
       else{me.w=[6,5,3,2,4,1].find(i=>me.ow[i]&&hasAmmo(i));if(me.w==null)me.w=0;}
       $('deathBox').hidden=true;showWeapon();SFX.respawn(1);updateHUD();
@@ -1256,10 +1259,12 @@ function onMsg(m){
       $('interXP').innerHTML=online?(ACC?'':(GCID?'Iniciá sesión con Google para ganar experiencia':'')):'En práctica no se gana experiencia';
       G.interEnd=performance.now()/1000+(m.secs||25);setTxt('interN',String(m.secs||25));
       $('inter').hidden=false;$('board').hidden=false;renderBoard();SFX.start();
+      $('bStay').disabled=false;$('bStay').textContent='Jugar de nuevo';$('interReady').textContent=online?'Si todos aprietan «Jugar de nuevo», arranca enseguida':'';
       G.interFree=true;if(document.pointerLockElement)document.exitPointerLock();
       break;
+    case 'ready': if(online)$('interReady').innerHTML='<b>'+m.n+'/'+m.of+'</b> jugadores listos';break;
     case 'start':
-      matchState='play';$('inter').hidden=true;$('board').hidden=true;
+      matchState='play';$('inter').hidden=true;$('board').hidden=true;$('bStay').disabled=false;$('bStay').textContent='Jugar de nuevo';
       if(!document.pointerLockElement&&$('menu').hidden&&inGame)announce('¡ARRANCÓ!','Hacé click para jugar');
       if(m.fs)FL=m.fs;if(m.ts)TS=m.ts;me.lvl=0;
       if(m.map&&m.map!==W.id){loadMap(m.map);projs.forEach(p=>scene.remove(p.m));projs.length=0;}
@@ -1454,12 +1459,20 @@ function selfBlast(p){
 
 /* =================== ARMAS DEL JUGADOR =================== */
 const hasAmmo=i=>{const w=WEAPONS[i];return MODE==='gungame'||!w.ammo||me.am[w.ammo]>=w.cost;};
-function selectWeapon(i,silent){if(i===me.w||!me.ow[i]||!me.alive)return;if(!hasAmmo(i)&&!silent){SFX.click();return;}me.lastW=me.w;me.w=i;me.scope=false;if(me.rel>0&&me.relW!==i){me.rel=0;}me.raise=1;me.cool=Math.max(me.cool,.2);showWeapon();updateHUD();}
+// Q: vuelve al arma que tenías antes; si esa ya no está (la reemplazaste o te mataron), alterna entre pistola y principal
+function quickSwitch(){
+  const ok=i=>i!=null&&i>=0&&i!==me.w&&me.ow[i]&&hasAmmo(i);
+  let t=me.lastW;if(!ok(t)){const pr=C.primaryOf(me.ow);t=me.w===0?pr:0;if(!ok(t))t=ok(pr)?pr:ok(7)?7:-1;}
+  if(t>=0)selectWeapon(t);
+}
+// F: inspeccionar el arma como en CS o Valorant
+function inspect(){if(!me.alive||me.scope||(me.rel>0&&me.relW===me.w))return;me.inspT=0;if(me.w===7)me.flipT=0;}
+function selectWeapon(i,silent){if(i===me.w||!me.ow[i]||!me.alive)return;if(!hasAmmo(i)&&!silent){SFX.click();return;}me.lastW=me.w;me.w=i;me.scope=false;me.inspT=9;if(me.rel>0&&me.relW!==i){me.rel=0;}me.raise=1;me.cool=Math.max(me.cool,.2);showWeapon();updateHUD();}
 function cycleWeapon(d){const n=WEAPONS.length;for(let k=1;k<=n;k++){const i=((me.w+d*k)%n+n)%n;if(me.ow[i]&&hasAmmo(i)){selectWeapon(i);return;}}}
 function autoSwitch(){for(const i of [6,5,2,3,1,4,0]){if(me.ow[i]&&hasAmmo(i)){if(i!==me.w)selectWeapon(i,true);return;}}}
 function showWeapon(){vms.forEach((g,k)=>g.visible=k===me.w);}
 const rgtV=new THREE.Vector3(),upV=new THREE.Vector3();
-function startReload(w){
+function startReload(w){me.inspT=9;
   const W_=WEAPONS[w];if(!W_.mag||me.rel>0||me.mag[w]>=W_.mag)return;
   me.rel=W_.reload*.75;me.relW=w;SFX.reload();if(net)net.send({t:'reload',w});
 }
@@ -1471,6 +1484,7 @@ function fire(){
   if(W_.mag){me.mag[w]--;}
   if(W_.melee){me.mt=0;me.mdir=-me.mdir;}
   if(w===10)me.throwT=0;
+  me.inspT=9;
   me.cool=W_.rate;me.kick=w===2?1.5:w===6||w===9?1.4:w===3?.4:1;me.flash=w===6||W_.melee?0:.06;
   const ex=me.s.x,ey=me.s.y+(me.s.crouch?K.EYEC:K.EYE),ez=me.s.z,d=C.dirFromAngles(me.yaw,me.pitch);
   camera.updateMatrixWorld();rgtV.set(1,0,0).applyQuaternion(camera.quaternion);upV.set(0,1,0).applyQuaternion(camera.quaternion);
@@ -1617,7 +1631,11 @@ function setSkin(p){Object.assign(S.skin,p);saveS();syncLocker();syncChest();reb
 /* =================== ENTRADA =================== */
 function lockPointer(){try{const r=canvas.requestPointerLock();if(r&&r.catch)r.catch(()=>{});}catch(e){}}
 document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement!==canvas&&inGame&&$('menu').hidden&&!chatOpen&&$('shop').hidden&&$('inter').hidden)openPause();});
-$('bStay').addEventListener('click',()=>{lockPointer();SFX.ui();});
+$('bStay').addEventListener('click',()=>{
+  // en el fin de partida: avisa que estás listo; en práctica arranca otra al instante
+  if(matchState==='inter'&&net){net.send({t:'ready'});$('bStay').disabled=true;$('bStay').textContent='¡Listo!';if(!online)$('interReady').textContent='Arrancando…';}
+  lockPointer();SFX.ui();
+});
 $('bQuit').addEventListener('click',()=>{leaveGame();$('mKick').textContent='Arena · Gungame · Team Deathmatch · Captura la bandera';$('bOnline').textContent='Jugar online';$('bOnline').disabled=!serverOK;$('bOffline').textContent='Práctica con bots';showMenu();});
 // los avisos con animación no se repiten al volver de la pausa
 ['cMsg','cSub','crPop','pick'].forEach(id=>$(id).addEventListener('animationend',()=>$(id).classList.remove('show')));
@@ -1659,10 +1677,11 @@ addEventListener('keydown',e=>{
   // como en Counter-Strike: 1 pistola · 2 arma principal · 3 cuchillo · 4 molotov
   const n=MODE==='gungame'?undefined:{Digit1:0,Digit2:C.primaryOf(me.ow),Digit3:7,Digit4:10,Numpad1:0,Numpad2:C.primaryOf(me.ow),Numpad3:7,Numpad4:10}[e.code];
   if(e.code==='KeyR')startReload(me.w);
-  if(e.code==='KeyV'||e.code==='KeyF')selectWeapon(7);if(n!==undefined&&n>=0)selectWeapon(n);
+  if(e.code==='KeyV')selectWeapon(7);if(n!==undefined&&n>=0)selectWeapon(n);
   if(e.code==='KeyG')selectWeapon(10);
   if(voteNow&&voteNow.me===0&&(e.code==='KeyY'||e.code==='KeyN')&&!e.repeat){net.send({t:'vote',y:e.code==='KeyY'});}
-  if(e.code==='KeyQ')selectWeapon(me.lastW);
+  if(e.code==='KeyQ')quickSwitch();
+  if(e.code==='KeyF'&&!e.repeat)inspect();
   if(e.code==='KeyB'&&!e.repeat){e.preventDefault();openShop();}
   if(e.code==='KeyT'||e.code==='Enter'){e.preventDefault();openChat();}
   if(e.code==='Tab'){$('board').hidden=false;renderBoard();}
@@ -1871,6 +1890,15 @@ function updViewmodel(dt){
     g.position.set(g.position.x*(1-a),g.position.y*(1-a)-.1205*a,g.position.z*(1-a)-.25*a);
     g.rotation.set((me.kick*.12-me.raise*.6)*(1-a*.6)+.0213*a,0,0);
   }else g.rotation.set(me.kick*.12-me.raise*.6,0,0);
+  // inspección (F): gira el arma para mostrar un costado, la inclina para mostrar el otro y vuelve; el cuchillo además da una vuelta
+  if(me.inspT!=null&&me.inspT<2.6&&me.alive&&!me.scope){
+    me.inspT+=dt;const t=me.inspT,ss=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
+    const w1=ss(t/.38)*(1-ss((t-1.15)/.4)),w2=ss((t-1.15)/.4)*(1-ss((t-2.1)/.45)),sw=Math.sin(t*2.2)*.012*(w1+w2);
+    const k=i===7?1.15:i===0?1.1:1;
+    g.position.x+=(-.07*w1-.03*w2)*k;g.position.y+=(.045*w1+.06*w2+sw)*k;g.position.z+=(.06*w1+.03*w2);
+    g.rotation.y+=(-.95*w1+.55*w2)*k;g.rotation.z+=(.4*w1-.3*w2)*k;g.rotation.x+=(.08*w1-.32*w2);
+    if(i===7&&t<.55)g.rotation.z+=Math.PI*2*ss(t/.55);
+  }
   if(me.rel>0){me.rel-=dt;if(me.rel<=0){me.rel=0;if(me.relW>=0)me.mag[me.relW]=WEAPONS[me.relW].mag;updateHUD();}}
   const relDip=me.rel>0&&me.relW===i?Math.sin(Math.min(1,me.rel/(WEAPONS[i].reload*.75))*Math.PI)*.18:0;
   g.position.y-=relDip;g.rotation.x-=relDip*2;

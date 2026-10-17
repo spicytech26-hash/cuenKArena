@@ -1177,6 +1177,7 @@ class Game {
     if (p.acct && this.state === 'play' && this.o.onXP) { const xp = this.matchXP(p, false, false); if (xp > 0) this.o.onXP(p, xp, { kills: p.kills, partida: 0, victoria: 0 }); }
     if (p.joined) { this.bcast({ t: 'ev', e: 'leave', id, n: p.name }); this.botT = 0; }
     if (this.vote) this.checkVote();
+    if (this.state === 'inter') this.checkReady();
   }
   newPlayer(id, name, skin, bot) {
     return { id, name, skin, color: skin.c, bot, send: null, s: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, on: false }, yaw: 0, pitch: 0, w: 1,
@@ -1258,8 +1259,16 @@ class Game {
       }
       case 'cfg': if (!this.o.online) this.configure(m); break;
       case 'kick': this.startKick(p, m.id | 0); break;
+      case 'ready': if (this.state === 'inter' && p.joined && !p.bot && !p.ready) { p.ready = true; this.checkReady(); } break;
       case 'vote': this.castVote(p, !!m.y); break;
     }
+  }
+  // fin de partida: si todas las personas apretaron "Jugar de nuevo", arranca la próxima sin esperar
+  checkReady() {
+    if (this.state !== 'inter') return;
+    const hs = [...this.players.values()].filter(q => q.joined && !q.bot), n = hs.filter(q => q.ready).length;
+    this.bcast({ t: 'ready', n, of: hs.length });
+    if (hs.length && n >= hs.length) this.interT = Math.min(this.interT, .6);
   }
   /* ---- votación para echar a un jugador (solo online, entre personas) ---- */
   voters(except) { return [...this.players.values()].filter(q => q.joined && !q.bot && q !== except); }
@@ -1795,7 +1804,7 @@ class Game {
     for (const it of this.items) { it.up = !it.off; it.t = 0; }
     this.bcast({ t: 'start', map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), tm: this.time, fs: this.flagState(), ts: this.ts });
     for (const p of this.players.values()) if (p.joined) {
-      p.frags = 0; p.deaths = 0; p.cr = ECON.START; p.unl = OW0(); p.perk = { ar: 0, am: 0 }; p.streak = 0; p.lvl = 0; p.caps = 0; p.kills = 0; p.joinT = this.time; p.dirty = true;
+      p.ready = false; p.frags = 0; p.deaths = 0; p.cr = ECON.START; p.unl = OW0(); p.perk = { ar: 0, am: 0 }; p.streak = 0; p.lvl = 0; p.caps = 0; p.kills = 0; p.joinT = this.time; p.dirty = true;
       this.spawn(p);
     }
     this.sendScores();

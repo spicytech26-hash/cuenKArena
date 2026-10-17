@@ -298,7 +298,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
     <div class="shophead"><h2>TIENDA</h2><div class="wallet"><small>Tus créditos</small><span id="shopCr">¤ 0</span></div></div>
     <div id="shopMsg"></div>
     <div class="shopgrid" id="shopGrid"></div>
-    <div class="shopfoot">Ganás ¤ 200 por frag, ¤ 100 extra si cortás una racha de 3 y ¤ 100 extra con pistola. Lo que comprás queda desbloqueado hasta que termina la partida y aparecés con eso cada vez. <b>B</b> o <b>Esc</b> para cerrar.</div>
+    <div class="shopfoot">Ganás ¤ 200 por frag, ¤ 100 extra si cortás una racha de 3 y ¤ 100 extra con pistola. Como en Counter-Strike llevás una sola <b>arma principal</b> (tecla 2): la que comprás reemplaza a la anterior y aparecés con ella hasta que termina la partida. Pistola en el 1, cuchillo en el 3 y molotov en el 4. <b>B</b> o <b>Esc</b> para cerrar.</div>
   </div>
 </div>
 <div id="menu">
@@ -381,7 +381,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
     </div>
     <div class="keys" id="mKeys">
       <kbd>W A S D</kbd><span>moverse</span><kbd>Espacio</kbd><span>saltar (mantené para bunny hop)</span>
-      <kbd>Click</kbd><span>disparar (click derecho: mira del francotirador)</span><kbd>1 – 0 · Rueda</kbd><span>armas · F cuchillo · R recargar</span>
+      <kbd>Click</kbd><span>disparar (click derecho: mira del francotirador)</span><kbd>1 · 2 · 3 · 4</kbd><span>pistola · arma principal · cuchillo · molotov (Rueda o Q para alternar) · R recargar</span>
       <kbd>Ctrl · C</kbd><span>agacharse (saltá y agachate para pasar por ventanas)</span>
       <kbd>B</kbd><span>tienda</span><kbd>Tab</kbd><span>tabla de frags</span>
       <kbd>T · Enter</kbd><span>chat</span><kbd>Esc</kbd><span>menú</span>
@@ -1543,7 +1543,7 @@ function renderShop(){
   const ic=shopIcons();
   $('shopCr').textContent='¤ '+me.cr.toLocaleString('es-AR');
   const cats=[];C.SHOP.forEach(it=>{if(!cats.includes(it.cat))cats.push(it.cat);});
-  const owned=it=>it.free||(it.w!=null&&me.unl[it.w])||(it.armor&&me.perk.ar>=it.armor)||(it.id==='am'&&me.perk.am);
+  const owned=it=>(it.w!=null&&C.PRIMARY.includes(it.w))?C.primaryOf(me.ow)===it.w:it.free||(it.w!=null&&!it.once&&me.unl[it.w])||(it.armor&&me.perk.ar>=it.armor)||(it.id==='am'&&me.perk.am);
   $('shopGrid').innerHTML=cats.map(cat=>'<div class="scol"><h3>'+cat+'</h3>'+C.SHOP.filter(it=>it.cat===cat).map(it=>{
     const own=owned(it),poor=!own&&me.cr<it.price;
     return '<button type="button" class="card'+(own?' own':'')+(poor?' poor':'')+'" data-id="'+it.id+'"'+(own?' disabled':'')+'>'+
@@ -1656,9 +1656,10 @@ addEventListener('keydown',e=>{
   if(e.code==='Escape'){e.preventDefault();if(!$('inter').hidden)return;if(document.pointerLockElement)document.exitPointerLock();openPause();return;}
   keys[e.code]=true;
   if(['Space','Tab','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)||e.ctrlKey)e.preventDefault();
-  const n={Digit1:0,Digit2:1,Digit3:2,Digit4:3,Digit5:4,Digit6:5,Digit7:6,Digit8:7,Digit9:8,Digit0:9}[e.code];
+  // como en Counter-Strike: 1 pistola · 2 arma principal · 3 cuchillo · 4 molotov
+  const n=MODE==='gungame'?undefined:{Digit1:0,Digit2:C.primaryOf(me.ow),Digit3:7,Digit4:10,Numpad1:0,Numpad2:C.primaryOf(me.ow),Numpad3:7,Numpad4:10}[e.code];
   if(e.code==='KeyR')startReload(me.w);
-  if(e.code==='KeyV'||e.code==='KeyF')selectWeapon(7);if(n!==undefined)selectWeapon(n);
+  if(e.code==='KeyV'||e.code==='KeyF')selectWeapon(7);if(n!==undefined&&n>=0)selectWeapon(n);
   if(e.code==='KeyG')selectWeapon(10);
   if(voteNow&&voteNow.me===0&&(e.code==='KeyY'||e.code==='KeyN')&&!e.repeat){net.send({t:'vote',y:e.code==='KeyY'});}
   if(e.code==='KeyQ')selectWeapon(me.lastW);
@@ -1797,8 +1798,11 @@ function updateHUD(){
   const tl=Math.max(0,timeLeft);setTxt('tTime',Math.floor(tl/60)+':'+String(tl%60).padStart(2,'0'));
   setTxt('tPing',ping?ping+' ms':'–');
   $('quadChip').hidden=!(me.q>0&&me.alive);setTxt('quadT',String(me.q));
-  const sl=$('slots');if(!sl.children.length)WEAPONS.forEach((w,i)=>{const d=document.createElement('div');d.className='slot';d.innerHTML='<i>'+(i===10?'G':(i+1)%10)+'</i><span>'+w.name+'</span><span></span>';sl.appendChild(d);});
-  WEAPONS.forEach((w,i)=>{const d=sl.children[i];d.classList.toggle('own',!!me.ow[i]);d.classList.toggle('on',i===me.w);d.lastChild.textContent=w.ammo&&!gg?me.am[w.ammo]:'∞';d.hidden=!me.ow[i]&&(gg||!!w.melee);});
+  // cuatro ranuras como en CS: 1 pistola, 2 principal, 3 cuchillo, 4 molotov (solo si tenés)
+  const sl=$('slots');if(sl.children.length!==4)sl.innerHTML=[1,2,3,4].map(k=>'<div class="slot"><i>'+k+'</i><span></span><span></span></div>').join('');
+  const prim=C.primaryOf(me.ow),ws=gg?[-1,me.w,7,-1]:[0,prim,7,10];
+  ws.forEach((w,k)=>{const d=sl.children[k],W_=WEAPONS[w],has=w>=0&&!!me.ow[w];d.hidden=!has;if(!has)return;
+    d.children[1].textContent=W_.name;d.classList.add('own');d.classList.toggle('on',w===me.w);d.lastChild.textContent=W_.ammo&&!gg?me.am[W_.ammo]:'∞';});
 }
 function renderBoard(){
   const tl=Math.max(0,timeLeft),gg=MODE==='gungame',ctf=MODE==='ctf',tm=teamsMode();

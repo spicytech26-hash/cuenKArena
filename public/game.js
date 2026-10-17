@@ -44,6 +44,11 @@ const WEAPONS = [
   { name: 'Bomba molotov',  ammo: 'molotov',  cost: 1, rate: .9,  type: 'proj', proj: 'molotov', speed: 17, dmg: 0, rad: 0, direct: 12, fire: { r: 3.4, dur: 6, hit: 5.5, every: .1 } }
 ];
 const NW = WEAPONS.length;
+// como en Counter-Strike: una sola arma principal a la vez (ranura 2); pistola en la 1, cuchillo en la 3, molotov en la 4
+const PRIMARY = [1, 2, 3, 4, 5, 6, 8, 9];
+const isPrimary = w => PRIMARY.includes(w);
+const primaryOf = ow => { for (const w of PRIMARY) if (ow[w]) return w; return -1; };
+function setPrimary(p, w) { for (const k of PRIMARY) if (k !== w) p.ow[k] = 0; p.ow[w] = 1; }
 // arrancás siempre con pistola, escopeta y cuchillo
 const OW0 = () => { const a = new Array(NW).fill(0); a[0] = a[1] = a[7] = 1; return a; };
 const AMMO_MAX = { shells: 50, bullets: 200, grenades: 25, rockets: 25, slugs: 25, sniper: 30, caza: 20, molotov: 6 };
@@ -80,7 +85,7 @@ const ECON = { START: 300, KILL: 200, SHUTDOWN: 100, PISTOL: 100, MAX: 9999 };
 // pack: munición con la que aparecés si desbloqueaste el arma
 const SHOP = [
   { id: 'w0', cat: 'Pistolas', name: 'Pistola', w: 0, price: 0, free: 1, desc: 'Arrancás con 60 balas; comparte munición con la ametralladora' },
-  { id: 'w1', cat: 'Escopetas', name: 'Escopeta', w: 1, price: 0, free: 1, desc: '10 perdigones, ideal de cerca' },
+  { id: 'w1', cat: 'Escopetas', name: 'Escopeta', w: 1, price: 0, free: 1, desc: 'Tu arma principal de base (gratis). Elegila para volver a la escopeta' },
   { id: 'w2', cat: 'Escopetas', name: 'Escopeta doble', w: 2, price: 500, pack: ['shells', 20], desc: '20 perdigones, gasta 2 cartuchos' },
   { id: 'w3', cat: 'Automáticas', name: 'Ametralladora', w: 3, price: 600, pack: ['bullets', 100], desc: 'Fuego continuo a media distancia' },
   { id: 'w4', cat: 'Explosivas', name: 'Lanzagranadas', w: 4, price: 900, pack: ['grenades', 10], desc: 'Explotan al segundo. Un impacto directo explota en el acto y da premio' },
@@ -1361,7 +1366,8 @@ class Game {
     }
     const mul = p.perk.am ? 2 : 1;
     p.ow = OW0(); p.am = AMMO0(0); p.am.shells = 10 * mul; p.am.bullets = 60 * mul;
-    for (const it of SHOP) if (it.w != null && it.pack && p.unl[it.w]) { p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n * mul); }
+    for (const it of SHOP) if (it.w != null && it.pack && !it.once && p.unl[it.w]) { if (isPrimary(it.w)) setPrimary(p, it.w); else p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n * mul); }
+    if (primaryOf(p.ow) !== 1) p.ow[1] = 0;
     p.ar = p.perk.ar; this.fillMags(p);
   }
   fillMags(p) { p.mag = {}; p.relT = {}; WEAPONS.forEach((W_, i) => { if (W_.mag) p.mag[i] = W_.mag; }); }
@@ -1382,16 +1388,23 @@ class Game {
     const it = SHOP_BY_ID[id];
     const no = why => p.send && p.send({ t: 'ev', e: 'buy', id, ok: 0, why });
     if (!this.mode.shop) return no('En ' + this.mode.name + ' no hay tienda');
-    if (!it || it.free || !p.joined) return no('No se puede comprar');
+    if (!it || !p.joined) return no('No se puede comprar');
     if (!this.live()) return no('La partida terminó');
     if (it.once && !p.alive) return no('Comprala cuando estés vivo: si te matan se pierde');
     if (it.once && p.am[it.pack[0]] >= AMMO_MAX[it.pack[0]]) return no('Ya llevás el máximo');
-    if (it.w != null && !it.once && p.unl[it.w]) return no('Ya lo tenés');
+    if (it.w != null && isPrimary(it.w) && primaryOf(p.ow) === it.w && (it.free || p.unl[it.w])) return no('Ya la tenés');
+    if (it.free && !(it.w != null && isPrimary(it.w))) return no('No se puede comprar');
+    if (it.w != null && !it.once && !isPrimary(it.w) && p.unl[it.w]) return no('Ya lo tenés');
     if (it.armor && p.perk.ar >= it.armor) return no('Ya tenés ese blindaje');
     if (it.id === 'am' && p.perk.am) return no('Ya la tenés');
     if (p.cr < it.price) return no('Te faltan ' + (it.price - p.cr) + ' créditos');
     p.cr -= it.price;
     if (it.once) { p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n); }
+    else if (it.w != null && isPrimary(it.w)) {
+      // reemplaza a la principal que tenías (y es la que te toca al reaparecer)
+      for (const k of PRIMARY) p.unl[k] = 0; if (!it.free) p.unl[it.w] = 1;
+      if (p.alive) { setPrimary(p, it.w); if (it.pack) { const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n); } else p.am.shells = Math.max(p.am.shells, 10); }
+    }
     else if (it.w != null) {
       p.unl[it.w] = 1;
       if (p.alive) { p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n); }
@@ -1718,7 +1731,10 @@ class Game {
         if (info.weapon != null) {
           const fresh = !p.ow[info.weapon];
           if (!fresh && p.am[info.ammo] >= AMMO_MAX[info.ammo]) return false;
-          p.ow[info.weapon] = 1; p.am[info.ammo] = Math.min(AMMO_MAX[info.ammo], p.am[info.ammo] + info.n);
+          // como en CS: con una principal comprada no se levanta otra; la escopeta de base sí se cambia
+          if (fresh && isPrimary(info.weapon) && !this.mode.gg) { const cur = primaryOf(p.ow); if (cur !== -1 && cur !== 1) return false; setPrimary(p, info.weapon); }
+          else p.ow[info.weapon] = 1;
+          p.am[info.ammo] = Math.min(AMMO_MAX[info.ammo], p.am[info.ammo] + info.n);
         } else if (info.ammo) {
           if (p.am[info.ammo] >= AMMO_MAX[info.ammo]) return false;
           p.am[info.ammo] = Math.min(AMMO_MAX[info.ammo], p.am[info.ammo] + info.n);
@@ -2066,5 +2082,5 @@ class Game {
   }
 }
 
-return { censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, SKILL, topAt, pmove, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
+return { PRIMARY, primaryOf, censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, SKILL, topAt, pmove, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
 });

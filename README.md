@@ -13,7 +13,7 @@ Al tocar **Jugar online** (o **Práctica con bots**) elegís el modo. Cada modo 
 
 ## Armas
 
-Todos arrancan con pistola (automática, 60 balas que comparte con la ametralladora; se recargan juntando cajas de balas), escopeta y cuchillo. En Gungame la munición es infinita. Las demás se juntan del mapa o se compran.
+Como en Counter-Strike llevás **una sola arma principal** (ranura 2): arrancás con la escopeta, y si comprás otra, la reemplaza (aparecés con la comprada hasta que termina la partida; la escopeta se puede volver a elegir gratis en la tienda). Las armas tiradas en el mapa solo se levantan si todavía tenés la escopeta de base. Todos arrancan con pistola (automática, 60 balas que comparte con la ametralladora; se recargan juntando cajas de balas), escopeta y cuchillo. En Gungame la munición es infinita. Las demás se juntan del mapa o se compran.
 
 | Arma | Daño | Tiros para matar (100 de vida / con blindaje 100) |
 |---|---|---|
@@ -26,8 +26,8 @@ Todos arrancan con pistola (automática, 60 balas que comparte con la ametrallad
 | Rifle de plasma | 110 (atraviesa) | 1 / 2 |
 | Cuchillo mariposa | 55, 99 por la espalda; el segundo tajo dentro de 4 s mata siempre; ignora el blindaje; alcance 2,6 m | 2 / 2 |
 | Francotirador | 115, 230 a la cabeza (click derecho: mira) | 1 / 2 |
-| Bomba molotov (tecla G) | se rompe al primer golpe y deja 6 s de fuego en 3,4 m: 5,5 cada décima de segundo, unos 55 por segundo (la mitad a vos). Es de un solo uso: se compra estando vivo (3 por compra, hasta 6) y si te matan la perdés | — |
-| Rifle de caza (tecla 0) | cualquier impacto mata | 1 / 1 — la bala viaja a 260 m/s y cae un poco (67 cm a 100 m); click derecho apunta con las miras de hierro. Los tiros de más de 22 m, al aire o con mucho vuelo dan premio en créditos |
+| Bomba molotov (tecla 4 o G) | se rompe al primer golpe y deja 6 s de fuego en 3,4 m: 5,5 cada décima de segundo, unos 55 por segundo (la mitad a vos). Es de un solo uso: se compra estando vivo (3 por compra, hasta 6) y si te matan la perdés | — |
+| Rifle de caza | cualquier impacto mata | 1 / 1 — la bala viaja a 260 m/s y cae un poco (67 cm a 100 m); click derecho apunta con las miras de hierro. Los tiros de más de 22 m, al aire o con mucho vuelo dan premio en créditos |
 
 El blindaje absorbe un tercio del daño y llega como máximo a 100; la megasalud sube hasta 150.
 
@@ -149,7 +149,7 @@ Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 
 | W A S D | moverse |
 | Espacio | saltar (mantenelo para encadenar saltos) |
 | Mouse / click | apuntar / disparar |
-| 1–0, rueda, Q | armas (Q vuelve a la anterior) |
+| 1 · 2 · 3 · 4, rueda, Q | como en Counter-Strike: 1 pistola, 2 arma principal, 3 cuchillo, 4 molotov (Q vuelve a la anterior) |
 | F o V | cuchillo |
 | Ctrl o C | agacharse (más lento y más bajo; saltá y agachate para pasar por ventanas) |
 | R | recargar la escopeta doble |

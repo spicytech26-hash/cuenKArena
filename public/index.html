@@ -78,7 +78,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 .mvC.lead .mvN::after{content:' ★';color:var(--amber)}
 .mvC kbd{position:absolute;top:8px;right:8px;font-size:11px;border:1px solid var(--mc);color:var(--mc);padding:0 5px}
 .mvC .mvN{font-family:var(--display);font-size:20px;color:#fff}
-.mvC .mvImg{display:block;margin:7px 0 2px;aspect-ratio:384/163;overflow:hidden;border:1px solid #000;box-shadow:0 0 0 1px rgba(255,255,255,.06);background:#000}
+.mvC .mvImg{display:block;margin:7px 0 2px;aspect-ratio:384/125;overflow:hidden;border:1px solid #000;box-shadow:0 0 0 1px rgba(255,255,255,.06);background:#000}
 .mvC .mvImg img{display:block;width:100%;height:100%;object-fit:cover;filter:saturate(.85) brightness(.9);transition:transform .25s,filter .25s}
 .mvC:hover .mvImg img,.mvC.mine .mvImg img{transform:scale(1.06);filter:none}.mvC .mvD{font-size:11px;color:var(--muted)}
 .mvC .mvB{height:6px;background:rgba(0,0,0,.5);margin-top:6px}.mvC .mvB i{display:block;height:100%;background:var(--mc);transition:width .25s}
@@ -110,7 +110,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 .pod.p1 .pb{height:74px;background:linear-gradient(#ffe08a,#e0a228)}.pod.p2 .pb{height:54px;background:linear-gradient(#e8edf2,#9aa6b2)}.pod.p3 .pb{height:40px;background:linear-gradient(#f0b07a,#a8642c)}
 .pod.p1{order:2;animation-delay:.25s}.pod.p2{order:1;animation-delay:.1s}.pod.p3{order:3;animation-delay:.4s}
 @keyframes podIn{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}
-#interTabW{width:100%;max-height:min(34vh,300px);overflow-y:auto;background:rgba(14,10,8,.88);border:1px solid #3a2a1a;box-shadow:0 4px 0 #000}
+#interTabW{width:100%;max-height:min(28vh,260px);overflow-y:auto;background:rgba(14,10,8,.88);border:1px solid #3a2a1a;box-shadow:0 4px 0 #000}
 #interTab{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
 #interTab th{position:sticky;top:0;background:#1c140e;font-size:10px;letter-spacing:.2em;color:var(--muted);font-weight:400;text-align:right;padding:7px 10px}
 #interTab th:nth-child(2),#interTab td:nth-child(2){text-align:left}
@@ -343,9 +343,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
 #interReady{text-align:center;font-size:15px;color:var(--muted);margin:-6px 0 12px;min-height:1.2em;font-variant-numeric:tabular-nums}
 #interReady b{color:var(--cash)}
 #interC b{font-weight:400;color:var(--amber);font-variant-numeric:tabular-nums}
-.interbox{display:flex;flex-direction:column;align-items:center;width:min(820px,100%);padding:16px 0}
+.interbox{display:flex;flex-direction:column;align-items:center;width:min(820px,100%);padding:16px 0;margin:auto}
 #inter .btn{pointer-events:auto}
-#inter{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(ellipse at center,rgba(20,12,6,.82),rgba(4,3,2,.94));overflow-y:auto;padding:0 max(16px,env(safe-area-inset-left,0px));z-index:40}
+#inter{position:fixed;inset:0;display:flex;background:radial-gradient(ellipse at center,rgba(20,12,6,.82),rgba(4,3,2,.94));overflow-y:auto;padding:0 max(16px,env(safe-area-inset-left,0px));z-index:40}
 #interT{font-family:var(--display);font-size:clamp(28px,6vw,56px);color:var(--amber);text-align:center;text-shadow:0 4px 0 #2a1205;margin-bottom:8px}
 @media (max-width:900px){#ctfBox{top:auto;bottom:calc(96px + env(safe-area-inset-bottom,0px))}#ctfBox .mid{display:none}}
 @media (max-width:620px){.keys{grid-template-columns:auto 1fr}.cell{min-width:80px}.cell .num{font-size:30px}#slots,#shopHint,#kickHint{display:none}.srow{grid-template-columns:1fr 1fr 44px}.locker{grid-template-columns:1fr}}

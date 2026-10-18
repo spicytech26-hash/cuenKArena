@@ -244,7 +244,7 @@ Si se corta la conexión en medio de una partida online (por ejemplo cuando el s
 
 ## Sifón de escudo
 
-Como en Quake Champions: cada jugador o bot que muere suelta **5 mini escudos** que saltan alrededor del cuerpo. Cada uno da **+5 de blindaje** (hasta 100) al que pasa por encima, con un sonidito y el aviso "+5 de escudo". Duran 20 segundos en el piso y los que caen en la lava se derriten. Matar y pasar a buscar el escudo te deja listo para la próxima pelea.
+Como en Quake Champions: cada jugador o bot que muere suelta **5 mini escudos** que saltan alrededor del cuerpo. Cada uno da **+5 de blindaje** (hasta 100) al que pasa por encima, con un sonidito y el aviso "+5 de escudo". Duran 10 segundos en el piso: a los 8 empiezan a parpadear (cada vez más rápido) y a los 10 desaparecen, así no se llena el mapa de escudos. Los que caen en la lava se derriten. Matar y pasar a buscar el escudo te deja listo para la próxima pelea.
 
 ## Escudos y botiquines
 
@@ -252,4 +252,4 @@ Los ítems de ayuda tienen forma propia: el **blindaje** es un escudo verde, el 
 
 ## Votación del próximo mapa
 
-En la pantalla final hay una tarjeta por cada mapa del modo. Se vota con un click o con 1, 2, 3; cada tarjeta muestra los votos y una estrella en el que va ganando, y se puede cambiar el voto. Gana el más votado; si hay empate entre los más votados, o si nadie vota, el mapa sale **al azar**.
+En la pantalla final hay una tarjeta por cada mapa del modo, con su nombre y una foto chiquita del mapa (sacadas con el mismo motor del juego, en `public/maps/`). Se vota con un click o con 1, 2, 3; cada tarjeta muestra los votos y una estrella en el que va ganando, y se puede cambiar el voto. Gana el más votado; si hay empate entre los más votados, o si nadie vota, el mapa sale **al azar**.

@@ -115,7 +115,8 @@ const MODES = {
 };
 const MODE_IDS = Object.keys(MODES);
 // sifón: mini escudos que suelta el que muere
-const SHARD = { N: 5, AR: 5, CAP: 100, LIFE: 20, MAX: 80 };
+// duran 10 s desde que caen al piso (a los 8 s empiezan a parpadear, eso lo hace el cliente)
+const SHARD = { N: 5, AR: 5, CAP: 100, LIFE: 10.45, MAX: 80 };
 // Gungame: arranca con armas fuertes y termina con las difíciles; la última baja es con machete
 const GG = [3, 5, 2, 4, 1, 6, 8, 0, 3, 5, 2, 4, 1, 9, 8, 0, 5, 6, 9, 7];
 const TEAMS = [{ name: 'Rojo', c: '#ff4a3a' }, { name: 'Azul', c: '#3a8bff' }];
@@ -1337,7 +1338,7 @@ class Game {
         if (this.mode.teams) this.setTeam(p, this.pickTeam(p));
         p.joined = true; p.joinT = this.time; p.kills = 0; p.dmg = 0; p.bestLife = 0;
         if (this.mode.tdm && this.o.online && this.humanCount(false) <= 1 && Number.isInteger(m.fl) && m.fl >= 5 && m.fl <= 500) this.o.fraglimit = m.fl;
-        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts, sh: this.shards.map(s => [s.id, r3(s.x), r3(s.y), r3(s.z)]), mv: this.voteState() });
+        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts, sh: this.shards.map(s => [s.id, r3(s.x), r3(s.y), r3(s.z), r2(s.t)]), mv: this.voteState() });
         this.bcast({ t: 'ev', e: 'join', id, n: p.name, c: p.color, s: p.skin, tm: p.team }, id);
         this.spawn(p); this.botT = 0; this.sendScores();
         break;

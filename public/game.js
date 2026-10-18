@@ -21,6 +21,7 @@ const EPS = 1e-3;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const r2 = v => Math.round(v * 100) / 100;
 const r3a = a => [Math.round(a[0] * 1000) / 1000, Math.round(a[1] * 1000) / 1000, Math.round(a[2] * 1000) / 1000];
+const r3 = v => Math.round(v * 1000) / 1000;
 
 /* ---------- Armas ---------- */
 /* Daño pensado para combates cortos: 100 de salud cae en ~1 segundo de fuego sostenido.
@@ -103,7 +104,7 @@ const SHOP = [
 ];
 /* ---------- Modos de juego ---------- */
 const MODES = {
-  arena:   { name: 'Arena', maps: ['represa', 'panymanteca', 'lacuenca'], shop: true,
+  arena:   { name: 'Arena', maps: ['represa', 'panymanteca', 'lacuenca'], shop: true, timelimit: 360,
              desc: 'Todos contra todos. Cada frag da créditos para la tienda (B).' },
   gungame: { name: 'Gungame', maps: ['represa', 'panymanteca', 'lacuenca'], shop: false, gg: true,
              desc: 'Cada baja te da la siguiente arma de la lista. Munición infinita, sin tienda. Si te matan con cuchillo bajás un nivel. Gana el primero en hacer las 20 bajas; la última es con cuchillo.' },
@@ -113,6 +114,8 @@ const MODES = {
              desc: 'Rojo contra azul. Robá la bandera rival y llevala hasta tu base. Gana el primer equipo en capturarla 3 veces.' }
 };
 const MODE_IDS = Object.keys(MODES);
+// sifón: mini escudos que suelta el que muere
+const SHARD = { N: 5, AR: 5, CAP: 100, LIFE: 20, MAX: 80 };
 // Gungame: arranca con armas fuertes y termina con las difíciles; la última baja es con machete
 const GG = [3, 5, 2, 4, 1, 6, 8, 0, 3, 5, 2, 4, 1, 9, 8, 0, 5, 6, 9, 7];
 const TEAMS = [{ name: 'Rojo', c: '#ff4a3a' }, { name: 'Azul', c: '#3a8bff' }];
@@ -1239,6 +1242,8 @@ class Game {
     this.o = Object.assign({ fraglimit: 20, timelimit: 600, caplimit: 3, bots: null, botFill: 0, botSkill: 1, online: false, maxPlayers: 16, map: null, rotate: true, mode: 'arena' }, o || {});
     if (!MODES[this.o.mode]) this.o.mode = 'arena';
     this.mode = MODES[this.o.mode];
+    if (this.mode.timelimit) this.o.timelimit = this.mode.timelimit;   // la Arena dura 6 minutos, online y en práctica
+    this.shards = []; this.sid = 1; this.mapVotes = new Map(); this.voteOpts = null;
     this.players = new Map(); this.nextId = 1; this.projs = []; this.fires = []; this.pid = 1; this.vote = null; this.bans = new Map(); this.kickN = new Map();
     this.time = 0; this.snapT = 0; this.scT = 0; this.botT = 0; this.state = 'play'; this.left = this.o.timelimit; this.interT = 0;
     this.ts = [0, 0]; this.flags = []; this.countT = 0;
@@ -1332,7 +1337,7 @@ class Game {
         if (this.mode.teams) this.setTeam(p, this.pickTeam(p));
         p.joined = true; p.joinT = this.time; p.kills = 0; p.dmg = 0; p.bestLife = 0;
         if (this.mode.tdm && this.o.online && this.humanCount(false) <= 1 && Number.isInteger(m.fl) && m.fl >= 5 && m.fl <= 500) this.o.fraglimit = m.fl;
-        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts });
+        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts, sh: this.shards.map(s => [s.id, r3(s.x), r3(s.y), r3(s.z)]), mv: this.voteState() });
         this.bcast({ t: 'ev', e: 'join', id, n: p.name, c: p.color, s: p.skin, tm: p.team }, id);
         this.spawn(p); this.botT = 0; this.sendScores();
         break;
@@ -1376,6 +1381,7 @@ class Game {
       case 'grab': this.grab(p); break;
       case 'ready': if (this.state === 'inter' && p.joined && !p.bot && !p.ready) { p.ready = true; this.checkReady(); } break;
       case 'vote': this.castVote(p, !!m.y); break;
+      case 'mapvote': this.castMapVote(p, String(m.m || '')); break;
     }
   }
   // E: cambiar tu arma principal por la que está tirada al lado (como en CS); al reaparecer volvés a tener la comprada
@@ -1806,6 +1812,7 @@ class Game {
     this.dropCarried(v);
     const ns = !!(this.curNS && k && k !== v.id && w != null && WEAPONS[w] && WEAPONS[w].scope);
     this.bcast({ t: 'ev', e: 'kill', k, v: v.id, w: w == null ? -1 : w, how: how || 'frag', gib: gib ? 1 : 0, ns: ns ? 1 : 0, p: r3a([v.s.x, v.s.y, v.s.z]) });
+    if (scoring) this.dropShards(v);
     if (v.bot && v.ai) v.ai.path = null;
     let won = false;
     if (this.mode.gg && scoring) won = this.ggKill(v, att, w);
@@ -1904,6 +1911,36 @@ class Game {
     }
     p.dirty = true; return true;
   }
+  /* ---- sifón (como Quake Champions): el que muere suelta mini escudos de 5 que junta el que pasa por encima ---- */
+  dropShards(v) {
+    const n = SHARD.N, ox = v.s.x, oy = v.s.y + 1, oz = v.s.z, l = [], a0 = Math.random() * 6.283;
+    for (let i = 0; i < n; i++) {
+      const a = a0 + i / n * 6.283 + (Math.random() - .5) * .5, d = .9 + Math.random() * 1.3;
+      let x = ox + Math.cos(a) * d, z = oz + Math.sin(a) * d;
+      if (!los(this.W, ox, oy, oz, x, oy, z)) { x = ox; z = oz; }             // si hay una pared en el medio, cae al lado del cuerpo
+      const fl = raycast(this.W, x, oy + .3, z, 0, -1, 0, 12), y = fl ? oy + .3 - fl.t : v.s.y;
+      if (inLava(this.W, x, y + .05, z)) continue;                                // en la lava se derriten
+      const s = { id: this.sid++, x, y, z, t: SHARD.LIFE, arm: .45 };
+      this.shards.push(s); l.push([s.id, r3(ox), r3(oy), r3(oz), r3(x), r3(y), r3(z)]);
+    }
+    while (this.shards.length > SHARD.MAX) { const s = this.shards.shift(); this.bcast({ t: 'ev', e: 'shx', id: s.id }); }
+    if (l.length) this.bcast({ t: 'ev', e: 'shard', l });
+  }
+  tickShards(dt) {
+    for (let i = this.shards.length - 1; i >= 0; i--) {
+      const s = this.shards[i]; s.t -= dt; s.arm -= dt;
+      if (s.t <= 0) { this.shards.splice(i, 1); this.bcast({ t: 'ev', e: 'shx', id: s.id }); continue; }
+      if (s.arm > 0) continue;
+      for (const p of this.players.values()) {
+        if (!p.alive || !p.joined || p.ar >= SHARD.CAP) continue;
+        if (Math.abs(p.s.x - s.x) < .95 && Math.abs(p.s.z - s.z) < .95 && p.s.y > s.y - 1 && p.s.y < s.y + 1.4) {
+          p.ar = Math.min(SHARD.CAP, p.ar + SHARD.AR); p.dirty = true;
+          this.shards.splice(i, 1); this.bcast({ t: 'ev', e: 'shx', id: s.id, by: p.id });
+          break;
+        }
+      }
+    }
+  }
   tickItems(dt) {
     for (const it of this.items) {
       if (it.off) continue;
@@ -1933,7 +1970,10 @@ class Game {
     this.state = 'inter'; this.interT = 25;
     this.bans.clear(); this.kickN.clear(); // la partida terminó: los echados pueden volver y se empieza la cuenta de cero
     const l = this.scores(), ms = this.mode.maps;
-    const next = this.o.rotate ? ms[(ms.indexOf(this.W.id) + 1) % ms.length] : this.W.id;
+    // el próximo mapa se vota en la pantalla final; si nadie vota, sale uno al azar
+    this.mapVotes.clear();
+    this.voteOpts = this.o.rotate && ms.length > 1 ? ms.slice() : null;
+    const next = this.voteOpts ? null : this.W.id;
     this.nextMap = next;
     let w = l.length ? l[0][1] : '';
     if (this.mode.teams) w = this.ts[0] === this.ts[1] ? '' : 'EQUIPO ' + TEAMS[this.ts[0] > this.ts[1] ? 0 : 1].name.toUpperCase();
@@ -1947,11 +1987,29 @@ class Game {
         if (xp > 0) this.o.onXP(p, xp, { kills: p.kills, partida: 1, victoria: won ? 1 : 0 });
       }
     }
-    this.bcast({ t: 'end', l, w, wt: this.mode.teams ? (this.ts[0] === this.ts[1] ? -1 : this.ts[0] > this.ts[1] ? 0 : 1) : -1, ts: this.ts, next, nextName: MAPS[next].name, secs: this.interT });
+    this.bcast({ t: 'end', l, w, wt: this.mode.teams ? (this.ts[0] === this.ts[1] ? -1 : this.ts[0] > this.ts[1] ? 0 : 1) : -1, ts: this.ts, next, nextName: next ? MAPS[next].name : '', mv: this.voteState(), secs: this.interT });
     this.projs.length = 0;
+  }
+  // resultado de la votación: el más votado; empate entre los más votados o sin votos → al azar
+  voteWinner() {
+    const o = this.voteOpts; if (!o) return null;
+    const c = this.voteCounts(); let best = 0; for (const id of o) best = Math.max(best, c[id]);
+    const pool = best ? o.filter(id => c[id] === best) : o;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+  voteCounts() { const c = {}; for (const id of this.voteOpts || []) c[id] = 0; for (const [pid, id] of this.mapVotes) if (this.players.has(pid) && c[id] != null) c[id]++; return c; }
+  voteState() { return this.voteOpts && this.state === 'inter' ? { o: this.voteOpts.map(id => [id, MAPS[id].name]), c: this.voteCounts() } : null; }
+  castMapVote(p, id) {
+    if (this.state !== 'inter' || !this.voteOpts || !this.voteOpts.includes(id) || !p.joined || p.bot) return;
+    this.mapVotes.set(p.id, id);
+    const st = this.voteState();
+    for (const q of this.players.values()) if (q.send && q.joined) q.send({ t: 'mv', o: st.o, c: st.c, me: this.mapVotes.get(q.id) || null });
   }
   restart(mapId) {
     this.bans.clear(); this.kickN.clear();
+    if (!mapId && !this.nextMap && this.voteOpts) this.nextMap = this.voteWinner();
+    this.voteOpts = null; this.mapVotes.clear();
+    for (const s of this.shards) this.bcast({ t: 'ev', e: 'shx', id: s.id }); this.shards.length = 0;
     const id = mapId || this.nextMap || this.W.id; this.nextMap = null;
     if (id !== this.W.id) this.setMap(id); else this.resetFlags();
     this.state = 'play'; this.left = this.o.timelimit; this.projs.length = 0;
@@ -2001,7 +2059,8 @@ class Game {
     updateMovers(this.W, this.time);
     if (this.state === 'inter') {
       this.interT -= dt;
-      if (this.nextMap && this.interT < 23 && !NAVS[this.nextMap]) getNav(MAPS[this.nextMap]);
+      // se prepara la navegación de los mapas candidatos de a uno mientras se ve la tabla final
+      if (this.interT < 23) { const c = (this.voteOpts || [this.nextMap]).find(id => id && !NAVS[id]); if (c) getNav(MAPS[c]); }
       if (this.interT <= 0) this.restart();
     } else if (this.state === 'lobby') {
       if (this.humanCount(false) >= this.mode.minPlayers) { this.state = 'count'; this.countT = 6; this.bcast({ t: 'ev', e: 'sys', m: '¡Ya son ' + this.humanCount(false) + '! El Team Deathmatch arranca en 6 segundos' }); this.sendScores(); }
@@ -2033,7 +2092,7 @@ class Game {
       if (p.alive && p.s.y < K.KILLY) this.damage(p, 999, null, null, null, 0, 'void');
     }
     if (this.vote) { this.voteT = (this.voteT || 0) - dt; if (this.voteT <= 0) { this.voteT = 1; this.checkVote(); if (this.vote) this.sendVote(); } }
-    if (this.live()) { this.tickProjs(dt); this.tickFires(dt); this.tickItems(dt); if (this.flags.length && this.state === 'play') this.tickFlags(dt); }
+    if (this.live()) { this.tickProjs(dt); this.tickFires(dt); this.tickItems(dt); this.tickShards(dt); if (this.flags.length && this.state === 'play') this.tickFlags(dt); }
     this.snapT -= dt;
     if (this.snapT <= 1e-6) { this.snapT += .05; if (this.snapT < 0) this.snapT = 0; this.snapshot(); }
     this.scT -= dt;

@@ -1,12 +1,12 @@
 # CuenkArena
 
-Deathmatch online estilo Quake que corre en el navegador. Mapas que rotan al terminar cada partida, entre ellos **dm3 · La Cuenca** (la Universidad de la Cuenca del Plata de Posadas, con la plaza y el edificio para recorrer por dentro), **dm1 · La Represa** (industrial, con lava) y **dm2 · Pan & Manteca** (un boliche con pista LED, plataformas móviles, ascensores y subwoofers que te lanzan). Siete armas, tienda con créditos, taquilla para personalizar tu personaje, bots y movimiento con *strafe jump* y *bunny hop*.
+Deathmatch online estilo Quake que corre en el navegador. Al terminar cada partida los jugadores votan el próximo mapa, entre ellos **dm3 · La Cuenca** (la Universidad de la Cuenca del Plata de Posadas, con la plaza y el edificio para recorrer por dentro), **dm1 · La Represa** (industrial, con lava) y **dm2 · Pan & Manteca** (un boliche con pista LED, plataformas móviles, ascensores y subwoofers que te lanzan). Siete armas, tienda con créditos, taquilla para personalizar tu personaje, bots y movimiento con *strafe jump* y *bunny hop*.
 
 ## Modos de juego
 
 Al tocar **Jugar online** (o **Práctica con bots**) elegís el modo. Cada modo es una sala aparte del servidor.
 
-- **Arena**: todos contra todos en La Represa y Pan & Manteca, con créditos y tienda.
+- **Arena**: todos contra todos en La Represa, Pan & Manteca y La Cuenca, con créditos y tienda. Cada partida dura **6 minutos** (online y en práctica).
 - **Gungame**: todos arrancan con la ametralladora y cada baja te da la siguiente arma de una lista de 20 niveles (armas fuertes primero, pistola, riel y francotirador al final, cuchillo en el último). Munición infinita, sin tienda y sin nada tirado en el mapa (ni armas, ni vida, ni blindaje). Además de la del nivel tenés siempre el cuchillo: si te matás solo, o te matan con cuchillo, bajás un nivel. Gana el primero en hacer la baja número 20.
 - **Team Deathmatch**: rojo contra azul, cada baja suma para el equipo hasta llegar al límite. Online la sala espera a tener **4 jugadores** (mientras tanto hay calentamiento y las bajas no cuentan) y arranca con una cuenta regresiva. El límite de bajas lo elige el primero en entrar desde la pantalla de modos, y se puede cambiar desde el menú (Esc) mientras esperan.
 - **Captura la bandera**: rojo (Posadas) contra azul (Encarnación) en **ctf1 · El Puente**. Robá la bandera rival del fortín enemigo y llevala hasta el pedestal de tu base (cuenta aunque tu bandera esté robada). Si matan al que la lleva, la bandera queda tirada 20 segundos: si la toca su equipo vuelve a la base. Gana el primer equipo en capturarla 3 veces (se cambia con `/caplimit N`). No hay fuego amigo y los equipos se equilibran solos con los bots.
@@ -75,7 +75,7 @@ Con **Iniciar sesión con Google** se guardan en tu cuenta el nombre, el persona
 | Si ganás (vos o tu equipo) | 50 |
 | Por cada bandera capturada | 40 |
 
-Máximo 700 por partida. Una partida normal de 10 minutos da unos 200-300 XP (10 bajas y aguantar 2 minutos vivo son 240), así que el primer nivel sale en una partida, el 5 en unas 5 y el 10 en unas 17. Si te vas antes de que termine, te llevás todo menos lo de terminarla y ganar (si te vas antes del primer minuto, solo las bajas). En la pantalla final se ve el detalle de dónde salió cada punto. Cada nivel pide más que el anterior (220 XP el primero y 60 más por cada nivel, hasta el 100). El nivel aparece como medalla en el menú y al lado de tu nombre en la tabla (Tab). Rangos: Recluta (1), Bronce (5), Plata (10), Oro (20), Platino (35), Diamante (50) y Leyenda (75).
+Máximo 700 por partida. Una partida normal de Arena (6 minutos) da unos 200-250 XP (10 bajas y aguantar 2 minutos vivo son 220), así que el primer nivel sale en una partida, el 5 en unas 5 y el 10 en unas 17. Si te vas antes de que termine, te llevás todo menos lo de terminarla y ganar (si te vas antes del primer minuto, solo las bajas). En la pantalla final se ve el detalle de dónde salió cada punto. Cada nivel pide más que el anterior (220 XP el primero y 60 más por cada nivel, hasta el 100). El nivel aparece como medalla en el menú y al lado de tu nombre en la tabla (Tab). Rangos: Recluta (1), Bronce (5), Plata (10), Oro (20), Platino (35), Diamante (50) y Leyenda (75).
 
 ### Activar las cuentas en Render
 
@@ -159,7 +159,7 @@ Variables de entorno opcionales:
 | `BOTS` | 0 | Si es mayor a 0, rellena con bots hasta tener esa cantidad de jugadores. Por defecto la partida online arranca sin bots; se agregan desde el chat con `/bots N` |
 | `BOT_SKILL` | 1 | 0 fácil · 1 normal · 2 difícil · 3 pesadilla |
 | `FRAGLIMIT` | 20 | Frags para ganar la partida |
-| `TIMELIMIT` | 10 | Minutos por partida |
+| `TIMELIMIT` | 10 | Minutos por partida (la Arena siempre dura 6) |
 | `MAX_PLAYERS` | 16 | Jugadores máximos, contando bots |
 | `MAP` | represa | Mapa inicial de Arena: `represa` o `panymanteca` |
 | `CAPLIMIT` | 3 | Capturas para ganar en Captura la bandera |
@@ -241,3 +241,15 @@ El servidor confía en la posición que manda cada cliente, así que alguien con
 Al terminar aparece la pantalla final con el ganador en grande, un **podio** con los tres primeros, y una **tabla** con las bajas, muertes, daño hecho (lo que de verdad le sacaste a los demás) y K/D de cada jugador; lo mejor de cada columna se marca. Si tenés cuenta, abajo está tu **tarjeta de experiencia**: la barra se llena con animación desde la XP que tenías hasta la nueva, cuenta los puntos ganados y, si subís de nivel, cambia la medalla con un destello y "¡NIVEL N!".
 
 Si se corta la conexión en medio de una partida online (por ejemplo cuando el servidor se reinicia al publicar una actualización), el juego intenta reconectarse solo durante un minuto.
+
+## Sifón de escudo
+
+Como en Quake Champions: cada jugador o bot que muere suelta **5 mini escudos** que saltan alrededor del cuerpo. Cada uno da **+5 de blindaje** (hasta 100) al que pasa por encima, con un sonidito y el aviso "+5 de escudo". Duran 20 segundos en el piso y los que caen en la lava se derriten. Matar y pasar a buscar el escudo te deja listo para la próxima pelea.
+
+## Escudos y botiquines
+
+Los ítems de ayuda tienen forma propia: el **blindaje** es un escudo verde, el **blindaje pesado** un escudo dorado y rojo más grande, el **botiquín** una valija blanca con cruz roja y manija, y la **megasalud** una valija azul más grande con un anillo de luz.
+
+## Votación del próximo mapa
+
+En la pantalla final hay una tarjeta por cada mapa del modo. Se vota con un click o con 1, 2, 3; cada tarjeta muestra los votos y una estrella en el que va ganando, y se puede cambiar el voto. Gana el más votado; si hay empate entre los más votados, o si nadie vota, el mapa sale **al azar**.

@@ -1,12 +1,12 @@
 # CuenkArena
 
-Deathmatch online estilo Quake que corre en el navegador. Al terminar cada partida los jugadores votan el próximo mapa, entre ellos **dm3 · La Cuenca** (la Universidad de la Cuenca del Plata de Posadas, con la plaza y el edificio para recorrer por dentro), **dm1 · La Represa** (industrial, con lava) y **dm2 · Pan & Manteca** (un boliche con pista LED, plataformas móviles, ascensores y subwoofers que te lanzan). Siete armas, tienda con créditos, taquilla para personalizar tu personaje, bots y movimiento con *strafe jump* y *bunny hop*.
+Deathmatch online estilo Quake que corre en el navegador. Al terminar cada partida los jugadores votan el próximo mapa, entre ellos **dm3 · La Cuenca** (la Universidad de la Cuenca del Plata de Posadas, con la plaza y el edificio para recorrer por dentro), **dm1 · La Represa** (industrial, con lava) y **dm2 · Humita** (un boliche con pista LED, plataformas móviles, ascensores y subwoofers que te lanzan). Siete armas, tienda con créditos, taquilla para personalizar tu personaje, bots y movimiento con *strafe jump* y *bunny hop*.
 
 ## Modos de juego
 
 Al tocar **Jugar online** (o **Práctica con bots**) elegís el modo. Cada modo es una sala aparte del servidor.
 
-- **Arena**: todos contra todos en La Represa, Pan & Manteca y La Cuenca, con créditos y tienda. Cada partida dura **6 minutos** (online y en práctica).
+- **Arena**: todos contra todos en La Represa, Humita y La Cuenca, con créditos y tienda. Cada partida dura **6 minutos** (online y en práctica).
 - **Gungame**: todos arrancan con la ametralladora y cada baja te da la siguiente arma de una lista de 20 niveles (armas fuertes primero, pistola, riel y francotirador al final, cuchillo en el último). Munición infinita, sin tienda y sin nada tirado en el mapa (ni armas, ni vida, ni blindaje). Además de la del nivel tenés siempre el cuchillo: si te matás solo, o te matan con cuchillo, bajás un nivel. Gana el primero en hacer la baja número 20.
 - **Team Deathmatch**: rojo contra azul, cada baja suma para el equipo hasta llegar al límite. Online la sala espera a tener **4 jugadores** (mientras tanto hay calentamiento y las bajas no cuentan) y arranca con una cuenta regresiva. El límite de bajas lo elige el primero en entrar desde la pantalla de modos, y se puede cambiar desde el menú (Esc) mientras esperan.
 - **Captura la bandera**: rojo (Posadas) contra azul (Encarnación) en **ctf1 · El Puente**. Robá la bandera rival del fortín enemigo y llevala hasta el pedestal de tu base (cuenta aunque tu bandera esté robada). Si matan al que la lleva, la bandera queda tirada 20 segundos: si la toca su equipo vuelve a la base. Gana el primer equipo en capturarla 3 veces (se cambia con `/caplimit N`). No hay fuego amigo y los equipos se equilibran solos con los bots.
@@ -253,3 +253,8 @@ Los ítems de ayuda tienen forma propia: el **blindaje** es un escudo verde, el 
 ## Votación del próximo mapa
 
 En la pantalla final hay una tarjeta por cada mapa del modo, con su nombre y una foto chiquita del mapa (sacadas con el mismo motor del juego, en `public/maps/`). Se vota con un click o con 1, 2, 3; cada tarjeta muestra los votos y una estrella en el que va ganando, y se puede cambiar el voto. Gana el más votado; si hay empate entre los más votados, o si nadie vota, el mapa sale **al azar**.
+
+## Novedades de La Cuenca y Humita
+
+- **La Cuenca:** segunda escalera de emergencia en el fondo, del lado este: el que viene por el pasillo derecho ya no termina en un callejón, sube hasta la puerta de la biblioteca. Las **azoteas de los vecinos** ahora se usan: se sube con saltadores desde la calle. La de la derecha (7 m) tiene tanque de agua, equipos de aire, blindaje, botiquín y otro saltador que te lleva al techo del edificio; la de la izquierda (5 m) tiene chimeneas, cajas, antena, blindaje y botiquín.
+- **Humita** (antes Pan & Manteca, el mismo boliche y del mismo tamaño): cuatro **tarimas LED** que suben y bajan por turnos en la pista, y la **terraza** del techo del lobby, que antes estaba vacía: barra, sillones, macetones con neón, parlantes, una escalera a la puerta del VIP y la **torre del DJ** con ascensor hasta un mirador a 10 m con el rifle de caza.

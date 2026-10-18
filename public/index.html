@@ -441,7 +441,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
   <div class="mbox">
     <div class="kicker" id="mKick">Arena · Gungame · Team Deathmatch · Captura la bandera</div>
     <h1 id="mTitle">CUENK<span>ARENA</span><small>SNIPER UPDATE</small></h1>
-    <p id="mSub">Cuatro modos y cuatro mapas: La Cuenca (la universidad, con la plaza y el edificio para recorrer por dentro), la represa industrial, Pan &amp; Manteca (un boliche con pista LED y subwoofers que te tiran por el aire) y El Puente, donde Posadas y Encarnación se disputan la bandera de un lado al otro del río.</p>
+    <p id="mSub">Cuatro modos y cuatro mapas: La Cuenca (la universidad, con la plaza y el edificio para recorrer por dentro), la represa industrial, Humita (un boliche con pista LED y subwoofers que te tiran por el aire) y El Puente, donde Posadas y Encarnación se disputan la bandera de un lado al otro del río.</p>
     <div id="acctBox" hidden></div>
     <div class="idrow"><label for="pName">Tu nombre</label><input id="pName" maxlength="16" autocomplete="off" spellcheck="false"></div>
     <div class="mrow">
@@ -510,7 +510,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
       <div class="srow"><span>Calidad gráfica</span><div class="seg" id="sQ" role="group" aria-label="Calidad"><button type="button" data-v="1">Alta</button><button type="button" data-v="0">Liviana</button></div></div>
       <div class="sep"></div>
       <div class="ptitle">Práctica con bots</div>
-      <div class="srow"><span>Mapa</span><div class="seg" id="sMap" role="group" aria-label="Mapa"><button type="button" data-v="represa">La Represa</button><button type="button" data-v="panymanteca">Pan &amp; Manteca</button><button type="button" data-v="lacuenca">La Cuenca</button></div></div>
+      <div class="srow"><span>Mapa</span><div class="seg" id="sMap" role="group" aria-label="Mapa"><button type="button" data-v="represa">La Represa</button><button type="button" data-v="panymanteca">Humita</button><button type="button" data-v="lacuenca">La Cuenca</button></div></div>
       <div class="srow"><span>Bots en la arena</span><div class="stepper"><button type="button" id="bMinus" aria-label="Sacar un bot">−</button><output id="oBots"></output><button type="button" id="bPlus" aria-label="Agregar un bot">+</button></div></div>
       <div class="srow"><span>Dificultad</span><div class="seg" id="sSkill" role="group" aria-label="Dificultad"><button type="button" data-v="0">Fácil</button><button type="button" data-v="1">Normal</button><button type="button" data-v="2">Difícil</button><button type="button" data-v="3">Pesadilla</button></div></div>
       <div class="srow"><span>Límite de frags</span><div class="seg" id="sFl" role="group" aria-label="Límite de frags"><button type="button" data-v="10">10</button><button type="button" data-v="20">20</button><button type="button" data-v="30">30</button><button type="button" data-v="50">50</button></div></div>
@@ -902,7 +902,7 @@ function buildClub(group){
   }
   const sc=document.createElement('canvas');sc.width=256;sc.height=96;club.screen=sc;club.screenTex=new THREE.CanvasTexture(sc);club.screenTex.magFilter=THREE.NearestFilter;
   const scr=new THREE.Mesh(new THREE.PlaneGeometry(22,8),new THREE.MeshBasicMaterial({map:club.screenTex}));scr.position.set(0,8,-17.97);group.add(scr);
-  const sign=cv(512,128,(g)=>{g.font='bold 92px "Black Ops One", Impact, sans-serif';const fw=g.measureText('PAN & MANTECA').width;if(fw>480)g.font='bold '+Math.floor(92*480/fw)+'px "Black Ops One", Impact, sans-serif';g.textAlign='center';g.textBaseline='middle';g.shadowColor='#ff3fd2';g.shadowBlur=24;g.fillStyle='#ff9be9';g.fillText('PAN & MANTECA',256,68);});
+  const sign=cv(512,128,(g)=>{g.font='bold 92px "Black Ops One", Impact, sans-serif';const fw=g.measureText('HUMITA').width;if(fw>480)g.font='bold '+Math.floor(92*480/fw)+'px "Black Ops One", Impact, sans-serif';g.textAlign='center';g.textBaseline='middle';g.shadowColor='#ff3fd2';g.shadowBlur=24;g.fillStyle='#ff9be9';g.fillText('HUMITA',256,68);});
   const sm=new THREE.Mesh(new THREE.PlaneGeometry(14,3.5),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(sign),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));sm.position.set(0,9.5,31.9);sm.rotation.y=Math.PI;group.add(sm);
   const bottleCols=[0x3aff9c,0xffcf3a,0x2be6ff,0xff4a6a,0xb46cff];
   for(const sx of [-1,1])for(let z=-7;z<=7;z+=1.4){const m=new THREE.Mesh(new THREE.CylinderGeometry(.07,.09,.42,6),new THREE.MeshBasicMaterial({color:bottleCols[(Math.abs(z*5)|0)%5],transparent:true,opacity:.8}));m.position.set(sx*16.5,1.32,z);group.add(m);}
@@ -920,7 +920,7 @@ function updClub(dt,beatF){
   c.scrT=(c.scrT||0)-dt;
   if(c.scrT<=0){c.scrT=1/15;const g=c.screen.getContext('2d');g.fillStyle='#07050c';g.fillRect(0,0,256,96);
     for(let i=0;i<32;i++){const h=(Math.sin(G.time*3+i*.7)*.5+.5)*(.35+pulse*.65)*70*(.5+.5*Math.abs(Math.sin(i*1.7)));g.fillStyle=LEDC[(i+beat)%LEDC.length];g.fillRect(i*8+1,92-h,6,h);}
-    g.font='bold 24px "Black Ops One", Impact, sans-serif';g.textAlign='center';g.fillStyle='rgba(255,255,255,'+(.55+pulse*.45)+')';g.fillText('PAN & MANTECA',128+Math.sin(G.time)*12,36);
+    g.font='bold 24px "Black Ops One", Impact, sans-serif';g.textAlign='center';g.fillStyle='rgba(255,255,255,'+(.55+pulse*.45)+')';g.fillText('HUMITA',128+Math.sin(G.time)*12,36);
     c.screenTex.needsUpdate=true;}
   for(const ml of level.maplights)ml.l.intensity=ml.base*(.75+pulse*.5);
 }

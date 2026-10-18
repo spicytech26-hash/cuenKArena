@@ -407,7 +407,7 @@ function buildRepresa() {
     theme: { sky: 'dusk', fog: 0x1c1310, fogD: .0105, amb: 0x55453a, ambI: .85, hemi: [0x5a4a6a, 0x1a100a, .55], sun: true } });
 }
 
-/* ---------- dm2 · Pan & Manteca — un boliche (homenaje a la noche de Posadas) ---------- */
+/* ---------- dm2 · Humita — un boliche (homenaje a la noche de Posadas; el id interno sigue siendo 'panymanteca') ---------- */
 function buildPanYManteca() {
   const { pads, spawns, lights, add, wall, stairs, D, face, I, mover, finish } = mapKit();
   /* ---- cáscara: salón principal x[-20,20] z[-18,18], techo a 16 ---- */
@@ -448,6 +448,9 @@ function buildPanYManteca() {
   mover(-14.5, 6.6, 4.5, -11.5, 7, 7.5, 'lift', 0, 26, 10, Math.PI);
   mover(-14, -.1, 10, -11, .3, 13, 'lift', 1, 6.7, 8, 0);                    // ascensores al VIP sur
   mover(11, -.1, 10, 14, .3, 13, 'lift', 1, 6.7, 8, Math.PI);
+  // tarimas LED que suben y bajan en la pista por turnos: cobertura que cambia al ritmo de la música
+  [[-6, -6.5, 0], [6, -6.5, 1], [6, 6.5, 2], [-6, 6.5, 3]].forEach(([x, z, k]) =>
+    mover(x - 1, -1.6, z - 1, x + 1, -.5, z + 1, 'led', 1, 2.6, 6.4, k * Math.PI / 2));
   /* ---- subwoofers (plataformas de salto) ---- */
   pads.push({ x: 9, y: 0, z: 0, r: 1, t: [1, 11, 0], apex: 1.5 });
   pads.push({ x: -9, y: 0, z: 0, r: 1, t: [-1, 11, 0], apex: 1.5 });
@@ -465,6 +468,22 @@ function buildPanYManteca() {
   [-8, 8].forEach(x => add(x - .5, 0, 24, x + .5, 4.5, 25, 'chrome'));
   add(-1, 0, 28.5, 1, .4, 30.5, 'chrome');
   add(-14, 0, 30.5, -8, .6, 32, 'velvet'); add(8, 0, 30.5, 14, .6, 32, 'velvet');
+  /* ---- TERRAZA (techo del lobby, a 5 m) — antes estaba vacía ---- */
+  stairs(-3, 19, 3, 22, 5, .5, 4, 'z', -1, 'stage');                             // escalera a la puerta del VIP
+  add(-15, 5, 26, -13.5, 6.3, 31, 'glass'); add(-15.2, 6.3, 25.8, -13.3, 6.45, 31.2, 'chrome');   // barra
+  add(-15.9, 5, 25.5, -15.6, 9, 31.5, 'mirror');
+  add(10, 5, 30.6, 15, 5.6, 31.8, 'velvet'); add(10, 5.6, 31.4, 15, 6.4, 31.8, 'velvet');          // sillones
+  add(-9.5, 5, 22.5, -7, 6.3, 25, 'black'); add(7, 5, 22.5, 9.5, 6.3, 25, 'black');                // macetones / cobertura
+  add(-9.5, 6.3, 22.5, -7, 6.4, 25, 'neonP', { nc: 1 }); add(7, 6.3, 22.5, 9.5, 6.4, 25, 'neonC', { nc: 1 });
+  add(-6, 5, 28, -4, 6.6, 30, 'speaker'); add(4, 5, 28, 6, 6.6, 30, 'speaker');
+  // torre del DJ de la terraza: ascensor hasta un mirador a 10 m con el rifle de caza
+  add(-2.5, 9.6, 27, 2.5, 10, 31, 'truss');
+  [[-2.5, 27], [2, 27], [-2.5, 30.5], [2, 30.5]].forEach(([x, z]) => add(x, 5, z, x + .5, 9.6, z + .5, 'chrome'));
+  mover(-1.25, 4.9, 24.6, 1.25, 5.3, 27, 'lift', 1, 4.7, 7, 0);
+  add(-2.5, 10, 30.9, 2.5, 11, 31, 'rail', { nc: 1 });
+  add(-2.6, 10, 27, -2.5, 11, 31, 'neonP', { nc: 1 }); add(2.5, 10, 27, 2.6, 11, 31, 'neonC', { nc: 1 });
+  // arco de neón sobre la terraza
+  add(-16, 13.8, 21.5, 16, 14, 21.7, 'neonP', { nc: 1 }); add(-16, 13.8, 29.5, 16, 14, 29.7, 'neonC', { nc: 1 });
   /* ---- neón ---- */
   add(-15.1, 6.3, -12, -14.9, 6.5, 13, 'neonP', { nc: 1 }); add(14.9, 6.3, -12, 15.1, 6.5, 13, 'neonC', { nc: 1 });
   add(-15, 6.3, 12.9, 15, 6.5, 13.1, 'neonP', { nc: 1 });
@@ -475,7 +494,7 @@ function buildPanYManteca() {
   I('quad', 0, 11, 0); I('mega', 0, 12, 8.75); I('w6', 0, 12, -8.75); I('w8', 13.25, 12, -4); I('grenades', -13.25, 12, 4);
   I('w5', 0, .4, 29.5); I('rockets', -11, 0, 28.5); I('rockets', 11, 5, 28); I('w2', 6, 2, -15.5); I('w3', -17.5, 7, -7); I('w4', 17.5, 7, 7);
   I('shells', -8, 0, -8); I('shells', 8, 0, 8); I('bullets', 8, 0, -8); I('bullets', -17.5, 7, 15); I('armor', 17.5, 7, -10); I('armor', -17.5, 7, 10);
-  I('armorH', 0, 5, 22); I('health', -18.5, 0, 0); I('health', 18.5, 0, 0); I('health', -12, 0, 22); I('health', 12, 0, 22); I('w1', -6, 2, -15.5);
+  I('armorH', -4.5, 5, 24); I('w9', 0, 10, 29.5); I('health', 12.5, 5, 26); I('health', -12, 5, 28.5); I('shells', 0, 0, -6.5); I('health', -18.5, 0, 0); I('health', 18.5, 0, 0); I('health', -12, 0, 22); I('health', 12, 0, 22); I('w1', -6, 2, -15.5);
   /* ---- apariciones ---- */
   [[-14, 0, -6], [14, 0, 6], [-8, 0, 15], [8, 0, 15.5], [4, 2, -16.5], [-17.5, 7, 1], [17.5, 7, -2], [-5, 7, 15.5], [5, 7, 15.5],
    [-10, 0, 21], [10, 0, 21], [-6, 0, 30], [6, 0, 30], [-12, 5, 24], [12, 5, 24], [0, 1, 0]]
@@ -489,7 +508,7 @@ function buildPanYManteca() {
     { x: 0, y: 3.5, z: 25, c: 0xff3050, i: 1.3, d: 22 },
     { x: 0, y: 10, z: 26, c: 0x6a7bff, i: 1.1, d: 26 }
   );
-  return finish({ id: 'panymanteca', name: 'dm2 · Pan & Manteca', bounds: { x0: -22, x1: 22, z0: -20, z1: 34 },
+  return finish({ id: 'panymanteca', name: 'dm2 · Humita', bounds: { x0: -22, x1: 22, z0: -20, z1: 34 },
     theme: { sky: 'night', fog: 0x0d0716, fogD: .013, amb: 0x3a2a55, ambI: .9, hemi: [0x6040a0, 0x10081a, .55], sun: false, club: true } });
 }
 /* ---------- ctf1 · El Puente ----------
@@ -633,6 +652,20 @@ function buildLaCuenca() {
   add(10.5, 1.5, 2, 12.5, 3.9, 4, 'booth');
   deco.push({ t: 'roof', x: 11.5, y: 3.9, z: 3, w: 2.8, h: 1 });
   deco.push({ t: 'pole', x: 14, y: 1.5, z: 6, h: 8, flag: 'ar' }, { t: 'pole', x: 14, y: 1.5, z: 8, h: 8, flag: 'mis' }, { t: 'pole', x: 14, y: 1.5, z: 10, h: 8, flag: 'ucp' });
+  /* ---- azoteas de los vecinos: se sube con saltadores desde la calle ---- */
+  // derecha (7 m): tanque de agua, equipos de aire, parapeto y un saltador al techo del edificio
+  pads.push({ x: 27, y: 0, z: 13, r: 1, t: [27, 7, 5], apex: 1.6 });
+  add(25, 7, -25, 29, 10, -20, 'metal'); add(24.8, 10, -25.2, 29.2, 10.4, -19.8, 'trim');
+  add(24.6, 7, -8, 26.6, 8.3, -6, 'metal'); add(27.6, 7, -2, 29.6, 8.3, 0, 'metal');
+  add(24, 7, -12, 24.4, 7.8, 8, 'whitewall');
+  add(26, 7, -15, 28.5, 8.2, -13.5, 'crate');
+  pads.push({ x: 27, y: 7, z: -17, r: 1, t: [12, 15, -13], apex: 4.5 });
+  // izquierda (5 m): chimeneas de ladrillo, antena y cajas
+  pads.push({ x: -27, y: 0, z: 13, r: 1, t: [-27, 5, 5], apex: 1.6 });
+  add(-28.5, 5, -6, -26.5, 7.5, -4, 'brick'); add(-26, 5, -20, -24.5, 6.8, -18.5, 'brick');
+  add(-29, 5, -14, -27, 6.2, -11.5, 'crate'); add(-27, 5, -13.6, -25.6, 5.8, -12, 'crate');
+  add(-24.4, 5, -30, -24, 5.8, 10, 'whitewall');
+  add(-27.6, 5, 2, -27.3, 9, 2.3, 'metal'); add(-28.5, 8.6, 2, -26.4, 8.8, 2.3, 'metal', { nc: 1 });
   /* ---- calle ---- */
   add(-10, 0, 20, -7, 1, 22, 'smooth'); add(6, 0, 22, 9, 1, 24, 'smooth');
   deco.push({ t: 'bush', x: -8.5, y: 1, z: 21, r: .8 }, { t: 'bush', x: 7.5, y: 1, z: 23, r: .8 });
@@ -649,6 +682,9 @@ function buildLaCuenca() {
   stairs(-20, -30, 2, -28, 0, .25, 44, 'x', 1, 'step');
   add(2, 0, -30, 6, 11, -28, 'metal');
   add(-20, 0, -30.05, 6, 1, -30, 'rail');
+  // segunda escalera de emergencia, del lado este: el que viene por el pasillo derecho ya no choca con la pared, sube hasta la biblioteca
+  stairs(6, -30, 22, -28, 0, .25, 44, 'x', -1, 'step');
+  add(6, 0, -30.05, 22, 1, -30, 'rail');
   wall(-16, -27.6, -15.6, -6.4, 3, 15, [D(-12, -9, 3, 5.6), D(-22, -18, 7.8, 9.4), D(-12, -9, 7.8, 9.4), D(-22, -18, 11.8, 13.4)], 'whitewall');
   add(21.6, 3, -27.6, 22, 15, -6.4, 'whitewall');
   // escalera: tres tramos en el lado este (planta baja → 1º → 2º → techo)
@@ -698,10 +734,12 @@ function buildLaCuenca() {
   I('w2', 3, 1.5, 1); I('w3', 0, 0, 24); I('w4', 13, 3, -3.5); I('w9', -12.5, 11, -4.8); I('w8', 14, 15, -26); I('w5', 0, 15, -12);
   I('w6', -10, 7, -20); I('w1', -19, 3, -12); I('quad', 2, 11, -19); I('mega', -3, 3.05, -14.5); I('armorH', -12, 11, -26); I('armor', 19, 0, 8);
   I('health', -6, 1.5, 10); I('health', 15, 0, 20); I('health', 12, 3.05, -25); I('health', 12, 7, -9); I('health', -18, 3, -20);
+  I('armor', 27, 7, -4); I('health', 25.5, 7, 6); I('bullets', 28, 7, -10.5); I('grenades', 27, 10.4, -22.5);
+  I('armor', -27, 5, -9); I('health', -25.5, 5, 6); I('shells', -28, 5, -16); I('health', 14, 0, -29);
   I('shells', -14, 3.05, -14); I('bullets', 6, 3, -4); I('rockets', 10, 15, -10); I('grenades', -10, 7, -9); I('slugs', 0, 7, -26); I('caza', -20, 0, 20);
   /* ---- apariciones ---- */
   [[-8, 1.5, 8], [6, 1.5, 6], [0, 1.5, 11], [13, 1.5, 11.5], [-20, 0, 22], [0, 0, 21], [18, 0, 24], [10, 3, -3.5], [-19, 3, -10],
-   [-10, 3.05, -14], [8, 3.05, -14], [-10, 7, -9], [8, 7, -9], [1, 7, -13.2], [-8, 11, -12], [10, 11, -12]]
+   [-10, 3.05, -14], [8, 3.05, -14], [27, 7, -9], [-27, 5, -2], [-10, 7, -9], [8, 7, -9], [1, 7, -13.2], [-8, 11, -12], [10, 11, -12]]
     .forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
   /* ---- luces ---- */
   lights.push({ x: -2, y: 5.8, z: -13, c: 0xfff2dc, i: .55, d: 18 }, { x: 6, y: 9.8, z: -9, c: 0xfff2dc, i: .5, d: 20 },

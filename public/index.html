@@ -2037,6 +2037,11 @@ function updMe(dt){
   G.grabT=(G.grabT||0)-dt;if(G.grabT<=0){G.grabT=.15;let txt='';
     if(me.alive&&MODE!=='gungame'&&level)for(const o of level.items){const inf=C.ITEMS[o.ty];if(!o.g.visible||!inf||inf.weapon==null||!C.PRIMARY.includes(inf.weapon)||me.ow[inf.weapon])continue;
       if(Math.hypot(me.s.x-o.it.x,me.s.z-o.it.z)<2.2&&Math.abs(me.s.y-o.it.y)<1.6){txt='<kbd>E</kbd>agarrar '+esc(inf.name)+(C.primaryOf(me.ow)>=0?' (deja '+esc(WEAPONS[C.primaryOf(me.ow)].name)+')':'');break;}}
+    // parado sobre un botiquín o un escudo que no podés agarrar porque ya estás lleno: avisarlo (no es que no funcione)
+    if(!txt&&me.alive&&level)for(const o of level.items){if(!o.g.visible||Math.abs(me.s.x-o.it.x)>1.1||Math.abs(me.s.z-o.it.z)>1.1||Math.abs(me.s.y-o.it.y)>1.4)continue;
+      if((o.ty==='health'&&me.hp>=100)||(o.ty==='mega'&&me.hp>=150))txt='Salud llena · el botiquín se agarra cuando te falta vida';
+      else if((o.ty==='armor'||o.ty==='armorH')&&me.ar>=100)txt='Blindaje lleno (100) · se agarra cuando te falta';
+      if(txt)break;}
     const h=$('grabHint');if(h.dataset.t!==txt){h.dataset.t=txt;h.innerHTML=txt;h.hidden=!txt;}}
   if(!me.alive){me.deadT+=dt;
     // como en TF2: unos segundos mirando al que te mató y reaparecés solo

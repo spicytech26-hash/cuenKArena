@@ -214,38 +214,8 @@ function buildRepresa() {
   add(-41, -6, -41, 41, 24, -40, 'block');
   add(-41, -6, 38, 41, 24, 39, 'block');
   add(-41, -6, -40, -40, 24, 38, 'block');
-  // pared este con dos pasos nuevos: puerta desde la plataforma de la megasalud (a 4 m) y el túnel del patio norte
-  add(40, -6, -40, 41, 24, -34, 'block'); add(40, -6, -34, 41, 0, -30, 'block'); add(40, 4, -34, 41, 24, -30, 'block');
-  add(40, -6, -30, 41, 24, -3, 'block'); add(40, -6, -3, 41, 4, 3, 'block'); add(40, 8, -3, 41, 24, 3, 'block');
-  add(40, -6, 3, 41, 24, 38, 'block');
-  // bloque NE con el túnel de servicio (z -34…-30) que lleva del patio norte al depósito
-  add(28, -6, -40, 40, 14, -34, 'block'); add(28, -6, -34, 40, 0, -30, 'block'); add(28, 4, -34, 40, 14, -30, 'block');
-  add(28, -6, -30, 40, 14, -17, 'block');   // bloque NE
-  add(28, 3.6, -34.2, 40, 4, -33.8, 'trim'); add(28, 3.6, -30.2, 40, 4, -29.8, 'trim');
-  add(28.5, 3.4, -32.2, 39.5, 3.6, -31.8, 'light', { nc: 1 });
-
-  /* ---- CASA DE MÁQUINAS (ala nueva al este): generadores, pasarelas y depósito ---- */
-  add(41, -6, -39, 75, 24, -38, 'block'); add(41, -6, 24, 75, 24, 25, 'block'); add(74, -6, -38, 75, 24, 24, 'block');
-  add(41, -1, -38, 74, 0, 24, 'floor'); add(41, 16, -38, 74, 17, 24, 'roof');
-  wall(41, -23, 74, -22, 0, 16, [D(50, 58, 0, 6)], 'wall');                        // pared entre el depósito y la sala
-  // balcón de entrada desde la megasalud y escalera a la sala
-  add(41, 3.6, -6, 47, 4, 6, 'grate'); add(46.5, 0, -6, 47, 3.6, -5.5, 'metal'); add(46.5, 0, 5.5, 47, 3.6, 6, 'metal');
-  stairs(47, -3, 53, 3, 0, .5, 8, 'x', -1, 'step');
-  add(41, 4, -6.1, 47, 5, -6, 'rail', { nc: 1 }); add(41, 4, 6, 47, 5, 6.1, 'rail', { nc: 1 });
-  // tres generadores con sus chimeneas (se puede andar arriba)
-  for (const z of [-14, 0, 14]) { add(57, 0, z - 3, 63, 5, z + 3, 'metal'); add(56.8, 5, z - 3.2, 63.2, 5.4, z + 3.2, 'trim'); add(59, 5.4, z - 1, 61, 12, z + 1, 'pillar'); }
-  // pasarelas perimetrales a 6 m y saltadores para subir
-  add(69, 5.6, -22, 74, 6, 24, 'grate'); add(41, 5.6, 20, 69, 6, 24, 'grate'); add(58, 5.6, -22, 69, 6, -18, 'grate');
-  add(68.9, 6, -18, 69, 7, 20, 'rail', { nc: 1 });
-  pads.push({ x: 67.5, y: 0, z: -8, r: 1, t: [72, 6, -8], apex: 1.4 }, { x: 67.5, y: 0, z: 8, r: 1, t: [72, 6, 8], apex: 1.4 }, { x: 50, y: 0, z: 16, r: 1, t: [50, 6, 22], apex: 1.4 });
-  // plataforma de la grúa: va y viene entre los generadores y los saltadores
-  mover(63.5, 5.6, -20, 66.5, 6, -17, 'lift', 2, 37, 16, 0);
-  // depósito al norte: cajas, estanterías y el final del túnel
-  add(43, 0, -37, 47, 2.5, -34.5, 'crate'); add(44, 2.5, -36.5, 46, 3.8, -35, 'crate');
-  add(60, 0, -36, 64, 2, -32, 'crate'); add(62, 2, -35.5, 63.5, 3.2, -33.5, 'crate'); add(43, 0, -29, 46, 1.5, -26, 'crate');
-  add(66, 0, -37.5, 73.5, 6, -36.5, 'metal'); add(66, 2.9, -37.5, 73.5, 3.1, -35.5, 'metal'); add(73, 0, -35.5, 73.5, 6, -24, 'metal');
-  add(41.2, 10, -10, 41.4, 10.4, 10, 'light', { nc: 1 }); add(73.6, 10, -20, 73.8, 10.4, 22, 'light', { nc: 1 });
-
+  add(40, -6, -40, 41, 24, 38, 'block');
+  add(28, -6, -40, 40, 14, -17, 'block');   // bloque NE
   add(-40, -6, -40, -28, 14, -17, 'block'); // bloque NO
 
   /* ---- ATRIO central ---- */
@@ -306,6 +276,9 @@ function buildRepresa() {
   add(-26, 0, -22.2, 12, .06, -21.9, 'rail', { nc: 1 }); add(-26, 0, -21.1, 12, .06, -20.8, 'rail', { nc: 1 });
   add(-27, 0, -23, -26, 1, -20, 'metal'); add(12, 0, -23, 13, 1, -20, 'metal');        // topes de los rieles
   mover(-25, 0, -22.5, -22, 1.3, -20.5, 'crate', 0, 33, 28, 0);
+  // ascensor exterior de la torre: atajo al riel (la espiral sigue estando, pero esto es más rápido si lo agarrás a tiempo)
+  mover(-1.5, -.1, -27, 1.5, .3, -24, 'lift', 1, 11.7, 9, 0);
+  add(-1.6, 0, -27.1, -1.5, 12, -26.9, 'neonC', { nc: 1 }); add(1.5, 0, -27.1, 1.6, 12, -26.9, 'neonC', { nc: 1 });
   // subestación: dos transformadores en la parte este del patio, con sus aisladores
   [[19, -29], [23.5, -29]].forEach(([x, z]) => { add(x, 0, z, x + 3, 2.6, z + 3, 'metal'); add(x - .1, 2.6, z - .1, x + 3.1, 2.9, z + 3.1, 'trim');
     [.6, 1.5, 2.4].forEach(d => add(x + d - .15, 2.9, z + 1.35, x + d + .15, 4, z + 1.65, 'pillar', { nc: 1 })); });
@@ -329,7 +302,10 @@ function buildRepresa() {
   add(-40, 8.6, -7.6, -39, 9, 7.6, 'trim');
   // pasarela de la grúa a 9,5 m: se sube por la escalera del nivel alto o con el ascensor del medio
   add(-39, 9.1, 3, -21, 9.5, 6, 'grate');
-  add(-39, 9.1, 2, -35, 9.5, 3, 'grate');                                          // ensanche sobre el entrepiso
+  add(-39, 9.1, -1, -35, 9.5, 3, 'grate');                                         // ensanche sobre el entrepiso
+  // puente grúa: sale del ensanche y cruza la sala a 9,5 m (la compuerta queda abajo)
+  mover(-38, 9.1, -4, -35, 9.5, -1, 'grate', 0, 9, 10, 0);
+  add(-38, 12, -2.6, -26, 12.2, -2.4, 'metal', { nc: 1 });
   stairs(-24, 6, -21, 13, 6, .5, 7, 'z', -1);
   add(-39, 9.5, 2.9, -21, 10.4, 3, 'rail', { nc: 1 }); add(-39, 9.5, 6, -24, 10.4, 6.1, 'rail', { nc: 1 });
   mover(-29.5, -.1, 0, -26.5, .3, 3, 'lift', 1, 9.2, 9, 0);                         // ascensor hasta la pasarela
@@ -351,6 +327,13 @@ function buildRepresa() {
   add(23, -4, 13, 25, -2, 16, 'step'); add(21, -4, 13, 23, -1, 16, 'step');
   add(23, -4, -16, 25, -2, -13, 'step'); add(21, -4, -16, 23, -1, -13, 'step');
   pads.push({ x: 35, y: 4, z: -3, r: 1, t: [13, 6, 0], apex: 1.5 });
+  // barcaza que cruza la lava por debajo de la pasarela, una repisa al fondo con saltador a la megasalud
+  mover(21, -1.4, -2.5, 24, -1, 2.5, 'metal', 0, 7, 12, 0);
+  add(31, -4, -2.5, 33, -1, 2.5, 'metal'); add(30.9, -1, -2.5, 31, -.6, 2.5, 'trim', { nc: 1 });
+  pads.push({ x: 31.9, y: -1, z: 0, r: .9, t: [34.6, 4, 0], apex: 2.2 });
+  // géiseres de lava: si caés en la pileta, cada tanto te tiran a la pasarela alta o al andén
+  pads.push({ x: 27, y: -3, z: 5, r: 1.6, t: [24, 6, 0], apex: 2.5, geyser: { period: 4.2, on: .9, phase: .3 } });
+  pads.push({ x: 27, y: -3, z: -5, r: 1.6, t: [19, 0, -6], apex: 2.5, geyser: { period: 4.2, on: .9, phase: .65 } });
 
   /* ---- SUR: rampa al sótano de turbinas y terraza en el techo ---- */
   ramp(-3, 17, 3, 24, -4, -3, 0, 'z', -1, 'concrete');
@@ -408,16 +391,13 @@ function buildRepresa() {
   I('mega', 37, 4, 0); I('rockets', 37, 4, 4); I('health', 31.5, 2.5, -10.5); I('shells', 19, 0, 12); I('bullets', 19, 0, -12); I('grenades', 31.5, 2.5, 10.5);
   I('w5', 0, -2.5, 32); I('rockets', -13, -3, 30); I('armor', 12, -3, 28); I('health', -10, -1, 28); I('w1', -8, -3, 35);
   I('health', 10, 5, 30); I('bullets', -10, 5, 30); I('w8', 0, 9, 34); I('rockets', -10, 5, 20);
-  // casa de máquinas y depósito
-  I('armorH', 58, 5.4, 0); I('w4', 58, 5.4, -14); I('grenades', 58, 5.4, 14); I('rockets', 72, 6, 0); I('health', 44, 4, -3.5); I('health', 71.5, 6, 21);
-  I('health', 46, 0, -18); I('shells', 52, 0, 10); I('w3', 57, 0, -31); I('bullets', 69, 0, -33); I('health', 45, 3.8, -35.7); I('armor', 34, 0, -32);
   I('armor', -37, 9.5, 4.5); I('slugs', -30, 9.5, 4.5); I('health', -2.5, -3, 27);
   // más curación repartida
   I('health', -13.5, 10.9, 35.6); I('health', -14, 5, 20); I('health', 14, 5, 20); I('health', -24, 0, -30); I('health', 24, 0, -36.5);
   I('health', 19, 0, 0); I('health', -29.5, 0, 9.5); I('health', -37, 3, 0); I('health', 0, 0, 13);
 
   /* ---- Puntos de aparición ---- */
-  [[50, 0, -12], [50, 0, 12], [70, 0, 0], [71.5, 6, -15], [71.5, 6, 15], [48, 0, -30], [68, 0, -27], [6, 0, -13], [-6, 0, 13], [-14, 6, 4], [14, 6, -4], [-12, 0, -26], [-33, 9.5, 4.5], [22, 0, -34], [-30, 0, -12], [-37, 3, 8], [-21, 6, -2],
+  [[6, 0, -13], [-6, 0, 13], [-14, 6, 4], [14, 6, -4], [-12, 0, -26], [-33, 9.5, 4.5], [22, 0, -34], [-30, 0, -12], [-37, 3, 8], [-21, 6, -2],
    [19, 0, -6], [-6, -3, 35], [8, -3, 27], [0, 5, 28], [37, 4, -3], [-8, 0, -36], [12, 0, -36]]
     .forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
 
@@ -432,12 +412,11 @@ function buildRepresa() {
     { x: 0, y: -2, z: 0, c: 0xff4a10, i: 1.4, d: 12 },
     { x: -32, y: 11, z: 4.5, c: 0x6fd8ff, i: 1.1, d: 16 },
     { x: -38, y: 6, z: 0, c: 0xffa040, i: 1.0, d: 14 },
-    { x: 60, y: 12, z: 0, c: 0xffa050, i: 1.5, d: 40 }, { x: 57, y: 8, z: -31, c: 0xffd080, i: 1.0, d: 22 },
     { x: 0, y: 11, z: 34, c: 0x6fd8ff, i: 1.0, d: 18 },
     { x: 23, y: 5, z: -27.5, c: 0x8fe0ff, i: 1.0, d: 12 }
   );
 
-  return finish({ id: 'represa', name: 'dm1 · La Represa', bounds: { x0: -41, x1: 75, z0: -41, z1: 39 },
+  return finish({ id: 'represa', name: 'dm1 · La Represa', bounds: { x0: -41, x1: 41, z0: -41, z1: 39 },
     theme: { sky: 'dusk', fog: 0x1c1310, fogD: .0105, amb: 0x55453a, ambI: .85, hemi: [0x5a4a6a, 0x1a100a, .55], sun: true } });
 }
 

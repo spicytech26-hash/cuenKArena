@@ -261,7 +261,7 @@ En la pantalla final hay una tarjeta por cada mapa del modo, con su nombre y una
 
 ## Mapas ampliados
 
-- **La Represa — Casa de máquinas (al este):** se entra por una puerta nueva desde la plataforma de la megasalud o por un **túnel de servicio** desde el patio norte. Tiene tres generadores con chimeneas (se puede andar arriba, con blindaje pesado y lanzagranadas), pasarelas a 6 m con saltadores, una **plataforma de grúa** que va y viene, y un **depósito** al norte con cajas, estanterías y la ametralladora.
+- **La Represa — salas más dinámicas:** en el patio norte, un **ascensor exterior** sube a la torre del riel en segundos (si lo agarrás a tiempo). En la sala de lava, una **barcaza** cruza la pileta por debajo de la pasarela hasta una repisa con saltador a la megasalud, y dos **géiseres de lava** que, si caés, te tiran a la pasarela alta o al andén. En la sala de compuertas, un **puente grúa** sale del ensanche de la pasarela y cruza la sala a 9,5 m.
 - **La Cuenca — Polideportivo (al oeste):** se entra desde la calle o por una puerta desde la azotea de las casas. Cancha de madera con aros, **tribuna**, vestuarios con casilleros y bancos, una cubierta caminable arriba de los vestuarios, un balcón con escalera, una **plataforma que cruza la cancha** a 5,5 m y un saltador.
 - **Humita — Backstage (detrás del escenario):** se entra por una puerta desde el escenario o desde arriba de las torres de parlantes. **Camarines** con espejo y sillón, el **micro de la gira** en el medio (se sube por las cajas), pasarelas a 5 m con una **pasarela móvil** que las cruza, un **montacargas** y un saltador.
 

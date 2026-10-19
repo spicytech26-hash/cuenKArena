@@ -34,7 +34,7 @@ const WEAPONS = [
   { name: 'Ametralladora',  ammo: 'bullets',  cost: 1, rate: .085, type: 'hit', pel: 1,  spread: .013, dmg: 16, range: 300 },
   // granada: explota al segundo; si le pega de lleno a alguien antes de rebotar, explota en el acto con daño extra y premio
   { name: 'Lanzagranadas',  ammo: 'grenades', cost: 1, rate: .75, type: 'proj', proj: 'grenade', speed: 26, dmg: 110, rad: 5.5, direct: 40, clean: 100, fuse: 1 },
-  { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 105, rad: 5, direct: 100 },
+  { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 85, rad: 4.5, direct: 80 },   // nerf: antes 100 directo + 105 de área en 5 m
   { name: 'Rifle de plasma', ammo: 'slugs',    cost: 1, rate: 1.4, type: 'rail', pel: 1,  dmg: 110, range: 400 },
   // cuchillo mariposa: el segundo tajo sobre la misma víctima (dentro de 4 s) mata siempre
   { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 55, back: 1.8, range: 2.6, melee: true },
@@ -214,8 +214,38 @@ function buildRepresa() {
   add(-41, -6, -41, 41, 24, -40, 'block');
   add(-41, -6, 38, 41, 24, 39, 'block');
   add(-41, -6, -40, -40, 24, 38, 'block');
-  add(40, -6, -40, 41, 24, 38, 'block');
-  add(28, -6, -40, 40, 14, -17, 'block');   // bloque NE
+  // pared este con dos pasos nuevos: puerta desde la plataforma de la megasalud (a 4 m) y el túnel del patio norte
+  add(40, -6, -40, 41, 24, -34, 'block'); add(40, -6, -34, 41, 0, -30, 'block'); add(40, 4, -34, 41, 24, -30, 'block');
+  add(40, -6, -30, 41, 24, -3, 'block'); add(40, -6, -3, 41, 4, 3, 'block'); add(40, 8, -3, 41, 24, 3, 'block');
+  add(40, -6, 3, 41, 24, 38, 'block');
+  // bloque NE con el túnel de servicio (z -34…-30) que lleva del patio norte al depósito
+  add(28, -6, -40, 40, 14, -34, 'block'); add(28, -6, -34, 40, 0, -30, 'block'); add(28, 4, -34, 40, 14, -30, 'block');
+  add(28, -6, -30, 40, 14, -17, 'block');   // bloque NE
+  add(28, 3.6, -34.2, 40, 4, -33.8, 'trim'); add(28, 3.6, -30.2, 40, 4, -29.8, 'trim');
+  add(28.5, 3.4, -32.2, 39.5, 3.6, -31.8, 'light', { nc: 1 });
+
+  /* ---- CASA DE MÁQUINAS (ala nueva al este): generadores, pasarelas y depósito ---- */
+  add(41, -6, -39, 75, 24, -38, 'block'); add(41, -6, 24, 75, 24, 25, 'block'); add(74, -6, -38, 75, 24, 24, 'block');
+  add(41, -1, -38, 74, 0, 24, 'floor'); add(41, 16, -38, 74, 17, 24, 'roof');
+  wall(41, -23, 74, -22, 0, 16, [D(50, 58, 0, 6)], 'wall');                        // pared entre el depósito y la sala
+  // balcón de entrada desde la megasalud y escalera a la sala
+  add(41, 3.6, -6, 47, 4, 6, 'grate'); add(46.5, 0, -6, 47, 3.6, -5.5, 'metal'); add(46.5, 0, 5.5, 47, 3.6, 6, 'metal');
+  stairs(47, -3, 53, 3, 0, .5, 8, 'x', -1, 'step');
+  add(41, 4, -6.1, 47, 5, -6, 'rail', { nc: 1 }); add(41, 4, 6, 47, 5, 6.1, 'rail', { nc: 1 });
+  // tres generadores con sus chimeneas (se puede andar arriba)
+  for (const z of [-14, 0, 14]) { add(57, 0, z - 3, 63, 5, z + 3, 'metal'); add(56.8, 5, z - 3.2, 63.2, 5.4, z + 3.2, 'trim'); add(59, 5.4, z - 1, 61, 12, z + 1, 'pillar'); }
+  // pasarelas perimetrales a 6 m y saltadores para subir
+  add(69, 5.6, -22, 74, 6, 24, 'grate'); add(41, 5.6, 20, 69, 6, 24, 'grate'); add(58, 5.6, -22, 69, 6, -18, 'grate');
+  add(68.9, 6, -18, 69, 7, 20, 'rail', { nc: 1 });
+  pads.push({ x: 67.5, y: 0, z: -8, r: 1, t: [72, 6, -8], apex: 1.4 }, { x: 67.5, y: 0, z: 8, r: 1, t: [72, 6, 8], apex: 1.4 }, { x: 50, y: 0, z: 16, r: 1, t: [50, 6, 22], apex: 1.4 });
+  // plataforma de la grúa: va y viene entre los generadores y los saltadores
+  mover(63.5, 5.6, -20, 66.5, 6, -17, 'lift', 2, 37, 16, 0);
+  // depósito al norte: cajas, estanterías y el final del túnel
+  add(43, 0, -37, 47, 2.5, -34.5, 'crate'); add(44, 2.5, -36.5, 46, 3.8, -35, 'crate');
+  add(60, 0, -36, 64, 2, -32, 'crate'); add(62, 2, -35.5, 63.5, 3.2, -33.5, 'crate'); add(43, 0, -29, 46, 1.5, -26, 'crate');
+  add(66, 0, -37.5, 73.5, 6, -36.5, 'metal'); add(66, 2.9, -37.5, 73.5, 3.1, -35.5, 'metal'); add(73, 0, -35.5, 73.5, 6, -24, 'metal');
+  add(41.2, 10, -10, 41.4, 10.4, 10, 'light', { nc: 1 }); add(73.6, 10, -20, 73.8, 10.4, 22, 'light', { nc: 1 });
+
   add(-40, -6, -40, -28, 14, -17, 'block'); // bloque NO
 
   /* ---- ATRIO central ---- */
@@ -279,7 +309,7 @@ function buildRepresa() {
   // subestación: dos transformadores en la parte este del patio, con sus aisladores
   [[19, -29], [23.5, -29]].forEach(([x, z]) => { add(x, 0, z, x + 3, 2.6, z + 3, 'metal'); add(x - .1, 2.6, z - .1, x + 3.1, 2.9, z + 3.1, 'trim');
     [.6, 1.5, 2.4].forEach(d => add(x + d - .15, 2.9, z + 1.35, x + d + .15, 4, z + 1.65, 'pillar', { nc: 1 })); });
-  add(18.5, 0, -33, 27.5, .8, -32, 'concrete');                                    // murito bajo
+  add(18.5, 0, -24.6, 27.5, .8, -24, 'concrete');                                  // murito bajo
 
   /* ---- ALA OESTE: andén de tres niveles ---- */
   add(-40, -1, -16, -17, 0, 16, 'floor');
@@ -378,13 +408,16 @@ function buildRepresa() {
   I('mega', 37, 4, 0); I('rockets', 37, 4, 4); I('health', 31.5, 2.5, -10.5); I('shells', 19, 0, 12); I('bullets', 19, 0, -12); I('grenades', 31.5, 2.5, 10.5);
   I('w5', 0, -2.5, 32); I('rockets', -13, -3, 30); I('armor', 12, -3, 28); I('health', -10, -1, 28); I('w1', -8, -3, 35);
   I('health', 10, 5, 30); I('bullets', -10, 5, 30); I('w8', 0, 9, 34); I('rockets', -10, 5, 20);
+  // casa de máquinas y depósito
+  I('armorH', 58, 5.4, 0); I('w4', 58, 5.4, -14); I('grenades', 58, 5.4, 14); I('rockets', 72, 6, 0); I('health', 44, 4, -3.5); I('health', 71.5, 6, 21);
+  I('health', 46, 0, -18); I('shells', 52, 0, 10); I('w3', 57, 0, -31); I('bullets', 69, 0, -33); I('health', 45, 3.8, -35.7); I('armor', 34, 0, -32);
   I('armor', -37, 9.5, 4.5); I('slugs', -30, 9.5, 4.5); I('health', -2.5, -3, 27);
   // más curación repartida
   I('health', -13.5, 10.9, 35.6); I('health', -14, 5, 20); I('health', 14, 5, 20); I('health', -24, 0, -30); I('health', 24, 0, -36.5);
   I('health', 19, 0, 0); I('health', -29.5, 0, 9.5); I('health', -37, 3, 0); I('health', 0, 0, 13);
 
   /* ---- Puntos de aparición ---- */
-  [[6, 0, -13], [-6, 0, 13], [-14, 6, 4], [14, 6, -4], [-12, 0, -26], [-33, 9.5, 4.5], [22, 0, -34], [-30, 0, -12], [-37, 3, 8], [-21, 6, -2],
+  [[50, 0, -12], [50, 0, 12], [70, 0, 0], [71.5, 6, -15], [71.5, 6, 15], [48, 0, -30], [68, 0, -27], [6, 0, -13], [-6, 0, 13], [-14, 6, 4], [14, 6, -4], [-12, 0, -26], [-33, 9.5, 4.5], [22, 0, -34], [-30, 0, -12], [-37, 3, 8], [-21, 6, -2],
    [19, 0, -6], [-6, -3, 35], [8, -3, 27], [0, 5, 28], [37, 4, -3], [-8, 0, -36], [12, 0, -36]]
     .forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
 
@@ -399,11 +432,12 @@ function buildRepresa() {
     { x: 0, y: -2, z: 0, c: 0xff4a10, i: 1.4, d: 12 },
     { x: -32, y: 11, z: 4.5, c: 0x6fd8ff, i: 1.1, d: 16 },
     { x: -38, y: 6, z: 0, c: 0xffa040, i: 1.0, d: 14 },
+    { x: 60, y: 12, z: 0, c: 0xffa050, i: 1.5, d: 40 }, { x: 57, y: 8, z: -31, c: 0xffd080, i: 1.0, d: 22 },
     { x: 0, y: 11, z: 34, c: 0x6fd8ff, i: 1.0, d: 18 },
     { x: 23, y: 5, z: -27.5, c: 0x8fe0ff, i: 1.0, d: 12 }
   );
 
-  return finish({ id: 'represa', name: 'dm1 · La Represa', bounds: { x0: -41, x1: 41, z0: -41, z1: 39 },
+  return finish({ id: 'represa', name: 'dm1 · La Represa', bounds: { x0: -41, x1: 75, z0: -41, z1: 39 },
     theme: { sky: 'dusk', fog: 0x1c1310, fogD: .0105, amb: 0x55453a, ambI: .85, hemi: [0x5a4a6a, 0x1a100a, .55], sun: true } });
 }
 
@@ -411,7 +445,31 @@ function buildRepresa() {
 function buildPanYManteca() {
   const { pads, spawns, lights, add, wall, stairs, D, face, I, mover, finish } = mapKit();
   /* ---- cáscara: salón principal x[-20,20] z[-18,18], techo a 16 ---- */
-  wall(-21, -19, 21, -18, -2, 17, [], 'black');
+  // pared del fondo con tres puertas al backstage: una desde el escenario y dos desde arriba de las torres de parlantes
+  wall(-21, -19, 21, -18, -2, 17, [D(-3, 3, 2, 6), D(-20, -17, 5, 9), D(17, 20, 5, 9)], 'black');
+  /* ---- BACKSTAGE (ala nueva detrás del escenario): camarines, micro de la gira, pasarelas y montacargas ---- */
+  add(-22, -2, -45, 22, 17, -44, 'black'); add(-22, -2, -44, -21, 17, -19, 'black'); add(21, -2, -44, 22, 17, -19, 'black');
+  add(-21, -1, -44, 21, 0, -19, 'club'); add(-21, 13, -44, 21, 14, -19, 'roof');
+  add(-3, 0, -23, 3, 2, -19, 'stage'); stairs(-3, -29, 3, -23, 0, .5, 4, 'z', 1, 'stage');
+  add(-21, 4.6, -44, -15, 5, -19, 'truss'); add(15, 4.6, -44, 21, 5, -19, 'truss'); add(-15, 4.6, -44, 15, 5, -39, 'truss');
+  add(-15, 5, -39, -14.9, 6, -19, 'rail', { nc: 1 }); add(14.9, 5, -39, 15, 6, -19, 'rail', { nc: 1 });
+  // camarines debajo de las pasarelas, con espejo y sillón
+  for (const s of [-1, 1]) {
+    const X = (a, b) => s < 0 ? [a, b] : [-b, -a];
+    let [a, b] = X(-15.4, -15); wall(a, -44, b, -30, 0, 4.6, [D(-37, -34, 0, 3.4)], 'velvet');
+    [a, b] = X(-21, -15.4); add(a, 0, -30.4, b, 4.6, -30, 'velvet');
+    [a, b] = X(-20.8, -20.5); add(a, .8, -42, b, 3.4, -32, 'mirror');
+    [a, b] = X(-20, -17.5); add(a, 0, -43.5, b, .7, -38, 'velvet');
+  }
+  // el micro de la gira en el medio (se sube por las cajas) y cajas de equipos
+  add(-6, 0, -40, 6, 3.6, -33, 'navy'); add(-6.05, 1.8, -40, 6.05, 2.8, -33, 'glass', { nc: 1 });
+  add(-9, 0, -36, -7, 1.3, -34, 'speaker'); add(-8.5, 1.3, -35.6, -7.2, 2.5, -34.4, 'speaker');
+  add(8, 0, -30, 10.5, 1.5, -27.5, 'black'); add(-11, 0, -27, -8.5, 1.2, -24.5, 'black'); add(9, 0, -42, 12, 2.2, -39.5, 'speaker');
+  // pasarela móvil que cruza entre las dos pasarelas laterales, montacargas y saltador
+  mover(-15, 4.6, -33, -12, 5, -30, 'lift', 0, 27, 11, 0);
+  mover(-15, -.1, -27, -12, .3, -24, 'lift', 1, 4.7, 7, Math.PI);
+  pads.push({ x: 12, y: 0, z: -35, r: 1, t: [12, 5, -41.5], apex: 1.4 });
+  add(-20.9, 9, -43.9, 20.9, 9.3, -43.7, 'neonP', { nc: 1 }); add(-20.9, 4.3, -44, -20.7, 4.5, -19, 'neonC', { nc: 1 }); add(20.7, 4.3, -44, 20.9, 4.5, -19, 'neonP', { nc: 1 });
   wall(-21, 18, 21, 19, -2, 17, [D(-12, -8, 0, 4), D(-2, 2, 0, 4), D(8, 12, 0, 4), D(-3, 3, 7, 10), D(16, 20, 7, 10), D(-20, -16, 7, 10)], 'black');
   add(-21, -2, -18, -20, 17, 18, 'black'); add(20, -2, -18, 21, 17, 18, 'black');
   add(-21, 16, -19, 21, 17, 19, 'roof');
@@ -494,10 +552,11 @@ function buildPanYManteca() {
   I('quad', 0, 11, 0); I('mega', 0, 12, 8.75); I('w6', 0, 12, -8.75); I('w8', 13.25, 12, -4); I('grenades', -13.25, 12, 4);
   I('w5', 0, .4, 29.5); I('rockets', -11, 0, 28.5); I('rockets', 11, 5, 28); I('w2', 6, 2, -15.5); I('w3', -17.5, 7, -7); I('w4', 17.5, 7, 7);
   I('shells', -8, 0, -8); I('shells', 8, 0, 8); I('bullets', 8, 0, -8); I('bullets', -17.5, 7, 15); I('armor', 17.5, 7, -10); I('armor', -17.5, 7, 10);
+  I('rockets', 0, 3.6, -36.5); I('armor', -18, 5, -41); I('health', 18, 5, -41); I('health', -18, 0, -36); I('shells', 18, 0, -36); I('bullets', -10, 0, -22); I('grenades', 10, 1.5, -28.75); I('health', 0, 5, -41.5);
   I('armorH', -4.5, 5, 24); I('w9', 0, 10, 29.5); I('health', 12.5, 5, 26); I('health', -12, 5, 28.5); I('shells', 0, 0, -6.5); I('health', -18.5, 0, 0); I('health', 18.5, 0, 0); I('health', -12, 0, 22); I('health', 12, 0, 22); I('w1', -6, 2, -15.5);
   /* ---- apariciones ---- */
   [[-14, 0, -6], [14, 0, 6], [-8, 0, 15], [8, 0, 15.5], [4, 2, -16.5], [-17.5, 7, 1], [17.5, 7, -2], [-5, 7, 15.5], [5, 7, 15.5],
-   [-10, 0, 21], [10, 0, 21], [-6, 0, 30], [6, 0, 30], [-12, 5, 24], [12, 5, 24], [0, 1, 0]]
+   [-10, 0, 21], [10, 0, 21], [-10, 0, -31], [10, 0, -33], [-18, 5, -28], [18, 5, -28], [0, 3.6, -38], [-17.5, 0, -40], [17.5, 0, -40], [-6, 0, 30], [6, 0, 30], [-12, 5, 24], [12, 5, 24], [0, 1, 0]]
     .forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
   /* ---- luces ---- */
   lights.push(
@@ -506,9 +565,10 @@ function buildPanYManteca() {
     { x: 0, y: 14, z: 0, c: 0x8a4bff, i: 1.5, d: 34 },
     { x: 0, y: 6, z: -14, c: 0xffb040, i: 1.4, d: 22 },
     { x: 0, y: 3.5, z: 25, c: 0xff3050, i: 1.3, d: 22 },
-    { x: 0, y: 10, z: 26, c: 0x6a7bff, i: 1.1, d: 26 }
+    { x: 0, y: 10, z: 26, c: 0x6a7bff, i: 1.1, d: 26 },
+    { x: -10, y: 10, z: -32, c: 0xff3050, i: 1.6, d: 28 }, { x: 10, y: 10, z: -32, c: 0x8a4bff, i: 1.6, d: 28 }
   );
-  return finish({ id: 'panymanteca', name: 'dm2 · Humita', bounds: { x0: -22, x1: 22, z0: -20, z1: 34 },
+  return finish({ id: 'panymanteca', name: 'dm2 · Humita', bounds: { x0: -22, x1: 22, z0: -45, z1: 34 },
     theme: { sky: 'night', fog: 0x0d0716, fogD: .013, amb: 0x3a2a55, ambI: .9, hemi: [0x6040a0, 0x10081a, .55], sun: false, club: true } });
 }
 /* ---------- ctf1 · El Puente ----------
@@ -601,11 +661,38 @@ function buildPuente() {
    y la vereda de ladrillo. El edificio se recorre por dentro: planta baja, dos pisos de aulas,
    biblioteca con balcón y terraza en el techo. Norte = -z (el edificio), sur = +z (la calle). */
 function buildLaCuenca() {
-  const { pads, spawns, lights, add, ramp, wall, stairs, D, face, I, finish } = mapKit();
+  const { pads, spawns, lights, add, ramp, wall, stairs, D, face, I, mover, finish } = mapKit();
   const deco = [];
   /* ---- suelo, vecinos y límites ---- */
   add(-30, -2, -30, 30, 0, 29, 'brick');
-  add(-31, -2, -31, -30, 10, 30, 'block'); add(30, -2, -31, 31, 10, 30, 'block');
+  // pared oeste con dos pasos al polideportivo: desde la calle y desde la azotea de las casas (a 5 m)
+  add(-31, -2, -31, -30, 10, -14, 'block'); add(-31, -2, -14, -30, 5, -8, 'block'); add(-31, 9, -14, -30, 10, -8, 'block');
+  add(-31, -2, -8, -30, 10, 14, 'block'); add(-31, -2, 14, -30, 0, 24, 'block'); add(-31, 6, 14, -30, 10, 24, 'block'); add(-31, -2, 24, -30, 10, 30, 'block');
+  add(30, -2, -31, 31, 10, 30, 'block');
+  /* ---- POLIDEPORTIVO (ala nueva al oeste): cancha, tribuna, vestuarios y balcón ---- */
+  add(-67, -2, -31, -31, 16, -30, 'block'); add(-67, -2, 28, -31, 16, 29, 'block'); add(-67, -2, -30, -66, 16, 28, 'block');
+  add(-66, -2, -30, -31, 0, 28, 'concrete'); add(-66, 14, -30, -31, 15, 28, 'roof');
+  add(-60, 0, -16, -38, .05, 16, 'wood');                                          // cancha de madera
+  add(-60, .05, -.1, -38, .07, .1, 'whitewall', { nc: 1 }); add(-60, .05, -16, -38, .07, -15.8, 'whitewall', { nc: 1 }); add(-60, .05, 15.8, -38, .07, 16, 'whitewall', { nc: 1 });
+  for (const s of [-1, 1]) { const z = s * 16.4; add(-49.3, 0, z - .3, -48.7, 3.4, z + .3, 'metal'); add(-50.6, 3.4, z - .1, -47.4, 4.8, z + .1, 'glass'); add(-49.5, 3.6, z - s * .6, -48.5, 3.7, z, 'neonR', { nc: 1 }); }
+  stairs(-60, 18, -38, 28, 0, .5, 10, 'z', 1, 'board');                            // tribuna
+  // vestuarios bajo la cubierta del norte
+  wall(-66, -20, -31, -19.5, 0, 5.1, [D(-62, -58, 0, 3.5), D(-44, -40, 0, 3.5)], 'whitewall');
+  wall(-49.5, -30, -49, -20, 0, 5.1, [D(-27, -24, 0, 3.5)], 'whitewall');
+  add(-66, 5.1, -30, -31, 5.5, -19.5, 'tiles');                                    // cubierta (se camina arriba)
+  for (const x of [-64, -58, -53]) add(x, 0, -29.5, x + 3, 2.4, -28.8, 'metal');   // casilleros
+  for (const x of [-46, -40, -35]) add(x, 0, -29.5, x + 3, 2.4, -28.8, 'metal');
+  add(-63, 0, -24, -57, .5, -23, 'wood'); add(-45, 0, -24, -38, .5, -23, 'wood');  // bancos
+  // balcón del este (5,5 m) con la puerta a la azotea de las casas y escalera a la cancha
+  add(-37, 5.1, -19.5, -31, 5.5, 8, 'wood');
+  stairs(-37, 8, -31, 14, 0, .5, 11, 'z', -1, 'step');
+  add(-37.1, 5.5, -19.5, -37, 6.5, 8, 'rail', { nc: 1 }); add(-66, 5.5, -19.6, -37, 6.5, -19.5, 'rail', { nc: 1 });
+  // plataforma que cruza la cancha a 5,5 m y saltador a la cubierta
+  mover(-40, 5.1, -2, -37, 5.5, 1, 'lift', 0, -20, 12, 0);
+  pads.push({ x: -49, y: 0, z: -12, r: 1, t: [-49, 5.5, -24.5], apex: 2 });
+  // tablero y luces del techo
+  add(-65.9, 7, -6, -65.7, 10, 6, 'led', { nc: 1 });
+  for (const z of [-12, 0, 12]) add(-62, 13.6, z - .2, -36, 13.9, z + .2, 'light', { nc: 1 });
   add(-31, -2, -31, 31, 18, -30, 'block'); add(-31, -2, 29, 31, 9, 30, 'whitewall');
   add(-30, 0, -30, -24, 5, 10, 'roofTiles');                       // casas vecinas con techo de tejas
   add(24, 0, -30, 30, 7, 10, 'whitewall');
@@ -734,17 +821,21 @@ function buildLaCuenca() {
   I('w2', 3, 1.5, 1); I('w3', 0, 0, 24); I('w4', 13, 3, -3.5); I('w9', -12.5, 11, -4.8); I('w8', 14, 15, -26); I('w5', 0, 15, -12);
   I('w6', -10, 7, -20); I('w1', -19, 3, -12); I('quad', 2, 11, -19); I('mega', -3, 3.05, -14.5); I('armorH', -12, 11, -26); I('armor', 19, 0, 8);
   I('health', -6, 1.5, 10); I('health', 15, 0, 20); I('health', 12, 3.05, -25); I('health', 12, 7, -9); I('health', -18, 3, -20);
+  // polideportivo
+  I('armorH', -49, 0, 0); I('w2', -58, 0, -26); I('health', -63, 0, -25); I('health', -41, 0, -25.5); I('health', -55, 5, 27.5); I('rockets', -34, 5.5, -10);
+  I('shells', -60, 5.5, -25); I('bullets', -35, 0, 20); I('health', -34, 5.5, 4); I('grenades', -64, 0, 20);
   I('armor', 27, 7, -4); I('health', 25.5, 7, 6); I('bullets', 28, 7, -10.5); I('grenades', 27, 10.4, -22.5);
   I('armor', -27, 5, -9); I('health', -25.5, 5, 6); I('shells', -28, 5, -16); I('health', 14, 0, -29);
   I('shells', -14, 3.05, -14); I('bullets', 6, 3, -4); I('rockets', 10, 15, -10); I('grenades', -10, 7, -9); I('slugs', 0, 7, -26); I('caza', -20, 0, 20);
   /* ---- apariciones ---- */
   [[-8, 1.5, 8], [6, 1.5, 6], [0, 1.5, 11], [13, 1.5, 11.5], [-20, 0, 22], [0, 0, 21], [18, 0, 24], [10, 3, -3.5], [-19, 3, -10],
-   [-10, 3.05, -14], [8, 3.05, -14], [27, 7, -9], [-27, 5, -2], [-10, 7, -9], [8, 7, -9], [1, 7, -13.2], [-8, 11, -12], [10, 11, -12]]
+   [-10, 3.05, -14], [8, 3.05, -14], [27, 7, -9], [-27, 5, -2], [-45, 0, -8], [-53, 0, 8], [-63, 0, -27], [-40, 0, -27], [-34, 5.5, -5], [-50, 5, 27.5], [-63, 0, 10], [-10, 7, -9], [8, 7, -9], [1, 7, -13.2], [-8, 11, -12], [10, 11, -12]]
     .forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
   /* ---- luces ---- */
   lights.push({ x: -2, y: 5.8, z: -13, c: 0xfff2dc, i: .55, d: 18 }, { x: 6, y: 9.8, z: -9, c: 0xfff2dc, i: .5, d: 20 },
-    { x: 0, y: 13.6, z: -18, c: 0xffe6c0, i: .55, d: 22 }, { x: 19, y: 9, z: -20, c: 0xfff2dc, i: .45, d: 16 });
-  return finish({ id: 'lacuenca', name: 'dm3 · La Cuenca', bounds: { x0: -27, x1: 27, z0: -30, z1: 28 }, deco,
+    { x: 0, y: 13.6, z: -18, c: 0xffe6c0, i: .55, d: 22 }, { x: 19, y: 9, z: -20, c: 0xfff2dc, i: .45, d: 16 },
+    { x: -49, y: 12, z: 2, c: 0xfff6e6, i: .9, d: 42 }, { x: -50, y: 4, z: -25, c: 0xffe6c0, i: .6, d: 16 });
+  return finish({ id: 'lacuenca', name: 'dm3 · La Cuenca', bounds: { x0: -67, x1: 27, z0: -30, z1: 28 }, deco,
     theme: { sky: 'day', fog: 0xbfd3e6, fogD: .0045, amb: 0xc9d0da, ambI: .48, hemi: [0xbcd8ff, 0x8a7a62, .42], sun: true, sunC: 0xfff1d6, sunI: .72 } });
 }
 const MAPS = { represa: buildRepresa(), panymanteca: buildPanYManteca(), lacuenca: buildLaCuenca(), puente: buildPuente() };

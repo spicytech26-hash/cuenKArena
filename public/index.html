@@ -1619,6 +1619,7 @@ function onKill(m){
   else if(m.how==='void')line=vn+' <i>cayó al vacío</i>';
   else if(!m.k||m.k===m.v)line=vn+' <i>se voló a sí mismo</i>';
   else if(m.ns)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>mató</i> <b class="ns">SIN USAR MIRA</b> <i>a</i> '+vn;
+  else if(W_&&W_.melee)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>le entró a pelo a</i> '+vn;
   else line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>'+(W_?W_.name:'')+'</i> '+vn;
   if(m.ns)sysChat(nameOf(m.k)+' mató SIN USAR MIRA a '+nameOf(m.v));
   feedLine(line,m.k===myId||m.v===myId);
@@ -1718,7 +1719,7 @@ function selfBlast(p){
   const dmg=W_.dmg*(1-d/W_.rad),cx=me.s.x-p.x,cyy=me.s.y+.9-p.y,cz=me.s.z-p.z,cl=Math.hypot(cx,cyy,cz)||1;
   if(p.k==='rocket'){
     // rocket jump estilo Soldier: buen empuje hacia arriba y hacia adelante; si ya saltaste, se suma al salto
-    const k=dmg*.17,up=Math.max(0,cyy/cl);
+    const k=dmg*.17*(105/W_.dmg),up=Math.max(0,cyy/cl);   // el empuje del rocket jump no cambió con el nerf del daño
     me.s.vx+=cx/cl*k*1.15;me.s.vz+=cz/cl*k*1.15;me.s.vy=Math.min(Math.max(me.s.vy,0)+up*k*1.05+(me.s.crouch?1.2:0),19);
     if(up>.2)me.s.on=false;
   }else{me.s.vx+=cx/cl*dmg*.16;me.s.vy+=cyy/cl*dmg*.16;me.s.vz+=cz/cl*dmg*.16;if(cyy>0)me.s.on=false;}

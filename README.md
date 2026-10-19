@@ -22,7 +22,7 @@ Como en Counter-Strike llevás **una sola arma principal** (ranura 1): arrancás
 | Escopeta doble | 12 perdigones de 11 por tiro, dos tiros y recarga (R) | 1 / 2 de cerca |
 | Ametralladora | 16 | 7 / 10 |
 | Lanzagranadas | 110 de área + 40 directo; explota al segundo. Si le pega de lleno a alguien antes de rebotar: 100 directo, explota en el acto y da ¤ 150 | 1 / 2 |
-| Lanzacohetes | 100 directo + 105 de área | 1 / 1 |
+| Lanzacohetes | 80 directo + 85 de área en 4,5 m (el rocket jump empuja igual que antes) | 1 / 1 |
 | Rifle de plasma | 110 (atraviesa) | 1 / 2 |
 | Cuchillo mariposa | 55, 99 por la espalda; el segundo tajo dentro de 4 s mata siempre; ignora el blindaje; alcance 2,6 m | 2 / 2 |
 | Francotirador | 115, 230 a la cabeza (click derecho: mira) | 1 / 2 |
@@ -258,3 +258,13 @@ En la pantalla final hay una tarjeta por cada mapa del modo, con su nombre y una
 
 - **La Cuenca:** segunda escalera de emergencia en el fondo, del lado este: el que viene por el pasillo derecho ya no termina en un callejón, sube hasta la puerta de la biblioteca. Las **azoteas de los vecinos** ahora se usan: se sube con saltadores desde la calle. La de la derecha (7 m) tiene tanque de agua, equipos de aire, blindaje, botiquín y otro saltador que te lleva al techo del edificio; la de la izquierda (5 m) tiene chimeneas, cajas, antena, blindaje y botiquín.
 - **Humita** (antes Pan & Manteca, el mismo boliche y del mismo tamaño): cuatro **tarimas LED** que suben y bajan por turnos en la pista, y la **terraza** del techo del lobby, que antes estaba vacía: barra, sillones, macetones con neón, parlantes, una escalera a la puerta del VIP y la **torre del DJ** con ascensor hasta un mirador a 10 m con el rifle de caza.
+
+## Mapas ampliados
+
+- **La Represa — Casa de máquinas (al este):** se entra por una puerta nueva desde la plataforma de la megasalud o por un **túnel de servicio** desde el patio norte. Tiene tres generadores con chimeneas (se puede andar arriba, con blindaje pesado y lanzagranadas), pasarelas a 6 m con saltadores, una **plataforma de grúa** que va y viene, y un **depósito** al norte con cajas, estanterías y la ametralladora.
+- **La Cuenca — Polideportivo (al oeste):** se entra desde la calle o por una puerta desde la azotea de las casas. Cancha de madera con aros, **tribuna**, vestuarios con casilleros y bancos, una cubierta caminable arriba de los vestuarios, un balcón con escalera, una **plataforma que cruza la cancha** a 5,5 m y un saltador.
+- **Humita — Backstage (detrás del escenario):** se entra por una puerta desde el escenario o desde arriba de las torres de parlantes. **Camarines** con espejo y sillón, el **micro de la gira** en el medio (se sube por las cajas), pasarelas a 5 m con una **pasarela móvil** que las cruza, un **montacargas** y un saltador.
+
+## Muertes con cuchillo
+
+En la lista de bajas, cuando alguien mata con el cuchillo aparece **"jugador1 le entró a pelo a jugador2"**.

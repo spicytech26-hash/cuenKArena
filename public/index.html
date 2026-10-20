@@ -1794,6 +1794,14 @@ function fire(){
       if(W_.type==='rail'){fxRail(vmWorldTip(),end,new THREE.Color(colorOf(myId)).getHex());if(wall)for(let j=0;j<16;j++)emit(sparks,end[0],end[1],end[2],wall.n[0]*3+R(4),wall.n[1]*3+R(4),wall.n[2]*3+R(4),.5,.5,.8,1,4);}
       else{if(w===8||w===0||w===3)fxTracer(vmWorldTip(),use.length?[ex+dd[0]*use[0].t,ey+dd[1]*use[0].t,ez+dd[2]*use[0].t]:end);if(!use.length&&wall)fxSparks(end[0]-dd[0]*.05,end[1]-dd[1]*.05,end[2]-dd[2]*.05,wall.n,pel>1?3:6);}
     }
+    if(W_.melee&&!claims.size){
+      let best=null,bd=1e9;
+      for(const q of players.values()){if(!q.alive||!q.model||!q.model.g.visible||(teamsMode()&&q.team===myTeam))continue;
+        const vx=q.x-ex,vy=q.y+1-ey,vz=q.z-ez,dist=Math.hypot(vx,vy,vz);if(dist>W_.range+.4)continue;
+        const ang=Math.acos(Math.max(-1,Math.min(1,(vx*d[0]+vy*d[1]+vz*d[2])/(dist||1))));
+        if(ang>.65||!C.los(W,ex,ey,ez,q.x,q.y+1.1,q.z))continue;if(dist<bd){bd=dist;best=q;}}
+      if(best){claims.set(best.id,[best.id,1,0]);fxBlood(best.x,best.y+1.1,best.z,4);}
+    }
     if(w===3)me.heat=Math.min(1.5,me.heat+.12);
     // respuesta inmediata: marcador de impacto y sonido sin esperar al servidor
     if(claims.size){let n=0;claims.forEach(c=>n+=c[1]);G.hitT=.18;G.predHit=.35;$('hitm').classList.remove('kill');let hs=0;claims.forEach(c=>hs+=c[2]);if(hs&&!W_.melee)SFX.head();else SFX.hit(n*(W_.dmg||10));G.predHS=hs>0;claims.forEach(c=>{const t=players.get(c[0]);if(t)t.pain=.12;});}
@@ -2260,11 +2268,13 @@ function updViewmodel(dt){
   }
   me.vmW=i;
   if(i===7){
-    // cuchillo: amague hacia atrás, tajo rápido cruzado y vuelta suave; alterna de lado en cada golpe
-    me.mt+=dt;const D=.46,p=Math.min(1,me.mt/D),dr=me.mdir;
+    // cuchillo estilo Counter-Strike 1.6: tajo horizontal ancho que cruza la pantalla; un golpe de derecha a izquierda
+    // con la hoja acostada y el siguiente de vuelta, de revés. Corto amague, barrido rápido y vuelta a la guardia
+    me.mt+=dt;const D=.38,p=Math.min(1,me.mt/D),dr=me.mdir;
     const ss=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);},out=x=>{x=Math.max(0,Math.min(1,x));return 1-Math.pow(1-x,3);};
-    const R=[.1,.5,.25,0,0,0],Wk=[.42,.5+.55*dr,.25+.7*dr,.06*dr,.05,.07],St=[-.38,.5-.95*dr,.25-.55*dr,-.13*dr,-.03,-.2];
-    const e1=ss(p/.24),e2=out((p-.24)/.16),e3=ss((p-.42)/.58);
+    const R=[.1,.5,.25,0,0,0];
+    const Wk=dr>0?[.05,1.05,-.55,.15,.07,.04]:[.06,-.4,.75,-.17,.05,.02],St=dr>0?[-.14,-.8,-1,-.32,-.04,-.13]:[-.1,1.1,.9,.27,-.03,-.13];
+    const e1=ss(p/.18),e2=out((p-.18)/.26),e3=ss((p-.5)/.5);
     const v=R.map((r,k)=>{let x=r+(Wk[k]-r)*e1;x+=(St[k]-x)*e2;x+=(r-x)*e3;return x;});
     const idle=p>=1?1:0,tt=G.time;
     g.rotation.set(v[0]+Math.sin(tt*1.6)*.015*idle-me.raise*.6,v[1]+Math.cos(tt*1.1)*.02*idle,v[2]);

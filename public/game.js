@@ -37,7 +37,7 @@ const WEAPONS = [
   { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 85, rad: 4.5, direct: 80 },   // nerf: antes 100 directo + 105 de área en 5 m
   { name: 'Rifle de plasma', ammo: 'slugs',    cost: 1, rate: 1.4, type: 'rail', pel: 1,  dmg: 110, range: 400 },
   // cuchillo mariposa: el segundo tajo sobre la misma víctima (dentro de 4 s) mata siempre
-  { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 55, back: 1.8, range: 2.6, melee: true },
+  { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 55, back: 1.8, range: 3.2, melee: true },   // tajo más ancho y largo (antes 2,6 m)
   { name: 'Francotirador',  ammo: 'sniper',   cost: 1, rate: 1.25, type: 'hit', pel: 1,  spread: .002, hip: .045, dmg: 115, head: 2, range: 500, scope: true },
   // rifle de caza: bala real con viaje y caída; cualquier impacto mata. Premia los tiros bien calculados
   { name: 'Rifle de caza',  ammo: 'caza',     cost: 1, rate: 1.6, type: 'proj', proj: 'bullet', speed: 260, drop: 9, dmg: 0, rad: 0, direct: 1000, scope: true, zoom: 58 },
@@ -870,13 +870,34 @@ function buildFuertes() {
     A(-13.6, 8.5, -28.1, 13.6, 9.5, -28, 'rail', { nc: 1 });
     SZ(11, -35.4, 13.4, -26, 0, .5, 9, 1, 'wood');                                   // planta baja → primer piso
     SZ(-13.4, -34.2, -11, -28, 4.5, .5, 8, 1, 'wood');                              // primer piso → pajar
-    // techo a la holandesa (escalonado) con alero
-    A(-14.6, 12, -36.4, 14.6, 12.6, -19.6, 'roofTiles'); A(-12, 12.6, -36.4, 12, 13.6, -19.6, 'roofTiles');
-    A(-9, 13.6, -36.4, 9, 14.6, -19.6, 'roofTiles'); A(-5.5, 14.6, -36.4, 5.5, 15.4, -19.6, 'roofTiles'); A(-2, 15.4, -36.4, 2, 16, -19.6, 'roofTiles');
-    // molduras blancas de la fachada
-    for (const [x0, y0, x1, y1] of [[-3.3, 0, -3, 4.3], [3, 0, 3.3, 4.3], [-3.3, 4, 3.3, 4.3], [-14, 11.8, 14, 12.1], [-14, 3.9, 14, 4.2], [-14, 7.9, 14, 8.2], [-14, 0, -13.7, 12], [13.7, 0, 14, 12]])
-      A(x0, y0, -19.95, x1, y1, -19.85, 'whitewall', { nc: 1 });
-    A(-3, 1.6, -19.95, 3, 2.2, -19.85, 'whitewall', { nc: 1 });
+    // techo a la holandesa como en los establos de verdad: frente rojo escalonado, tejas oscuras en cada escalón
+    // (con alero adelante y atrás) y una moldura blanca que dibuja el contorno
+    let prev = 14;
+    for (const [hw, y0, y1] of [[14.6, 12, 12.6], [12.8, 12.6, 13.5], [11, 13.5, 14.4], [9, 14.4, 15.2], [6.8, 15.2, 15.9], [4.4, 15.9, 16.5], [2, 16.5, 17]]) {
+      A(-hw + .3, y0, -35.8, hw - .3, y1 - .3, -20, barn);
+      A(-hw, y1 - .3, -36.6, hw, y1 + .1, -20.3, 'roofTiles');
+      A(-hw + .3, y1 - .55, -19.98, hw - .3, y1 - .3, -19.85, 'whitewall', { nc: 1 });
+      for (const sx of [-1, 1]) A(sx > 0 ? hw - .55 : -hw + .3, y0, -19.98, sx > 0 ? hw - .3 : -hw + .55, y1 - .3, -19.85, 'whitewall', { nc: 1 });
+      prev = hw;
+    }
+    // puerta del pajar arriba con su marco
+    A(-1.3, 13.6, -19.9, 1.3, 15.6, -19.8, 'wood', { nc: 1 });
+    for (const [x0, y0, x1, y1] of [[-1.5, 13.4, 1.5, 13.6], [-1.5, 15.6, 1.5, 15.8], [-1.5, 13.4, -1.3, 15.8], [1.3, 13.4, 1.5, 15.8], [-.08, 13.6, .08, 15.6]]) A(x0, y0, -19.82, x1, y1, -19.72, 'whitewall', { nc: 1 });
+    // marcos blancos de todas las ventanas y la puerta, y molduras entre pisos
+    for (const [a, b, y0, y1] of [[-3, 3, 0, 4], [-10, -7, 1.2, 2.8], [7, 10, 1.2, 2.8], [-12, -9.5, 5.3, 7], [-6.5, -4, 5.3, 7], [-1.25, 1.25, 5.3, 7], [4, 6.5, 5.3, 7], [9.5, 12, 5.3, 7], [-9, -6, 9.3, 10.8], [-1.5, 1.5, 9.3, 10.8], [6, 9, 9.3, 10.8]]) {
+      const t = .2;
+      A(a - t, y1, -19.98, b + t, y1 + t, -19.84, 'whitewall', { nc: 1 }); if (y0 > 0) A(a - t, y0 - t, -19.98, b + t, y0, -19.84, 'whitewall', { nc: 1 });
+      A(a - t, y0, -19.98, a, y1, -19.84, 'whitewall', { nc: 1 }); A(b, y0, -19.98, b + t, y1, -19.84, 'whitewall', { nc: 1 });
+    }
+    for (const y of [4.05, 8.05, 11.85]) A(-14, y, -19.96, 14, y + .2, -19.86, 'whitewall', { nc: 1 });
+    A(-14, 0, -19.96, -13.75, 12, -19.86, 'whitewall', { nc: 1 }); A(13.75, 0, -19.96, 14, 12, -19.86, 'whitewall', { nc: 1 });
+    // portones corredizos a los costados de la puerta, con la cruz blanca hecha de cubitos
+    for (const [a, b] of [[-6.4, -3.3], [3.3, 6.4]]) {
+      A(a, 0, -19.84, b, 3.9, -19.7, barn, { nc: 1 });
+      A(a, 3.7, -19.7, b, 3.9, -19.6, 'whitewall', { nc: 1 }); A(a, 0, -19.7, b, .2, -19.6, 'whitewall', { nc: 1 }); A(a, 0, -19.7, a + .2, 3.9, -19.6, 'whitewall', { nc: 1 }); A(b - .2, 0, -19.7, b, 3.9, -19.6, 'whitewall', { nc: 1 });
+      for (let k = 0; k <= 11; k++) { const t = k / 11, x1 = a + .2 + t * (b - a - .6), x2 = b - .4 - t * (b - a - .6), y = .2 + t * 3.3; A(x1, y, -19.7, x1 + .22, y + .24, -19.6, 'whitewall', { nc: 1 }); A(x2, y, -19.7, x2 + .22, y + .24, -19.6, 'whitewall', { nc: 1 }); }
+    }
+    A(-14.3, 0, -20.5, 14.3, .5, -19.7, 'concrete');                                // zócalo de piedra
     // adentro: boxes, fardos y cajas para cubrirse en cada piso
     for (const x of [-9, -4, 1, 6]) A(x - .1, 0, -35.6, x + .1, 1.4, -30, 'wood');
     A(-12, 0, -24.5, -9.5, 1.2, -22.5, 'hay'); A(5.5, 0, -25, 8.5, 1.2, -23, 'hay'); A(6, 1.2, -24.6, 8, 2.3, -23.4, 'hay');

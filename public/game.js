@@ -22,6 +22,8 @@ const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const r2 = v => Math.round(v * 100) / 100;
 const r3a = a => [Math.round(a[0] * 1000) / 1000, Math.round(a[1] * 1000) / 1000, Math.round(a[2] * 1000) / 1000];
 const r3 = v => Math.round(v * 1000) / 1000;
+// caída del daño con la distancia: [hasta acá pega completo, desde acá pega lo mínimo, mínimo]
+const falloff = (W_, d) => { const f = W_.fall; if (!f) return 1; if (d <= f[0]) return 1; if (d >= f[1]) return f[2]; return 1 - (1 - f[2]) * (d - f[0]) / (f[1] - f[0]); };
 
 /* ---------- Armas ---------- */
 /* Daño pensado para combates cortos: 100 de salud cae en ~1 segundo de fuego sostenido.
@@ -29,7 +31,7 @@ const r3 = v => Math.round(v * 1000) / 1000;
    hip: dispersión del francotirador sin mira (con mira usa spread). */
 const WEAPONS = [
   { name: 'Pistola',        ammo: 'bullets',  cost: 1, rate: .17, type: 'hit',  pel: 1,  spread: .005, dmg: 22, range: 300, mag: 12, reload: 1.3 },
-  { name: 'Escopeta',       ammo: 'shells',   cost: 1, rate: .85, type: 'hit',  pel: 10, spread: .06,  dmg: 11, range: 120, mag: 6, reload: 1.8 },
+  { name: 'Escopeta',       ammo: 'shells',   cost: 1, rate: .85, type: 'hit',  pel: 10, spread: .06,  dmg: 9, range: 120, mag: 6, reload: 1.8, fall: [4, 20, .45] },   // como la de TF2: 90 de cerca, baja hasta ~40 de lejos
   { name: 'Escopeta doble', ammo: 'shells',   cost: 1, rate: .28, type: 'hit',  pel: 12, spread: .085, dmg: 11, range: 100, mag: 2, reload: 1.7 },
   { name: 'Ametralladora',  ammo: 'bullets',  cost: 1, rate: .085, type: 'hit', pel: 1,  spread: .013, dmg: 16, range: 300, mag: 40, reload: 2 },
   // granada: explota al segundo; si le pega de lleno a alguien antes de rebotar, explota en el acto con daño extra y premio
@@ -1855,7 +1857,7 @@ class Game {
       done.add(t.id);
       const n = clamp(c[1] | 0, 0, W_.pel), hs = clamp(c[2] | 0, 0, n); if (!n) continue;
       if (!this.validHit(o, d, t, W_, p)) continue;
-      const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? W_.dmg * (hs ? 1.5 : 1) : W_.head ? W_.dmg * (hs ? W_.head : 1) : (n + hs) * W_.dmg;
+      const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? W_.dmg * (hs ? 1.5 : 1) : W_.head ? W_.dmg * (hs ? W_.head : 1) : (n + hs) * W_.dmg * falloff(W_, Math.hypot(t.s.x - o[0], t.s.y + 1 - o[1], t.s.z - o[2]));
       this.curHS = hs > 0 && !W_.melee;
       this.damage(t, dmg * this.mult(p), p, w, d, .05, 'frag');
       this.curHS = false;
@@ -1922,7 +1924,7 @@ class Game {
       for (const h of tr.hits) { const a = acc.get(h.p) || { n: 0, hs: 0 }; a.n++; if (h.head) a.hs++; acc.set(h.p, a); }
     }
     for (const [t, a] of acc) {
-      const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? W_.dmg * (a.hs ? 1.5 : 1) : W_.head ? W_.dmg * (a.hs ? W_.head : 1) : (a.n + a.hs) * W_.dmg;
+      const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? W_.dmg * (a.hs ? 1.5 : 1) : W_.head ? W_.dmg * (a.hs ? W_.head : 1) : (a.n + a.hs) * W_.dmg * falloff(W_, Math.hypot(t.s.x - o[0], t.s.y + 1 - o[1], t.s.z - o[2]));
       this.damage(t, dmg * this.mult(p) * this.skill().dmg, p, w, d, .05, 'frag');
     }
   }

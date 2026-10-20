@@ -19,7 +19,7 @@ Como en Counter-Strike llevás **una sola arma principal** (ranura 1): arrancás
 | Arma | Daño | Tiros para matar (100 de vida / con blindaje 100) |
 |---|---|---|
 | Pistola | 22 | 5 / 8 |
-| Escopeta | 10 perdigones de 11 | 1–2 / 2–3 de cerca |
+| Escopeta | 10 perdigones de 9: hasta 90 de cerca (4 m) y baja hasta unos 40 de lejos (20 m), como la de TF2 | 0 / 1 |
 | Escopeta doble | 12 perdigones de 11 por tiro, dos tiros y recarga (R) | 1 / 2 de cerca |
 | Ametralladora | 16 | 7 / 10 |
 | Lanzagranadas | 110 de área + 40 directo; explota al segundo. Si le pega de lleno a alguien antes de rebotar: 100 directo, explota en el acto y da ¤ 150 | 1 / 2 |

@@ -833,61 +833,79 @@ function buildFuertes() {
   add(-47, -16, -49, 47, 30, -48, 'canyon'); add(-47, -16, 48, 47, 30, 49, 'canyon');
   add(-47, -16, -48, -46, 30, 48, 'canyon'); add(46, -16, -48, 47, 30, 48, 'canyon');
   add(-46, -16, -14, 46, -12, 14, 'rock');                                          // lecho del río
-  lava.push({ min: [-46, -16, -14], max: [46, -9, 14], dps: 999, water: 1 });
-  add(40, -12, -14, 46, 24, -6, 'canyon'); add(40, -12, 6, 46, 24, 14, 'canyon');    // paredes al fondo del cañón
-  add(-46, -12, -14, -40, 24, 14, 'canyon');
-  add(43.6, -9, -6, 44.6, 24, 6, 'falls', { nc: 1 }); add(44.6, -12, -6, 46, 24, 6, 'canyon');   // cascada
-  add(36, -9.1, -6.5, 44, -8.9, 6.5, 'whitewall', { nc: 1 });                       // espuma
-  for (const [x, z, r, h] of [[-20, 3, 2.2, -5], [14, -4, 1.8, -6.5], [30, 6, 2.5, -4]]) add(x - r, -12, z - r, x + r, h, z + r, 'canyon');   // rocas en el río
-  /* ---- puente techado del medio ---- */
-  add(-2.5, -.4, -15, 2.5, 0, 15, 'wood');
-  add(-2.7, 0, -14, -2.4, 1.1, 14, 'wood'); add(2.4, 0, -14, 2.7, 1.1, 14, 'wood');
-  for (const z of [-5, 5]) for (const x of [-2.7, 2.4]) add(x, 1.1, z - .2, x + .3, 3.2, z + .2, 'wood');
-  for (const x of [-2.7, 2.4]) add(x, 1.1, -.2, x + .3, 3.2, .2, 'wood');
-  add(-3.2, 3.2, -5.6, 3.2, 3.6, 5.6, 'roofTiles');
-  for (const z of [-10, -5, 0, 5, 10]) { add(-2.3, -12, z - .3, -1.7, -.4, z + .3, 'wood', { nc: 1 }); add(1.7, -12, z - .3, 2.3, -.4, z + .3, 'wood', { nc: 1 }); add(-2.4, -5, z - .2, 2.4, -4.6, z + .2, 'wood', { nc: 1 }); }
-  /* ---- puentes de tablones a los costados (sin baranda: cuidado) ---- */
-  for (const x of [-26, 26]) { add(x - 1, -.3, -15, x + 1, 0, 15, 'board'); add(x - 1.1, -1, -.3, x + 1.1, -.3, .3, 'wood', { nc: 1 }); }
-  /* ---- cada lado: meseta, establo, mirador y cobertura ---- */
+  lava.push({ min: [-46, -16, -14], max: [46, -6, 14], dps: 999, water: 1 });
+  add(40, -12, -14, 46, 26, -6, 'canyon'); add(40, -12, 6, 46, 26, 14, 'canyon');    // fondo del cañón con la cascada
+  add(-46, -12, -14, -40, 26, 14, 'canyon');
+  add(43.6, -6, -6, 44.6, 26, 6, 'falls', { nc: 1 }); add(44.6, -12, -6, 46, 26, 6, 'canyon');
+  add(36, -6.1, -6.5, 44, -5.9, 6.5, 'whitewall', { nc: 1 });                       // espuma
+  for (const [x, z, r, h] of [[-22, 3, 2.2, -3], [16, -4, 1.8, -4.5], [31, 6, 2.5, -2]]) add(x - r, -12, z - r, x + r, h, z + r, 'canyon');
+  /* ---- el único puente: tablones, baranda de postes y pérgola en el medio ---- */
+  add(-3, -.4, -15, 3, 0, 15, 'wood');
+  for (const x of [-3.1, 2.95]) { add(x, 0, -14, x + .15, 1.2, 14, 'wood', { nc: 0 }); }
+  for (let z = -14; z <= 14; z += 3.5) for (const x of [-3.2, 2.9]) add(x, 0, z - .15, x + .3, 1.4, z + .15, 'wood');
+  for (let z = -9; z <= 9; z += 1.2) add(-3.4, 3.3, z - .25, 3.4, 3.55, z + .25, 'wood', { nc: 1 });      // pérgola
+  for (const z of [-9, 9]) for (const x of [-3.2, 2.9]) add(x, 1.4, z - .15, x + .3, 3.3, z + .15, 'wood');
+  for (const z of [-10, -4, 4, 10]) { add(-2.6, -12, z - .3, -2, -.4, z + .3, 'wood', { nc: 1 }); add(2, -12, z - .3, 2.6, -.4, z + .3, 'wood', { nc: 1 });
+    add(-2.6, -4, z - .2, 2.6, -3.6, z + .2, 'wood', { nc: 1 }); add(-.3, -12, z - .3, .3, -3.6, z + .3, 'wood', { nc: 1 }); }
+  /* ---- cada lado: meseta, establo grande de tres pisos, galpón, mirador y cobertura ---- */
   for (const s of [-1, 1]) {
-    const team = s < 0 ? 0 : 1, flag = s < 0 ? 'neonR' : 'neonB';
+    const team = s < 0 ? 0 : 1, flag = s < 0 ? 'neonR' : 'neonB', barn = s < 0 ? 'barn' : 'barnB';
     const Z = (a, b) => s < 0 ? [a, b] : [-b, -a];
     const A = (x0, y0, z0, x1, y1, z1, mat, ex) => { const [a, b] = Z(z0, z1); return add(x0, y0, a, x1, y1, b, mat, ex); };
     const SZ = (x0, z0, x1, z1, yb, rise, n, dir, mat) => { const [a, b] = Z(z0, z1); return stairs(x0, a, x1, b, yb, rise, n, 'z', dir * -s, mat); };
     const WX = (x0, z0, x1, z1, y0, y1, doors, mat) => { const [a, b] = Z(z0, z1); wall(x0, a, x1, b, y0, y1, doors, mat); };
-    // meseta (la tierra roja con pasto arriba) y mesas del fondo
+    // meseta y mesas del fondo
     A(-46, -16, -48, 46, -.2, -14, 'canyon'); A(-46, -.2, -48, 46, 0, -14, 'grass');
-    A(-46, 0, -48, 46, 18, -42, 'canyon'); A(-46, 0, -42, -32, 9, -38, 'canyon'); A(30, 0, -42, 46, 12, -37, 'canyon'); A(-46, 0, -38, -40, 5, -14, 'canyon');
-    A(40, 0, -37, 46, 7, -14, 'canyon');
-    // establo: planta baja con boxes, pajar arriba con ventanas al cañón y techo a dos aguas (se puede subir)
-    WX(-9, -20.4, 9, -20, 0, 7, [D(-3, 3, 0, 4.2), D(-7, -4, 5, 6.4), D(4, 7, 5, 6.4)], 'barn');
-    WX(-9, -34, 9, -33.6, 0, 7, [D(-2, 2, 0, 3.5)], 'barn');
-    A(-9, 0, -33.6, -8.6, 7, -20.4, 'barn'); A(8.6, 0, -33.6, 9, 7, -20.4, 'barn');
-    A(-8.6, 4.4, -24.5, 8.6, 4.8, -20.4, 'wood');                                 // pajar
-    SZ(-8.4, -33.4, -6.4, -24.5, 0, .48, 10, 1, 'wood');
-    for (const x of [-4, 0, 4]) A(x - .1, 0, -33.6, x + .1, 1.4, -28, 'wood');     // boxes
-    A(2, 0, -33.4, 4.2, 1.1, -31.4, 'hay'); A(5, 0, -27.5, 7.5, 1.1, -25.5, 'hay'); A(5.6, 1.1, -27, 7, 2.2, -25.9, 'hay');
-    A(-6, 4.8, -24.3, -3.8, 5.9, -23, 'hay'); A(3.6, 4.8, -24.3, 6, 5.9, -23, 'hay');
-    A(-9.4, 7, -34.4, 9.4, 7.6, -19.6, 'roofTiles'); A(-7.4, 7.6, -34.4, 7.4, 8.4, -19.6, 'roofTiles');
-    A(-5.4, 8.4, -34.4, 5.4, 9.2, -19.6, 'roofTiles'); A(-3.4, 9.2, -34.4, 3.4, 10, -19.6, 'roofTiles'); A(-1.4, 10, -34.4, 1.4, 10.6, -19.6, 'roofTiles');
-    A(-3.3, 0, -19.95, -3, 4.5, -19.85, 'whitewall', { nc: 1 }); A(3, 0, -19.95, 3.3, 4.5, -19.85, 'whitewall', { nc: 1 }); A(-3.3, 4.2, -19.95, 3.3, 4.5, -19.85, 'whitewall', { nc: 1 });
-    A(-8.9, 6.9, -19.95, 8.9, 7.1, -19.85, 'whitewall', { nc: 1 });
-    // mirador al lado del establo: escalera, plataforma a 9 m con pretil y techo, bandera del equipo
-    SZ(12.5, -38, 15.5, -28.4, 0, .5, 18, 1, 'wood');
-    for (const [x, z] of [[12, -28.4], [15.6, -28.4], [12, -24], [15.6, -24]]) A(x, 0, z, x + .4, 12.2, z + .4, 'wood');
-    A(11.6, 8.6, -28.4, 16.4, 9, -23.6, 'board'); A(11.6, 9, -23.9, 16.4, 10.1, -23.6, 'barn'); A(11.6, 9, -28.4, 11.9, 10.1, -23.6, 'barn'); A(16.1, 9, -28.4, 16.4, 10.1, -23.6, 'barn');
-    A(11.2, 12.2, -28.8, 16.8, 12.6, -23.2, 'roofTiles');
-    A(-14.2, 0, -26.2, -13.8, 12, -25.8, 'metal'); A(-13.8, 9.6, -26.1, -11.4, 11.4, -25.9, flag, { nc: 1 });
-    // cobertura en el patio: fardos, carreta, bebedero, cerca al borde del cañón (con huecos en los puentes)
-    A(-12, 0, -17, -10, 1.2, -15.5, 'hay'); A(10, 0, -18, 12.5, 1.2, -16.5, 'hay'); A(18, 0, -17, 20, 1.2, -15.5, 'hay'); A(-20, 0, -18.5, -17.5, 1.2, -17, 'hay');
-    A(-33, 0, -24, -29, 1.8, -21.5, 'crate'); A(-32.5, 1.8, -23.5, -30, 2.6, -22, 'crate');
-    A(30, 0, -26, 33, 1, -24.5, 'barn'); A(-36, 0, -31, -33, 2.4, -28, 'canyon'); A(22, 0, -34, 25, 3, -31, 'canyon');
-    for (const [a, b] of [[-40, -28], [-24, -4], [4, 24], [28, 40]]) A(a, 0, -14.7, b, 1.1, -14.5, 'fence');
+    A(-46, 0, -48, 46, 20, -43, 'canyon'); A(-46, 0, -43, -34, 10, -39, 'canyon'); A(28, 0, -43, 46, 13, -40, 'canyon'); A(-46, 0, -39, -40, 5, -14, 'canyon');
+    A(40, 0, -40, 46, 7, -14, 'canyon');
+    // ESTABLO: 28 x 15 m, fachada de 12 m con tres filas de ventanas al cañón y techo a la holandesa
+    WX(-14, -20.4, 14, -20, 0, 12, [D(-3, 3, 0, 4), D(-10, -7, 1.2, 2.8), D(7, 10, 1.2, 2.8),
+      D(-12, -9.5, 5.3, 7), D(-6.5, -4, 5.3, 7), D(-1.25, 1.25, 5.3, 7), D(4, 6.5, 5.3, 7), D(9.5, 12, 5.3, 7),
+      D(-9, -6, 9.3, 10.8), D(-1.5, 1.5, 9.3, 10.8), D(6, 9, 9.3, 10.8)], barn);
+    WX(-14, -36, 14, -35.6, 0, 12, [D(-2, 2, 0, 3.5), D(-10, -7, 5.3, 7), D(7, 10, 5.3, 7)], barn);
+    A(-14, 0, -35.6, -13.6, 12, -20.4, barn); A(13.6, 0, -35.6, 14, 12, -20.4, barn);
+    // pisos: primer piso entero (con el hueco de la escalera) y pajar al frente
+    A(-13.6, 4.1, -35.6, 10.8, 4.5, -20.4, 'wood'); A(10.8, 4.1, -26, 13.6, 4.5, -20.4, 'wood');
+    A(-13.6, 8.1, -28, 13.6, 8.5, -20.4, 'wood');
+    A(-13.6, 8.5, -28.1, 13.6, 9.5, -28, 'rail', { nc: 1 });
+    SZ(11, -35.4, 13.4, -26, 0, .5, 9, 1, 'wood');                                   // planta baja → primer piso
+    SZ(-13.4, -34.2, -11, -28, 4.5, .5, 8, 1, 'wood');                              // primer piso → pajar
+    // techo a la holandesa (escalonado) con alero
+    A(-14.6, 12, -36.4, 14.6, 12.6, -19.6, 'roofTiles'); A(-12, 12.6, -36.4, 12, 13.6, -19.6, 'roofTiles');
+    A(-9, 13.6, -36.4, 9, 14.6, -19.6, 'roofTiles'); A(-5.5, 14.6, -36.4, 5.5, 15.4, -19.6, 'roofTiles'); A(-2, 15.4, -36.4, 2, 16, -19.6, 'roofTiles');
+    // molduras blancas de la fachada
+    for (const [x0, y0, x1, y1] of [[-3.3, 0, -3, 4.3], [3, 0, 3.3, 4.3], [-3.3, 4, 3.3, 4.3], [-14, 11.8, 14, 12.1], [-14, 3.9, 14, 4.2], [-14, 7.9, 14, 8.2], [-14, 0, -13.7, 12], [13.7, 0, 14, 12]])
+      A(x0, y0, -19.95, x1, y1, -19.85, 'whitewall', { nc: 1 });
+    A(-3, 1.6, -19.95, 3, 2.2, -19.85, 'whitewall', { nc: 1 });
+    // adentro: boxes, fardos y cajas para cubrirse en cada piso
+    for (const x of [-9, -4, 1, 6]) A(x - .1, 0, -35.6, x + .1, 1.4, -30, 'wood');
+    A(-12, 0, -24.5, -9.5, 1.2, -22.5, 'hay'); A(5.5, 0, -25, 8.5, 1.2, -23, 'hay'); A(6, 1.2, -24.6, 8, 2.3, -23.4, 'hay');
+    A(-8, 4.5, -24.5, -5.5, 5.6, -23, 'hay'); A(2.5, 4.5, -25, 5, 5.6, -23.5, 'hay'); A(-2, 4.5, -33, 2, 5.7, -31, 'crate');
+    A(-6, 8.5, -24, -3.5, 9.5, -22.8, 'hay'); A(3.5, 8.5, -24, 6, 9.5, -22.8, 'hay');
+    // galpón blanco al costado, con terraza arriba
+    WX(-25, -20.4, -14, -20, 0, 4.5, [D(-22, -19, 1.2, 3), D(-17.5, -15.5, 0, 3.4)], 'whitewall');
+    WX(-25, -31, -14, -30.6, 0, 4.5, [D(-21, -19, 0, 3.4)], 'whitewall');
+    A(-25, 0, -30.6, -24.6, 4.5, -20.4, 'whitewall');
+    A(-25.2, 4.5, -31.2, -14, 4.9, -19.8, 'board'); A(-25.2, 4.9, -20, -14, 5.9, -19.8, 'wood');
+    SZ(-26.8, -30.5, -25.2, -22, 0, .49, 10, -1, 'wood');                            // escalera de afuera a la terraza
+    A(-23, 0, -29.5, -20, 1.2, -27.5, 'crate'); A(-18, 4.9, -24, -16, 6, -22, 'hay');
+    // mirador con estandarte del equipo
+    SZ(16.5, -40, 20.5, -31, 0, .5, 22, 1, 'wood');
+    for (const [x, z] of [[16, -31], [20.6, -31], [16, -26], [20.6, -26]]) A(x, 0, z, x + .4, 14, z + .4, 'wood');
+    A(15.6, 10.6, -31, 21.4, 11, -25.6, 'board');
+    A(15.6, 11, -25.9, 21.4, 12.1, -25.6, 'whitewall'); A(15.6, 11, -31, 15.9, 12.1, -25.6, 'whitewall'); A(21.1, 11, -31, 21.4, 12.1, -25.6, 'whitewall');
+    A(15.2, 14, -31.4, 21.8, 14.4, -25.2, 'roofTiles');
+    A(17, 4, -25.65, 19.6, 10, -25.55, flag, { nc: 1 }); A(16, 0, -26, 21, 10.6, -25.6, 'whitewall');
+    // cobertura en el patio y cerca al borde (con hueco en el puente)
+    A(-12, 0, -17.5, -9.5, 1.2, -16, 'hay'); A(9.5, 0, -18, 12, 1.2, -16.5, 'hay'); A(20, 0, -17, 22.5, 1.2, -15.5, 'hay'); A(-22, 0, -18.2, -19.5, 1.2, -16.8, 'hay');
+    A(-36, 0, -33, -32, 2.4, -29, 'canyon'); A(26, 0, -36, 29, 3, -33, 'canyon'); A(30, 0, -24, 34, 1.6, -21.5, 'crate');
+    for (const [a, b] of [[-40, -4], [4, 40]]) A(a, 0, -14.7, b, 1.1, -14.5, 'fence');
     // apariciones, ítems y luces
-    for (const [x, y, z] of [[1.5, 0, -30.5], [-5, 0, -26], [5, 0, -22.5], [-6, 4.8, -22.5], [6, 4.8, -22], [14, 9, -26], [-20, 0, -26], [-34, 0, -20], [22, 0, -24], [34, 0, -30], [-14, 0, -32]])
+    for (const [x, y, z] of [[1.5, 0, -32.5], [-6, 0, -26], [8, 0, -27.5], [-9, 4.5, -26], [9, 4.5, -23], [-10, 8.5, -24.5], [10, 8.5, -24.5],
+      [18.5, 11, -28.5], [-20, 4.9, -25], [-22, 0, -24], [-34, 0, -24], [33, 0, -30]])
       tspawns[team].push({ x, y, z: s * z, yaw: face(x, s * z, x, 0) });
-    I('health', 0, 0, s * 26); I('health', -7.5, 4.8, s * 21.5); I('armor', 14, 9, s * 25); I('health', -30.5, 0, s * 20); I('health', 31.5, 0, s * 30);
-    lights.push({ x: 0, y: 4, z: s * 28, c: 0xffd9a0, i: .8, d: 16 });
+    I('health', 0, 0, s * 27); I('health', 0, 4.5, s * 26); I('health', -12, 8.5, s * 22); I('armor', 18.5, 11, s * 27.5); I('health', -21, 0, s * 23); I('armor', 0, 8.5, s * 22);
+    lights.push({ x: 0, y: 6, z: s * 28, c: 0xffd9a0, i: .9, d: 22 });
   }
   spawns.push(...tspawns[0], ...tspawns[1]);
   return finish({ id: 'fuertes', name: 'snp1 · Fuertes del Cañón', bounds: { x0: -47, x1: 47, z0: -49, z1: 49 }, tspawns,

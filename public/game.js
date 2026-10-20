@@ -265,9 +265,11 @@ function buildRepresa() {
   add(-6, 0, -20, -5, 5.5, -19, 'metal'); add(5, 0, -20, 6, 5.5, -19, 'metal');
   add(-5, 0, -34, 5, 12, -27, 'tower');                 // torre
   add(-5.2, 11.6, -34.2, 5.2, 12, -26.8, 'trim');       // borde de la torre
-  // plataformas en espiral hasta la torre
-  [[9, -24, 1.2], [11.5, -28, 2.4], [11, -33, 3.6], [8, -37, 4.8], [3, -38.5, 6.0], [-2, -38.5, 7.2], [-7, -37, 8.4], [-10, -32.5, 9.6], [-7.5, -28.5, 10.8]]
-    .forEach(([x, z, t]) => add(x - 1, t - .4, z - 1, x + 1, t, z + 1, 'metal'));
+  // plataformas en espiral hasta la torre: más grandes, más juntas y con escalones más bajos (0,9 m, el salto da 1,4)
+  // así sigue siendo un parkour pero se sube de corrido sin frenar la partida
+  [[7.9, -27.1, .92], [9.4, -29.6, 1.85], [9.4, -32.3, 2.77], [8, -34.8, 3.69], [5.4, -36.7, 4.62], [1.9, -37.8, 5.54],
+   [-1.9, -37.8, 6.46], [-5.4, -36.7, 7.38], [-8, -34.8, 8.31], [-9.4, -32.3, 9.23], [-9.4, -29.6, 10.15], [-7.9, -27.1, 11.08]]
+    .forEach(([x, z, t]) => { add(x - 1.3, t - .4, z - 1.3, x + 1.3, t, z + 1.3, 'metal'); add(x - 1.32, t - .02, z - 1.32, x + 1.32, t + .02, z - 1.22, 'neonC', { nc: 1 }); });
   // cajas
   add(14.5, 0, -23.5, 17.5, 2, -20.5, 'crate');
   add(-17.5, 0, -27, -14.5, 1.5, -23, 'crate');
@@ -322,8 +324,9 @@ function buildRepresa() {
   wall(17, 16, 40, 17, -6, 14, [D(18, 21, 0, 3)], 'wall');
   add(17, 5.6, -1.5, 30, 6, 1.5, 'grate');              // pasarela alta
   add(33, -4, -6, 40, 4, 6, 'metal');                   // plataforma de la megasalud
-  [[24, -9, .5], [27.5, -12, 1.5], [31.5, -10.5, 2.5], [36, -9, 3.5], [24, 9, .5], [27.5, 12, 1.5], [31.5, 10.5, 2.5], [36, 9, 3.5]]
-    .forEach(([x, z, t]) => add(x - 1, -4, z - 1, x + 1, t, z + 1, 'pillar'));
+  // columnas sobre la lava hasta la megasalud: más anchas y más seguidas (escalones de 0,7 m, huecos de menos de un metro)
+  for (const s of [-1, 1]) [[23.5, 9, .4], [26.5, 10.5, 1.1], [29.5, 11, 1.8], [32.5, 10.3, 2.5], [35.5, 8.8, 3.2]]
+    .forEach(([x, z, t]) => add(x - 1.5, -4, s * z - 1.5, x + 1.5, t, s * z + 1.5, 'pillar'));
   add(23, -4, 13, 25, -2, 16, 'step'); add(21, -4, 13, 23, -1, 16, 'step');
   add(23, -4, -16, 25, -2, -13, 'step'); add(21, -4, -16, 23, -1, -13, 'step');
   pads.push({ x: 35, y: 4, z: -3, r: 1, t: [13, 6, 0], apex: 1.5 });
@@ -388,7 +391,7 @@ function buildRepresa() {
   I('w6', 0, 12, -31); I('slugs', 3, 12, -32.5); I('armor', -20, 2.5, -36); I('health', 20, 0, -36);
   I('w4', -16, 1.5, -25); I('grenades', 16, 2, -22); I('shells', 0, 0, -24);
   I('w2', -37, 3, 0); I('w3', -29, 0, 12); I('bullets', -37, 3, -12); I('armorH', -21, 6, -12); I('health', -19, 6, 12.5); I('shells', -37, 0, 13);
-  I('mega', 37, 4, 0); I('rockets', 37, 4, 4); I('health', 31.5, 2.5, -10.5); I('shells', 19, 0, 12); I('bullets', 19, 0, -12); I('grenades', 31.5, 2.5, 10.5);
+  I('mega', 37, 4, 0); I('rockets', 37, 4, 4); I('health', 29.5, 1.8, -11); I('shells', 19, 0, 12); I('bullets', 19, 0, -12); I('grenades', 29.5, 1.8, 11);
   I('w5', 0, -2.5, 32); I('rockets', -13, -3, 30); I('armor', 12, -3, 28); I('health', -10, -1, 28); I('w1', -8, -3, 35);
   I('health', 10, 5, 30); I('bullets', -10, 5, 30); I('w8', 0, 9, 34); I('rockets', -10, 5, 20);
   I('armor', -37, 9.5, 4.5); I('slugs', -30, 9.5, 4.5); I('health', -2.5, -3, 27);

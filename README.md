@@ -268,3 +268,4 @@ En la pantalla final hay una tarjeta por cada mapa del modo, con su nombre y una
 ## Muertes con cuchillo
 
 En la lista de bajas, cuando alguien mata con el cuchillo aparece **"jugador1 le entró a pelo a jugador2"**.
+- **Parkours más amables en La Represa:** la espiral de la torre tiene 12 plataformas más grandes (2,6 m) y más juntas, con escalones de 0,9 m (el salto llega a 1,4) y borde de neón para ver dónde caer; las columnas sobre la lava son más anchas (3 m) y más seguidas, con escalones de 0,7 m. Siguen pidiendo saltar bien, pero se suben de corrido.

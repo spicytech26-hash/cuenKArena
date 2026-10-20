@@ -1251,18 +1251,50 @@ const vms=WEAPONS.map((_,i)=>{const g=buildGun(i);g.visible=false;wScene.add(g);
 })();
 // manos en primera persona (cuchillo, pistola y rifle de caza)
 (()=>{const glove=mGlove,f=new THREE.Group();
-  f.add(bx(.075,.07,.09,glove,0,-.012,.07),bx(.06,.03,.08,glove,-.035,.02,.065),bx(.05,.06,.14,glove,.01,-.03,.17,.25));vms[7].add(f);
+  // puño que envuelve el mango que se agarra (dedos alrededor, pulgar arriba); el otro mango gira suelto
+  f.add(bx(.04,.045,.075,glove,-.004,-.006,.085),bx(.012,.03,.06,glove,.018,-.006,.085),bx(.03,.012,.03,glove,-.004,.02,.06));vms[7].add(f);
   const arm=(x,y,z,rx,ry,len)=>{const a=new THREE.Mesh(new THREE.BoxGeometry(.06,.06,len),mSleeve);a.geometry.translate(0,0,len/2);a.position.set(x,y,z);a.rotation.set(rx,ry,0,'YXZ');return a;};
   vms[0].add(bx(.046,.06,.062,glove,0,-.055,.038,-.26),bx(.018,.018,.05,glove,-.024,-.025,.012),bx(.04,.05,.055,glove,-.03,-.065,.03,-.2),arm(.005,-.085,.06,.55,.15,.45),arm(-.03,-.09,.05,.5,-.45,.45));
   vms[9].add(bx(.055,.075,.075,glove,0,-.1,.11,.35),bx(.02,.02,.06,glove,-.03,-.05,.08),arm(.01,-.14,.15,.6,.12,.5),
     bx(.07,.05,.1,glove,-.012,-.05,-.5),bx(.02,.04,.08,glove,.03,-.03,-.5),arm(-.03,-.075,-.47,.32,-.55,.65));
 })();
 // antebrazo del cuchillo: va desde abajo a la derecha de la pantalla hasta la mano y la sigue en cada movimiento
-const knArm=new THREE.Group(),knArmM=new THREE.Mesh(new THREE.BoxGeometry(.075,.075,1),mSleeve);knArmM.geometry.translate(0,0,.5);knArm.add(knArmM);
+const knArm=new THREE.Group(),knArmM=new THREE.Mesh(new THREE.BoxGeometry(.05,.05,1),mSleeve);knArmM.geometry.translate(0,0,.5);knArm.add(knArmM);
 const knCuff=new THREE.Mesh(new THREE.BoxGeometry(.085,.085,.05),mGlove);knArm.visible=false;wScene.add(knArm);
 const knHand=new THREE.Vector3(),knAnchor=new THREE.Vector3(.34,-.62,.05);
+/* ráfaga del tajo: una media luna blanca que barre delante de la cámara y se desvanece (como el barrido de Minecraft) */
+const sweepTex=(()=>{const c=document.createElement('canvas');c.width=256;c.height=128;const g=c.getContext('2d');
+  for(let k=0;k<60;k++){const a0=Math.PI*(1.08+k/60*.84),a1=a0+Math.PI*.84/60+.01,al=Math.sin(k/60*Math.PI);
+    g.strokeStyle='rgba(255,255,255,'+(.15+.75*al)+')';g.lineWidth=6+16*al;g.beginPath();g.arc(128,140,104,a0,a1);g.stroke();
+    g.strokeStyle='rgba(220,235,255,'+(.25*al)+')';g.lineWidth=3;g.beginPath();g.arc(128,140,86,a0,a1);g.stroke();}
+  const t=new THREE.CanvasTexture(c);return t;})();
+const sweep=new THREE.Mesh(new THREE.PlaneGeometry(1.1,.55),new THREE.MeshBasicMaterial({map:sweepTex,transparent:true,depthWrite:false,depthTest:false,blending:THREE.AdditiveBlending,opacity:0}));
+sweep.position.set(0,-.04,-.62);sweep.renderOrder=5;wScene.add(sweep);let sweepT=9,sweepD=1;
+function sweepFx(d){sweepT=0;sweepD=d;}
+function updSweep(dt){sweepT+=dt;const k=sweepT/.2;if(k>=1){sweep.material.opacity=0;sweep.visible=false;return;}sweep.visible=true;
+  sweep.material.opacity=Math.sin(k*Math.PI)*.85;sweep.rotation.set(0,0,sweepD*(.5-k)*.9);sweep.scale.set(.85+k*.35,.85+k*.35,1);}
+/* mano izquierda: aparece solo durante la recarga (como en TF2), viene desde abajo a la izquierda y trabaja sobre el arma */
+const lhG=new THREE.Group();lhG.add(bx(.045,.05,.07,mGlove,0,0,0),bx(.04,.014,.04,mGlove,0,.03,-.02),bx(.012,.035,.05,mGlove,-.025,-.005,-.005));
+const lhArm=new THREE.Group(),lhArmM=new THREE.Mesh(new THREE.BoxGeometry(.05,.05,1),mSleeve);lhArmM.geometry.translate(0,0,.5);lhArm.add(lhArmM);
+lhG.visible=lhArm.visible=false;wScene.add(lhG,lhArm);
+const lhAnchor=new THREE.Vector3(-.36,-.62,.05),lhP=new THREE.Vector3(),lhOff=new THREE.Vector3();
+// punto del arma donde trabaja la mano (coordenadas del arma) y cómo se mueve en cada tipo de recarga
+const RELPT={0:[-.03,-.04,0],1:[-.03,-.02,-.22],2:[-.03,.05,-.2],3:[-.03,-.06,-.18],4:[-.03,.03,-.14],5:[-.03,.06,-.16],6:[-.03,.03,-.26],8:[-.03,-.03,-.18],9:[-.02,.05,-.14]};
+function updLeftHand(i,g,u){
+  const pt=RELPT[i];if(!pt||u<0||!g.visible){lhG.visible=lhArm.visible=false;return;}
+  const ss=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);},bump=(x,a,b)=>x>a&&x<b?Math.sin((x-a)/(b-a)*Math.PI):0;
+  const come=ss((u-.08)/.17),go=1-ss((u-.78)/.16),k=Math.min(come,go);if(k<=.01){lhG.visible=lhArm.visible=false;return;}
+  lhOff.set(0,0,0);
+  if(i===0||i===3||i===8){lhOff.y-=.09*bump(u,.25,.45);lhOff.y-=.05*(u>.42&&u<.55?1:0);lhOff.y+=.02*bump(u,.55,.66);}   // saca y mete el cargador
+  else if(i===1||i===4||i===5){const f=(Math.max(0,Math.min(1,(u-.2)/.55))*(i===1?4:3))%1;lhOff.z+=.04*Math.sin(f*Math.PI);lhOff.y-=.03*Math.sin(f*Math.PI);}   // de a uno
+  else if(i===2){lhOff.y+=.03*bump(u,.35,.6);lhOff.z+=.02*bump(u,.35,.6);}
+  else{lhOff.x+=.03*bump(u,.4,.6);lhOff.z+=.04*bump(u,.45,.62);}
+  g.updateMatrixWorld(true);lhP.set(pt[0]+lhOff.x,pt[1]+lhOff.y,pt[2]+lhOff.z).applyMatrix4(g.matrixWorld);
+  lhP.lerpVectors(lhAnchor,lhP,k);
+  lhG.position.copy(lhP);lhG.quaternion.copy(g.quaternion);lhG.visible=true;
+  lhArm.position.copy(lhP);lhArm.lookAt(lhAnchor);lhArm.scale.set(1,1,Math.max(.05,lhP.distanceTo(lhAnchor)+.15));lhArm.visible=true;}
 function updKnifeArm(){const g=vms[7];if(!g.visible){knArm.visible=false;return;}g.updateMatrixWorld(true);
-  knHand.set(0,-.015,.08).applyMatrix4(g.matrixWorld);knArm.position.copy(knHand);knArm.lookAt(knAnchor);
+  knHand.set(-.004,-.008,.11).applyMatrix4(g.matrixWorld);knArm.position.copy(knHand);knArm.lookAt(knAnchor);
   knArm.scale.set(1,1,Math.max(.05,knHand.distanceTo(knAnchor)+.15));knArm.visible=true;}
 wScene.add(new THREE.AmbientLight(0x8a7a66,.75));
 const wDir=new THREE.DirectionalLight(0xffe2c0,.85);wDir.position.set(1,2,1.5);wScene.add(wDir);
@@ -1809,6 +1841,8 @@ const rgtV=new THREE.Vector3(),upV=new THREE.Vector3();
 function reloadAnim(i,g,u){
   const ss=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);},bump=(x,a,b)=>x>a&&x<b?Math.sin((x-a)/(b-a)*Math.PI):0;
   const inn=ss(u/.18),out=1-ss((u-.82)/.18),hold=Math.min(inn,out);
+  // como en TF2: el arma sube y se corre al centro para que se vea el trabajo de la mano izquierda
+  g.position.x-=.06*hold;g.position.y+=.07*hold;
   if(i===0||i===3||i===8){
     // cargador: inclina de costado, saca el cargador (tirón abajo), mete el nuevo (golpe arriba) y monta (atrás)
     g.rotation.z+=.55*hold;g.rotation.x+=(.22-.1*bump(u,.55,.68))*hold;g.position.y-=.05*hold;g.position.x-=.03*hold;
@@ -1842,7 +1876,7 @@ function fire(){
   if(W_.mag){if(me.rel>0&&me.relW===w)return;if(!(me.mag[w]>0)){startReload(w);return;}}
   if(W_.ammo&&MODE!=='gungame')me.am[W_.ammo]-=W_.cost;
   if(W_.mag){me.mag[w]--;}
-  if(W_.melee){me.mt=0;me.mdir=-me.mdir;}
+  if(W_.melee){me.mt=0;me.mdir=-me.mdir;sweepFx(me.mdir);}
   if(w===10)me.throwT=0;
   me.inspT=9;
   me.cool=W_.rate;me.kick=w===2?1.5:w===6||w===9?1.4:w===3?.4:1;me.flash=w===6||W_.melee?0:.06;
@@ -1877,13 +1911,13 @@ function fire(){
       if(W_.type==='rail'){fxRail(vmWorldTip(),end,new THREE.Color(colorOf(myId)).getHex());if(wall)for(let j=0;j<16;j++)emit(sparks,end[0],end[1],end[2],wall.n[0]*3+R(4),wall.n[1]*3+R(4),wall.n[2]*3+R(4),.5,.5,.8,1,4);}
       else{if(w===8||w===0||w===3)fxTracer(vmWorldTip(),use.length?[ex+dd[0]*use[0].t,ey+dd[1]*use[0].t,ez+dd[2]*use[0].t]:end);if(!use.length&&wall)fxSparks(end[0]-dd[0]*.05,end[1]-dd[1]*.05,end[2]-dd[2]*.05,wall.n,pel>1?3:6);}
     }
-    if(W_.melee&&!claims.size){
+    if(W_.melee){
       let best=null,bd=1e9;
       for(const q of players.values()){if(!q.alive||!q.model||!q.model.g.visible||(teamsMode()&&q.team===myTeam))continue;
         const vx=q.x-ex,vy=q.y+1-ey,vz=q.z-ez,dist=Math.hypot(vx,vy,vz);if(dist>W_.range+.3)continue;
         const ang=Math.acos(Math.max(-1,Math.min(1,(vx*d[0]+vy*d[1]+vz*d[2])/(dist||1))));
-        if(ang>.4||!C.los(W,ex,ey,ez,q.x,q.y+1.1,q.z))continue;if(dist<bd){bd=dist;best=q;}}
-      if(best){claims.set(best.id,[best.id,1,0]);fxBlood(best.x,best.y+1.1,best.z,4);}
+        if(ang>.7||!C.los(W,ex,ey,ez,q.x,q.y+1.1,q.z)||claims.has(q.id))continue;
+        claims.set(q.id,[q.id,1,0]);fxBlood(q.x,q.y+1.1,q.z,4);}
     }
     if(w===3)me.heat=Math.min(1.5,me.heat+.12);
     // respuesta inmediata: marcador de impacto y sonido sin esperar al servidor
@@ -2353,7 +2387,8 @@ function updViewmodel(dt){
     // inspección (F): la rutina de trucos, mangos que vuelan seis veces con giros de muñeca
     const it=me.inspT!=null&&me.inspT<2.6&&me.alive&&!me.scope?me.inspT:-1;
     if(it>=0&&it<2.3){const q=Math.min(1,it/2.3)*6,qb=Math.min(1,Math.max(0,(it-.06)/2.3))*6;fa=Math.max(fa,Math.pow(Math.sin(Math.PI*q*.5),2));fb=Math.max(fb,Math.pow(Math.sin(Math.PI*qb*.5),2));}
-    if(hA&&hB){hA.rotation.x=Math.PI*fa;hB.rotation.x=-Math.PI*fb;}
+    // el mango que agarra la mano queda quieto; el libre da las vueltas (así la mano nunca se separa del cuchillo)
+    if(hA&&hB){hA.rotation.x=0;hB.rotation.x=-Math.PI*Math.max(fa,fb);}
     me.bflyDraw=ft<DR?ft/DR:1;
   }
   me.vmW=i;
@@ -2363,7 +2398,8 @@ function updViewmodel(dt){
     me.mt+=dt;const D=.3,p=Math.min(1,me.mt/D),dr=me.mdir;
     const ss=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);},out=x=>{x=Math.max(0,Math.min(1,x));return 1-Math.pow(1-x,3);};
     const R=[.1,.5,.25,0,0,0];
-    const Wk=dr>0?[.35,.85,-.35,.08,.06,.05]:[.3,.05,.8,-.06,.05,.04],St=dr>0?[-.45,-.15,-.9,-.18,-.07,-.16]:[-.4,1.05,.55,.16,-.06,-.16];
+    // barrido horizontal ancho: de derecha a izquierda con la hoja acostada y de vuelta de revés
+    const Wk=dr>0?[.08,1.15,-.9,.12,.04,.03]:[.08,-.25,1.1,-.12,.04,.03],St=dr>0?[-.05,-.7,-1.25,-.3,0,-.12]:[-.05,1.3,1.2,.25,0,-.12];
     const e1=ss(p/.14),e2=out((p-.14)/.2),e3=ss((p-.42)/.58);
     const v=R.map((r,k)=>{let x=r+(Wk[k]-r)*e1;x+=(St[k]-x)*e2;x+=(r-x)*e3;return x;});
     const idle=p>=1?1:0,tt=G.time;
@@ -2387,8 +2423,8 @@ function updViewmodel(dt){
   }
   if(me.rel>0){me.rel-=dt;if(me.rel<=0){me.rel=0;if(me.relW>=0)me.mag[me.relW]=WEAPONS[me.relW].mag;updateHUD();}}
   if(me.rel>0&&me.relW===i)reloadAnim(i,g,1-Math.min(1,me.rel/(WEAPONS[i].reload*.75)));
-  setTimeout0(updKnifeArm);
   vms.forEach((v,k)=>v.visible=k===i&&me.alive&&!(me.scope&&WEAPONS[i].scope&&i!==9&&camera.fov<(WEAPONS[i].zoom||22)+8)&&!(i===10&&me.throwT<.75&&((me.throwT>.2&&me.throwT<.45)||(me.throwT>=.45&&!hasAmmo(10)))));
+  updKnifeArm();updSweep(dt);updLeftHand(i,g,me.rel>0&&me.relW===i&&me.alive?1-Math.min(1,me.rel/(WEAPONS[i].reload*.75)):-1);
   if(i===10){
     const f=g.getObjectByName('flame');if(f){const k=.8+Math.random()*.45;f.scale.set(k,.8+Math.random()*.7,k);}
     // tiro: amague atrás, brazo hacia adelante, la mano vuelve vacía y sube otra botella (si quedan)

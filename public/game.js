@@ -1888,7 +1888,7 @@ class Game {
     const px = cx - d[0] * proj, py = cy - d[1] * proj, pz = cz - d[2] * proj;
     // tolerancia generosa: el que dispara ve a los demás un poco en el pasado
     const sp = Math.hypot(ts.vx, ts.vz);
-    if (Math.hypot(px, py, pz) > (W_.melee ? 1.1 + sp * .12 : 2.4 + proj * .025 + sp * .25)) return false;
+    if (Math.hypot(px, py, pz) > (W_.melee ? 1.5 + sp * .12 : 2.4 + proj * .025 + sp * .25)) return false;   // el cuchillo barre en abanico
     return los(this.W, o[0], o[1], o[2], ts.x, ts.y + 1.1, ts.z) || los(this.W, o[0], o[1], o[2], ts.x, ts.y + 1.6, ts.z);
   }
   trace(o, d, range, shooter, pierce) {

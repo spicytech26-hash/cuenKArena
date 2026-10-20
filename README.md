@@ -275,9 +275,9 @@ En la lista de bajas, cuando alguien mata con el cuchillo aparece **"jugador1 le
 
 Un cañón de roca roja en capas con un río abajo (si caés, te lleva el río) y una cascada al fondo. En cada meseta hay un **establo grande** (rojo el del equipo rojo, azul el del azul) de 28 × 15 m y tres pisos: planta baja con boxes y fardos, primer piso y pajar, con **tres filas de ventanas mirando al cañón** para esconderse y tirarle al otro establo, y techo a la holandesa. Al costado tiene un **galpón** blanco con terraza y escalera de afuera, y un **mirador** a 11 m con el estandarte del equipo. Los dos lados se unen por **un solo puente** de madera con baranda y pérgola en el medio. En los patios hay fardos, rocas, cajas y una cerca al borde del cañón.
 
-## Cuchillo estilo CS 1.6
+## Cuchillo mariposa estilo CS:GO
 
-El tajo ahora es como en Counter-Strike 1.6: un barrido horizontal ancho que cruza la pantalla, alternando de derecha a izquierda y de revés. Además llega más lejos (3,2 m) y es más ancho: si apuntás cerca, el tajo agarra al enemigo que tengas adelante dentro de un abanico de unos 35° a cada lado.
+Al sacarlo, los mangos se abren y se cierran dos veces mientras el cuchillo da una vuelta en la mano, como el butterfly knife del CS:GO. El tajo es corto, diagonal y muy rápido, alternando de lado. Con **F** hace la rutina de trucos: seis aperturas de mangos con giros de muñeca. Además llega más lejos (3,2 m) y es más ancho: si apuntás cerca, el tajo agarra al enemigo que tengas adelante dentro de un abanico de unos 35° a cada lado.
 
 Los establos de Fuertes del Cañón tienen la fachada como en la foto de referencia: frente escalonado rojo (o azul) con contorno blanco, puerta del pajar arriba, marcos blancos en todas las ventanas, portones con la cruz blanca y zócalo de piedra.
 

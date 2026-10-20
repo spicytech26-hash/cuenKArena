@@ -2266,20 +2266,28 @@ function updViewmodel(dt){
     me.flipT=(me.flipT||0)+dt;
     const ft=me.flipT,ez=x=>{x=Math.max(0,Math.min(1,x));return 1-Math.pow(1-x,3);};
     const hA=g.getObjectByName('hA'),hB=g.getObjectByName('hB');
-    if(hA&&hB){hA.rotation.x=Math.PI*(1-ez(ft/.32));hB.rotation.x=-Math.PI*(1-ez((ft-.12)/.32));}
+    // como el butterfly knife del CS:GO: al sacarlo los mangos se abren y cierran dos veces mientras gira en la mano
+    const DR=.85,k=Math.min(2,Math.max(0,ft/DR*2)),kb=Math.min(2,Math.max(0,(ft-.07)/DR*2));
+    let fa=Math.pow(Math.sin(Math.PI*k),2),fb=Math.pow(Math.sin(Math.PI*kb),2);
+    // inspección (F): la rutina de trucos, mangos que vuelan seis veces con giros de muñeca
+    const it=me.inspT!=null&&me.inspT<2.6&&me.alive&&!me.scope?me.inspT:-1;
+    if(it>=0&&it<2.3){const q=Math.min(1,it/2.3)*6,qb=Math.min(1,Math.max(0,(it-.06)/2.3))*6;fa=Math.max(fa,Math.pow(Math.sin(Math.PI*q*.5),2));fb=Math.max(fb,Math.pow(Math.sin(Math.PI*qb*.5),2));}
+    if(hA&&hB){hA.rotation.x=Math.PI*fa;hB.rotation.x=-Math.PI*fb;}
+    me.bflyDraw=ft<DR?ft/DR:1;
   }
   me.vmW=i;
   if(i===7){
-    // cuchillo estilo Counter-Strike 1.6: tajo horizontal ancho que cruza la pantalla; un golpe de derecha a izquierda
-    // con la hoja acostada y el siguiente de vuelta, de revés. Corto amague, barrido rápido y vuelta a la guardia
-    me.mt+=dt;const D=.38,p=Math.min(1,me.mt/D),dr=me.mdir;
+    // butterfly knife del CS:GO: tajo diagonal corto y muy rápido (de arriba a la derecha hacia abajo a la izquierda,
+    // el siguiente de vuelta) con un golpe de muñeca al final; la hoja casi no sale del cuadro
+    me.mt+=dt;const D=.3,p=Math.min(1,me.mt/D),dr=me.mdir;
     const ss=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);},out=x=>{x=Math.max(0,Math.min(1,x));return 1-Math.pow(1-x,3);};
     const R=[.1,.5,.25,0,0,0];
-    const Wk=dr>0?[.05,1.05,-.55,.15,.07,.04]:[.06,-.4,.75,-.17,.05,.02],St=dr>0?[-.14,-.8,-1,-.32,-.04,-.13]:[-.1,1.1,.9,.27,-.03,-.13];
-    const e1=ss(p/.18),e2=out((p-.18)/.26),e3=ss((p-.5)/.5);
+    const Wk=dr>0?[.35,.85,-.35,.08,.06,.05]:[.3,.05,.8,-.06,.05,.04],St=dr>0?[-.45,-.15,-.9,-.18,-.07,-.16]:[-.4,1.05,.55,.16,-.06,-.16];
+    const e1=ss(p/.14),e2=out((p-.14)/.2),e3=ss((p-.42)/.58);
     const v=R.map((r,k)=>{let x=r+(Wk[k]-r)*e1;x+=(St[k]-x)*e2;x+=(r-x)*e3;return x;});
     const idle=p>=1?1:0,tt=G.time;
-    g.rotation.set(v[0]+Math.sin(tt*1.6)*.015*idle-me.raise*.6,v[1]+Math.cos(tt*1.1)*.02*idle,v[2]);
+    const bd=me.bflyDraw==null?1:me.bflyDraw,spin=bd<1?Math.PI*2*ss(bd):0;
+    g.rotation.set(v[0]+Math.sin(tt*1.6)*.015*idle-me.raise*.3+Math.sin(bd*Math.PI)*.35,v[1]+Math.cos(tt*1.1)*.02*idle,v[2]+spin);
     g.position.x+=v[3];g.position.y+=v[4]+Math.sin(tt*2)*.004*idle;g.position.z+=v[5];
   }else if(i===9){
     // apuntar con las miras: el rifle sube al centro y la mira trasera se alinea con la delantera
@@ -2294,7 +2302,7 @@ function updViewmodel(dt){
     const k=i===7?1.15:i===0?1.1:1;
     g.position.x+=(-.07*w1-.03*w2)*k;g.position.y+=(.045*w1+.06*w2+sw)*k;g.position.z+=(.06*w1+.03*w2);
     g.rotation.y+=(-.95*w1+.55*w2)*k;g.rotation.z+=(.4*w1-.3*w2)*k;g.rotation.x+=(.08*w1-.32*w2);
-    if(i===7&&t<.55)g.rotation.z+=Math.PI*2*ss(t/.55);
+    if(i===7&&t<2.3){g.rotation.z+=Math.PI*4*ss(t/2.3);g.rotation.x+=Math.sin(t*5.5)*.25;}
   }
   if(me.rel>0){me.rel-=dt;if(me.rel<=0){me.rel=0;if(me.relW>=0)me.mag[me.relW]=WEAPONS[me.relW].mag;updateHUD();}}
   const relDip=me.rel>0&&me.relW===i?Math.sin(Math.min(1,me.rel/(WEAPONS[i].reload*.75))*Math.PI)*.18:0;

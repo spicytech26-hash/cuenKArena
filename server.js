@@ -94,7 +94,7 @@ function serveStatic(req, res, file) {
       c = { mtime: st.mtimeMs, raw: data, gz: zlib.gzipSync(data, { level: 9 }), etag: '"' + crypto.createHash('sha1').update(data).digest('base64').slice(0, 20) + '"' };
       fileCache.set(file, c);
     }
-    const head = { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache', ETag: c.etag, Vary: 'Accept-Encoding' };
+    const head = { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream', 'Cache-Control': /\.(jpg|png|ico)$/.test(file) ? 'public, max-age=86400' : 'no-cache', ETag: c.etag, Vary: 'Accept-Encoding' };
     if (req.headers['if-none-match'] === c.etag) { res.writeHead(304, head); res.end(); return; }
     if (/\bgzip\b/.test(req.headers['accept-encoding'] || '')) { head['Content-Encoding'] = 'gzip'; res.writeHead(200, head); res.end(c.gz); }
     else { res.writeHead(200, head); res.end(c.raw); }

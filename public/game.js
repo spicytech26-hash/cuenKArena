@@ -1853,7 +1853,7 @@ class Game {
       const t = this.players.get(c[0] | 0); if (!t || !t.alive || t === p || done.has(t.id)) continue;
       done.add(t.id);
       const n = clamp(c[1] | 0, 0, W_.pel), hs = clamp(c[2] | 0, 0, n); if (!n) continue;
-      if (!this.validHit(o, d, t, W_)) continue;
+      if (!this.validHit(o, d, t, W_, p)) continue;
       const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? W_.dmg * (hs ? 1.5 : 1) : W_.head ? W_.dmg * (hs ? W_.head : 1) : (n + hs) * W_.dmg;
       this.curHS = hs > 0 && !W_.melee;
       this.damage(t, dmg * this.mult(p), p, w, d, .05, 'frag');
@@ -1870,15 +1870,25 @@ class Game {
     const behind = (-Math.sin(t.yaw) * ax - Math.cos(t.yaw) * az) / al < -.4;
     return W_.dmg * (behind ? W_.back : 1);
   }
-  validHit(o, d, t, W_) {
-    const cx = t.s.x - o[0], cy = t.s.y + 1 - o[1], cz = t.s.z - o[2];
+  // compensación de lag (como en Counter-Strike): el que dispara ve a los demás en el pasado (su ping + la interpolación),
+  // así que el impacto se valida también contra dónde estaba el blanco en ese momento. Así un jugador con 200 de ping
+  // que apuntó bien le pega, sin importar desde qué país juegue.
+  validHit(o, d, t, W_, shooter) {
+    if (this.hitAt(o, d, t.s, t, W_)) return true;
+    if (!shooter || !t.hist || !t.hist.length) return false;
+    const back = clamp((shooter.ping || 0) / 1000 + .1, 0, .6), when = this.time - back;
+    let best = null; for (const h of t.hist) if (!best || Math.abs(h[0] - when) < Math.abs(best[0] - when)) best = h;
+    return !!best && this.hitAt(o, d, { x: best[1], y: best[2], z: best[3], vx: 0, vz: 0 }, t, W_);
+  }
+  hitAt(o, d, ts, t, W_) {
+    const cx = ts.x - o[0], cy = ts.y + 1 - o[1], cz = ts.z - o[2];
     const proj = cx * d[0] + cy * d[1] + cz * d[2];
     if (proj < -1 || proj > (W_.range || 300) + (W_.melee ? 1.2 : 5)) return false;
     const px = cx - d[0] * proj, py = cy - d[1] * proj, pz = cz - d[2] * proj;
     // tolerancia generosa: el que dispara ve a los demás un poco en el pasado
-    const sp = Math.hypot(t.s.vx, t.s.vz);
+    const sp = Math.hypot(ts.vx, ts.vz);
     if (Math.hypot(px, py, pz) > 2.4 + proj * .025 + sp * .25) return false;
-    return los(this.W, o[0], o[1], o[2], t.s.x, t.s.y + 1.1, t.s.z) || los(this.W, o[0], o[1], o[2], t.s.x, t.s.y + 1.6, t.s.z);
+    return los(this.W, o[0], o[1], o[2], ts.x, ts.y + 1.1, ts.z) || los(this.W, o[0], o[1], o[2], ts.x, ts.y + 1.6, ts.z);
   }
   trace(o, d, range, shooter, pierce) {
     const wall = raycast(this.W, o[0], o[1], o[2], d[0], d[1], d[2], range);
@@ -2292,6 +2302,9 @@ class Game {
   }
   tick(dt) {
     this.time += dt; this.planBudget = 1;
+    // historial de posiciones del último 0,7 s para la compensación de lag (cada 2 ticks)
+    if (this.o.online && (this.histN = (this.histN || 0) + 1) % 2 === 0)
+      for (const q of this.players.values()) { if (!q.alive) { if (q.hist) q.hist.length = 0; continue; } const h = q.hist || (q.hist = []); h.push([this.time, q.s.x, q.s.y, q.s.z]); if (h.length > 14) h.shift(); }
     updateMovers(this.W, this.time);
     if (this.state === 'inter') {
       this.interT -= dt;

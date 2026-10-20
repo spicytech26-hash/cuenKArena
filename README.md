@@ -280,3 +280,10 @@ Un cañón de roca roja en capas con un río abajo (si caés, te lleva el río) 
 El tajo ahora es como en Counter-Strike 1.6: un barrido horizontal ancho que cruza la pantalla, alternando de derecha a izquierda y de revés. Además llega más lejos (3,2 m) y es más ancho: si apuntás cerca, el tajo agarra al enemigo que tengas adelante dentro de un abanico de unos 35° a cada lado.
 
 Los establos de Fuertes del Cañón tienen la fachada como en la foto de referencia: frente escalonado rojo (o azul) con contorno blanco, puerta del pajar arriba, marcos blancos en todas las ventanas, portones con la cruz blanca y zócalo de piedra.
+
+## Jugar desde otras regiones
+
+- **Compensación de lag** (como en Counter-Strike): el servidor guarda dónde estuvo cada jugador en los últimos 0,7 s y, cuando alguien dispara, valida el impacto también contra la posición en la que el tirador veía al blanco (su ping + la interpolación). Así un jugador con 300-500 de ping que apuntó bien le pega igual.
+- El movimiento propio se calcula en tu computadora (no se siente el ping al moverte) y la interpolación de los demás se adapta sola a la calidad de tu conexión.
+- Cada jugador recibe unos 8 KB/s con 8 jugadores en la sala, así que anda bien con conexiones lentas o datos móviles.
+- three.js viene de un CDN global y las imágenes se guardan en caché un día.

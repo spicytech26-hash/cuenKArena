@@ -37,7 +37,7 @@ const WEAPONS = [
   { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 85, rad: 4.5, direct: 80 },   // nerf: antes 100 directo + 105 de área en 5 m
   { name: 'Rifle de plasma', ammo: 'slugs',    cost: 1, rate: 1.4, type: 'rail', pel: 1,  dmg: 110, range: 400 },
   // cuchillo mariposa: el segundo tajo sobre la misma víctima (dentro de 4 s) mata siempre
-  { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 55, back: 1.8, range: 3.2, melee: true },   // tajo más ancho y largo (antes 2,6 m)
+  { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 55, back: 1.8, range: 1.9, melee: true },   // alcance corto como el cuchillo del espía de TF2 o el del CS:GO
   { name: 'Francotirador',  ammo: 'sniper',   cost: 1, rate: 1.25, type: 'hit', pel: 1,  spread: .002, hip: .045, dmg: 115, head: 2, range: 500, scope: true },
   // rifle de caza: bala real con viaje y caída; cualquier impacto mata. Premia los tiros bien calculados
   { name: 'Rifle de caza',  ammo: 'caza',     cost: 1, rate: 1.6, type: 'proj', proj: 'bullet', speed: 260, drop: 9, dmg: 0, rad: 0, direct: 1000, scope: true, zoom: 58 },
@@ -1883,11 +1883,11 @@ class Game {
   hitAt(o, d, ts, t, W_) {
     const cx = ts.x - o[0], cy = ts.y + 1 - o[1], cz = ts.z - o[2];
     const proj = cx * d[0] + cy * d[1] + cz * d[2];
-    if (proj < -1 || proj > (W_.range || 300) + (W_.melee ? 1.2 : 5)) return false;
+    if (proj < -1 || proj > (W_.range || 300) + (W_.melee ? .5 : 5)) return false;
     const px = cx - d[0] * proj, py = cy - d[1] * proj, pz = cz - d[2] * proj;
     // tolerancia generosa: el que dispara ve a los demás un poco en el pasado
     const sp = Math.hypot(ts.vx, ts.vz);
-    if (Math.hypot(px, py, pz) > 2.4 + proj * .025 + sp * .25) return false;
+    if (Math.hypot(px, py, pz) > (W_.melee ? 1.1 + sp * .12 : 2.4 + proj * .025 + sp * .25)) return false;
     return los(this.W, o[0], o[1], o[2], ts.x, ts.y + 1.1, ts.z) || los(this.W, o[0], o[1], o[2], ts.x, ts.y + 1.6, ts.z);
   }
   trace(o, d, range, shooter, pierce) {

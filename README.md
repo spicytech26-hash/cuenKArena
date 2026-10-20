@@ -277,7 +277,7 @@ Un cañón de roca roja en capas con un río abajo (si caés, te lleva el río) 
 
 ## Cuchillo mariposa estilo CS:GO
 
-Al sacarlo, los mangos se abren y se cierran dos veces mientras el cuchillo da una vuelta en la mano, como el butterfly knife del CS:GO. El tajo es corto, diagonal y muy rápido, alternando de lado. Con **F** hace la rutina de trucos: seis aperturas de mangos con giros de muñeca. Además llega más lejos (3,2 m) y es más ancho: si apuntás cerca, el tajo agarra al enemigo que tengas adelante dentro de un abanico de unos 35° a cada lado.
+Al sacarlo, los mangos se abren y se cierran dos veces mientras el cuchillo da una vuelta en la mano, como el butterfly knife del CS:GO. El tajo es corto, diagonal y muy rápido, alternando de lado. Con **F** hace la rutina de trucos: seis aperturas de mangos con giros de muñeca. El alcance es corto, como el cuchillo del espía de TF2 o los del CS:GO (1,9 m, con un margen chico de unos 23° a cada lado), y el antebrazo sale del borde de la pantalla y sigue a la mano en cada movimiento.
 
 Los establos de Fuertes del Cañón tienen la fachada como en la foto de referencia: frente escalonado rojo (o azul) con contorno blanco, puerta del pajar arriba, marcos blancos en todas las ventanas, portones con la cruz blanca y zócalo de piedra.
 
@@ -287,3 +287,8 @@ Los establos de Fuertes del Cañón tienen la fachada como en la foto de referen
 - El movimiento propio se calcula en tu computadora (no se siente el ping al moverte) y la interpolación de los demás se adapta sola a la calidad de tu conexión.
 - Cada jugador recibe unos 8 KB/s con 8 jugadores en la sala, así que anda bien con conexiones lentas o datos móviles.
 - three.js viene de un CDN global y las imágenes se guardan en caché un día.
+
+## Gráficos: sombras y texturas (primer paso)
+
+- **Sombras del sol** en los mapas de día y atardecer (La Cuenca, La Represa, El Puente y Fuertes del Cañón): el mapa y los jugadores proyectan sombra. Es un solo mapa de sombras que cubre todo el mapa (2048 en calidad alta, 1024 en liviana) y se recalcula cada dos cuadros para cuidar el rendimiento. Se pueden apagar en **Ajustes → Sombras**.
+- **Texturas con desgaste**: todas las texturas de los mapas tienen manchas de suciedad, bordes oscurecidos y más sombra abajo, para que se vean menos planas.

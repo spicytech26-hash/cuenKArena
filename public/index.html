@@ -206,6 +206,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 #chat{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(120px + env(safe-area-inset-bottom,0px));width:min(440px,calc(100vw - 32px));display:flex;flex-direction:column;gap:2px;font-size:14px}
 #chatLog div{text-shadow:0 1px 0 #000,0 0 4px #000;animation:fade 9s forwards;overflow-wrap:anywhere}
 #chatLog b{font-weight:400}
+#fpsBox{position:fixed;left:8px;top:6px;z-index:5;font:600 12px/1 ui-monospace,Consolas,monospace;color:#d8f0c8;background:rgba(0,0,0,.45);padding:4px 7px;border-radius:4px;pointer-events:none}
 #kickNote{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:60;max-width:min(560px,calc(100vw - 32px));background:#1d1410;border:2px solid #e8703a;box-shadow:0 8px 30px rgba(0,0,0,.6);padding:12px 40px 12px 16px;font-family:var(--mono);color:var(--ink);animation:knIn .25s ease-out}
 #kickNote .kt{font-size:15px;color:#ffb53a;font-weight:bold}
 #kickNote .ks{font-size:13px;margin-top:4px;color:#d6c9b2}
@@ -356,6 +357,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
 <canvas id="c"></canvas>
 <div id="flash" class="ov"></div><div id="pflash" class="ov"></div><div id="qtint" class="ov"></div><div id="lavatint" class="ov"></div>
 <div id="hud" hidden>
+  <div id="fpsBox" hidden></div>
   <div id="xh"></div><div id="hitm"></div><div id="dmgdir"></div>
   <div id="speed">VEL <b id="spdV">0</b> u/s</div>
   <div id="crPop"></div>
@@ -506,6 +508,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
       <div class="srow"><label for="sXz">Tamaño</label><input type="range" id="sXz" min="0.5" max="2.5" step="0.05"><output id="oXz"></output></div>
       <div class="srow"><span>Vista previa</span><div id="xhPrev"><div id="xhPrevIn"></div></div></div>
       <div class="sep"></div>
+      <div class="srow"><label for="sFps">Mostrar FPS (cuadros por segundo)</label><input type="checkbox" id="sFps"></div>
       <div class="srow"><label for="sImg">Ver las imágenes que los demás tienen en el pecho</label><input type="checkbox" id="sImg"></div>
       <div class="srow"><label for="sFs">Pantalla completa al jugar (permite agacharse con Ctrl sin que el navegador cierre la pestaña)</label><input type="checkbox" id="sFs"></div>
       <div class="srow"><span>Sombras</span><div class="seg" id="sSh" role="group" aria-label="Sombras"><button type="button" data-v="1">Sí</button><button type="button" data-v="0">No</button></div></div>
@@ -567,7 +570,9 @@ scene.background=new THREE.Color(0x1c1310);
 scene.fog=new THREE.FogExp2(0x1c1310,.0105);
 const camera=new THREE.PerspectiveCamera(S.fov,1,.05,500);camera.rotation.order='YXZ';
 const wScene=new THREE.Scene(),wCam=new THREE.PerspectiveCamera(62,1,.01,10);
-function resize(){const w=innerWidth,h=innerHeight;const cap=S.q?Math.max(.5,720/h):Math.max(.4,480/h);renderer.setPixelRatio(Math.min(devicePixelRatio||1,cap));renderer.setSize(w,h,false);camera.aspect=wCam.aspect=w/h;camera.updateProjectionMatrix();wCam.updateProjectionMatrix();}
+// resolución dinámica: si la compu no llega a ~50 cuadros, se baja un poco la resolución (hasta 75%) en vez de que el juego se trabe
+const DR={s:1,acc:0,n:0,good:0,upT:0,block:0,fps:0};
+function resize(){const w=innerWidth,h=innerHeight;const cap=S.q?Math.max(.5,720/h):Math.max(.4,480/h);renderer.setPixelRatio(Math.min(devicePixelRatio||1,cap)*DR.s);renderer.setSize(w,h,false);camera.aspect=wCam.aspect=w/h;camera.updateProjectionMatrix();wCam.updateProjectionMatrix();}
 addEventListener('resize',resize);resize();
 
 /* =================== TEXTURAS PROCEDURALES =================== */
@@ -789,11 +794,13 @@ function loadMap(id){
   if(th.sun){const sun=new THREE.DirectionalLight(th.sunC||0xffb48a,(th.sunI||.35)*(shOn?1.7:1));
     const B=M.bounds,cx=(B.x0+B.x1)/2,cz=(B.z0+B.z1)/2,R=Math.max(B.x1-B.x0,B.z1-B.z0)*.62;
     sun.position.set(cx-40,60,cz+28);sun.target.position.set(cx,0,cz);group.add(sun.target);
-    sun.castShadow=S.sh!==0;sun.shadow.mapSize.set(S.q?2048:1024,S.q?2048:1024);
+    sun.castShadow=S.sh!==0;sun.shadow.mapSize.set(2048,2048);
     Object.assign(sun.shadow.camera,{left:-R,right:R,top:R,bottom:-R,near:5,far:160});sun.shadow.camera.updateProjectionMatrix();
     sun.shadow.bias=-.0006;sun.shadow.normalBias=.04;L.sun=sun;group.add(sun);}
   // todo el mapa recibe sombra y la proyecta (menos lo transparente y los neones)
   group.traverse(o=>{if(!o.isMesh)return;const mt=o.material;if(mt&&(mt.transparent||mt.isMeshBasicMaterial))return;o.castShadow=true;o.receiveShadow=true;});
+  // las sombras del mapa se calculan una sola vez (el mapa no se mueve): las plataformas móviles reciben sombra pero no la proyectan
+  for(const mv of L.movers)mv.mesh.traverse(o=>{o.castShadow=false;});
   renderer.shadowMap.needsUpdate=true;
   if(M.deco)buildDeco(group,M.deco);
   // luces del mapa "virtuales": se encienden solo las más cercanas en unas pocas luces fijas (ver lightSlots)
@@ -1365,7 +1372,6 @@ function buildPlayer(skin,name,noTag){
   const gun=new THREE.Group();gun.position.set(0,-.13,.36);gun.rotation.y=Math.PI;gun.scale.setScalar(1.25);armR.add(gun);
   if(noTag){gun.add(tpGun(1));gun.userData.w=1;}
   let tag=null;if(!noTag){tag=nameSprite(name,skin.c);g.add(tag);}
-  g.traverse(o=>{if(o.isMesh&&!o.isSprite)o.castShadow=true;});
   return {g,b,legs,armL,armR,head,gun,tag,mats:[mA,mH]};
 }
 
@@ -1440,7 +1446,7 @@ const keys={};let mouseDown=false;
 const G={hurt:0,pick:0,hitT:0,time:0,lava:0,sendT:0,pingT:0,dmgT:0,dmgAng:0,fpsN:0,fpsT:0};
 // reloj: estimación de la hora del servidor y colchón de interpolación adaptativo
 const CLK={off:null,jit:.02,delay:.1};
-function serverNow(){if(!online&&net&&net.game)return net.game.time;return performance.now()/1000+(CLK.off===null?0:CLK.off);}
+function serverNow(){if(!online&&net&&net.game)return net.game.time+(net.acc||0);return performance.now()/1000+(CLK.off===null?0:CLK.off);}
 
 function ensurePlayer(id,name,color,bot,skin,team){
   let p=players.get(id);
@@ -2239,8 +2245,30 @@ function sendState(){if(net)net.send({t:'st',p:r3([me.s.x,me.s.y,me.s.z]),v:r3([
 
 /* ---------- jugadores remotos: interpolación con colchón adaptativo ---------- */
 const angLerp=(a,b,t)=>{let d=b-a;while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;return a+d*t;};
+// el reloj con el que se dibujan los demás avanza parejo: si la estimación de la hora del servidor o el colchón cambian,
+// se acomoda de a poco (como mucho 10% más rápido o más lento) en vez de dar un salto que se ve como un tirón
+let rtS=null;
+function renderClock(dt){
+  const target=serverNow()-CLK.delay;
+  if(rtS==null||Math.abs(target-rtS)>.25)rtS=target;
+  else{rtS+=dt;const e=target-rtS;rtS+=Math.max(-dt*.1,Math.min(dt*.1,e*Math.min(1,dt*3)));}
+  return rtS;
+}
+// sombra bajo cada jugador: una mancha suave estirada hacia donde da el sol (más barata que recalcular el mapa de sombras)
+const blobTex=new THREE.CanvasTexture(cv(64,64,g=>{const gr=g.createRadialGradient(32,32,2,32,32,31);gr.addColorStop(0,'rgba(0,0,0,.85)');gr.addColorStop(.55,'rgba(0,0,0,.45)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);}));
+const blobGeo=new THREE.PlaneGeometry(1,1).rotateX(-Math.PI/2),blobs=[];
+function blobAt(i){let b=blobs[i];if(!b){b=new THREE.Mesh(blobGeo,new THREE.MeshBasicMaterial({map:blobTex,transparent:true,depthWrite:false,opacity:.5,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4}));b.renderOrder=1;blobs[i]=b;scene.add(b);}b.visible=true;return b;}
+function placeBlob(i,x,y,z,k){
+  const hit=C.raycast(W,x,y+.3,z,0,-1,0,7);if(!hit)return false;
+  const gy=y+.3-hit.t,h=y-gy,f=Math.max(0,1-h/5);if(f<=0)return false;
+  const b=blobAt(i),sun=level&&level.sun;
+  if(sun){const dx=sun.target.position.x-sun.position.x,dz=sun.target.position.z-sun.position.z,dl=Math.hypot(dx,dz)||1,ux=dx/dl,uz=dz/dl;
+    b.position.set(x+ux*.5,gy+.02,z+uz*.5);b.rotation.y=Math.atan2(ux,uz);b.scale.set(.85+h*.1,1,1.7+h*.1);b.material.opacity=.55*f*k;}
+  else{b.position.set(x,gy+.02,z);b.rotation.y=0;b.scale.set(1+h*.15,1,1+h*.15);b.material.opacity=.45*f*k;}
+  return true;
+}
 function updRemote(dt){
-  const rt=serverNow()-CLK.delay;
+  const rt=renderClock(dt);let nb=0;
   for(const p of players.values()){
     const m=p.model;if(!m)continue;
     const b=p.buf;if(!b.length){m.g.visible=false;continue;}
@@ -2286,12 +2314,15 @@ function updRemote(dt){
       const em=p.pain>0?0x803020:p.quad?0x5020a0:0;m.mats.forEach(mm=>mm.emissive.setHex(em));
       if(m.gun.userData.w!==p.w){m.gun.clear();m.gun.add(tpGun(p.w));m.gun.userData.w=p.w;}
       if(m.tag)m.tag.visible=true;
+      if(placeBlob(nb,p.x,p.y,p.z,1))nb++;
     }else{
       p.deadT+=dt;if(m.tag)m.tag.visible=false;
       if(p.gib)m.g.visible=false;
-      else{m.b.rotation.x=Math.max(-Math.PI/2,-p.deadT*5);m.b.position.y=p.deadT>2?Math.max(-.3,-(p.deadT-2)*.3):0;m.g.visible=p.deadT<5;}
+      else{m.b.rotation.x=Math.max(-Math.PI/2,-p.deadT*5);m.b.position.y=p.deadT>2?Math.max(-.3,-(p.deadT-2)*.3):0;m.g.visible=p.deadT<5;
+        if(m.g.visible&&placeBlob(nb,p.x,p.y,p.z,Math.max(0,1-p.deadT/5)))nb++;}
     }
   }
+  for(let i=nb;i<blobs.length;i++)blobs[i].visible=false;
 }
 function updMovers(){
   if(!level||!level.movers.length)return;
@@ -2735,7 +2766,7 @@ function syncSettings(){
   $('sFov').value=S.fov;$('oFov').textContent=S.fov+'°';
   $('sVol').value=S.vol;$('oVol').textContent=Math.round(S.vol*100)+'%';
   $('sMus').value=S.music;$('oMus').textContent=Math.round(S.music*100)+'%';
-  $('sInv').checked=S.invY;$('sHop').checked=S.hop;$('sFs').checked=S.fs;$('sImg').checked=S.showImg!==false;$('oBots').textContent=S.bots;
+  $('sInv').checked=S.invY;$('sHop').checked=S.hop;$('sFs').checked=S.fs;$('sImg').checked=S.showImg!==false;$('sFps').checked=!!S.fpsOn;$('oBots').textContent=S.bots;
   [...$('sSkill').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.skill)));
   [...$('mSkill').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.skill)));
   [...$('sFl').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.fl)));
@@ -2750,6 +2781,7 @@ $('sMus').addEventListener('input',e=>{S.music=+e.target.value;if(musicGain)musi
 $('sInv').addEventListener('change',e=>{S.invY=e.target.checked;saveS();});
 $('sHop').addEventListener('change',e=>{S.hop=e.target.checked;saveS();});
 $('sFs').addEventListener('change',e=>{S.fs=e.target.checked;saveS();});
+$('sFps').addEventListener('change',e=>{S.fpsOn=e.target.checked;saveS();if(!S.fpsOn)$('fpsBox').hidden=true;});
 $('sImg').addEventListener('change',e=>{S.showImg=e.target.checked;saveS();for(const p of players.values())if(p.model){scene.remove(p.model.g);p.model=null;ensurePlayer(p.id);}});
 // pantalla completa + bloqueo de teclado: así Ctrl+W agacha y avanza en vez de cerrar la pestaña
 // teclas que se bloquean en pantalla completa (Esc no saca de la pantalla completa, abre el menú; Ctrl+W no cierra la pestaña).
@@ -2776,7 +2808,13 @@ let last=performance.now(),attractT=0;
 function attract(dt){attractT+=dt*.06;const club=level&&level.club;const R0=club?13:22;camera.position.set(Math.cos(attractT)*R0,club?6:9+Math.sin(attractT*.7)*2,Math.sin(attractT)*R0*(club?.8:1));camera.lookAt(0,club?7:4,0);camera.rotation.order='YXZ';sky.position.copy(camera.position);}
 function frame(now){
   requestAnimationFrame(frame);
-  const dt=Math.min(.05,(now-last)/1000);last=now;G.time+=dt;
+  const raw=(now-last)/1000,dt=Math.min(.05,raw);last=now;G.time+=dt;
+  if(inGame&&!paused&&raw<.5){DR.acc+=raw;DR.n++;
+    if(DR.acc>=1.5){const avg=DR.acc/DR.n,t=performance.now();DR.fps=Math.round(1/avg);DR.acc=DR.n=0;
+      if(avg>1/50&&DR.s>.75){if(t-DR.upT<9000)DR.block=t+45000;DR.s=Math.max(.75,DR.s-.08);DR.good=0;resize();}
+      else if(avg<1/57&&DR.s<1&&t>DR.block){if(++DR.good>=3){DR.good=0;DR.s=Math.min(1,DR.s+.05);DR.upT=t;resize();}}
+      else DR.good=0;
+      if(S.fpsOn){const e=$('fpsBox');e.hidden=false;e.textContent=DR.fps+' FPS'+(DR.s<1?' · res '+Math.round(DR.s*100)+'%':'');}}}
   if(net)net.update(dt);
   updMovers();
   if(inGame&&!paused){
@@ -2787,7 +2825,6 @@ function frame(now){
   updClub(dt,beatNow());musicTick();updFlags();
   updEffects(dt);renderLocker(dt);
   updLightSlots(dt);
-  if(S.sh!==0&&level&&level.sun&&((G.shF=(G.shF||0)+1)%2===0))renderer.shadowMap.needsUpdate=true;
   renderer.clear();renderer.render(scene,camera);
   if(inGame&&!me.alive&&G.pov){
     // arma del que te mató en primera persona

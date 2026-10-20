@@ -808,17 +808,21 @@ function loadMap(id){
 // se arman todos al cargar el mapa (armas, jugadores, explosión, rayo, proyectiles, fuego)
 function warmShaders(){
   if(typeof renderer==='undefined'||!renderer.compile)return;
+  const tmp=[];
   try{
-    const tmp=[];const add=o=>{o.position.set(camera.position.x,camera.position.y,camera.position.z-3);scene.add(o);tmp.push(o);};
+    const add=o=>{o.position.set(camera.position.x,camera.position.y,camera.position.z-3);scene.add(o);tmp.push(o);};
     fxExplosion(0,-999,0);fxRail([0,-999,0],[1,-999,0],0xffffff);
     add(buildPlayer({c:'#e8542a',v:'#ffffff',a:1},'x',true).g);
     for(const k of ['rocket','grenade','bullet','molotov']){spawnProjVis(k,[0,-999,0],[0,0,0],false,-1,0);}
     const vis=vms.map(v=>v.visible);vms.forEach(v=>v.visible=true);
-    renderer.compile(scene,camera);renderer.compile(wScene,wCam);
+    // render de verdad a una textura chiquita (renderer.compile falla con las sombras en three r128)
+    const rt=warmShaders.rt||(warmShaders.rt=new THREE.WebGLRenderTarget(8,8));
+    try{renderer.shadowMap.needsUpdate=true;renderer.setRenderTarget(rt);renderer.clear();renderer.render(scene,camera);renderer.render(wScene,wCam);}finally{renderer.setRenderTarget(null);}
     vms.forEach((v,i)=>v.visible=vis[i]);
-    tmp.forEach(o=>scene.remove(o));
-    for(let i=projs.length-1;i>=0;i--)if(projs[i].pid===-1){scene.remove(projs[i].m);projs.splice(i,1);}
-  }catch(e){}
+  }catch(e){console.warn('warmShaders',e);}
+  // pase lo que pase, el muñeco de prueba y los proyectiles de prueba se sacan (si no, quedaba un "bot congelado" en el mapa)
+  tmp.forEach(o=>scene.remove(o));
+  for(let i=projs.length-1;i>=0;i--)if(projs[i].pid===-1){scene.remove(projs[i].m);projs.splice(i,1);}
 }
 
 /* ---------- decoración de La Cuenca: nada de esto choca, es solo visual ---------- */
@@ -1255,11 +1259,11 @@ const vms=WEAPONS.map((_,i)=>{const g=buildGun(i);g.visible=false;wScene.add(g);
 })();
 // antebrazo del cuchillo: va desde abajo a la derecha de la pantalla hasta la mano y la sigue en cada movimiento
 const knArm=new THREE.Group(),knArmM=new THREE.Mesh(new THREE.BoxGeometry(.075,.075,1),mSleeve);knArmM.geometry.translate(0,0,.5);knArm.add(knArmM);
-const knCuff=new THREE.Mesh(new THREE.BoxGeometry(.085,.085,.05),mGlove);knArm.add(knCuff);knArm.visible=false;wScene.add(knArm);
+const knCuff=new THREE.Mesh(new THREE.BoxGeometry(.085,.085,.05),mGlove);knArm.visible=false;wScene.add(knArm);
 const knHand=new THREE.Vector3(),knAnchor=new THREE.Vector3(.34,-.62,.05);
 function updKnifeArm(){const g=vms[7];if(!g.visible){knArm.visible=false;return;}g.updateMatrixWorld(true);
-  knHand.set(0,-.025,.14).applyMatrix4(g.matrixWorld);knArm.position.copy(knHand);knArm.lookAt(knAnchor);
-  knArm.scale.set(1,1,Math.max(.05,knHand.distanceTo(knAnchor)+.15));knCuff.scale.set(1,1,1/knArm.scale.z);knCuff.position.z=.02/knArm.scale.z;knArm.visible=true;}
+  knHand.set(0,-.015,.08).applyMatrix4(g.matrixWorld);knArm.position.copy(knHand);knArm.lookAt(knAnchor);
+  knArm.scale.set(1,1,Math.max(.05,knHand.distanceTo(knAnchor)+.15));knArm.visible=true;}
 wScene.add(new THREE.AmbientLight(0x8a7a66,.75));
 const wDir=new THREE.DirectionalLight(0xffe2c0,.85);wDir.position.set(1,2,1.5);wScene.add(wDir);
 const wMuz=new THREE.PointLight(0xffaa44,0,2.5);wScene.add(wMuz);
@@ -1511,7 +1515,7 @@ function onMsg(m){
     case 'spawn':
       me.s={x:m.p[0],y:m.p[1],z:m.p[2],vx:0,vy:0,vz:0,on:true};me.yaw=m.yaw;me.pitch=0;me.alive=true;me.deadT=0;me.raise=1;me.hp=100;
       if(m.ow)me.ow=m.ow.slice();if(m.am)me.am=Object.assign({},m.am);if(m.ar!=null)me.ar=m.ar;
-      me.mag={2:2};me.rel=0;me.scope=false;me.inspT=9;me.lastW=me.w===0?C.primaryOf(m.ow||me.ow):0;
+      me.mag=fullMags();me.rel=0;me.scope=false;me.inspT=9;me.lastW=me.w===0?C.primaryOf(m.ow||me.ow):0;
       if(MODE==='gungame'&&m.w!=null)me.w=m.w;
       else{me.w=[6,5,3,2,4,1].find(i=>me.ow[i]&&hasAmmo(i));if(me.w==null)me.w=0;}
       $('deathBox').hidden=true;showWeapon();SFX.respawn(1);updateHUD();
@@ -1800,13 +1804,41 @@ function cycleWeapon(d){const n=WEAPONS.length;for(let k=1;k<=n;k++){const i=((m
 function autoSwitch(){for(const i of [6,5,2,3,1,4,0]){if(me.ow[i]&&hasAmmo(i)){if(i!==me.w)selectWeapon(i,true);return;}}}
 function showWeapon(){vms.forEach((g,k)=>g.visible=k===me.w);}
 const rgtV=new THREE.Vector3(),upV=new THREE.Vector3();
-function startReload(w){me.inspT=9;
-  const W_=WEAPONS[w];if(!W_.mag||me.rel>0||me.mag[w]>=W_.mag)return;
+/* recarga con animación propia de cada arma, al estilo de TF2 y Quake 3: el arma baja e inclina, hace su movimiento
+   (cargador afuera y adentro, cartuchos de a uno, quebrar la escopeta, cohetes al tubo) y vuelve. u va de 0 a 1 */
+function reloadAnim(i,g,u){
+  const ss=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);},bump=(x,a,b)=>x>a&&x<b?Math.sin((x-a)/(b-a)*Math.PI):0;
+  const inn=ss(u/.18),out=1-ss((u-.82)/.18),hold=Math.min(inn,out);
+  if(i===0||i===3||i===8){
+    // cargador: inclina de costado, saca el cargador (tirón abajo), mete el nuevo (golpe arriba) y monta (atrás)
+    g.rotation.z+=.55*hold;g.rotation.x+=(.22-.1*bump(u,.55,.68))*hold;g.position.y-=.05*hold;g.position.x-=.03*hold;
+    g.position.y-=.05*bump(u,.25,.4);g.position.y+=.035*bump(u,.55,.66);
+    if(u>.7&&u<.85)g.position.z+=.06*bump(u,.7,.85);
+  }else if(i===1||i===5||i===4){
+    // de a uno (escopeta, cohetes, granadas): arma inclinada hacia arriba y un empujón por cada cartucho
+    const n=i===1?4:3,k=Math.max(0,Math.min(1,(u-.2)/.55));
+    g.rotation.x+=.38*hold;g.rotation.z-=.35*hold;g.position.y-=.06*hold;g.position.x+=.02*hold;
+    if(u>.2&&u<.75){const f=(k*n)%1;g.position.z-=.035*Math.sin(f*Math.PI);g.rotation.x+=.06*Math.sin(f*Math.PI);}
+    if(i===1&&u>.78&&u<.92)g.position.z+=.07*bump(u,.78,.92);   // bombeo final
+  }else if(i===2){
+    // escopeta doble: la quiebra apuntando abajo, cartuchos adentro y la cierra de un golpe
+    g.rotation.x-=.85*hold;g.position.y-=.04*hold;g.position.z+=.04*hold;g.rotation.z+=.2*hold;
+    g.position.y+=.03*bump(u,.4,.55);g.rotation.x+=.5*bump(u,.75,.86);
+  }else if(i===6||i===9){
+    // rifle de plasma y rifle de caza: lo baja girándolo, carga y lo vuelve a subir con un tirón
+    g.rotation.z+=.9*hold;g.rotation.y+=.3*hold;g.position.y-=.09*hold;g.position.x-=.02*hold;
+    g.position.z+=.05*bump(u,.45,.6);g.rotation.x+=.15*bump(u,.6,.75);
+  }else{g.position.y-=Math.sin(u*Math.PI)*.18;g.rotation.x-=Math.sin(u*Math.PI)*.36;}
+}
+function fullMags(){const o={};WEAPONS.forEach((W_,i)=>{if(W_.mag)o[i]=W_.mag;});return o;}
+function startReload(w){me.inspT=9;if(WEAPONS[w].mag&&me.mag[w]==null)me.mag[w]=WEAPONS[w].mag;
+  const W_=WEAPONS[w];if(!W_.mag||me.rel>0||me.mag[w]>=W_.mag||!hasAmmo(w))return;
   me.rel=W_.reload*.75;me.relW=w;SFX.reload();if(net)net.send({t:'reload',w});
 }
 function fire(){
   const w=me.w,W_=WEAPONS[w];
   if(!hasAmmo(w)){SFX.click();me.cool=.3;autoSwitch();return;}
+  if(W_.mag&&me.mag[w]==null)me.mag[w]=W_.mag;
   if(W_.mag){if(me.rel>0&&me.relW===w)return;if(!(me.mag[w]>0)){startReload(w);return;}}
   if(W_.ammo&&MODE!=='gungame')me.am[W_.ammo]-=W_.cost;
   if(W_.mag){me.mag[w]--;}
@@ -2217,7 +2249,7 @@ function setTxt(id,v){if(hudCache[id]!==v){hudCache[id]=v;$(id).textContent=v;}}
 function updateHUD(){
   const W_=WEAPONS[me.w];setTxt('hWName',W_.name);
   const gg=MODE==='gungame'||!!(C.MODES[MODE]&&C.MODES[MODE].inf),ctf=MODE==='ctf',tm=teamsMode();
-  const a=W_.mag?(me.rel>0&&me.relW===me.w?'···':me.mag[me.w]+'|'+(gg?'∞':me.am[W_.ammo])):W_.ammo&&!gg?me.am[W_.ammo]:'∞';setTxt('hAmmo',String(a));$('hAmmo').classList.toggle('low',!!W_.ammo&&!gg&&me.am[W_.ammo]<=(W_.ammo==='bullets'?20:3));
+  const a=W_.mag?(me.rel>0&&me.relW===me.w?'···':(me.mag[me.w]==null?W_.mag:me.mag[me.w])+'|'+(gg?'∞':me.am[W_.ammo])):W_.ammo&&!gg?me.am[W_.ammo]:'∞';setTxt('hAmmo',String(a));$('hAmmo').classList.toggle('low',!!W_.ammo&&!gg&&me.am[W_.ammo]<=(W_.ammo==='bullets'?20:3));
   const hp=Math.max(0,Math.ceil(me.hp));setTxt('hHp',String(hp));$('hHp').classList.toggle('low',hp<=25);$('hHp').classList.toggle('over',hp>100);
   setTxt('hAr',String(Math.ceil(me.ar)));
   const idx=scores.findIndex(s=>s[0]===myId);const mine=idx>=0?scores[idx]:null;
@@ -2354,8 +2386,7 @@ function updViewmodel(dt){
     if(i===7&&t<2.3){g.rotation.z+=Math.PI*4*ss(t/2.3);g.rotation.x+=Math.sin(t*5.5)*.25;}
   }
   if(me.rel>0){me.rel-=dt;if(me.rel<=0){me.rel=0;if(me.relW>=0)me.mag[me.relW]=WEAPONS[me.relW].mag;updateHUD();}}
-  const relDip=me.rel>0&&me.relW===i?Math.sin(Math.min(1,me.rel/(WEAPONS[i].reload*.75))*Math.PI)*.18:0;
-  g.position.y-=relDip;g.rotation.x-=relDip*2;
+  if(me.rel>0&&me.relW===i)reloadAnim(i,g,1-Math.min(1,me.rel/(WEAPONS[i].reload*.75)));
   setTimeout0(updKnifeArm);
   vms.forEach((v,k)=>v.visible=k===i&&me.alive&&!(me.scope&&WEAPONS[i].scope&&i!==9&&camera.fov<(WEAPONS[i].zoom||22)+8)&&!(i===10&&me.throwT<.75&&((me.throwT>.2&&me.throwT<.45)||(me.throwT>=.45&&!hasAmmo(10)))));
   if(i===10){

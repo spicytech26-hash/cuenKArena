@@ -28,19 +28,19 @@ const r3 = v => Math.round(v * 1000) / 1000;
    mag/reload: armas con cargador (la escopeta doble tira 2 y recarga).
    hip: dispersión del francotirador sin mira (con mira usa spread). */
 const WEAPONS = [
-  { name: 'Pistola',        ammo: 'bullets',  cost: 1, rate: .17, type: 'hit',  pel: 1,  spread: .005, dmg: 22, range: 300 },
-  { name: 'Escopeta',       ammo: 'shells',   cost: 1, rate: .85, type: 'hit',  pel: 10, spread: .06,  dmg: 11, range: 120 },
+  { name: 'Pistola',        ammo: 'bullets',  cost: 1, rate: .17, type: 'hit',  pel: 1,  spread: .005, dmg: 22, range: 300, mag: 12, reload: 1.3 },
+  { name: 'Escopeta',       ammo: 'shells',   cost: 1, rate: .85, type: 'hit',  pel: 10, spread: .06,  dmg: 11, range: 120, mag: 6, reload: 1.8 },
   { name: 'Escopeta doble', ammo: 'shells',   cost: 1, rate: .28, type: 'hit',  pel: 12, spread: .085, dmg: 11, range: 100, mag: 2, reload: 1.7 },
-  { name: 'Ametralladora',  ammo: 'bullets',  cost: 1, rate: .085, type: 'hit', pel: 1,  spread: .013, dmg: 16, range: 300 },
+  { name: 'Ametralladora',  ammo: 'bullets',  cost: 1, rate: .085, type: 'hit', pel: 1,  spread: .013, dmg: 16, range: 300, mag: 40, reload: 2 },
   // granada: explota al segundo; si le pega de lleno a alguien antes de rebotar, explota en el acto con daño extra y premio
-  { name: 'Lanzagranadas',  ammo: 'grenades', cost: 1, rate: .75, type: 'proj', proj: 'grenade', speed: 26, dmg: 110, rad: 5.5, direct: 40, clean: 100, fuse: 1 },
-  { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 85, rad: 4.5, direct: 80 },   // nerf: antes 100 directo + 105 de área en 5 m
-  { name: 'Rifle de plasma', ammo: 'slugs',    cost: 1, rate: 1.4, type: 'rail', pel: 1,  dmg: 110, range: 400 },
+  { name: 'Lanzagranadas',  ammo: 'grenades', cost: 1, rate: .75, type: 'proj', proj: 'grenade', speed: 26, dmg: 110, rad: 5.5, direct: 40, clean: 100, fuse: 1, mag: 4, reload: 2 },
+  { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 85, rad: 4.5, direct: 80, mag: 4, reload: 2.1 },   // nerf: antes 100 directo + 105 de área en 5 m
+  { name: 'Rifle de plasma', ammo: 'slugs',    cost: 1, rate: 1.4, type: 'rail', pel: 1,  dmg: 110, range: 400, mag: 4, reload: 2.2 },
   // cuchillo mariposa: el segundo tajo sobre la misma víctima (dentro de 4 s) mata siempre
   { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 55, back: 1.8, range: 1.9, melee: true },   // alcance corto como el cuchillo del espía de TF2 o el del CS:GO
-  { name: 'Francotirador',  ammo: 'sniper',   cost: 1, rate: 1.25, type: 'hit', pel: 1,  spread: .002, hip: .045, dmg: 115, head: 2, range: 500, scope: true },
+  { name: 'Francotirador',  ammo: 'sniper',   cost: 1, rate: 1.25, type: 'hit', pel: 1,  spread: .002, hip: .045, dmg: 115, head: 2, range: 500, scope: true, mag: 5, reload: 2.2 },
   // rifle de caza: bala real con viaje y caída; cualquier impacto mata. Premia los tiros bien calculados
-  { name: 'Rifle de caza',  ammo: 'caza',     cost: 1, rate: 1.6, type: 'proj', proj: 'bullet', speed: 260, drop: 9, dmg: 0, rad: 0, direct: 1000, scope: true, zoom: 58 },
+  { name: 'Rifle de caza',  ammo: 'caza',     cost: 1, rate: 1.6, type: 'proj', proj: 'bullet', speed: 260, drop: 9, dmg: 0, rad: 0, direct: 1000, scope: true, zoom: 58, mag: 3, reload: 2.2 },
   // bomba molotov: se rompe al primer golpe y deja el piso en llamas unos segundos
   { name: 'Bomba molotov',  ammo: 'molotov',  cost: 1, rate: .9,  type: 'proj', proj: 'molotov', speed: 17, dmg: 0, rad: 0, direct: 12, fire: { r: 5, dur: 6, hit: 5.5, every: .1 } }
 ];
@@ -104,7 +104,7 @@ const SHOP = [
 ];
 /* ---------- Modos de juego ---------- */
 const MODES = {
-  arena:   { name: 'Arena', maps: ['represa', 'panymanteca', 'lacuenca'], shop: true, timelimit: 360,
+  arena:   { name: 'Arena', maps: ['represa', 'panymanteca', 'lacuenca'], shop: true, timelimit: 300,
              desc: 'Todos contra todos. Cada frag da créditos para la tienda (B).' },
   gungame: { name: 'Gungame', maps: ['represa', 'panymanteca', 'lacuenca'], shop: false, gg: true,
              desc: 'Cada baja te da la siguiente arma de la lista. Munición infinita, sin tienda. Si te matan con cuchillo bajás un nivel. Gana el primero en hacer las 20 bajas; la última es con cuchillo.' },
@@ -1824,6 +1824,7 @@ class Game {
     const W_ = WEAPONS[w]; if (!W_ || !p.alive || !p.ow[w] || !this.live()) return false;
     if (W_.ammo && p.am[W_.ammo] < W_.cost && !this.mode.gg && !this.mode.inf) return false;
     if (W_.mag) {
+      if (p.mag[w] == null) p.mag[w] = W_.mag;   // arma recién conseguida: viene con el cargador lleno
       if (p.relT[w] > this.time) return false;
       if (p.relT[w]) { p.relT[w] = 0; p.mag[w] = W_.mag; }
       if (!(p.mag[w] > 0)) { p.relT[w] = this.time + W_.reload * (p.bot ? 1 : .75); return false; }

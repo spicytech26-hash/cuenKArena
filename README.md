@@ -296,7 +296,11 @@ Los establos de Fuertes del Cañón tienen la fachada como en la foto de referen
 
 ## Recarga (R)
 
-Todas las armas de fuego tienen cargador, como en TF2: pistola 12, escopeta 6, escopeta doble 2, ametralladora 40, lanzagranadas 4, lanzacohetes 4, rifle de plasma 4, francotirador 5 y rifle de caza 3. Se recarga con **R** o solo cuando se vacía. Cada tipo tiene su animación: las de cargador (pistola, ametralladora, francotirador) se inclinan, sacan el cargador, meten el nuevo y montan; la escopeta, el lanzacohetes y el lanzagranadas cargan de a uno con un empujón por cartucho; la escopeta doble se quiebra y se cierra de un golpe; los rifles de plasma y de caza bajan girando y suben con un tirón. Las armas recién compradas o levantadas vienen con el cargador lleno.
+Todas las armas de fuego tienen cargador, como en TF2: pistola 12, escopeta 6, escopeta doble 2, ametralladora 40, lanzagranadas 4, lanzacohetes 4 (como el del Soldier de TF2: unos 2,7 s para recargar los cuatro), rifle de plasma 4, francotirador 5 y rifle de caza 3. Se recarga con **R** o solo cuando se vacía. Cada tipo tiene su animación: las de cargador (pistola, ametralladora, francotirador) se inclinan, sacan el cargador, meten el nuevo y montan; la escopeta, el lanzacohetes y el lanzagranadas cargan de a uno con un empujón por cartucho; la escopeta doble se quiebra y se cierra de un golpe; los rifles de plasma y de caza bajan girando y suben con un tirón. Las armas recién compradas o levantadas vienen con el cargador lleno.
 - Durante la recarga aparece la **mano izquierda** (como en TF2): sube desde abajo a la izquierda, trabaja sobre el arma (saca y mete el cargador, empuja los cartuchos o los cohetes, cierra la escopeta) y se va al terminar. El arma sube y se corre al centro para que se vea.
 
 El **cuchillo** ahora barre en horizontal y deja una **ráfaga** blanca en forma de media luna; todos los enemigos que queden dentro del barrido (hasta 1,9 m, unos 40° a cada lado) reciben el tajo. La mano agarra un solo mango y el otro gira suelto en los trucos.
+
+## Al morir
+
+Como en TF2, después de un instante ves **en primera persona lo que ve el que te mató**: su posición, a dónde apunta y el arma que tiene en la mano, con el cartel "Viendo a NOMBRE" y la cuenta para reaparecer. Si no hubo culpable (lava, caída, tu propia explosión) o el otro murió, la cámara gira sobre tu cuerpo como antes.

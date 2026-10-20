@@ -34,7 +34,7 @@ const WEAPONS = [
   { name: 'Ametralladora',  ammo: 'bullets',  cost: 1, rate: .085, type: 'hit', pel: 1,  spread: .013, dmg: 16, range: 300, mag: 40, reload: 2 },
   // granada: explota al segundo; si le pega de lleno a alguien antes de rebotar, explota en el acto con daño extra y premio
   { name: 'Lanzagranadas',  ammo: 'grenades', cost: 1, rate: .75, type: 'proj', proj: 'grenade', speed: 26, dmg: 110, rad: 5.5, direct: 40, clean: 100, fuse: 1, mag: 4, reload: 2 },
-  { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 85, rad: 4.5, direct: 80, mag: 4, reload: 2.1 },   // nerf: antes 100 directo + 105 de área en 5 m
+  { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 85, rad: 4.5, direct: 80, mag: 4, reload: 3.6 },   // como el del Soldier: 4 cohetes y ~2,7 s para recargar todo   // nerf: antes 100 directo + 105 de área en 5 m
   { name: 'Rifle de plasma', ammo: 'slugs',    cost: 1, rate: 1.4, type: 'rail', pel: 1,  dmg: 110, range: 400, mag: 4, reload: 2.2 },
   // cuchillo mariposa: el segundo tajo sobre la misma víctima (dentro de 4 s) mata siempre
   { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 55, back: 1.8, range: 1.9, melee: true },   // alcance corto como el cuchillo del espía de TF2 o el del CS:GO

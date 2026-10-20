@@ -6,6 +6,7 @@ Deathmatch online estilo Quake que corre en el navegador. Al terminar cada parti
 
 Al tocar **Jugar online** (o **Práctica con bots**) elegís el modo. Cada modo es una sala aparte del servidor.
 
+- **Francotiradores** (mapa *snp1 · Fuertes del Cañón*): rojo contra azul, cada equipo en su establo a un lado del cañón. Solo francotirador (mata de un tiro, munición infinita) y cuchillo (con el cuchillo en la mano corrés un 30 % más rápido). Una racha de 6 bajas sin morir desbloquea la escopeta doble (tecla 2) hasta que te maten. Sin tienda y sin mira: la retícula aparece solo al apuntar con el clic derecho. Gana el primer equipo a 30 bajas o el que tenga más a los 6 minutos.
 - **Arena**: todos contra todos en La Represa, Humita y La Cuenca, con créditos y tienda. Cada partida dura **6 minutos** (online y en práctica).
 - **Gungame**: todos arrancan con la ametralladora y cada baja te da la siguiente arma de una lista de 20 niveles (armas fuertes primero, pistola, riel y francotirador al final, cuchillo en el último). Munición infinita, sin tienda y sin nada tirado en el mapa (ni armas, ni vida, ni blindaje). Además de la del nivel tenés siempre el cuchillo: si te matás solo, o te matan con cuchillo, bajás un nivel. Gana el primero en hacer la baja número 20.
 - **Team Deathmatch**: rojo contra azul, cada baja suma para el equipo hasta llegar al límite. Online la sala espera a tener **4 jugadores** (mientras tanto hay calentamiento y las bajas no cuentan) y arranca con una cuenta regresiva. El límite de bajas lo elige el primero en entrar desde la pantalla de modos, y se puede cambiar desde el menú (Esc) mientras esperan.
@@ -269,3 +270,7 @@ En la pantalla final hay una tarjeta por cada mapa del modo, con su nombre y una
 
 En la lista de bajas, cuando alguien mata con el cuchillo aparece **"jugador1 le entró a pelo a jugador2"**.
 - **Parkours más amables en La Represa:** la espiral de la torre tiene 12 plataformas más grandes (2,6 m) y más juntas, con escalones de 0,9 m (el salto llega a 1,4) y borde de neón para ver dónde caer; las columnas sobre la lava son más anchas (3 m) y más seguidas, con escalones de 0,7 m. Siguen pidiendo saltar bien, pero se suben de corrido.
+
+## Fuertes del Cañón
+
+Un cañón de roca roja en capas con un río abajo (si caés, te lleva el río) y una cascada al fondo. En cada meseta hay un **establo** rojo (planta baja con boxes, pajar con ventanas para tirar al otro lado, techo a dos aguas al que se puede subir) y un **mirador** de madera a 9 m con escalera, pretil, techo y la bandera del equipo. Se cruza por el **puente techado** del medio o por dos **puentes de tablones** sin baranda a los costados. En los patios hay fardos de pasto, carreta, rocas y una cerca al borde del cañón.

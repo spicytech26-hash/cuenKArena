@@ -110,6 +110,8 @@ const MODES = {
              desc: 'Cada baja te da la siguiente arma de la lista. Munición infinita, sin tienda. Si te matan con cuchillo bajás un nivel. Gana el primero en hacer las 20 bajas; la última es con cuchillo.' },
   tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca'], shop: true, teams: true, tdm: true, minPlayers: 4,
              desc: 'Rojo contra azul: cada baja suma para tu equipo hasta llegar al límite que elijan. Online arranca cuando hay 4 jugadores; mientras tanto, calentamiento.' },
+  snipers: { name: 'Francotiradores', maps: ['fuertes'], shop: false, teams: true, tk: true, snipers: true, inf: true, timelimit: 360, teamLimit: 30,
+             desc: 'Rojo contra azul con francotirador y cuchillo nomás: el francotirador mata de un tiro y con el cuchillo en la mano corrés más rápido. Racha de 6 bajas: escopeta doble. Sin tienda y sin mira hasta que apuntás.' },
   ctf:     { name: 'Captura la bandera', maps: ['puente'], shop: true, teams: true, ctf: true,
              desc: 'Rojo contra azul. Robá la bandera rival y llevala hasta tu base. Gana el primer equipo en capturarla 3 veces.' }
 };
@@ -820,7 +822,78 @@ function buildLaCuenca() {
   return finish({ id: 'lacuenca', name: 'dm3 · La Cuenca', bounds: { x0: -67, x1: 27, z0: -30, z1: 28 }, deco,
     theme: { sky: 'day', fog: 0xbfd3e6, fogD: .0045, amb: 0xc9d0da, ambI: .48, hemi: [0xbcd8ff, 0x8a7a62, .42], sun: true, sunC: 0xfff1d6, sunI: .72 } });
 }
-const MAPS = { represa: buildRepresa(), panymanteca: buildPanYManteca(), lacuenca: buildLaCuenca(), puente: buildPuente() };
+
+/* ---------- snp1 · Fuertes del Cañón ----------
+   Dos establos, uno de cada lado de un cañón de roca roja con un río abajo, unidos por un puente de madera
+   techado en el medio y dos puentes de tablones a los costados. Rojo al norte, azul al sur (simétrico respecto de z = 0). */
+function buildFuertes() {
+  const { pads, lava, spawns, lights, add, wall, stairs, D, face, I, finish } = mapKit();
+  const tspawns = [[], []];
+  /* ---- cañón: paredes altas, río y cascada ---- */
+  add(-47, -16, -49, 47, 30, -48, 'canyon'); add(-47, -16, 48, 47, 30, 49, 'canyon');
+  add(-47, -16, -48, -46, 30, 48, 'canyon'); add(46, -16, -48, 47, 30, 48, 'canyon');
+  add(-46, -16, -14, 46, -12, 14, 'rock');                                          // lecho del río
+  lava.push({ min: [-46, -16, -14], max: [46, -9, 14], dps: 999, water: 1 });
+  add(40, -12, -14, 46, 24, -6, 'canyon'); add(40, -12, 6, 46, 24, 14, 'canyon');    // paredes al fondo del cañón
+  add(-46, -12, -14, -40, 24, 14, 'canyon');
+  add(43.6, -9, -6, 44.6, 24, 6, 'falls', { nc: 1 }); add(44.6, -12, -6, 46, 24, 6, 'canyon');   // cascada
+  add(36, -9.1, -6.5, 44, -8.9, 6.5, 'whitewall', { nc: 1 });                       // espuma
+  for (const [x, z, r, h] of [[-20, 3, 2.2, -5], [14, -4, 1.8, -6.5], [30, 6, 2.5, -4]]) add(x - r, -12, z - r, x + r, h, z + r, 'canyon');   // rocas en el río
+  /* ---- puente techado del medio ---- */
+  add(-2.5, -.4, -15, 2.5, 0, 15, 'wood');
+  add(-2.7, 0, -14, -2.4, 1.1, 14, 'wood'); add(2.4, 0, -14, 2.7, 1.1, 14, 'wood');
+  for (const z of [-5, 5]) for (const x of [-2.7, 2.4]) add(x, 1.1, z - .2, x + .3, 3.2, z + .2, 'wood');
+  for (const x of [-2.7, 2.4]) add(x, 1.1, -.2, x + .3, 3.2, .2, 'wood');
+  add(-3.2, 3.2, -5.6, 3.2, 3.6, 5.6, 'roofTiles');
+  for (const z of [-10, -5, 0, 5, 10]) { add(-2.3, -12, z - .3, -1.7, -.4, z + .3, 'wood', { nc: 1 }); add(1.7, -12, z - .3, 2.3, -.4, z + .3, 'wood', { nc: 1 }); add(-2.4, -5, z - .2, 2.4, -4.6, z + .2, 'wood', { nc: 1 }); }
+  /* ---- puentes de tablones a los costados (sin baranda: cuidado) ---- */
+  for (const x of [-26, 26]) { add(x - 1, -.3, -15, x + 1, 0, 15, 'board'); add(x - 1.1, -1, -.3, x + 1.1, -.3, .3, 'wood', { nc: 1 }); }
+  /* ---- cada lado: meseta, establo, mirador y cobertura ---- */
+  for (const s of [-1, 1]) {
+    const team = s < 0 ? 0 : 1, flag = s < 0 ? 'neonR' : 'neonB';
+    const Z = (a, b) => s < 0 ? [a, b] : [-b, -a];
+    const A = (x0, y0, z0, x1, y1, z1, mat, ex) => { const [a, b] = Z(z0, z1); return add(x0, y0, a, x1, y1, b, mat, ex); };
+    const SZ = (x0, z0, x1, z1, yb, rise, n, dir, mat) => { const [a, b] = Z(z0, z1); return stairs(x0, a, x1, b, yb, rise, n, 'z', dir * -s, mat); };
+    const WX = (x0, z0, x1, z1, y0, y1, doors, mat) => { const [a, b] = Z(z0, z1); wall(x0, a, x1, b, y0, y1, doors, mat); };
+    // meseta (la tierra roja con pasto arriba) y mesas del fondo
+    A(-46, -16, -48, 46, -.2, -14, 'canyon'); A(-46, -.2, -48, 46, 0, -14, 'grass');
+    A(-46, 0, -48, 46, 18, -42, 'canyon'); A(-46, 0, -42, -32, 9, -38, 'canyon'); A(30, 0, -42, 46, 12, -37, 'canyon'); A(-46, 0, -38, -40, 5, -14, 'canyon');
+    A(40, 0, -37, 46, 7, -14, 'canyon');
+    // establo: planta baja con boxes, pajar arriba con ventanas al cañón y techo a dos aguas (se puede subir)
+    WX(-9, -20.4, 9, -20, 0, 7, [D(-3, 3, 0, 4.2), D(-7, -4, 5, 6.4), D(4, 7, 5, 6.4)], 'barn');
+    WX(-9, -34, 9, -33.6, 0, 7, [D(-2, 2, 0, 3.5)], 'barn');
+    A(-9, 0, -33.6, -8.6, 7, -20.4, 'barn'); A(8.6, 0, -33.6, 9, 7, -20.4, 'barn');
+    A(-8.6, 4.4, -24.5, 8.6, 4.8, -20.4, 'wood');                                 // pajar
+    SZ(-8.4, -33.4, -6.4, -24.5, 0, .48, 10, 1, 'wood');
+    for (const x of [-4, 0, 4]) A(x - .1, 0, -33.6, x + .1, 1.4, -28, 'wood');     // boxes
+    A(2, 0, -33.4, 4.2, 1.1, -31.4, 'hay'); A(5, 0, -27.5, 7.5, 1.1, -25.5, 'hay'); A(5.6, 1.1, -27, 7, 2.2, -25.9, 'hay');
+    A(-6, 4.8, -24.3, -3.8, 5.9, -23, 'hay'); A(3.6, 4.8, -24.3, 6, 5.9, -23, 'hay');
+    A(-9.4, 7, -34.4, 9.4, 7.6, -19.6, 'roofTiles'); A(-7.4, 7.6, -34.4, 7.4, 8.4, -19.6, 'roofTiles');
+    A(-5.4, 8.4, -34.4, 5.4, 9.2, -19.6, 'roofTiles'); A(-3.4, 9.2, -34.4, 3.4, 10, -19.6, 'roofTiles'); A(-1.4, 10, -34.4, 1.4, 10.6, -19.6, 'roofTiles');
+    A(-3.3, 0, -19.95, -3, 4.5, -19.85, 'whitewall', { nc: 1 }); A(3, 0, -19.95, 3.3, 4.5, -19.85, 'whitewall', { nc: 1 }); A(-3.3, 4.2, -19.95, 3.3, 4.5, -19.85, 'whitewall', { nc: 1 });
+    A(-8.9, 6.9, -19.95, 8.9, 7.1, -19.85, 'whitewall', { nc: 1 });
+    // mirador al lado del establo: escalera, plataforma a 9 m con pretil y techo, bandera del equipo
+    SZ(12.5, -38, 15.5, -28.4, 0, .5, 18, 1, 'wood');
+    for (const [x, z] of [[12, -28.4], [15.6, -28.4], [12, -24], [15.6, -24]]) A(x, 0, z, x + .4, 12.2, z + .4, 'wood');
+    A(11.6, 8.6, -28.4, 16.4, 9, -23.6, 'board'); A(11.6, 9, -23.9, 16.4, 10.1, -23.6, 'barn'); A(11.6, 9, -28.4, 11.9, 10.1, -23.6, 'barn'); A(16.1, 9, -28.4, 16.4, 10.1, -23.6, 'barn');
+    A(11.2, 12.2, -28.8, 16.8, 12.6, -23.2, 'roofTiles');
+    A(-14.2, 0, -26.2, -13.8, 12, -25.8, 'metal'); A(-13.8, 9.6, -26.1, -11.4, 11.4, -25.9, flag, { nc: 1 });
+    // cobertura en el patio: fardos, carreta, bebedero, cerca al borde del cañón (con huecos en los puentes)
+    A(-12, 0, -17, -10, 1.2, -15.5, 'hay'); A(10, 0, -18, 12.5, 1.2, -16.5, 'hay'); A(18, 0, -17, 20, 1.2, -15.5, 'hay'); A(-20, 0, -18.5, -17.5, 1.2, -17, 'hay');
+    A(-33, 0, -24, -29, 1.8, -21.5, 'crate'); A(-32.5, 1.8, -23.5, -30, 2.6, -22, 'crate');
+    A(30, 0, -26, 33, 1, -24.5, 'barn'); A(-36, 0, -31, -33, 2.4, -28, 'canyon'); A(22, 0, -34, 25, 3, -31, 'canyon');
+    for (const [a, b] of [[-40, -28], [-24, -4], [4, 24], [28, 40]]) A(a, 0, -14.7, b, 1.1, -14.5, 'fence');
+    // apariciones, ítems y luces
+    for (const [x, y, z] of [[1.5, 0, -30.5], [-5, 0, -26], [5, 0, -22.5], [-6, 4.8, -22.5], [6, 4.8, -22], [14, 9, -26], [-20, 0, -26], [-34, 0, -20], [22, 0, -24], [34, 0, -30], [-14, 0, -32]])
+      tspawns[team].push({ x, y, z: s * z, yaw: face(x, s * z, x, 0) });
+    I('health', 0, 0, s * 26); I('health', -7.5, 4.8, s * 21.5); I('armor', 14, 9, s * 25); I('health', -30.5, 0, s * 20); I('health', 31.5, 0, s * 30);
+    lights.push({ x: 0, y: 4, z: s * 28, c: 0xffd9a0, i: .8, d: 16 });
+  }
+  spawns.push(...tspawns[0], ...tspawns[1]);
+  return finish({ id: 'fuertes', name: 'snp1 · Fuertes del Cañón', bounds: { x0: -47, x1: 47, z0: -49, z1: 49 }, tspawns,
+    theme: { sky: 'day', fog: 0xd8c8b0, fogD: .0042, amb: 0xd8c8b8, ambI: .5, hemi: [0xbcd8ff, 0x9a6a42, .45], sun: true, sunC: 0xfff0d0, sunI: .8 } });
+}
+const MAPS = { represa: buildRepresa(), panymanteca: buildPanYManteca(), lacuenca: buildLaCuenca(), puente: buildPuente(), fuertes: buildFuertes() };
 // ninguna aparición puede quedar dentro de un mueble o pared: si pasa, se sube encima o se descarta
 function safeSpawns(W) {
   if (W._safe) return; W._safe = true;
@@ -974,6 +1047,7 @@ function pmove(W, s, cmd, dt) {
   const wl = Math.hypot(wx, wz); let wish = 0;
   if (wl > 1e-4) { wish = K.MAXSPD * Math.min(1, wl); wx /= wl; wz /= wl; }
   if (s.crouch && s.on) wish *= K.CROUCH_SPD;
+  if (cmd.fast > 1) wish *= Math.min(1.5, cmd.fast);
   const out = { jumped: false, landed: 0 };
   for (let i = 0; i < steps; i++) {
     const wasOn = s.on;
@@ -1449,7 +1523,7 @@ class Game {
         if (this.mode.teams) this.setTeam(p, this.pickTeam(p));
         p.joined = true; p.joinT = this.time; p.kills = 0; p.dmg = 0; p.bestLife = 0;
         if (this.mode.tdm && this.o.online && this.humanCount(false) <= 1 && Number.isInteger(m.fl) && m.fl >= 5 && m.fl <= 500) this.o.fraglimit = m.fl;
-        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts, sh: this.shards.map(s => [s.id, r3(s.x), r3(s.y), r3(s.z), r2(s.t)]), mv: this.voteState() });
+        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts, sh: this.shards.map(s => [s.id, r3(s.x), r3(s.y), r3(s.z), r2(s.t)]), mv: this.voteState() });
         this.bcast({ t: 'ev', e: 'join', id, n: p.name, c: p.color, s: p.skin, tm: p.team }, id);
         this.spawn(p); this.botT = 0; this.sendScores();
         break;
@@ -1627,6 +1701,11 @@ class Game {
     return scored[Math.floor(Math.random() * Math.min(3, scored.length))].sp;
   }
   loadout(p) {
+    if (this.mode.snipers) {   // solo francotirador y cuchillo; la escopeta doble se gana con una racha de 6 y se pierde al morir
+      p.ow = new Array(NW).fill(0); p.ow[8] = 1; p.ow[7] = 1; p.w = 8; p.ar = 0;
+      p.am = AMMO0(999); this.fillMags(p);
+      return;
+    }
     if (this.mode.gg) {
       const w = GG[Math.min(p.lvl, GG.length - 1)];
       p.ow = new Array(NW).fill(0); p.ow[w] = 1; p.ow[7] = 1; p.w = w; p.ar = 0;
@@ -1704,7 +1783,7 @@ class Game {
   /* ---- disparos ---- */
   canFire(p, w) {
     const W_ = WEAPONS[w]; if (!W_ || !p.alive || !p.ow[w] || !this.live()) return false;
-    if (W_.ammo && p.am[W_.ammo] < W_.cost && !this.mode.gg) return false;
+    if (W_.ammo && p.am[W_.ammo] < W_.cost && !this.mode.gg && !this.mode.inf) return false;
     if (W_.mag) {
       if (p.relT[w] > this.time) return false;
       if (p.relT[w]) { p.relT[w] = 0; p.mag[w] = W_.mag; }
@@ -1713,7 +1792,7 @@ class Game {
     return this.time - p.lastFire >= W_.rate * .7;
   }
   consume(p, w) {
-    const W_ = WEAPONS[w]; if (W_.ammo && !this.mode.gg) p.am[W_.ammo] -= W_.cost;
+    const W_ = WEAPONS[w]; if (W_.ammo && !this.mode.gg && !this.mode.inf) p.am[W_.ammo] -= W_.cost;
     if (W_.mag) { p.mag[w]--; if (p.mag[w] <= 0) p.relT[w] = this.time + W_.reload * (p.bot ? 1 : .75); } p.lastFire = this.time; p.w = w; p.dirty = true; }
   humanFire(p, m) {
     const w = m.w | 0; if (!this.canFire(p, w)) return;
@@ -1892,6 +1971,7 @@ class Game {
   damage(t, amt, att, w, dir, ks, how) {
     if (!t.alive || !this.live() || amt <= 0) return;
     if (this.mode.teams && att && att !== t && att.team === t.team) return; // sin fuego amigo
+    if (this.mode.snipers && w === 8 && att && att !== t) amt = Math.max(amt, Math.ceil(t.hp + t.ar) + 1);   // en Francotiradores mata de un tiro
     let take = amt;
     // daño hecho (para la tabla final): solo lo que de verdad le sacaste, sin contar lo que sobra al matarlo
     if (att && att !== t) att.dmg = (att.dmg || 0) + Math.min(amt, Math.max(0, t.hp) + t.ar);
@@ -1928,7 +2008,12 @@ class Game {
     if (v.bot && v.ai) v.ai.path = null;
     let won = false;
     if (this.mode.gg && scoring) won = this.ggKill(v, att, w);
-    if (this.mode.tdm && scoring && att && att !== v && att.team !== v.team && att.team >= 0) { this.ts[att.team]++; if (this.ts[att.team] >= this.o.fraglimit) won = true; }
+    if ((this.mode.tdm || this.mode.tk) && scoring && att && att !== v && att.team !== v.team && att.team >= 0) { this.ts[att.team]++; if (this.ts[att.team] >= (this.mode.teamLimit || this.o.fraglimit)) won = true; }
+    if (this.mode.snipers && scoring && att && att !== v && att.streak === 6 && !att.ow[2]) {
+      att.ow[2] = 1; att.am.shells = 999; att.dirty = true;
+      if (att.send) att.send({ t: 'ev', e: 'unlock', w: 2 });
+      this.bcast({ t: 'ev', e: 'sys', m: att.name + ' hizo una racha de 6 bajas: ¡desbloqueó la escopeta doble!' });
+    }
     this.sendScores();
     if (won || (scoring && !this.mode.gg && !this.mode.teams && att && att !== v && att.frags >= this.o.fraglimit)) this.endMatch();
   }
@@ -2076,7 +2161,7 @@ class Game {
       .sort((a, b) => (gg ? b.lvl - a.lvl : 0) || (this.mode.teams ? b.caps - a.caps : 0) || b.frags - a.frags || a.deaths - b.deaths)
       .map(p => [p.id, p.name, p.frags, p.deaths, p.bot ? 0 : p.ping, p.bot ? 1 : 0, p.color, p.cr, p.lvl, p.team, p.caps, p.plvl, Math.round(p.dmg || 0)]);
   }
-  sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.o.fraglimit, cl: this.o.caplimit, st: this.state, map: this.W.id, mode: this.o.mode, ts: this.ts, fs: this.flagState(), cd: Math.ceil(this.countT), hn: this.humanCount(false), mp: this.mode.minPlayers || 0 }); }
+  sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, st: this.state, map: this.W.id, mode: this.o.mode, ts: this.ts, fs: this.flagState(), cd: Math.ceil(this.countT), hn: this.humanCount(false), mp: this.mode.minPlayers || 0 }); }
   endMatch() {
     if (this.state !== 'play') return;
     this.state = 'inter'; this.interT = 25;

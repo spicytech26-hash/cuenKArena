@@ -443,8 +443,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
   <div class="mbox">
     <div class="kicker" id="mKick">Arena · Gungame · Team Deathmatch · Captura la bandera</div>
     <h1 id="mTitle">CUENK<span>ARENA</span><small>SNIPER UPDATE</small></h1>
-    <p id="mBy">Creado por: <b>Calamari Negrito</b></p>
-    <p id="mSub">Cinco modos y cinco mapas: Fuertes del Cañón (dos establos frente a frente para los francotiradores), La Cuenca (la universidad, con la plaza y el edificio para recorrer por dentro), la represa industrial, Humita (un boliche con pista LED y subwoofers que te tiran por el aire) y El Puente, donde Posadas y Encarnación se disputan la bandera de un lado al otro del río.</p>
     <div id="acctBox" hidden></div>
     <div class="idrow"><label for="pName">Tu nombre</label><input id="pName" maxlength="16" autocomplete="off" spellcheck="false"></div>
     <div class="mrow">
@@ -1224,6 +1222,29 @@ function buildGun(i){const g=new THREE.Group();let tip=[0,0,-.5];
   g.userData.tip=new THREE.Vector3(tip[0],tip[1],tip[2]);return g;}
 const vmBase=[[.12,-.09,-.44],[.2,-.19,-.36],[.2,-.2,-.36],[.21,-.2,-.38],[.22,-.21,-.36],[.24,-.22,-.34],[.22,-.2,-.36],[.17,-.13,-.5],[.2,-.2,-.34],[.19,-.2,-.36],[.2,-.17,-.4]].map(a=>new THREE.Vector3(a[0],a[1],a[2]));
 const vms=WEAPONS.map((_,i)=>{const g=buildGun(i);g.visible=false;wScene.add(g);return g;});
+/* ---- armas con textura de desgaste (segundo paso de los gráficos): rayones, manchas y bordes gastados en cada material,
+   y un reflejo suave del entorno en los metales. Se dibuja una sola vez al cargar, así no cuesta rendimiento ---- */
+(()=>{
+  let sd=777;const rr=()=>{sd=(sd*16807)%2147483647;return (sd-1)/2147483646;};
+  const wear=(kind)=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');
+    g.fillStyle='#fff';g.fillRect(0,0,64,64);
+    for(let i=0;i<500;i++){const v=225+rr()*30|0;g.fillStyle='rgba('+v+','+v+','+v+',.55)';g.fillRect(rr()*64|0,rr()*64|0,1+rr()*2|0,1+rr()*2|0);}
+    for(let i=0;i<(kind==='metal'?26:12);i++){g.strokeStyle='rgba(255,255,255,'+(.35+rr()*.4)+')';g.lineWidth=.6;g.beginPath();const x=rr()*64,y=rr()*64,a=rr()*6.28,l=4+rr()*14;g.moveTo(x,y);g.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l);g.stroke();}
+    for(let i=0;i<10;i++){g.fillStyle='rgba(60,45,30,'+(.05+rr()*.08)+')';g.beginPath();g.arc(rr()*64,rr()*64,2+rr()*7,0,6.283);g.fill();}
+    g.strokeStyle='rgba(255,255,255,.5)';g.lineWidth=2;g.strokeRect(1,1,62,62);g.strokeStyle='rgba(0,0,0,.18)';g.lineWidth=1;g.strokeRect(3,3,58,58);
+    const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=4;return t;};
+  const env=(()=>{const c=document.createElement('canvas');c.width=128;c.height=64;const g=c.getContext('2d');const gr=g.createLinearGradient(0,0,0,64);
+    gr.addColorStop(0,'#c8c4bc');gr.addColorStop(.45,'#7a7064');gr.addColorStop(.55,'#4a4038');gr.addColorStop(1,'#1c1814');g.fillStyle=gr;g.fillRect(0,0,128,64);
+    g.fillStyle='rgba(255,240,210,.7)';g.fillRect(20,10,22,6);g.fillRect(84,14,16,5);
+    const t=new THREE.CanvasTexture(c);t.mapping=THREE.EquirectangularReflectionMapping;return t;})();
+  const T={metal:wear('metal'),poly:wear('poly')},done=new Set();
+  const isMetal=m=>(m.shininess||0)>=60;
+  const apply=g=>g.traverse(o=>{if(!o.isMesh||!o.material||!o.material.isMeshPhongMaterial)return;const m=o.material;if(done.has(m))return;done.add(m);
+    if(!m.map){m.map=isMetal(m)?T.metal:T.poly;}
+    if(isMetal(m)){m.envMap=env;m.reflectivity=.22;m.combine=THREE.MixOperation;}
+    m.needsUpdate=true;});
+  vms.forEach(apply);
+})();
 // manos en primera persona (cuchillo, pistola y rifle de caza)
 (()=>{const glove=mGlove,f=new THREE.Group();
   f.add(bx(.075,.07,.09,glove,0,-.012,.07),bx(.06,.03,.08,glove,-.035,.02,.065),bx(.05,.06,.14,glove,.01,-.03,.17,.25));vms[7].add(f);
@@ -2652,7 +2673,7 @@ $('sMap').addEventListener('click',e=>{const v=e.target.dataset&&e.target.datase
 $('sSh').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.sh=+v;saveS();syncSettings();if(level&&level.sun){level.sun.castShadow=!!S.sh;renderer.shadowMap.needsUpdate=true;}scene.traverse(o=>{if(o.material)o.material.needsUpdate=true;});SFX.ui();});
 $('sQ').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.q=+v;saveS();syncSettings();resize();if(level)level.maplights.forEach(m=>m.l.visible=!!S.q);});
 syncSettings();probeServer();loadMap(S.map);initAccounts();syncChest();
-if(matchMedia('(pointer: coarse)').matches&&!matchMedia('(pointer: fine)').matches)$('mSub').textContent+=' Se juega con teclado y mouse, desde una computadora.';
+
 
 /* =================== BUCLE PRINCIPAL =================== */
 let last=performance.now(),attractT=0;

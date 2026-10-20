@@ -292,3 +292,4 @@ Los establos de Fuertes del Cañón tienen la fachada como en la foto de referen
 
 - **Sombras del sol** en los mapas de día y atardecer (La Cuenca, La Represa, El Puente y Fuertes del Cañón): el mapa y los jugadores proyectan sombra. Es un solo mapa de sombras que cubre todo el mapa (2048 en calidad alta, 1024 en liviana) y se recalcula cada dos cuadros para cuidar el rendimiento. Se pueden apagar en **Ajustes → Sombras**.
 - **Texturas con desgaste**: todas las texturas de los mapas tienen manchas de suciedad, bordes oscurecidos y más sombra abajo, para que se vean menos planas.
+- **Armas con desgaste** (segundo paso): todas las armas tienen rayones, manchas y bordes gastados en cada pieza, y los metales reflejan suave el entorno. Se dibuja una sola vez al cargar, así que no cuesta rendimiento.

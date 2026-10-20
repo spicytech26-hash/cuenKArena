@@ -727,8 +727,28 @@ function matOf(m){
 }
 const padTex=new THREE.CanvasTexture(cv(64,64,(g)=>{g.fillStyle='#120a06';g.fillRect(0,0,64,64);g.strokeStyle='#ffb12b';g.lineWidth=4;g.beginPath();g.arc(32,32,26,0,7);g.stroke();g.fillStyle='#ffb12b';for(let k=0;k<3;k++){g.beginPath();g.moveTo(32,8+k*14);g.lineTo(44,20+k*14);g.lineTo(38,20+k*14);g.lineTo(32,14+k*14);g.lineTo(26,20+k*14);g.lineTo(20,20+k*14);g.fill();}}));
 const subTex=new THREE.CanvasTexture(cv(64,64,(g)=>{g.fillStyle='#08070a';g.fillRect(0,0,64,64);for(let r=30;r>4;r-=5){g.strokeStyle=r%10?'#2a2830':'#ff3fd2';g.lineWidth=2;g.beginPath();g.arc(32,32,r,0,7);g.stroke();}g.fillStyle='#ff3fd2';g.beginPath();g.arc(32,32,6,0,7);g.fill();}));
+/* ---- luces: en vez de una luz real por cada lámpara del mapa (La Represa tenía 14 y cada una se calcula en cada
+   píxel), hay 6 luces fijas que se ubican en las lámparas más cercanas a la cámara. Como la cantidad no cambia,
+   la placa de video nunca recompila los sombreadores, y el costo por píxel baja a menos de la mitad ---- */
+function vLight(x,y,z,c,i,d){return {position:{x,y,z},color:c,intensity:i,distance:d,visible:true};}
+const LIGHT_SLOTS=6,lightSlots=[];let slotT=0;
+function initLightSlots(){if(lightSlots.length)return;for(let k=0;k<LIGHT_SLOTS;k++){const l=new THREE.PointLight(0xffffff,0,10,1.3);scene.add(l);lightSlots.push({l,v:null,cur:0});}}
+function updLightSlots(dt){
+  if(!level||!level.vlights)return;initLightSlots();
+  slotT-=dt;
+  if(slotT<=0){slotT=.2;const cx=camera.position.x,cy=camera.position.y,cz=camera.position.z;
+    const rank=level.vlights.filter(v=>v.visible!==false).map(v=>{const dx=v.position.x-cx,dy=v.position.y-cy,dz=v.position.z-cz,d2=dx*dx+dy*dy+dz*dz,r=v.distance||20;
+      return {v,sc:d2>(r+12)*(r+12)?-1:(Math.max(v.intensity,.3))*r*r/(d2+4)};}).filter(o=>o.sc>0).sort((a,b)=>b.sc-a.sc).slice(0,LIGHT_SLOTS).map(o=>o.v);
+    // las que siguen elegidas se quedan en su lugar; las nuevas ocupan los lugares libres
+    const keep=new Set(rank);for(const sl of lightSlots)if(sl.v&&!keep.has(sl.v))sl.v=null;
+    for(const v of rank)if(!lightSlots.some(sl=>sl.v===v)){const f=lightSlots.find(sl=>!sl.v);if(f){f.v=v;f.cur=0;}}}
+  for(const sl of lightSlots){const v=sl.v,l=sl.l;
+    if(!v||!S.q){l.intensity=Math.max(0,l.intensity-dt*6);continue;}
+    l.position.set(v.position.x,v.position.y,v.position.z);l.color.setHex(v.color);l.distance=v.distance;
+    sl.cur=Math.min(1,sl.cur+dt*5);l.intensity=v.intensity*sl.cur;}
+}
 function loadMap(id){
-  const M=C.MAPS[id]||C.MAPS.represa;clearShards();
+  const M=C.MAPS[id]||C.MAPS.represa;clearShards();initLightSlots();for(const sl of lightSlots){sl.v=null;sl.l.intensity=0;}slotT=0;
   if(level){scene.remove(level.group);level.group.traverse(o=>{if(o.geometry)o.geometry.dispose();});}
   W=M;
   const group=new THREE.Group();scene.add(group);
@@ -776,7 +796,9 @@ function loadMap(id){
   group.traverse(o=>{if(!o.isMesh)return;const mt=o.material;if(mt&&(mt.transparent||mt.isMeshBasicMaterial))return;o.castShadow=true;o.receiveShadow=true;});
   renderer.shadowMap.needsUpdate=true;
   if(M.deco)buildDeco(group,M.deco);
-  for(const li of M.lights){const p=new THREE.PointLight(li.c,li.i,li.d,1.3);p.position.set(li.x,li.y,li.z);p.visible=!!S.q;group.add(p);L.maplights.push({l:p,base:li.i});}
+  // luces del mapa "virtuales": se encienden solo las más cercanas en unas pocas luces fijas (ver lightSlots)
+  L.vlights=[];
+  for(const li of M.lights){const v=vLight(li.x,li.y,li.z,li.c,li.i,li.d);L.vlights.push(v);L.maplights.push({l:v,base:li.i});}
   for(const p of M.pads){
     if(p.geyser){
       // boca del géiser: anillo de roca negra con el centro incandescente que se enciende antes de soplar
@@ -784,7 +806,7 @@ function loadMap(id){
       rim.position.set(p.x,p.y+.2,p.z);group.add(rim);
       const core=new THREE.Mesh(new THREE.CircleGeometry(p.r*.9,18),new THREE.MeshBasicMaterial({color:0xff7a20,transparent:true,opacity:.6}));
       core.rotation.x=-Math.PI/2;core.position.set(p.x,p.y+.42,p.z);group.add(core);
-      const gl=new THREE.PointLight(0xff6a18,0,14,1.4);gl.position.set(p.x,p.y+1.2,p.z);gl.visible=!!S.q;group.add(gl);
+      const gl=vLight(p.x,p.y+1.2,p.z,0xff6a18,0,14);L.vlights.push(gl);
       L.geysers=(L.geysers||[]);L.geysers.push({p,core,gl,was:false});
       continue;
     }
@@ -2478,7 +2500,7 @@ function updEffects(dt){
       const p=gy.p,g=p.geyser,ph=C.geyserPhase(p,serverNow()),on=ph<g.on,warn=Math.max(0,1-(g.period-ph)/1.2);
       // burbujeo que avisa, después la columna de magma
       gy.core.material.opacity=on?1:.35+warn*.6;gy.core.material.color.setHex(on?0xffd27a:warn>.1?0xff8a20:0xb03a0a);
-      if(gy.gl.visible)gy.gl.intensity=on?3.2+Math.random():warn*1.6;
+      gy.gl.intensity=S.q?(on?3.2+Math.random():warn*1.6):0;
       if(!on&&warn>0&&Math.random()<dt*40*warn)emit(sparks,p.x+R(p.r*1.4),p.y+.45,p.z+R(p.r*1.4),R(.4),1+Math.random()*1.5,R(.4),.4,1,.45,.08,4);
       if(on){const n=Math.round(dt*260);for(let k=0;k<n;k++){const a=Math.random()*6.28,r=Math.random()*p.r*.8;emit(sparks,p.x+Math.cos(a)*r,p.y+.5,p.z+Math.sin(a)*r,R(1.2),9+Math.random()*7,R(1.2),.7+Math.random()*.4,1,.5+Math.random()*.35,.08,9);}
         if(Math.random()<dt*10)emit(gore,p.x+R(p.r),p.y+.6,p.z+R(p.r),R(.6),3+Math.random()*3,R(.6),1.6,.18,.15,.14,-.8);}
@@ -2745,7 +2767,7 @@ $('sSkill').addEventListener('click',e=>{const v=e.target.dataset&&e.target.data
 $('sFl').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.fl=+v;saveS();syncSettings();if(net&&!online)net.send({t:'cfg',fl:S.fl});});
 $('sMap').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(!v)return;S.map=v;saveS();syncSettings();if(net&&!online)net.send({t:'cfg',map:v});else if(!inGame)loadMap(v);});
 $('sSh').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.sh=+v;saveS();syncSettings();if(level&&level.sun){level.sun.castShadow=!!S.sh;renderer.shadowMap.needsUpdate=true;}scene.traverse(o=>{if(o.material)o.material.needsUpdate=true;});SFX.ui();});
-$('sQ').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.q=+v;saveS();syncSettings();resize();if(level)level.maplights.forEach(m=>m.l.visible=!!S.q);});
+$('sQ').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.q=+v;saveS();syncSettings();resize();});
 syncSettings();probeServer();loadMap(S.map);initAccounts();syncChest();
 
 
@@ -2764,6 +2786,7 @@ function frame(now){
   }else if(!inGame){attract(dt);vms.forEach(v=>v.visible=false);flashMesh.visible=false;}
   updClub(dt,beatNow());musicTick();updFlags();
   updEffects(dt);renderLocker(dt);
+  updLightSlots(dt);
   if(S.sh!==0&&level&&level.sun&&((G.shF=(G.shF||0)+1)%2===0))renderer.shadowMap.needsUpdate=true;
   renderer.clear();renderer.render(scene,camera);
   if(inGame&&!me.alive&&G.pov){

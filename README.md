@@ -236,6 +236,7 @@ El servidor confía en la posición que manda cada cliente, así que alguien con
 
 - Los rayos (disparos, línea de visión de los bots, explosiones) primero descartan con una prueba rápida que no crea objetos, así no se llena la memoria de basura ni hay pausas del recolector.
 - La navegación de los bots se arma varias veces más rápido, y el servidor la prepara para todos los mapas al arrancar. Antes, cada cambio de mapa congelaba la partida un par de segundos para todos. En la práctica se arma la del próximo mapa mientras se ve la tabla final.
+- **Luces por cercanía**: cada mapa puede tener muchas lámparas, pero la placa de video solo calcula las **6 más cercanas** a la cámara (más el sol, el fogonazo y las luces de explosiones). Al moverte, las luces se reasignan con un fundido suave, así que no se nota. La Represa tenía 17 luces calculadas en cada píxel (por eso caían los FPS); ahora tiene las mismas que los demás mapas, con las sombras y texturas intactas.
 
 ## Fin de partida
 

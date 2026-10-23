@@ -300,8 +300,23 @@ Los establos de Fuertes del Cañón tienen la fachada como en la foto de referen
 
 ## Recarga (R)
 
-Todas las armas de fuego tienen cargador, como en TF2: pistola 12, escopeta 6, escopeta doble 2, ametralladora 40, lanzagranadas 4, lanzacohetes 4 (como el del Soldier de TF2: unos 2,7 s para recargar los cuatro), rifle de plasma 4, francotirador 5 y rifle de caza 3. Se recarga con **R** o solo cuando se vacía. Cada tipo tiene su animación: las de cargador (pistola, ametralladora, francotirador) se inclinan, sacan el cargador, meten el nuevo y montan; la escopeta, el lanzacohetes y el lanzagranadas cargan de a uno con un empujón por cartucho; la escopeta doble se quiebra y se cierra de un golpe; los rifles de plasma y de caza bajan girando y suben con un tirón. Las armas recién compradas o levantadas vienen con el cargador lleno.
-- Durante la recarga aparece la **mano izquierda** (como en TF2): sube desde abajo a la izquierda, trabaja sobre el arma (saca y mete el cargador, empuja los cartuchos o los cohetes, cierra la escopeta) y se va al terminar. El arma sube y se corre al centro para que se vea.
+Todas las armas de fuego tienen cargador, como en TF2: pistola 12, escopeta 6, escopeta doble 2, ametralladora 40, lanzagranadas 4, lanzacohetes 4 (como el del Soldier de TF2: unos 2,7 s para recargar los cuatro), rifle de plasma 4, francotirador 5 y rifle de caza 3. Se recarga con **R** o solo cuando se vacía. Las armas recién compradas o levantadas vienen con el cargador lleno.
+
+### Armas y animaciones (inspiradas en Quake 3 Arena y TF2)
+
+Las armas en primera persona están hechas con piezas redondeadas (cantos biselados, caños y tambores cilíndricos, culatas con perfil) en vez de cajas, y tienen partes que se mueven. Las dos manos agarran el arma: la derecha en la empuñadura y la izquierda en el guardamano, y la izquierda trabaja en cada recarga.
+
+- **Escopeta**: después de cada tiro la mano izquierda bombea el guardamano y sale volando el cartucho vacío. Para recargar la inclina mostrando la panza, saca los cartuchos de a uno y los mete por la ventana de carga, y al final bombea.
+- **Escopeta doble**: la quiebra sobre la bisagra, saltan las dos vainas, mete dos cartuchos y la cierra de un golpe.
+- **Ametralladora**: la izquierda en la empuñadura delantera; el arma tiembla al tirar y escupe vainas. Para recargar saca el cargador curvo, trae uno nuevo, lo calza con un golpe y monta la palanca.
+- **Pistola**: se lleva con una mano; la corredera retrocede en cada tiro. La izquierda aparece para cambiar el cargador y soltar la corredera.
+- **Lanzagranadas**: el tambor gira con cada tiro y se carga granada por granada.
+- **Lanzacohetes**: como el del Soldier de TF2, lo baja girándolo y mete los cohetes de a uno a mano por la boca.
+- **Rifle de plasma**: las bobinas se apagan al tirar y se vuelven a cargar; para recargar cambia la celda de energía.
+- **Francotirador**: después de cada tiro la mano derecha trabaja el cerrojo (sale la vaina); recarga por cargador.
+- **Rifle de caza**: nuevo modelo de palanca, estilo Winchester. Después de cada tiro la mano derecha baja y sube la palanca, y se recarga bala por bala por el portón del costado.
+
+Cada arma con sus manos son unas 10 llamadas de dibujo y unos 4.000 triángulos (las piezas quietas se fusionan en una malla por material), así que no cambia el rendimiento.
 
 El **cuchillo** ahora barre en horizontal y deja una **ráfaga** blanca en forma de media luna; todos los enemigos que queden dentro del barrido (hasta 1,9 m, unos 40° a cada lado) reciben el tajo. La mano agarra un solo mango y el otro gira suelto en los trucos.
 

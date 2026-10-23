@@ -892,6 +892,32 @@ function buildDeco(group,list){
       const fan=new THREE.Mesh(new THREE.CircleGeometry(.22,16),M_('acfan',()=>new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv(32,32,(g)=>{g.fillStyle='#bfc4c7';g.fillRect(0,0,32,32);g.strokeStyle='#555b60';for(let r=3;r<16;r+=3){g.beginPath();g.arc(16,16,r,0,7);g.stroke();}}))})));fan.position.set(.15,0,.165);g2.add(fan);group.add(g2);
     }else if(d.t==='lamp'){
       const l=new THREE.Mesh(new THREE.BoxGeometry(.3,.18,.1),M_('lampm',()=>new THREE.MeshBasicMaterial({color:0xffe2a8})));l.position.set(d.x,d.y,d.z+.05);group.add(l);
+    }else if(d.t==='pitch'){
+      // césped en franjas con las líneas blancas de una cancha de fútbol (pintadas en la textura, 24 px por metro)
+      const PX=24,W=(d.x1-d.x0)*PX|0,H=(d.z1-d.z0)*PX|0,X=x=>(x-d.x0)*PX,Z=z=>(z-d.z0)*PX;
+      const c=cv(W,H,(g)=>{
+        for(let k=0;k*2*PX<H+PX;k++){g.fillStyle=k%2?'#3f8a34':'#4a9a3c';g.fillRect(0,k*2*PX,W,2*PX);}
+        for(let n=0;n<2600;n++){g.fillStyle=n%2?'rgba(255,255,255,.035)':'rgba(0,0,0,.05)';g.fillRect(Math.random()*W|0,Math.random()*H|0,1,2);}
+        g.strokeStyle='rgba(245,248,240,.92)';g.lineWidth=.12*PX;
+        const r=(a,b,c2,e)=>g.strokeRect(X(a),Z(b),(c2-a)*PX,(e-b)*PX),cx=(d.lx0+d.lx1)/2,cz=(d.lz0+d.lz1)/2;
+        r(d.lx0,d.lz0,d.lx1,d.lz1);
+        g.beginPath();g.moveTo(X(d.lx0),Z(cz));g.lineTo(X(d.lx1),Z(cz));g.stroke();
+        g.beginPath();g.arc(X(cx),Z(cz),3.2*PX,0,7);g.stroke();
+        g.fillStyle='rgba(245,248,240,.92)';
+        const dot=(x,z)=>{g.beginPath();g.arc(X(x),Z(z),.18*PX,0,7);g.fill();};dot(cx,cz);
+        for(const s of [-1,1]){const gl=s<0?d.lz0:d.lz1;
+          r(cx-7,Math.min(gl,gl-s*5.5),cx+7,Math.max(gl,gl-s*5.5));        // área grande
+          r(cx-3.6,Math.min(gl,gl-s*2),cx+3.6,Math.max(gl,gl-s*2));        // área chica
+          dot(cx,gl-s*4.2);                                                 // punto del penal
+          g.beginPath();if(s<0)g.arc(X(cx),Z(gl+4.2),2.6*PX,Math.PI*.2,Math.PI*.8);else g.arc(X(cx),Z(gl-4.2),2.6*PX,Math.PI*1.2,Math.PI*1.8);g.stroke();   // medialuna
+          for(const x of [d.lx0,d.lx1]){g.beginPath();g.arc(X(x),Z(gl),.7*PX,0,7);g.stroke();}   // córners
+        }});
+      const t=new THREE.CanvasTexture(c);t.anisotropy=8;
+      const m=new THREE.Mesh(new THREE.PlaneGeometry(d.x1-d.x0,d.z1-d.z0),new THREE.MeshLambertMaterial({map:t}));
+      m.rotation.x=-Math.PI/2;m.position.set((d.x0+d.x1)/2,d.y,(d.z0+d.z1)/2);m.receiveShadow=true;group.add(m);
+      // banderines de córner
+      for(const x of [d.lx0,d.lx1])for(const z of [d.lz0,d.lz1]){const p=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,1.5,5),M_('pole',()=>new THREE.MeshPhongMaterial({color:0xdadfe3,shininess:90})));p.position.set(x,d.y+.75,z);group.add(p);
+        const f=new THREE.Mesh(new THREE.PlaneGeometry(.4,.28),M_('cflag',()=>new THREE.MeshLambertMaterial({color:0xffd21a,side:THREE.DoubleSide})));f.position.set(x+(x<(d.lx0+d.lx1)/2?.2:-.2),d.y+1.35,z);group.add(f);}
     }else if(d.t==='logo'){
       const c=cv(256,256,(g)=>ucpLogo(g,128,128,124));
       const m=new THREE.Mesh(new THREE.CircleGeometry(d.r,40),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));m.position.set(d.x,d.y,d.z);group.add(m);

@@ -23,7 +23,7 @@ Como en Counter-Strike llevás **una sola arma principal** (ranura 1): arrancás
 | Escopeta doble | 12 perdigones de 11 por tiro, dos tiros y recarga (R) | 1 / 2 de cerca |
 | Ametralladora | 16 | 7 / 10 |
 | Lanzagranadas | 110 de área + 40 directo; explota al segundo. Si le pega de lleno a alguien antes de rebotar: 100 directo, explota en el acto y da ¤ 150 | 1 / 2 |
-| Lanzacohetes | 80 directo + 85 de área en 4,5 m (el rocket jump empuja igual que antes) | 1 / 1 |
+| Lanzacohetes | 70 directo; 60 de área a los pies que baja rápido hasta 15 en el borde (4,5 m). El directo siempre pega más que tirar al piso. El rocket jump empuja igual que antes | 1 / 1 |
 | Rifle de plasma | 110 (atraviesa) | 1 / 2 |
 | Cuchillo mariposa | 55, 99 por la espalda; el segundo tajo dentro de 4 s mata siempre; ignora el blindaje; alcance 2,6 m | 2 / 2 |
 | Francotirador | 115, 230 a la cabeza (click derecho: mira) | 1 / 2 |
@@ -128,7 +128,7 @@ Cada impacto muestra al lado de la mira cuánto le sacaste (con un "ding" como e
 
 **Tiro a la cabeza:** cuando le pegás en la cabeza suena una campanita metálica (como el "dink" de Counter-Strike o el ding de TF2) en lugar del ding normal, y el número de daño sale en rojo con "¡CABEZA!".
 
-**Rocket jump (lanzacohetes estilo Soldier de TF2):** a los enemigos les hace el mismo daño de siempre, pero tu propio cohete te saca mucho menos (más o menos 27 de vida si explota a tus pies) y te empuja fuerte hacia arriba y hacia adelante. Disparando al piso quieto subís unos 4 m; si saltás y disparás al piso en el mismo momento (mejor agachado) llegás a unos 7 m, ideal para subir a lugares altos o cruzar el mapa rápido.
+**Rocket jump (lanzacohetes estilo Soldier de TF2):** a los enemigos les hace el mismo daño de siempre, pero tu propio cohete te saca mucho menos (más o menos 17 de vida si explota a tus pies) y te empuja fuerte hacia arriba y hacia adelante. Disparando al piso quieto subís unos 4 m; si saltás y disparás al piso en el mismo momento (mejor agachado) llegás a unos 7 m, ideal para subir a lugares altos o cruzar el mapa rápido.
 
 **Chat:** cada jugador tiene su propio color de nombre en el chat (claro y fácil de leer, sin importar el color de su armadura). En los modos por equipos, un cuadradito al lado del nombre muestra de qué equipo es.
 
@@ -267,7 +267,7 @@ En la pantalla final hay una tarjeta por cada mapa del modo, con su nombre y una
 ## Mapas ampliados
 
 - **La Represa — salas más dinámicas:** en el patio norte, un **ascensor exterior** sube a la torre del riel en segundos (si lo agarrás a tiempo). En la sala de lava, una **barcaza** cruza la pileta por debajo de la pasarela hasta una repisa con saltador a la megasalud, y dos **géiseres de lava** que, si caés, te tiran a la pasarela alta o al andén. En la sala de compuertas, un **puente grúa** sale del ensanche de la pasarela y cruza la sala a 9,5 m.
-- **La Cuenca — Polideportivo (al oeste):** se entra desde la calle o por una puerta desde la azotea de las casas. Cancha de madera con aros, **tribuna**, vestuarios con casilleros y bancos, una cubierta caminable arriba de los vestuarios, un balcón con escalera, una **plataforma que cruza la cancha** a 5,5 m y un saltador.
+- **La Cuenca — Polideportivo (al oeste):** se entra desde la calle o por una puerta desde la azotea de las casas. **Cancha de fútbol** de césped sintético con líneas, banderines y dos arcos con red (el blindaje pesado está adentro del arco norte y hay un botiquín en el círculo central), **tribuna**, vestuarios con casilleros y bancos, una cubierta caminable arriba de los vestuarios, un balcón con escalera, una **plataforma que cruza la cancha** a 5,5 m y un saltador.
 - **Humita — Backstage (detrás del escenario):** se entra por una puerta desde el escenario o desde arriba de las torres de parlantes. **Camarines** con espejo y sillón, el **micro de la gira** en el medio (se sube por las cajas), pasarelas a 5 m con una **pasarela móvil** que las cruza, un **montacargas** y un saltador.
 
 ## Muertes con cuchillo

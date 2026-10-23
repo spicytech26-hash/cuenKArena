@@ -36,7 +36,7 @@ const WEAPONS = [
   { name: 'Ametralladora',  ammo: 'bullets',  cost: 1, rate: .085, type: 'hit', pel: 1,  spread: .013, dmg: 16, range: 300, mag: 40, reload: 2 },
   // granada: explota al segundo; si le pega de lleno a alguien antes de rebotar, explota en el acto con daño extra y premio
   { name: 'Lanzagranadas',  ammo: 'grenades', cost: 1, rate: .75, type: 'proj', proj: 'grenade', speed: 26, dmg: 110, rad: 5.5, direct: 40, clean: 100, fuse: 1, mag: 4, reload: 2 },
-  { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 85, rad: 4.5, direct: 80, mag: 4, reload: 3.6 },   // como el del Soldier: 4 cohetes y ~2,7 s para recargar todo   // nerf: antes 100 directo + 105 de área en 5 m
+  { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 60, rad: 4.5, sfall: .75, direct: 70, mag: 4, reload: 3.6 },   // como el del Soldier: 4 cohetes y ~2,7 s para recargar todo   // nerf: antes 100/105, después 80/85; ahora 70 directo y 60 de área (nunca más que el directo) que cae rápido con la distancia
   { name: 'Rifle de plasma', ammo: 'slugs',    cost: 1, rate: 1.4, type: 'rail', pel: 1,  dmg: 110, range: 400, mag: 4, reload: 2.2 },
   // cuchillo mariposa: el segundo tajo sobre la misma víctima (dentro de 4 s) mata siempre
   { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 55, back: 1.8, range: 1.9, melee: true },   // alcance corto como el cuchillo del espía de TF2 o el del CS:GO
@@ -658,9 +658,16 @@ function buildLaCuenca() {
   /* ---- POLIDEPORTIVO (ala nueva al oeste): cancha, tribuna, vestuarios y balcón ---- */
   add(-67, -2, -31, -31, 16, -30, 'block'); add(-67, -2, 28, -31, 16, 29, 'block'); add(-67, -2, -30, -66, 16, 28, 'block');
   add(-66, -2, -30, -31, 0, 28, 'concrete'); add(-66, 14, -30, -31, 15, 28, 'roof');
-  add(-60, 0, -16, -38, .05, 16, 'wood');                                          // cancha de madera
-  add(-60, .05, -.1, -38, .07, .1, 'whitewall', { nc: 1 }); add(-60, .05, -16, -38, .07, -15.8, 'whitewall', { nc: 1 }); add(-60, .05, 15.8, -38, .07, 16, 'whitewall', { nc: 1 });
-  for (const s of [-1, 1]) { const z = s * 16.4; add(-49.3, 0, z - .3, -48.7, 3.4, z + .3, 'metal'); add(-50.6, 3.4, z - .1, -47.4, 4.8, z + .1, 'glass'); add(-49.5, 3.6, z - s * .6, -48.5, 3.7, z, 'neonR', { nc: 1 }); }
+  // cancha de fútbol de césped sintético: las líneas van pintadas en el deco 'pitch'; un arco en cada punta (5 x 2,4 m) con red
+  deco.push({ t: 'pitch', x0: -61, x1: -37, z0: -18, z1: 17.9, y: .02, lx0: -60, lx1: -38, lz0: -16, lz1: 16 });
+  for (const s of [-1, 1]) {
+    const z = s * 16, zb = s * 17.3, zl = Math.min(z, zb), zh = Math.max(z, zb);
+    add(-51.7, 0, z - .1, -51.5, 2.6, z + .1, 'whitewall'); add(-46.5, 0, z - .1, -46.3, 2.6, z + .1, 'whitewall');   // palos
+    add(-51.7, 2.4, z - .1, -46.3, 2.6, z + .1, 'whitewall');                                                            // travesaño
+    add(-51.7, 0, zb - .05, -46.3, 2.5, zb + .05, 'fence');                                                            // red del fondo
+    add(-51.7, 0, zl, -51.6, 2.5, zh, 'fence'); add(-46.4, 0, zl, -46.3, 2.5, zh, 'fence');                         // redes de los costados
+    add(-51.7, 2.45, zl, -46.3, 2.5, zh, 'fence', { nc: 1 });                                                            // red de arriba
+  }
   stairs(-60, 18, -38, 28, 0, .5, 10, 'z', 1, 'board');                            // tribuna
   // vestuarios bajo la cubierta del norte
   wall(-66, -20, -31, -19.5, 0, 5.1, [D(-62, -58, 0, 3.5), D(-44, -40, 0, 3.5)], 'whitewall');
@@ -808,7 +815,7 @@ function buildLaCuenca() {
   I('w6', -10, 7, -20); I('w1', -19, 3, -12); I('quad', 2, 11, -19); I('mega', -3, 3.05, -14.5); I('armorH', -12, 11, -26); I('armor', 19, 0, 8);
   I('health', -6, 1.5, 10); I('health', 15, 0, 20); I('health', 12, 3.05, -25); I('health', 12, 7, -9); I('health', -18, 3, -20);
   // polideportivo
-  I('armorH', -49, 0, 0); I('w2', -58, 0, -26); I('health', -63, 0, -25); I('health', -41, 0, -25.5); I('health', -55, 5, 27.5); I('rockets', -34, 5.5, -10);
+  I('health', -49, 0, 0); I('armorH', -49, 0, -16.7); I('w2', -58, 0, -26); I('health', -63, 0, -25); I('health', -41, 0, -25.5); I('health', -55, 5, 27.5); I('rockets', -34, 5.5, -10);
   I('shells', -60, 5.5, -25); I('bullets', -35, 0, 20); I('health', -34, 5.5, 4); I('grenades', -64, 0, 20);
   I('armor', 27, 7, -4); I('health', 25.5, 7, 6); I('bullets', 28, 7, -10.5); I('grenades', 27, 10.4, -22.5);
   I('armor', -27, 5, -9); I('health', -25.5, 5, 6); I('shells', -28, 5, -16); I('health', 14, 0, -29);
@@ -1977,7 +1984,7 @@ class Game {
       if (dist >= W_.rad) continue;
       if (!los(this.W, pr.x, pr.y + .1, pr.z, t.s.x, t.s.y + .9, t.s.z) && !los(this.W, pr.x, pr.y + .1, pr.z, t.s.x, t.s.y + .2, t.s.z)) continue;
       const self = t.id === pr.own;
-      let dmg = W_.dmg * (1 - .6 * dist / W_.rad) * pr.q; if (self) dmg *= pr.k === 'rocket' ? .28 : .5;
+      let dmg = W_.dmg * (1 - (W_.sfall || .6) * dist / W_.rad) * pr.q; if (self) dmg *= pr.k === 'rocket' ? .28 : .5;
       const cx = t.s.x - pr.x, cy = t.s.y + .9 - pr.y, cz = t.s.z - pr.z, cl = Math.hypot(cx, cy, cz) || 1;
       const ks = self && !t.bot ? 0 : .16;
       this.damage(t, dmg, own, pr.w, [cx / cl, cy / cl, cz / cl], ks / (self ? 1 : pr.q), self ? 'self' : 'frag');

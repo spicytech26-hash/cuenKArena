@@ -528,11 +528,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
       <kbd>B</kbd><span>tienda</span><kbd>Tab</kbd><span>tabla de frags</span>
       <kbd>T · Enter</kbd><span>chat</span><kbd>Esc</kbd><span>menú</span>
     </div>
-    <p class="legal"><a href="/privacidad.html" target="_blank" rel="noopener">Privacidad</a> · <a href="/terminos.html" target="_blank" rel="noopener">Condiciones</a></p>
+    <p class="legal"><a href="/privacidad.html" target="_blank" rel="noopener">Privacidad</a> · <a href="/terminos.html" target="_blank" rel="noopener">Condiciones</a> · <a href="editor.html" target="_blank" rel="noopener">Editor de mapas</a></p>
   </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin></script>
+<script>/* "Probar en práctica" desde el editor de mapas (editor.html): index.html?editor carga el mapa que dejó guardado el editor */
+if(/[?&]editor\b/.test(location.search)){try{self.CK_MAPA_EDITOR=JSON.parse(localStorage.getItem('cuenk_mapa_editor')||'null');}catch(e){}}</script>
 <script src="game.js"></script>
 <script>
 (function(){
@@ -550,11 +552,15 @@ const GG=C.GG,TEAMS=C.TEAMS;
 const S={sens:1,fov:95,vol:.5,music:.45,invY:false,hop:true,name:'',skin:{c:C.COLORS[0],v:'#ffffff',a:0},bots:5,skill:1,fl:20,map:'represa',q:1,mode:'arena',tdmLimit:50,fs:true,showImg:true,mira:{s:'cruz',c:'#ffffff',z:1}};
 try{const saved=JSON.parse(localStorage.getItem('cuenk_settings')||'{}');if(saved.color&&!saved.skin)saved.skin={c:saved.color,v:'#ffffff',a:0};Object.assign(S,saved);}catch(e){}
 if(S.map==='sagrado'||S.map==='salvaje')S.map='panymanteca';
+// mapa del editor: se juega solo en esta pestaña; si el mapa guardado ya no existe se vuelve a La Represa
+const EDITOR_MAP=self.CK_MAPA_EDITOR&&C.MAPS[self.CK_MAPA_EDITOR.id]?self.CK_MAPA_EDITOR.id:null;
+if(!C.MAPS[S.map])S.map='represa';
 if(!S.mira||typeof S.mira!=='object')S.mira={s:'cruz',c:'#ffffff',z:1};
 if(!S.skin||typeof S.skin!=='object')S.skin={c:C.COLORS[0],v:'#ffffff',a:0};
 // identificador al azar de este navegador (solo sirve para que un jugador echado por votación no vuelva enseguida)
 let CID='';try{CID=localStorage.getItem('cuenk_cid')||'';if(!CID){CID=Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem('cuenk_cid',CID);}}catch(e){CID=Math.random().toString(36).slice(2);}
-function saveS(){try{localStorage.setItem('cuenk_settings',JSON.stringify(S));}catch(e){}}
+const MAP0=S.map;if(EDITOR_MAP)S.map=EDITOR_MAP;
+function saveS(){try{localStorage.setItem('cuenk_settings',JSON.stringify(EDITOR_MAP&&S.map===EDITOR_MAP?Object.assign({},S,{map:MAP0}):S));}catch(e){}}
 if(!S.name)S.name='Jugador'+(100+Math.floor(Math.random()*900));
 
 /* =================== RENDER =================== */
@@ -1264,9 +1270,14 @@ function vShellM(){return vGrp('',vT(.0125,.0125,.05,vShell,0,0,-.004,10),vT(.01
 function vRocketM(){const r=new THREE.Group();r.add(vT(.026,.026,.17,vRL,0,0,.085,12),vCone(.026,.07,vRed,0,0,-.035,12),vT(.027,.027,.012,vRLd,0,0,.0,12),vT(.02,.024,.03,vBlack,0,0,.18,10));
   for(let k=0;k<4;k++){const f=vRB(.004,.03,.05,.0015,vRLd,0,0,.15);const a=k*Math.PI/2;f.position.set(Math.sin(a)*.03,Math.cos(a)*.03,.15);f.rotation.z=-a;r.add(f);}return r;}
 function vNadeM(){return vGrp('',vSph(.03,vODd,0,0,0,12,10),vT(.031,.031,.012,vBlack,0,0,0,12),vT(.012,.012,.02,vBrass,0,0,.032,8));}
-
-function buildGunV(i){const g=new THREE.Group();let tip=[0,0,-.5];
-  if(i===0){
+// registro de armas: cada archivo de 07-armas/ completa VMOD[i] (modelo) y vRigs[i] (animación)
+const VMOD={},vRigs={};
+// modelos .glb que reemplazan a los hechos con código (los carga 20-modelos-glb.js desde public/modelos/modelos.json)
+const GLB={armas:{},items:{}};
+/* ===== 0 · Pistola =====
+   VMOD[0]: el modelo (primera persona, tienda, ítem en el piso y en la mano de los demás). Devuelve la punta del caño.
+   vRigs[0]: animaciones de disparo y recarga (ver 08-armas-animacion.js). */
+VMOD[0]=function(g){let tip=[0,0,-.5];
     // pistola: corredera redondeada con estrías (se mueve al disparar), armazón de polímero, cargador que se cae al recargar
     const slide=vGrp('slide',vRB(.032,.034,.19,.008,mSlide,0,.031,-.045),vT(.0095,.0095,.02,vBlack,0,.03,-.142,12),vRB(.006,.008,.008,.002,vBlack,0,.051,-.128),
       vRB(.026,.008,.012,.002,vBlack,0,.05,.045));
@@ -1278,8 +1289,29 @@ function buildGunV(i){const g=new THREE.Group();let tip=[0,0,-.5];
       vRB(.022,.012,.018,.004,vSteelL,0,.026,.062));
     g.add(vGrp('mag',vRB(.022,.1,.038,.004,vBlack,0,-.075,.06,-.26),vRB(.026,.012,.044,.004,vPoly,0,-.124,.073,-.26)));
     tip=[0,.03,-.155];
-  }
-  if(i===1){
+  return tip;};
+// ---- pistola ----
+vRigs[0]=(g,P,u,f)=>{
+  const empty=me.mag[0]===0&&u<0;
+  P.slide.position.z=empty?.03:f<.09?.03*vbump(f,0,.09):0;
+  P.mag.position.set(0,0,0);P.mag.rotation.set(0,0,0);P.mag.visible=true;
+  // la pistola se lleva con una mano (como en TF2); la izquierda aparece solo para cambiar el cargador
+  H.rot=[Math.PI/2-.3,0,0];H.p=null;
+  if(u<0)return;
+  const k=vEnv(u,.12,.14);vGun(g,k,VPR[0]);const PK=vPk(g),rest=PK;
+  if(u<.36){const d=vss((u-.06)/.22);P.mag.position.set(0,-.4*d*d,.03*d);P.mag.rotation.x=.4*d;P.mag.visible=d<.95;}
+  else if(u<.62){const h=vKF(u,[[.36,PK],[.52,[0,-.22,.08]],[.62,[0,-.1,.06]]]);P.mag.position.set(h[0],h[1]+.1,h[2]-.06);}
+  if(VEV.u(.12))SFX.magOut();if(VEV.u(.6)){SFX.magIn();}
+  g.rotation.x+=.05*vbump(u,.58,.68);
+  P.slide.position.z=Math.max(P.slide.position.z,u<.72?.03:u<.8?.03+.012*vbump(u,.72,.8):0);
+  if(VEV.u(.8))SFX.slideRel();
+  H.p=vKF(u,[[0,rest],[.08,[-.05,-.12,.08]],[.3,PK],[.36,PK],[.52,[0,-.22,.08]],[.62,[0,-.1,.06]],[.66,[-.03,.06,.05]],[.74,[-.03,.06,.05]],[.78,[-.03,.065,.09]],[.86,[-.03,.065,.09]],[1,rest]]);
+  H.rot=u>.62&&u<.88?null:H.rot;
+};
+/* ===== 1 · Escopeta =====
+   VMOD[1]: el modelo (primera persona, tienda, ítem en el piso y en la mano de los demás). Devuelve la punta del caño.
+   vRigs[1]: animaciones de disparo y recarga (ver 08-armas-animacion.js). */
+VMOD[1]=function(g){let tip=[0,0,-.5];
     // escopeta de bombeo (como la de TF2): cajón de acero, caño con cinta, tubo cargador, guardamano de madera que se bombea
     g.add(vRB(.066,.088,.24,.014,vSteel,0,.006,.04),vRB(.004,.028,.07,.001,vBlack,.0335,.02,.03),vRB(.036,.004,.08,.001,vBlack,0,-.039,.03),
       vT(.021,.021,.62,vSteel,0,.032,-.39,18),vT(.025,.025,.022,vSteelL,0,.032,-.69,18),vRB(.012,.006,.6,.002,vSteelL,0,.055,-.39),vSph(.006,vBrass,0,.062,-.68,8,6),
@@ -1290,8 +1322,31 @@ function buildGunV(i){const g=new THREE.Group();let tip=[0,0,-.5];
     const pump=vGrp('pump',vRB(.058,.05,.17,.018,woodRifle,0,-.016,-.34),vRB(.004,.006,.13,.001,vSteel,.026,-.006,-.22),vRB(.004,.006,.13,.001,vSteel,-.026,-.006,-.22));
     for(let k=0;k<6;k++)pump.add(vRB(.0595,.006,.006,.002,vWoodD,0,-.016,-.4+k*.024));
     g.add(pump);tip=[0,.032,-.7];
+  return tip;};
+// ---- escopeta de bombeo: bombea después de cada tiro; recarga metiendo los cartuchos de a uno por abajo y bombea con las dos manos ----
+vRigs[1]=(g,P,u,f)=>{
+  let pump=f<.14?0:f<.3?vss((f-.14)/.16):f<.48?1-vss((f-.3)/.18):0;
+  if(VEV.f(.24)){SFX.pumpBack();vEject(g,[.045,.03,.03],[1.5,1.3,.4],'shell');}
+  if(VEV.f(.4))SFX.pumpFwd();
+  g.rotation.z+=.05*pump;g.rotation.x+=.035*pump;g.position.y-=.01*pump;
+  H.hold=null;H.rot=null;
+  if(u>=0){
+    const k=vEnv(u,.13,.12);vGun(g,k,VPR[1]);const PK=vPk(g);
+    const n=Math.max(1,Math.min(4,me.relN||4)),c=vCyc(u,.16,.78,n);
+    const pt=[0,-.016,-.34],port=[0,-.06,.04],app=[-.01,-.13,.07];
+    if(c){const q=c.c;H.p=vKF(q,[[0,PK],[.32,app],[.52,port],[.62,port],[1,PK]]);H.hold=q<.55?'shell':null;g.rotation.x-=.03*vbump(q,.45,.62);}
+    else if(u<.16)H.p=vMix(pt,PK,vss(u/.14));
+    else{const r=u<.86?vss((u-.78)/.08):1;H.p=vMix(PK,pt,r);if(u>.86)pump=u<.92?vss((u-.86)/.06):1-vss((u-.92)/.06);}
+    if(VEV.cyc(.16,.78,n,.5))SFX.shellIn();if(VEV.u(.88))SFX.pumpBack();if(VEV.u(.94))SFX.pumpFwd();
+    if(u>.86){g.rotation.z+=.06*pump;g.position.z+=.01*pump;}
   }
-  if(i===2){
+  P.pump.position.z=.11*pump;
+  if(u<0||u>.86)H.p=[0,-.016,-.34+.11*pump];
+};
+/* ===== 2 · Escopeta doble =====
+   VMOD[2]: el modelo (primera persona, tienda, ítem en el piso y en la mano de los demás). Devuelve la punta del caño.
+   vRigs[2]: animaciones de disparo y recarga (ver 08-armas-animacion.js). */
+VMOD[2]=function(g){let tip=[0,0,-.5];
     // escopeta doble: los caños se quiebran sobre la bisagra para cargar; vainas a la vista en la recámara
     const brl=vGrp('brl',vT(.021,.021,.55,vSteel,-.022,.035,-.27,16),vT(.021,.021,.55,vSteel,.022,.035,-.27,16),vRB(.014,.008,.54,.003,vSteelL,0,.058,-.27),
       vRB(.03,.012,.54,.003,vSteel,0,.014,-.27),vRB(.064,.044,.2,.016,woodRifle,0,-.004,-.18),vRB(.07,.05,.05,.01,vSteel,0,.022,-.02),
@@ -1303,8 +1358,28 @@ function buildGunV(i){const g=new THREE.Group();let tip=[0,0,-.5];
       vP([[.115,.046],[.18,.036],[.42,-.006],[.436,-.012],[.442,-.124],[.42,-.13],[.28,-.086],[.17,-.06],[.115,-.03]],.052,woodRifle,0,0,0,.006),
       vRB(.056,.12,.014,.004,vRubber,0,-.068,.442,-.06));
     tip=[0,.035,-.56];
-  }
-  if(i===3){
+  return tip;};
+// ---- escopeta doble: la quiebra, saltan las vainas, mete dos cartuchos y la cierra de un golpe ----
+vRigs[2]=(g,P,u,f)=>{
+  P.brl.rotation.x=0;P.sh.visible=true;H.hold=null;H.rot=null;
+  const fore=()=>{P.brl.updateMatrix();vV.set(0,-.004,-.18+.04).applyMatrix4(P.brl.matrix);return [vV.x,vV.y-.024,vV.z];};
+  if(u>=0){
+    const k=vEnv(u,.12,.12);vGun(g,k,VPR[2]);const PK=vPk(g);
+    const open=u<.74?vss((u-.1)/.12):1-vss((u-.74)/.06);P.brl.rotation.x=-.62*open+(u>.8?.05*vbump(u,.8,.9):0);
+    if(VEV.u(.24)){vEject(g,[-.022,.06,-.03],[-.2,1.6,1.8],'shell');vEject(g,[.022,.06,-.03],[.2,1.7,1.9],'shell');SFX.breakOpen();}
+    P.sh.visible=!(u>.24&&u<.66);
+    if(VEV.u(.64))SFX.shellIn();if(VEV.u(.79))SFX.breakClose();
+    g.rotation.x+=.08*vbump(u,.78,.88);
+    const breech=[0,.07,-.02];
+    H.p=vKF(u,[[0,fore()],[.24,fore()],[.36,PK],[.4,PK],[.56,[-.01,.12,.02]],[.66,breech],[.7,breech],[.8,fore()],[1,fore()]]);
+    if(u<.24||u>.7)H.p=vMix(H.p,fore(),u<.24?1:vss((u-.7)/.1));
+    H.hold=u>.38&&u<.66?'shell2':null;
+  }else H.p=fore();
+};
+/* ===== 3 · Ametralladora =====
+   VMOD[3]: el modelo (primera persona, tienda, ítem en el piso y en la mano de los demás). Devuelve la punta del caño.
+   vRigs[3]: animaciones de disparo y recarga (ver 08-armas-animacion.js). */
+VMOD[3]=function(g){let tip=[0,0,-.5];
     // ametralladora estilo Quake: cajón verde oliva con placas, guardamano con ranuras, freno de boca, cargador curvo y palanca de montar
     g.add(vRB(.064,.074,.32,.01,mODrab,0,0,-.06),vRB(.068,.018,.24,.004,vODd,0,.024,-.07),vRB(.026,.014,.26,.003,vBlack,0,.044,-.07),
       vRB(.03,.026,.03,.006,mODrab,0,.06,.07),vRB(.008,.026,.008,.002,vBlack,0,.062,-.205),vRB(.004,.022,.05,.001,vBrass,.0335,.008,-.02),
@@ -1319,8 +1394,33 @@ function buildGunV(i){const g=new THREE.Group();let tip=[0,0,-.5];
     g.children[g.children.length-1].position.set(0,-.035,-.105);
     g.add(vGrp('cock',vRB(.012,.012,.03,.004,vSteelL,-.036,.026,-.2),vT(.006,.006,.03,vSteel,-.036,.026,-.18,8)));
     tip=[0,.004,-.56];
-  }
-  if(i===4){
+  return tip;};
+// ---- ametralladora: la mano izquierda en la empuñadura delantera; saca el cargador, pone uno nuevo y monta la palanca ----
+vRigs[3]=(g,P,u,f)=>{
+  P.mag.position.set(0,-.035,-.105);P.mag.rotation.set(0,0,0);P.mag.visible=true;P.cock.position.z=0;
+  if(f<.07){const v=1-f/.07;g.position.x+=R(.004)*v;g.position.y+=R(.004)*v;g.rotation.z+=R(.02)*v;}
+  const grip=[0,-.07,-.25];H.p=grip;H.rot=VERT;H.hold=null;
+  if(u<0)return;
+  const k=vEnv(u,.12,.13);vGun(g,k,VPR[3]);const PK=vPk(g);
+  const grab=[-.004,-.145,-.135],well=[-.004,-.06,-.125],cock=[-.05,.028,-.19];
+  let mo=[0,0,0],mr=0,vis=true;
+  if(u<.3){const d=vss((u-.12)/.16);mo=[0,-.1*d,-.01*d];mr=.25*d;}
+  else if(u<.44){const d=vss((u-.3)/.14);mo=[0,-.1-.5*d,-.01];mr=.25+1.1*d;vis=d<.9;}
+  else if(u<.7){const h=vKF(u,[[.44,PK],[.58,[0,-.27,-.12]],[.7,grab]]);mo=[h[0]-grab[0],h[1]-grab[1],h[2]-grab[2]];mr=u<.6?.3:.3*(1-vss((u-.6)/.1));}
+  P.mag.position.set(mo[0],-.035+mo[1],-.105+mo[2]);P.mag.rotation.x=mr;P.mag.visible=vis;
+  if(VEV.u(.2))SFX.magOut();if(VEV.u(.69))SFX.magIn();if(VEV.u(.8))SFX.bolt();
+  g.rotation.x+=.07*vbump(u,.68,.76);
+  const pull=u<.76?0:u<.81?vss((u-.76)/.05):1-vss((u-.81)/.03);P.cock.position.z=.06*pull;
+  g.rotation.x-=.04*vbump(u,.8,.88);
+  const ck=[cock[0],cock[1],cock[2]+.06*pull];
+  H.p=vKF(u,[[0,grip],[.12,grab],[.28,[grab[0],grab[1]-.1,grab[2]-.01]],[.42,PK],[.44,PK],[.58,[0,-.27,-.12]],[.7,grab],[.72,grab],[.76,cock],[.86,cock],[1,grip]]);
+  if(u>.76&&u<.86)H.p=ck;
+  H.rot=(u>.1&&u<.74)?null:(u>=.74&&u<.88)?[0,0,.5]:VERT;
+};
+/* ===== 4 · Lanzagranadas =====
+   VMOD[4]: el modelo (primera persona, tienda, ítem en el piso y en la mano de los demás). Devuelve la punta del caño.
+   vRigs[4]: animaciones de disparo y recarga (ver 08-armas-animacion.js). */
+VMOD[4]=function(g){let tip=[0,0,-.5];
     // lanzagranadas de tambor (como el del Demo): tambor que gira con cada tiro, caño corto, empuñadura y culata
     const drum=vGrp('drum',vT(.06,.06,.12,vSteel,0,0,0,18));
     for(let k=0;k<6;k++){const a=k/6*Math.PI*2;drum.add(vT(.017,.017,.122,vBlack,Math.sin(a)*.036,Math.cos(a)*.036,0,10));drum.add(vRB(.008,.014,.1,.002,vSteelL,Math.sin(a+.52)*.058,Math.cos(a+.52)*.058,0,0,0,-(a+.52)));}
@@ -1330,8 +1430,26 @@ function buildGunV(i){const g=new THREE.Group();let tip=[0,0,-.5];
       vP([[.03,-.03],[.075,-.03],[.105,-.14],[.06,-.145]],.036,woodRifle,0,0,0,.005),vP([[.02,-.04],[.03,-.06],[.075,-.06],[.075,-.04]],.012,vSteel,0,0,0,.002),
       vP([[.07,.02],[.24,-.01],[.25,-.1],[.21,-.1],[.1,-.05]],.05,woodRifle,0,0,0,.006),vRB(.03,.018,.2,.006,vODd,0,-.05,-.25));
     tip=[0,0,-.47];
-  }
-  if(i===5){
+  return tip;};
+// ---- lanzagranadas: el tambor gira con cada tiro; recarga granada por granada por la ventana del costado ----
+vRigs[4]=(g,P,u,f)=>{
+  let rot=me.drumA||0;const step=Math.PI/3;
+  H.p=[0,-.06,-.25];H.rot=null;H.hold=null;
+  if(u>=0){
+    const k=vEnv(u,.12,.12);vGun(g,k,VPR[4]);const PK=vPk(g);
+    const n=Math.max(1,Math.min(4,me.relN||4)),c=vCyc(u,.15,.85,n),gate=[-.075,.0,-.06],app=[-.16,-.03,-.02];
+    if(c){H.p=vKF(c.c,[[0,PK],[.35,app],[.55,gate],[.65,gate],[1,PK]]);H.hold=c.c<.58?'nade':null;rot+=step*(c.i+vss((c.c-.55)/.2));g.rotation.z-=.03*vbump(c.c,.5,.66);}
+    else if(u>=.85){rot+=step*n;H.p=vMix(PK,[0,-.06,-.25],vss((u-.85)/.13));}
+    else H.p=vMix([0,-.06,-.25],PK,vss(u/.15));
+    if(VEV.cyc(.15,.85,n,.56))SFX.shellIn();
+    if(VEV.u(.97))me.drumA=(me.drumA||0)+step*n;
+  }else if(f<.25)rot+=step*vss(f/.25)-step;
+  P.drum.rotation.z=rot;
+};
+/* ===== 5 · Lanzacohetes =====
+   VMOD[5]: el modelo (primera persona, tienda, ítem en el piso y en la mano de los demás). Devuelve la punta del caño.
+   vRigs[5]: animaciones de disparo y recarga (ver 08-armas-animacion.js). */
+VMOD[5]=function(g){let tip=[0,0,-.5];
     // lanzacohetes como el del Soldier: tubo grueso con boca acampanada, anillos, mira arriba, empuñadura y manija delantera
     g.add(vT(.07,.07,.84,vRL,0,0,-.2,22),vT(.074,.086,.08,vRLd,0,0,-.6,22),vT(.066,.066,.12,vBlack,0,0,-.58,20,true),
       vT(.09,.078,.08,vRLd,0,0,.24,22),vT(.07,.07,.06,vBlack,0,0,.25,18,true),
@@ -1341,8 +1459,26 @@ function buildGunV(i){const g=new THREE.Group();let tip=[0,0,-.5];
       vRB(.04,.016,.1,.005,vRLd,0,-.068,-.32),vTY(.016,.018,.08,vPoly,0,-.11,-.32,0),vRB(.06,.03,.16,.012,vRubber,0,.07,.12));
     const ld=vRocketM();ld.name='loaded';ld.position.set(0,0,-.6);ld.scale.setScalar(1.25);g.add(ld);
     tip=[0,0,-.64];
-  }
-  if(i===6){
+  return tip;};
+// ---- lanzacohetes: como el del Soldier, mete los cohetes de a uno a mano por la boca ----
+vRigs[5]=(g,P,u,f)=>{
+  P.loaded.visible=(me.mag[5]||0)>0;
+  H.p=[0,-.11,-.32];H.rot=VERT;H.hold=null;
+  if(u<0)return;
+  const k=vEnv(u,.11,.11);vGun(g,k,VPR[5]);const PK=vPk(g);
+  const n=Math.max(1,Math.min(4,me.relN||4)),c=vCyc(u,.13,.87,n);
+  const app=[-.02,.0,-.98],p1=[-.01,.0,-.8],p2=[-.0,.0,-.7];
+  P.loaded.visible=false;
+  if(c){const q=c.c;H.rot=null;H.p=vKF(q,[[0,PK],[.36,app],[.56,p1],[.66,p2],[.72,p2],[1,PK]]);H.hold=q<.66?'rocket':null;
+    g.rotation.x-=.05*vbump(q,.6,.74);g.position.z+=.02*vbump(q,.6,.74);P.loaded.visible=q>=.66;}
+  else if(u<.13)H.p=vMix([0,-.11,-.32],PK,vss(u/.12));
+  else{H.p=vMix(PK,[0,-.11,-.32],vss((u-.87)/.11));P.loaded.visible=true;}
+  if(VEV.cyc(.13,.87,n,.64))SFX.rocketIn();
+};
+/* ===== 6 · Rifle de plasma =====
+   VMOD[6]: el modelo (primera persona, tienda, ítem en el piso y en la mano de los demás). Devuelve la punta del caño.
+   vRigs[6]: animaciones de disparo y recarga (ver 08-armas-animacion.js). */
+VMOD[6]=function(g){let tip=[0,0,-.5];
     // rifle de plasma (en la línea del railgun de Quake): cuerpo de metal con bobinas que brillan, aletas, celda de energía abajo
     const glow=new THREE.MeshBasicMaterial({color:0x8fe4ff});g.userData.glow=glow;
     g.add(vRB(.08,.1,.46,.014,vSci,0,0,-.14),vRB(.084,.03,.36,.006,vSciD,0,.04,-.16),vRB(.024,.016,.3,.004,vSciD,0,.064,-.14),
@@ -1356,74 +1492,29 @@ function buildGunV(i){const g=new THREE.Group();let tip=[0,0,-.5];
     const cm=new THREE.MeshBasicMaterial({color:0x6ee8ff});g.userData.cellGlow=cm;
     const cell=vGrp('cell',vRB(.05,.05,.09,.01,vSciD,0,0,0),vRB(.052,.012,.07,.003,cm,0,-.004,0),vRB(.03,.008,.03,.004,vSteelL,0,.028,0));cell.position.set(0,-.06,.03);g.add(cell);
     tip=[0,0,-.64];
+  return tip;};
+// ---- rifle de plasma: las bobinas se cargan después de cada tiro; cambia la celda de energía ----
+vRigs[6]=(g,P,u,f)=>{
+  const gl=g.userData.glow,cg=g.userData.cellGlow;
+  let charge=Math.min(1,f/1.3);if(f<.12)charge=1-f/.12*.9;
+  P.cell.position.set(0,-.06,.03);P.cell.rotation.set(0,0,0);P.cell.visible=true;
+  H.p=[0,-.07,-.3];H.rot=null;H.hold=null;
+  if(u>=0){
+    const k=vEnv(u,.12,.12);vGun(g,k,VPR[6]);const PK=vPk(g);
+    const grab=[0,-.1,.03];
+    if(u<.3){const d=vss((u-.1)/.16);P.cell.position.y-=.06*d;P.cell.position.z+=.02*d;}
+    else if(u<.42){const d=vss((u-.3)/.12);P.cell.position.y-=.06+.5*d;P.cell.rotation.x=1.2*d;P.cell.visible=d<.9;}
+    else if(u<.66){const h=vKF(u,[[.42,PK],[.56,[0,-.24,.06]],[.66,grab]]);P.cell.position.set(h[0]-grab[0],-.06+h[1]-grab[1],.03+h[2]-grab[2]);}
+    if(VEV.u(.2))SFX.cellOut();if(VEV.u(.65))SFX.cellIn();
+    g.rotation.x+=.06*vbump(u,.64,.72);
+    charge=u<.66?Math.max(0,.3-u):vss((u-.68)/.25);
+    H.p=vKF(u,[[0,[0,-.07,-.3]],[.1,grab],[.26,[0,-.16,.05]],[.4,PK],[.42,PK],[.56,[0,-.24,.06]],[.66,grab],[.72,grab],[.86,[0,-.07,-.3]]]);
   }
-  if(i===8){
-    // francotirador de cerrojo: mira telescópica con lentes, caño largo con freno, culata de madera, cerrojo con manija a la derecha
-    g.add(vRB(.06,.07,.3,.012,vSteel,0,0,-.04),vT(.022,.018,.7,vSteel,0,.012,-.55,16),vT(.028,.028,.07,vSteel,0,.012,-.92,14),
-      vRB(.04,.012,.05,.003,vBlack,0,.012,-.93),
-      vT(.028,.028,.3,vBlack,0,.085,-.08,18),vT(.036,.03,.06,vBlack,0,.085,-.25,18),vT(.032,.036,.05,vBlack,0,.085,.08,18),vRing(.03,.005,vSteelL,0,.085,-.08),
-      vRB(.02,.04,.03,.004,vBlack,0,.055,-.14),vRB(.02,.04,.03,.004,vBlack,0,.055,.0),vRB(.022,.024,.03,.005,vBlack,0,.12,-.08),
-      vM(new THREE.CircleGeometry(.03,18),mRail,0,.085,-.281),
-      vP([[-.25,-.03],[.05,-.03],[.11,-.045],[.4,-.03],[.42,-.04],[.425,-.15],[.39,-.155],[.22,-.1],[.12,-.075],[-.25,-.05]],.06,woodRifle,0,0,0,.008),
-      vP([[.06,-.035],[.1,-.035],[.13,-.13],[.085,-.135]],.044,woodRifle,0,0,0,.006),vRB(.064,.12,.016,.004,vRubber,0,-.095,.425,-.08),
-      vP([[.0,-.04],[.01,-.062],[.065,-.062],[.065,-.04]],.012,vSteel,0,0,0,.002));
-    g.add(vGrp('mag',vRB(.034,.05,.07,.006,vBlack,0,-.025,0)));g.children[g.children.length-1].position.set(0,-.04,-.06);
-    const bolt=vGrp('bolt',vT(.012,.012,.12,vSteelL,0,0,0,10),vRB(.04,.008,.008,.003,vSteelL,.024,0,.03),vSph(.011,vBlack,.046,0,.03,10,8));bolt.position.set(.0,.035,.06);g.add(bolt);
-    tip=[0,.012,-.98];
-  }
-  if(i===9){
-    // rifle de caza de palanca (estilo Winchester): caño octogonal pavonado, tubo cargador, madera rojiza con venda,
-    // portón de carga al costado y palanca que se acciona después de cada tiro
-    g.add(vT(.019,.017,.92,bluedSteel,0,.035,-.56,8),vT(.024,.024,.02,bluedSteel,0,.035,-1.01,8),vRB(.01,.045,.012,.003,bluedSteel,0,.075,-.98),
-      vT(.012,.012,.62,bluedSteel,0,-.002,-.43,12),vT(.014,.014,.014,vSteelL,0,-.002,-.74,12),
-      vT(.03,.028,.016,bluedSteel,0,.02,-.42,10),vT(.03,.028,.016,bluedSteel,0,.02,-.58,10),
-      vRB(.05,.05,.3,.016,woodRifle,0,.008,-.27),
-      vRB(.054,.082,.2,.01,bluedSteel,0,.016,-.02),vRB(.056,.018,.14,.004,vSteelL,0,.044,-.03),vRB(.004,.018,.034,.002,vBrass,.028,.0,-.02),
-      vRB(.02,.02,.01,.003,bluedSteel,0,.0875,-.17),vRB(.012,.03,.014,.003,bluedSteel,0,.066,-.17),vRB(.008,.012,.008,.002,vBlack,0,.1,-.17),
-      vP([[.08,.034],[.15,.024],[.42,-.008],[.436,-.014],[.442,-.13],[.42,-.136],[.28,-.092],[.16,-.064],[.08,-.036]],.05,woodRifle,0,0,0,.006),
-      vRB(.054,.07,.06,.012,clothWrap,0,-.016,.13,-.25),vRB(.054,.118,.014,.004,vRubber,0,-.07,.442,-.06));
-    const lever=vGrp('lever',vRB(.009,.012,.1,.004,vSteel,0,0,.05),vRB(.009,.036,.01,.004,vSteel,0,-.02,.1),vRB(.009,.01,.07,.004,vSteel,0,-.04,.07));
-    lever.position.set(0,-.028,-.07);g.add(lever);
-    const cock=vGrp('cock',vRB(.01,.03,.012,.003,vSteel,0,.012,0),vRB(.012,.006,.018,.002,vSteel,0,.026,.008));cock.position.set(0,.04,.075);g.add(cock);
-    tip=[0,.035,-1.02];
-  }
-  g.userData.tip=new THREE.Vector3(tip[0],tip[1],tip[2]);
-  return vMerge(g);}
-
-const VNEW=new Set([0,1,2,3,4,5,6,8,9]);
-function buildGun(i){if(VNEW.has(i))return buildGunV(i);const g=new THREE.Group();let tip=[0,0,-.5];
-  if(i===0){
-    // pistola semiautomática: corredera con estrías, armazón de polímero, guardamonte, empuñadura texturada y miras
-    g.add(bx(.034,.036,.2,mSlide,0,.03,-.04),bx(.036,.012,.045,mSteelL,.001,.04,-.065),cy(.009,.02,mDark,0,.03,-.142,0,10),
-      bx(.006,.009,.008,mDark,0,.052,-.13),bx(.008,.01,.01,mDark,-.009,.053,.048),bx(.008,.01,.01,mDark,.009,.053,.048),
-      bx(.03,.022,.17,mPoly,0,0,-.03),bx(.024,.01,.06,mPoly,0,-.014,-.09),
-      bx(.026,.006,.05,mPoly,0,-.034,-.035),bx(.026,.032,.006,mPoly,0,-.018,-.062),bx(.006,.022,.006,mSteelL,0,-.02,-.03,.3),
-      bx(.033,.11,.05,mGripT,0,-.064,.035,-.26),bx(.035,.01,.054,mPoly,0,-.12,.05,-.26),bx(.02,.014,.016,mSteelL,0,.03,.067));
-    tip=[0,.03,-.155];
-  }
-  if(i===1){g.add(cy(.032,.72,mGun,0,.02,-.32),cy(.026,.5,mDark,0,-.045,-.24),bx(.075,.07,.16,mWood,0,-.045,-.38),bx(.1,.13,.26,mDark,0,0,.06),bx(.075,.13,.26,mWood,0,-.04,.3,-.15));tip=[0,.02,-.7];}
-  if(i===2){g.add(cy(.034,.58,mGun,-.036,.02,-.26),cy(.034,.58,mGun,.036,.02,-.26),bx(.11,.03,.5,mDark,0,-.02,-.22),bx(.13,.13,.2,mDark,0,0,.08),bx(.09,.13,.28,mWood,0,-.05,.3,-.2));tip=[0,.02,-.56];}
-  if(i===3){
-    // ametralladora estilo Quake: cajón verde oliva con placas, riel arriba, camisa ventilada, cargador curvo, empuñadura y culata
-    g.add(bx(.066,.07,.32,mODrab,0,0,-.06),                                   // cajón
-      bx(.07,.016,.26,mODdark,0,.022,-.07),bx(.07,.012,.2,mODdark,0,-.03,-.09), // placas laterales
-      bx(.026,.016,.24,mDark,0,.044,-.07),                                     // riel superior
-      bx(.03,.026,.03,mODrab,0,.06,.07),bx(.008,.022,.008,mDark,0,.06,-.2),     // mira trasera y delantera
-      bx(.004,.022,.05,mBrass,.034,.008,-.02),                                 // ventana de expulsión
-      cy(.028,.2,mODrab,0,.004,-.31,0,8),                                      // camisa del caño
-      cy(.012,.12,mDark,0,.004,-.46,0,10),cy(.019,.045,mDark,0,.004,-.535,0,6),// caño y bocacha
-      bx(.03,.012,.06,mDark,0,-.036,.015),                                     // guardamonte
-      bx(.03,.06,.03,mPoly,0,-.055,-.25,-.1));                                 // empuñadura delantera
-    for(let k=0;k<4;k++)g.add(bx(.058,.008,.022,mDark,0,.02,-.25-k*.04));      // ranuras de la camisa
-    const mag1=bx(.03,.07,.05,mODdark,0,-.07,-.11,.1),mag2=bx(.03,.06,.048,mODdark,0,-.128,-.122,.4);g.add(mag1,mag2);
-    g.add(bx(.036,.1,.045,mPoly,0,-.075,.06,-.32),                              // empuñadura
-      bx(.05,.06,.15,mODrab,0,-.018,.17,.12),bx(.044,.03,.1,mODdark,0,-.052,.19,.3), // culata
-      bx(.054,.1,.022,mPoly,0,-.042,.25,.08));                              // cantonera
-    tip=[0,.004,-.56];
-  }
-  if(i===4){g.add(cy(.062,.48,mDark,0,.02,-.28,0,10),cy(.072,.05,mOlive,0,.02,-.5,0,10),cy(.11,.16,mOlive,0,-.02,.02,Math.PI/2,6),bx(.06,.16,.08,mDark,0,-.15,.1,.3),bx(.08,.1,.22,mDark,0,.02,.18));tip=[0,.02,-.54];}
-  if(i===5){g.add(cy(.078,.82,mGun,0,0,-.2,0,10),cy(.092,.06,mDark,0,0,-.6,0,10),cy(.088,.06,mDark,0,0,.2,0,10),cy(.08,.05,mRed,0,0,-.42,0,10),bx(.06,.16,.08,mDark,0,-.14,-.02,.25));tip=[0,0,-.64];}
-  if(i===7){
+  const b=.25+.75*charge;gl.color.setRGB(.56*b+.3*(1-charge)*0,.89*b,1*b);cg.color.setRGB(.43*b,.91*b,1*b);
+};
+/* ===== 7 · Cuchillo =====
+   VMOD[7]: modelo hecho con cajas simples (estilo viejo, no se fusiona). Sin rig: sus manos están en 08-armas-animacion.js. */
+VMOD[7]=function(g){let tip=[0,0,-.5];
     // cuchillo mariposa al estilo del espía: hoja larga y fina de punta recortada, mangos negros con puntas de acero
     // y los dos mangos giran sobre sus pernos cuando lo sacás (se abre con un giro)
     const L=.25,Wd=.03,sh=new THREE.Shape();
@@ -1449,8 +1540,93 @@ function buildGun(i){if(VNEW.has(i))return buildGunV(i);const g=new THREE.Group(
     // traba del extremo
     const latch=new THREE.Group();latch.name='latch';latch.position.set(-.0093,-.002,.156);latch.add(bx(.006,.004,.03,steel,.009,-.012,.008));hA.add(latch);latch.position.set(0,0,.152);
     tip=[0,0,-.25];
+  return tip;};
+VMOD[7].sinFusion=true;
+/* ===== 8 · Francotirador =====
+   VMOD[8]: el modelo (primera persona, tienda, ítem en el piso y en la mano de los demás). Devuelve la punta del caño.
+   vRigs[8]: animaciones de disparo y recarga (ver 08-armas-animacion.js). */
+VMOD[8]=function(g){let tip=[0,0,-.5];
+    // francotirador de cerrojo: mira telescópica con lentes, caño largo con freno, culata de madera, cerrojo con manija a la derecha
+    g.add(vRB(.06,.07,.3,.012,vSteel,0,0,-.04),vT(.022,.018,.7,vSteel,0,.012,-.55,16),vT(.028,.028,.07,vSteel,0,.012,-.92,14),
+      vRB(.04,.012,.05,.003,vBlack,0,.012,-.93),
+      vT(.028,.028,.3,vBlack,0,.085,-.08,18),vT(.036,.03,.06,vBlack,0,.085,-.25,18),vT(.032,.036,.05,vBlack,0,.085,.08,18),vRing(.03,.005,vSteelL,0,.085,-.08),
+      vRB(.02,.04,.03,.004,vBlack,0,.055,-.14),vRB(.02,.04,.03,.004,vBlack,0,.055,.0),vRB(.022,.024,.03,.005,vBlack,0,.12,-.08),
+      vM(new THREE.CircleGeometry(.03,18),mRail,0,.085,-.281),
+      vP([[-.25,-.03],[.05,-.03],[.11,-.045],[.4,-.03],[.42,-.04],[.425,-.15],[.39,-.155],[.22,-.1],[.12,-.075],[-.25,-.05]],.06,woodRifle,0,0,0,.008),
+      vP([[.06,-.035],[.1,-.035],[.13,-.13],[.085,-.135]],.044,woodRifle,0,0,0,.006),vRB(.064,.12,.016,.004,vRubber,0,-.095,.425,-.08),
+      vP([[.0,-.04],[.01,-.062],[.065,-.062],[.065,-.04]],.012,vSteel,0,0,0,.002));
+    g.add(vGrp('mag',vRB(.034,.05,.07,.006,vBlack,0,-.025,0)));g.children[g.children.length-1].position.set(0,-.04,-.06);
+    const bolt=vGrp('bolt',vT(.012,.012,.12,vSteelL,0,0,0,10),vRB(.04,.008,.008,.003,vSteelL,.024,0,.03),vSph(.011,vBlack,.046,0,.03,10,8));bolt.position.set(.0,.035,.06);g.add(bolt);
+    tip=[0,.012,-.98];
+  return tip;};
+// ---- francotirador: después de cada tiro la mano derecha trabaja el cerrojo; recarga por cargador ----
+vRigs[8]=(g,P,u,f)=>{
+  const rh=g.userData.rh,rh0=g.userData.rh0;
+  P.mag.position.set(0,-.04,-.06);P.mag.rotation.set(0,0,0);P.mag.visible=true;
+  // cerrojo: levantar, atrás (sale la vaina), adelante, bajar
+  const bc=(t)=>{const lift=vss((t-.0)/.15)*(1-vss((t-.75)/.15)),back=vss((t-.18)/.22)*(1-vss((t-.5)/.22));return [lift,back];};
+  let bt=-1;if(f>.28&&f<1.1)bt=(f-.28)/.8;
+  if(u>.82)bt=(u-.82)/.18;
+  let lift=0,back=0;if(bt>=0&&bt<=1){[lift,back]=bc(bt);}
+  P.bolt.rotation.z=.9*lift;P.bolt.position.z=.06+.09*back;
+  const reach=bt>=0&&bt<=1?Math.min(vss(bt/.1),1-vss((bt-.86)/.14)):0;
+  rh.position.copy(rh0);if(reach>0){rh.position.x+=.04*reach;rh.position.y+=(.1+.02*lift)*reach;rh.position.z+=(-.02+.09*back)*reach;rh.rotation.z=.4*reach;}else rh.rotation.z=0;
+  if((f>.28&&VEV.f(.28+.8*.38))||VEV.u(.82+.18*.38)){vEject(g,[.03,.04,.05],[1.4,1.2,.4],'brass');}
+  if(VEV.f(.32)||VEV.u(.84))SFX.bolt();
+  g.rotation.z+=.06*reach;
+  H.p=[-.0,-.05,-.3];H.rot=null;H.hold=null;
+  if(u<0||u>.82)return;
+  const k=vEnv(u/.82,.14,.14);vGun(g,k,VPR[8]);const PK=vPk(g);
+  const grab=[0,-.1,-.06];
+  if(u<.3){const d=vss((u-.1)/.16);P.mag.position.y-=.06*d;}
+  else if(u<.42){const d=vss((u-.3)/.12);P.mag.position.y-=.06+.5*d;P.mag.rotation.x=1.1*d;P.mag.visible=d<.9;}
+  else if(u<.66){const h=vKF(u,[[.42,PK],[.56,[0,-.25,-.06]],[.66,grab]]);P.mag.position.set(h[0]-grab[0],-.04+h[1]-grab[1],-.06+h[2]-grab[2]);}
+  if(VEV.u(.2))SFX.magOut();if(VEV.u(.65))SFX.magIn();
+  g.rotation.x+=.05*vbump(u,.64,.72);
+  H.p=vKF(u,[[0,[0,-.05,-.3]],[.1,grab],[.26,[0,-.16,-.06]],[.4,PK],[.42,PK],[.56,[0,-.25,-.06]],[.66,grab],[.7,grab],[.82,[0,-.05,-.3]]]);
+};
+/* ===== 9 · Rifle de caza =====
+   VMOD[9]: el modelo (primera persona, tienda, ítem en el piso y en la mano de los demás). Devuelve la punta del caño.
+   vRigs[9]: animaciones de disparo y recarga (ver 08-armas-animacion.js). */
+VMOD[9]=function(g){let tip=[0,0,-.5];
+    // rifle de caza de palanca (estilo Winchester): caño octogonal pavonado, tubo cargador, madera rojiza con venda,
+    // portón de carga al costado y palanca que se acciona después de cada tiro
+    g.add(vT(.019,.017,.92,bluedSteel,0,.035,-.56,8),vT(.024,.024,.02,bluedSteel,0,.035,-1.01,8),vRB(.01,.045,.012,.003,bluedSteel,0,.075,-.98),
+      vT(.012,.012,.62,bluedSteel,0,-.002,-.43,12),vT(.014,.014,.014,vSteelL,0,-.002,-.74,12),
+      vT(.03,.028,.016,bluedSteel,0,.02,-.42,10),vT(.03,.028,.016,bluedSteel,0,.02,-.58,10),
+      vRB(.05,.05,.3,.016,woodRifle,0,.008,-.27),
+      vRB(.054,.082,.2,.01,bluedSteel,0,.016,-.02),vRB(.056,.018,.14,.004,vSteelL,0,.044,-.03),vRB(.004,.018,.034,.002,vBrass,.028,.0,-.02),
+      vRB(.02,.02,.01,.003,bluedSteel,0,.0875,-.17),vRB(.012,.03,.014,.003,bluedSteel,0,.066,-.17),vRB(.008,.012,.008,.002,vBlack,0,.1,-.17),
+      vP([[.08,.034],[.15,.024],[.42,-.008],[.436,-.014],[.442,-.13],[.42,-.136],[.28,-.092],[.16,-.064],[.08,-.036]],.05,woodRifle,0,0,0,.006),
+      vRB(.054,.07,.06,.012,clothWrap,0,-.016,.13,-.25),vRB(.054,.118,.014,.004,vRubber,0,-.07,.442,-.06));
+    const lever=vGrp('lever',vRB(.009,.012,.1,.004,vSteel,0,0,.05),vRB(.009,.036,.01,.004,vSteel,0,-.02,.1),vRB(.009,.01,.07,.004,vSteel,0,-.04,.07));
+    lever.position.set(0,-.028,-.07);g.add(lever);
+    const cock=vGrp('cock',vRB(.01,.03,.012,.003,vSteel,0,.012,0),vRB(.012,.006,.018,.002,vSteel,0,.026,.008));cock.position.set(0,.04,.075);g.add(cock);
+    tip=[0,.035,-1.02];
+  return tip;};
+// ---- rifle de caza: después de cada tiro la mano derecha baja y sube la palanca (sale la vaina); recarga bala por bala por el portón ----
+vRigs[9]=(g,P,u,f)=>{
+  const rh=g.userData.rh,rh0=g.userData.rh0;
+  const lev=t=>t<0||t>1?0:t<.45?vss(t/.45):1-vss((t-.55)/.45);
+  let lv=lev((f-.14)/.5);
+  if(VEV.f(.3)){SFX.bolt();vEject(g,[.03,.07,-.03],[.9,1.8,.3],'brass');}
+  H.p=[0,-.03,-.3];H.rot=null;H.hold=null;
+  if(u>=0){
+    const k=vEnv(u,.12,.12);vGun(g,k,VPR[9]);const PK=vPk(g);
+    const n=Math.max(1,Math.min(3,me.relN||3)),c=vCyc(u,.15,.8,n),gate=[.04,.0,-.02],app=[.1,-.08,.04];
+    if(c){H.p=vKF(c.c,[[0,PK],[.35,app],[.55,gate],[.65,gate],[1,PK]]);H.hold=c.c<.58?'round':null;H.rot=c.c>.2&&c.c<.7?[0,0,-.9]:null;g.rotation.z+=.03*vbump(c.c,.5,.66);}
+    else if(u<.15)H.p=vMix([0,-.03,-.3],PK,vss(u/.15));
+    else H.p=vMix(PK,[0,-.03,-.3],vss((u-.8)/.12));
+    if(VEV.cyc(.15,.8,n,.56))SFX.shellIn();
+    if(u>.84){lv=lev((u-.84)/.16);if(VEV.u(.9))SFX.bolt();}
   }
-  if(i===10){
+  P.lever.rotation.x=.9*lv;P.cock.rotation.x=-.55*Math.min(1,lv*2);
+  rh.position.copy(rh0);rh.position.y-=.055*lv;rh.position.z+=.03*lv;rh.rotation.x=-.3*lv;
+  g.rotation.x+=.04*lv;g.position.y+=.006*lv;
+};
+/* ===== 10 · Bomba molotov =====
+   VMOD[10]: modelo hecho con cajas simples (estilo viejo, no se fusiona). Sin rig: sus manos están en 08-armas-animacion.js. */
+VMOD[10]=function(g){let tip=[0,0,-.5];
     // molotov: botella de vidrio con nafta, cuello largo y trapo prendido
     const glass=new THREE.MeshPhongMaterial({color:0x6b8a3a,transparent:true,opacity:.72,shininess:140,specular:0xffffff});
     const fuel=new THREE.MeshPhongMaterial({color:0xc9862a,transparent:true,opacity:.8,emissive:0x2a1400});
@@ -1465,18 +1641,14 @@ function buildGun(i){if(VNEW.has(i))return buildGunV(i);const g=new THREE.Group(
     const bot=new THREE.Group();bot.add(body,liq,sh2,neck,cloth,fl);bot.rotation.x=-.35;bot.rotation.z=.25;g.add(bot);
     g.add(bx(.07,.06,.09,mGlove,.0,-.005,.02),bx(.03,.03,.08,mGlove,-.04,.02,.01));
     tip=[0,.2,-.05];
-  }
-  if(i===8){g.add(bx(.08,.1,.5,mDark,0,0,-.05),cy(.022,.7,mGun,0,.02,-.62),cy(.04,.32,mDark,0,.1,-.08,0,10),cy(.046,.03,mRail,0,.1,-.25,0,10),bx(.07,.11,.28,mWood,0,-.03,.3,-.1),bx(.05,.14,.07,mDark,0,-.12,.06,.3));tip=[0,.02,-.98];}
-  if(i===9){
-    // rifle de caza: caño largo pavonado, madera roja, abrazaderas y empuñadura con venda
-    g.add(cy(.021,1.0,bluedSteel,0,.035,-.62),cy(.03,.06,bluedSteel,0,.035,-1.12,0,10),bx(.012,.045,.02,bluedSteel,0,.075,-1.08),
-      bx(.062,.07,.56,woodRifle,0,-.005,-.44),cy(.04,.03,bluedSteel,0,.005,-.7,0,10),cy(.04,.03,bluedSteel,0,.005,-.22,0,10),
-      bx(.066,.095,.28,bluedSteel,0,.025,-.04),bx(.02,.045,.03,bluedSteel,0,.095,-.14),bx(.05,.016,.016,mGun,.05,.04,.04),
-      bx(.068,.12,.36,woodRifle,0,-.05,.28,-.14),bx(.05,.13,.06,woodRifle,0,-.12,.09,.35),bx(.074,.13,.09,clothWrap,0,-.055,.4,-.14),bx(.076,.15,.03,mDark,0,-.075,.47,-.14));
-    tip=[0,.035,-1.15];
-  }
-  if(i===6){g.add(bx(.1,.12,.78,mGun,0,0,-.2),bx(.02,.03,.72,mDark,-.055,.06,-.22),bx(.02,.03,.72,mDark,.055,.06,-.22),bx(.06,.16,.08,mDark,0,-.14,.08,.3));for(let k=0;k<4;k++)g.add(cy(.07,.035,mRail,0,0,-.08-k*.12,0,10));tip=[0,0,-.6];}
-  g.userData.tip=new THREE.Vector3(tip[0],tip[1],tip[2]);return g;}
+  return tip;};
+VMOD[10].sinFusion=true;
+/* ===== armado de las armas: cada arma está en 07-armas/NN-nombre.js (modelo VMOD[i] y rig vRigs[i]) ===== */
+function buildGun(i){const g=new THREE.Group(),gl=GLB.armas[i];
+  if(gl){g.add(gl.obj.clone(true));const t=gl.c.punta||[0,0,-.5];g.userData.tip=new THREE.Vector3(t[0],t[1],t[2]);return g;}
+  const f=VMOD[i];const tip=f?f(g):[0,0,-.5];
+  g.userData.tip=new THREE.Vector3(tip[0],tip[1],tip[2]);
+  return f&&f.sinFusion?g:vMerge(g);}
 const vmBase=[[.12,-.09,-.44],[.2,-.19,-.36],[.2,-.2,-.36],[.21,-.2,-.38],[.22,-.21,-.36],[.24,-.22,-.34],[.22,-.2,-.36],[.17,-.13,-.5],[.2,-.2,-.34],[.19,-.2,-.36],[.2,-.17,-.4]].map(a=>new THREE.Vector3(a[0],a[1],a[2]));
 const vms=WEAPONS.map((_,i)=>{const g=buildGun(i);g.visible=false;wScene.add(g);return g;});
 /* ===== manos y animaciones de las armas (inspiradas en Quake 3 Arena y TF2) =====
@@ -1496,7 +1668,6 @@ const vArmGeo=(()=>{const g=new THREE.CylinderGeometry(.04,.032,1,10);g.rotateX(
 // mano derecha fija en la empuñadura de cada arma: posición, inclinación de la empuñadura y hacia dónde sale el brazo
 const RH={0:[0,-.068,.044,1.27,.02],1:[0,-.048,.215,.25,.024],2:[0,-.046,.175,.25,.024],3:[0,-.078,.072,1.2,.02],4:[0,-.085,.068,1.25,.02],
   5:[0,-.125,.0,1.38,.02],6:[0,-.1,.065,1.23,.02],8:[0,-.075,.1,1.25,.02],9:[0,-.062,.13,1.2,.02]};
-const vRigs={};
 function vAddHands(i,g){const R_=RH[i];if(!R_)return;
   const rh=vGrp('rh');const hd=vHand(mGlove,R_[4]);
   // mano derecha = la izquierda en espejo, girada para envolver la empuñadura con la palma del lado derecho
@@ -1536,178 +1707,6 @@ function vPk(g){g.updateMatrix();vPkM.copy(g.matrix).invert();vPkV.set(-.24,-.44
 // giro base de cada arma hacia el centro de la pantalla (así se ve su costado derecho)
 const VYAW={0:.04,1:.1,2:.1,3:.09,4:.1,5:.08,6:.09,8:.07,9:.07};
 const VROLL={0:0,1:.06,2:.06,3:.06,4:.06,5:.04,6:.06,8:.05,9:.05};
-// ---- pistola ----
-vRigs[0]=(g,P,u,f)=>{
-  const empty=me.mag[0]===0&&u<0;
-  P.slide.position.z=empty?.03:f<.09?.03*vbump(f,0,.09):0;
-  P.mag.position.set(0,0,0);P.mag.rotation.set(0,0,0);P.mag.visible=true;
-  // la pistola se lleva con una mano (como en TF2); la izquierda aparece solo para cambiar el cargador
-  H.rot=[Math.PI/2-.3,0,0];H.p=null;
-  if(u<0)return;
-  const k=vEnv(u,.12,.14);vGun(g,k,VPR[0]);const PK=vPk(g),rest=PK;
-  if(u<.36){const d=vss((u-.06)/.22);P.mag.position.set(0,-.4*d*d,.03*d);P.mag.rotation.x=.4*d;P.mag.visible=d<.95;}
-  else if(u<.62){const h=vKF(u,[[.36,PK],[.52,[0,-.22,.08]],[.62,[0,-.1,.06]]]);P.mag.position.set(h[0],h[1]+.1,h[2]-.06);}
-  if(VEV.u(.12))SFX.magOut();if(VEV.u(.6)){SFX.magIn();}
-  g.rotation.x+=.05*vbump(u,.58,.68);
-  P.slide.position.z=Math.max(P.slide.position.z,u<.72?.03:u<.8?.03+.012*vbump(u,.72,.8):0);
-  if(VEV.u(.8))SFX.slideRel();
-  H.p=vKF(u,[[0,rest],[.08,[-.05,-.12,.08]],[.3,PK],[.36,PK],[.52,[0,-.22,.08]],[.62,[0,-.1,.06]],[.66,[-.03,.06,.05]],[.74,[-.03,.06,.05]],[.78,[-.03,.065,.09]],[.86,[-.03,.065,.09]],[1,rest]]);
-  H.rot=u>.62&&u<.88?null:H.rot;
-};
-// ---- escopeta de bombeo: bombea después de cada tiro; recarga metiendo los cartuchos de a uno por abajo y bombea con las dos manos ----
-vRigs[1]=(g,P,u,f)=>{
-  let pump=f<.14?0:f<.3?vss((f-.14)/.16):f<.48?1-vss((f-.3)/.18):0;
-  if(VEV.f(.24)){SFX.pumpBack();vEject(g,[.045,.03,.03],[1.5,1.3,.4],'shell');}
-  if(VEV.f(.4))SFX.pumpFwd();
-  g.rotation.z+=.05*pump;g.rotation.x+=.035*pump;g.position.y-=.01*pump;
-  H.hold=null;H.rot=null;
-  if(u>=0){
-    const k=vEnv(u,.13,.12);vGun(g,k,VPR[1]);const PK=vPk(g);
-    const n=Math.max(1,Math.min(4,me.relN||4)),c=vCyc(u,.16,.78,n);
-    const pt=[0,-.016,-.34],port=[0,-.06,.04],app=[-.01,-.13,.07];
-    if(c){const q=c.c;H.p=vKF(q,[[0,PK],[.32,app],[.52,port],[.62,port],[1,PK]]);H.hold=q<.55?'shell':null;g.rotation.x-=.03*vbump(q,.45,.62);}
-    else if(u<.16)H.p=vMix(pt,PK,vss(u/.14));
-    else{const r=u<.86?vss((u-.78)/.08):1;H.p=vMix(PK,pt,r);if(u>.86)pump=u<.92?vss((u-.86)/.06):1-vss((u-.92)/.06);}
-    if(VEV.cyc(.16,.78,n,.5))SFX.shellIn();if(VEV.u(.88))SFX.pumpBack();if(VEV.u(.94))SFX.pumpFwd();
-    if(u>.86){g.rotation.z+=.06*pump;g.position.z+=.01*pump;}
-  }
-  P.pump.position.z=.11*pump;
-  if(u<0||u>.86)H.p=[0,-.016,-.34+.11*pump];
-};
-// ---- escopeta doble: la quiebra, saltan las vainas, mete dos cartuchos y la cierra de un golpe ----
-vRigs[2]=(g,P,u,f)=>{
-  P.brl.rotation.x=0;P.sh.visible=true;H.hold=null;H.rot=null;
-  const fore=()=>{P.brl.updateMatrix();vV.set(0,-.004,-.18+.04).applyMatrix4(P.brl.matrix);return [vV.x,vV.y-.024,vV.z];};
-  if(u>=0){
-    const k=vEnv(u,.12,.12);vGun(g,k,VPR[2]);const PK=vPk(g);
-    const open=u<.74?vss((u-.1)/.12):1-vss((u-.74)/.06);P.brl.rotation.x=-.62*open+(u>.8?.05*vbump(u,.8,.9):0);
-    if(VEV.u(.24)){vEject(g,[-.022,.06,-.03],[-.2,1.6,1.8],'shell');vEject(g,[.022,.06,-.03],[.2,1.7,1.9],'shell');SFX.breakOpen();}
-    P.sh.visible=!(u>.24&&u<.66);
-    if(VEV.u(.64))SFX.shellIn();if(VEV.u(.79))SFX.breakClose();
-    g.rotation.x+=.08*vbump(u,.78,.88);
-    const breech=[0,.07,-.02];
-    H.p=vKF(u,[[0,fore()],[.24,fore()],[.36,PK],[.4,PK],[.56,[-.01,.12,.02]],[.66,breech],[.7,breech],[.8,fore()],[1,fore()]]);
-    if(u<.24||u>.7)H.p=vMix(H.p,fore(),u<.24?1:vss((u-.7)/.1));
-    H.hold=u>.38&&u<.66?'shell2':null;
-  }else H.p=fore();
-};
-// ---- ametralladora: la mano izquierda en la empuñadura delantera; saca el cargador, pone uno nuevo y monta la palanca ----
-vRigs[3]=(g,P,u,f)=>{
-  P.mag.position.set(0,-.035,-.105);P.mag.rotation.set(0,0,0);P.mag.visible=true;P.cock.position.z=0;
-  if(f<.07){const v=1-f/.07;g.position.x+=R(.004)*v;g.position.y+=R(.004)*v;g.rotation.z+=R(.02)*v;}
-  const grip=[0,-.07,-.25];H.p=grip;H.rot=VERT;H.hold=null;
-  if(u<0)return;
-  const k=vEnv(u,.12,.13);vGun(g,k,VPR[3]);const PK=vPk(g);
-  const grab=[-.004,-.145,-.135],well=[-.004,-.06,-.125],cock=[-.05,.028,-.19];
-  let mo=[0,0,0],mr=0,vis=true;
-  if(u<.3){const d=vss((u-.12)/.16);mo=[0,-.1*d,-.01*d];mr=.25*d;}
-  else if(u<.44){const d=vss((u-.3)/.14);mo=[0,-.1-.5*d,-.01];mr=.25+1.1*d;vis=d<.9;}
-  else if(u<.7){const h=vKF(u,[[.44,PK],[.58,[0,-.27,-.12]],[.7,grab]]);mo=[h[0]-grab[0],h[1]-grab[1],h[2]-grab[2]];mr=u<.6?.3:.3*(1-vss((u-.6)/.1));}
-  P.mag.position.set(mo[0],-.035+mo[1],-.105+mo[2]);P.mag.rotation.x=mr;P.mag.visible=vis;
-  if(VEV.u(.2))SFX.magOut();if(VEV.u(.69))SFX.magIn();if(VEV.u(.8))SFX.bolt();
-  g.rotation.x+=.07*vbump(u,.68,.76);
-  const pull=u<.76?0:u<.81?vss((u-.76)/.05):1-vss((u-.81)/.03);P.cock.position.z=.06*pull;
-  g.rotation.x-=.04*vbump(u,.8,.88);
-  const ck=[cock[0],cock[1],cock[2]+.06*pull];
-  H.p=vKF(u,[[0,grip],[.12,grab],[.28,[grab[0],grab[1]-.1,grab[2]-.01]],[.42,PK],[.44,PK],[.58,[0,-.27,-.12]],[.7,grab],[.72,grab],[.76,cock],[.86,cock],[1,grip]]);
-  if(u>.76&&u<.86)H.p=ck;
-  H.rot=(u>.1&&u<.74)?null:(u>=.74&&u<.88)?[0,0,.5]:VERT;
-};
-// ---- lanzagranadas: el tambor gira con cada tiro; recarga granada por granada por la ventana del costado ----
-vRigs[4]=(g,P,u,f)=>{
-  let rot=me.drumA||0;const step=Math.PI/3;
-  H.p=[0,-.06,-.25];H.rot=null;H.hold=null;
-  if(u>=0){
-    const k=vEnv(u,.12,.12);vGun(g,k,VPR[4]);const PK=vPk(g);
-    const n=Math.max(1,Math.min(4,me.relN||4)),c=vCyc(u,.15,.85,n),gate=[-.075,.0,-.06],app=[-.16,-.03,-.02];
-    if(c){H.p=vKF(c.c,[[0,PK],[.35,app],[.55,gate],[.65,gate],[1,PK]]);H.hold=c.c<.58?'nade':null;rot+=step*(c.i+vss((c.c-.55)/.2));g.rotation.z-=.03*vbump(c.c,.5,.66);}
-    else if(u>=.85){rot+=step*n;H.p=vMix(PK,[0,-.06,-.25],vss((u-.85)/.13));}
-    else H.p=vMix([0,-.06,-.25],PK,vss(u/.15));
-    if(VEV.cyc(.15,.85,n,.56))SFX.shellIn();
-    if(VEV.u(.97))me.drumA=(me.drumA||0)+step*n;
-  }else if(f<.25)rot+=step*vss(f/.25)-step;
-  P.drum.rotation.z=rot;
-};
-// ---- lanzacohetes: como el del Soldier, mete los cohetes de a uno a mano por la boca ----
-vRigs[5]=(g,P,u,f)=>{
-  P.loaded.visible=(me.mag[5]||0)>0;
-  H.p=[0,-.11,-.32];H.rot=VERT;H.hold=null;
-  if(u<0)return;
-  const k=vEnv(u,.11,.11);vGun(g,k,VPR[5]);const PK=vPk(g);
-  const n=Math.max(1,Math.min(4,me.relN||4)),c=vCyc(u,.13,.87,n);
-  const app=[-.02,.0,-.98],p1=[-.01,.0,-.8],p2=[-.0,.0,-.7];
-  P.loaded.visible=false;
-  if(c){const q=c.c;H.rot=null;H.p=vKF(q,[[0,PK],[.36,app],[.56,p1],[.66,p2],[.72,p2],[1,PK]]);H.hold=q<.66?'rocket':null;
-    g.rotation.x-=.05*vbump(q,.6,.74);g.position.z+=.02*vbump(q,.6,.74);P.loaded.visible=q>=.66;}
-  else if(u<.13)H.p=vMix([0,-.11,-.32],PK,vss(u/.12));
-  else{H.p=vMix(PK,[0,-.11,-.32],vss((u-.87)/.11));P.loaded.visible=true;}
-  if(VEV.cyc(.13,.87,n,.64))SFX.rocketIn();
-};
-// ---- rifle de plasma: las bobinas se cargan después de cada tiro; cambia la celda de energía ----
-vRigs[6]=(g,P,u,f)=>{
-  const gl=g.userData.glow,cg=g.userData.cellGlow;
-  let charge=Math.min(1,f/1.3);if(f<.12)charge=1-f/.12*.9;
-  P.cell.position.set(0,-.06,.03);P.cell.rotation.set(0,0,0);P.cell.visible=true;
-  H.p=[0,-.07,-.3];H.rot=null;H.hold=null;
-  if(u>=0){
-    const k=vEnv(u,.12,.12);vGun(g,k,VPR[6]);const PK=vPk(g);
-    const grab=[0,-.1,.03];
-    if(u<.3){const d=vss((u-.1)/.16);P.cell.position.y-=.06*d;P.cell.position.z+=.02*d;}
-    else if(u<.42){const d=vss((u-.3)/.12);P.cell.position.y-=.06+.5*d;P.cell.rotation.x=1.2*d;P.cell.visible=d<.9;}
-    else if(u<.66){const h=vKF(u,[[.42,PK],[.56,[0,-.24,.06]],[.66,grab]]);P.cell.position.set(h[0]-grab[0],-.06+h[1]-grab[1],.03+h[2]-grab[2]);}
-    if(VEV.u(.2))SFX.cellOut();if(VEV.u(.65))SFX.cellIn();
-    g.rotation.x+=.06*vbump(u,.64,.72);
-    charge=u<.66?Math.max(0,.3-u):vss((u-.68)/.25);
-    H.p=vKF(u,[[0,[0,-.07,-.3]],[.1,grab],[.26,[0,-.16,.05]],[.4,PK],[.42,PK],[.56,[0,-.24,.06]],[.66,grab],[.72,grab],[.86,[0,-.07,-.3]]]);
-  }
-  const b=.25+.75*charge;gl.color.setRGB(.56*b+.3*(1-charge)*0,.89*b,1*b);cg.color.setRGB(.43*b,.91*b,1*b);
-};
-// ---- francotirador: después de cada tiro la mano derecha trabaja el cerrojo; recarga por cargador ----
-vRigs[8]=(g,P,u,f)=>{
-  const rh=g.userData.rh,rh0=g.userData.rh0;
-  P.mag.position.set(0,-.04,-.06);P.mag.rotation.set(0,0,0);P.mag.visible=true;
-  // cerrojo: levantar, atrás (sale la vaina), adelante, bajar
-  const bc=(t)=>{const lift=vss((t-.0)/.15)*(1-vss((t-.75)/.15)),back=vss((t-.18)/.22)*(1-vss((t-.5)/.22));return [lift,back];};
-  let bt=-1;if(f>.28&&f<1.1)bt=(f-.28)/.8;
-  if(u>.82)bt=(u-.82)/.18;
-  let lift=0,back=0;if(bt>=0&&bt<=1){[lift,back]=bc(bt);}
-  P.bolt.rotation.z=.9*lift;P.bolt.position.z=.06+.09*back;
-  const reach=bt>=0&&bt<=1?Math.min(vss(bt/.1),1-vss((bt-.86)/.14)):0;
-  rh.position.copy(rh0);if(reach>0){rh.position.x+=.04*reach;rh.position.y+=(.1+.02*lift)*reach;rh.position.z+=(-.02+.09*back)*reach;rh.rotation.z=.4*reach;}else rh.rotation.z=0;
-  if((f>.28&&VEV.f(.28+.8*.38))||VEV.u(.82+.18*.38)){vEject(g,[.03,.04,.05],[1.4,1.2,.4],'brass');}
-  if(VEV.f(.32)||VEV.u(.84))SFX.bolt();
-  g.rotation.z+=.06*reach;
-  H.p=[-.0,-.05,-.3];H.rot=null;H.hold=null;
-  if(u<0||u>.82)return;
-  const k=vEnv(u/.82,.14,.14);vGun(g,k,VPR[8]);const PK=vPk(g);
-  const grab=[0,-.1,-.06];
-  if(u<.3){const d=vss((u-.1)/.16);P.mag.position.y-=.06*d;}
-  else if(u<.42){const d=vss((u-.3)/.12);P.mag.position.y-=.06+.5*d;P.mag.rotation.x=1.1*d;P.mag.visible=d<.9;}
-  else if(u<.66){const h=vKF(u,[[.42,PK],[.56,[0,-.25,-.06]],[.66,grab]]);P.mag.position.set(h[0]-grab[0],-.04+h[1]-grab[1],-.06+h[2]-grab[2]);}
-  if(VEV.u(.2))SFX.magOut();if(VEV.u(.65))SFX.magIn();
-  g.rotation.x+=.05*vbump(u,.64,.72);
-  H.p=vKF(u,[[0,[0,-.05,-.3]],[.1,grab],[.26,[0,-.16,-.06]],[.4,PK],[.42,PK],[.56,[0,-.25,-.06]],[.66,grab],[.7,grab],[.82,[0,-.05,-.3]]]);
-};
-// ---- rifle de caza: después de cada tiro la mano derecha baja y sube la palanca (sale la vaina); recarga bala por bala por el portón ----
-vRigs[9]=(g,P,u,f)=>{
-  const rh=g.userData.rh,rh0=g.userData.rh0;
-  const lev=t=>t<0||t>1?0:t<.45?vss(t/.45):1-vss((t-.55)/.45);
-  let lv=lev((f-.14)/.5);
-  if(VEV.f(.3)){SFX.bolt();vEject(g,[.03,.07,-.03],[.9,1.8,.3],'brass');}
-  H.p=[0,-.03,-.3];H.rot=null;H.hold=null;
-  if(u>=0){
-    const k=vEnv(u,.12,.12);vGun(g,k,VPR[9]);const PK=vPk(g);
-    const n=Math.max(1,Math.min(3,me.relN||3)),c=vCyc(u,.15,.8,n),gate=[.04,.0,-.02],app=[.1,-.08,.04];
-    if(c){H.p=vKF(c.c,[[0,PK],[.35,app],[.55,gate],[.65,gate],[1,PK]]);H.hold=c.c<.58?'round':null;H.rot=c.c>.2&&c.c<.7?[0,0,-.9]:null;g.rotation.z+=.03*vbump(c.c,.5,.66);}
-    else if(u<.15)H.p=vMix([0,-.03,-.3],PK,vss(u/.15));
-    else H.p=vMix(PK,[0,-.03,-.3],vss((u-.8)/.12));
-    if(VEV.cyc(.15,.8,n,.56))SFX.shellIn();
-    if(u>.84){lv=lev((u-.84)/.16);if(VEV.u(.9))SFX.bolt();}
-  }
-  P.lever.rotation.x=.9*lv;P.cock.rotation.x=-.55*Math.min(1,lv*2);
-  rh.position.copy(rh0);rh.position.y-=.055*lv;rh.position.z+=.03*lv;rh.rotation.x=-.3*lv;
-  g.rotation.x+=.04*lv;g.position.y+=.006*lv;
-};
 // aplica el rig del arma i; devuelve true si el arma usa manos nuevas
 function vRig(i,g,u,f){const fn=vRigs[i];if(!fn)return false;const P=g.userData.parts;if(!P||!P.__ok)return false;H.hold=null;H.rot=null;fn(g,P,u,f);return true;}
 function vHideHands(){lhG.visible=lhArm.visible=false;}
@@ -1844,6 +1843,7 @@ function buildMedkit(mega){const g=new THREE.Group(),w=mega?.8:.62,h=mega?.58:.4
   if(mega){const r=new THREE.Mesh(new THREE.TorusGeometry(.62,.03,6,32),new THREE.MeshBasicMaterial({color:0x7ab8ff,transparent:true,opacity:.7,blending:THREE.AdditiveBlending,depthWrite:false}));r.rotation.x=Math.PI/2;r.position.y=-.38;g.add(r);}
   return g;}
 function buildItem(t){const g=new THREE.Group();
+  if(GLB.items[t]){g.add(GLB.items[t].obj.clone(true));return g;}
   if(t==='health')g.add(buildMedkit(false));
   if(t==='mega')g.add(buildMedkit(true));
   if(t==='armor'){const s=buildShield(0x7fc23a,0x3f6a1a,0x2a4a0a,0x0e1e04,false);s.scale.setScalar(1.05);g.add(s);}
@@ -3159,7 +3159,41 @@ function initAccounts(){
   }).catch(()=>{});
 }
 
+/* =================== MODELOS 3D EN ARCHIVOS (.glb) ===================
+   public/modelos/modelos.json dice qué archivo reemplaza a qué modelo hecho con código. Si un archivo falta o falla,
+   queda el de código (el juego nunca se rompe por un modelo). Formato:
+   { "armas": { "5": { "archivo": "lanzacohetes.glb", "escala": 1, "pos": [0,0,0], "rot": [0,0,0], "punta": [0,0.03,-1] } },
+     "items": { "health": { "archivo": "botiquin.glb", "escala": 1, "pos": [0,0,0], "rot": [0,0,0] } } }
+   - armas: la clave es el número del arma (0 pistola … 10 molotov). El arma mira hacia -z, la empuñadura cerca del origen,
+     1 unidad = 1 metro. "punta" es de dónde sale el fogonazo.
+   - Para que las animaciones (bombeo, cargador, cerrojo…) sigan andando, las piezas que se mueven tienen que llamarse
+     igual que en el modelo de código: los nombres están en vGrp('nombre',…) de 07-armas/NN-arma.js. Si falta alguna,
+     el arma se ve igual pero queda quieta (sin manos animadas).
+   - items: la clave es el tipo de ítem (health, mega, armor, armorH, quad, shells, bullets, rockets, grenades, slugs, caza, w1…). */
+const GLB_LOADER='https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js';
+function glbLoader(){return new Promise((ok,no)=>{if(THREE.GLTFLoader)return ok();const s=document.createElement('script');s.src=GLB_LOADER;s.onload=ok;s.onerror=no;document.head.appendChild(s);});}
+function glbPrep(obj,c){if(c.escala)obj.scale.setScalar(c.escala);if(c.pos)obj.position.set(c.pos[0],c.pos[1],c.pos[2]);if(c.rot)obj.rotation.set(c.rot[0],c.rot[1],c.rot[2]);
+  obj.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;}});const w=new THREE.Group();w.add(obj);return w;}
+// arma en primera persona: se cambian las piezas del grupo (vms[i] sigue siendo el mismo objeto) y se vuelven a poner las manos
+function glbArma(i){const g=vms[i],gl=GLB.armas[i];if(!g||!gl)return;
+  const antes=Object.keys(g.userData.parts||{}).filter(k=>k!=='__ok');
+  while(g.children.length)g.remove(g.children[0]);
+  g.add(gl.obj.clone(true));const t=gl.c.punta||[0,0,-.5];g.userData.tip=new THREE.Vector3(t[0],t[1],t[2]);
+  const P={};g.traverse(o=>{if(o.name&&o!==g)P[o.name]=o;});
+  P.__ok=antes.length>0&&antes.every(k=>P[k]);g.userData.parts=P;g.userData.rh=null;vAddHands(i,g);delete tpCache[i];}
+async function glbCargar(){let man;try{const r=await fetch('modelos/modelos.json',{cache:'no-cache'});if(!r.ok)return;man=await r.json();}catch(e){return;}
+  const tareas=[];for(const k in man.armas||{})tareas.push(['armas',k]);for(const k in man.items||{})tareas.push(['items',k]);
+  if(!tareas.length)return;
+  try{await glbLoader();}catch(e){console.warn('No se pudo cargar GLTFLoader',e);return;}
+  const ld=new THREE.GLTFLoader();
+  await Promise.all(tareas.map(([tipo,k])=>new Promise(ok=>{const c=man[tipo][k];
+    ld.load('modelos/'+c.archivo,gltf=>{GLB[tipo][k]={obj:glbPrep(gltf.scene,c),c};
+      if(tipo==='armas')glbArma(+k);else if(level)for(const o of level.items)if(o.ty===k){o.ty=null;setItemType(o,k);}
+      ok();},undefined,e=>{console.warn('Modelo '+c.archivo+' no cargó',e);ok();});})));}
+glbCargar();
 /* =================== MENÚ =================== */
+// botones de mapa en Ajustes: salen solos de los mapas de la Arena (un mapa nuevo aparece sin tocar el HTML)
+$('sMap').innerHTML=C.MODES.arena.maps.map(id=>'<button type="button" data-v="'+id+'">'+esc(C.MAPS[id].name.split(' · ').pop())+'</button>').join('');
 function showMenu(){$('menu').hidden=false;$('hud').hidden=true;if(document.pointerLockElement)document.exitPointerLock();}
 function hideMenu(){$('menu').hidden=true;$('hud').hidden=false;['settings','lockerPanel','modePanel','limitPanel'].forEach(id=>$(id).hidden=true);['bSet','bLocker'].forEach(id=>$(id).setAttribute('aria-expanded','false'));updateHUD();}
 function openPause(){

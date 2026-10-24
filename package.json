@@ -5,7 +5,9 @@
   "private": true,
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "armar": "node herramientas/armar.js",
+    "probar": "node herramientas/probar.js"
   },
   "engines": {
     "node": ">=18"

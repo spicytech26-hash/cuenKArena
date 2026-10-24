@@ -1,0 +1,196 @@
+<title>CuenkArena</title>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" as="script" crossorigin>
+<link rel="preload" href="game.js" as="script">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+@@ESTILOS@@
+</style>
+
+<canvas id="c"></canvas>
+<div id="flash" class="ov"></div><div id="pflash" class="ov"></div><div id="qtint" class="ov"></div><div id="lavatint" class="ov"></div>
+<div id="hud" hidden>
+  <div id="fpsBox" hidden></div>
+  <div id="xh"></div><div id="hitm"></div><div id="dmgdir"></div>
+  <div id="speed">VEL <b id="spdV">0</b> u/s</div>
+  <div id="crPop"></div>
+  <div id="scopeOv" hidden></div>
+  <div id="huntOv" hidden><svg viewBox="-50 -50 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+    <defs><radialGradient id="lens" r=".5"><stop offset=".9" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
+      <mask id="hole"><rect x="-200" y="-200" width="400" height="400" fill="#fff"/><circle r="38" fill="#000"/></mask></defs>
+    <rect x="-200" y="-200" width="400" height="400" fill="#050505" mask="url(#hole)"/>
+    <circle r="38" fill="url(#lens)"/><circle r="38.4" fill="none" stroke="#1b1b1b" stroke-width="1.2"/>
+    <g fill="#0b0b0b"><rect x="-38" y="-.9" width="24" height="1.8"/><rect x="14" y="-.9" width="24" height="1.8"/><rect x="-.9" y="-38" width="1.8" height="24"/><rect x="-.9" y="14" width="1.8" height="24"/></g>
+    <g stroke="#0b0b0b" stroke-width=".22"><line x1="-14" y1="0" x2="14" y2="0"/><line x1="0" y1="-14" x2="0" y2="14"/></g>
+    <g id="bdc" stroke="#0b0b0b" stroke-width=".35" font-family="Share Tech Mono, monospace" font-size="2.2" fill="#0b0b0b"></g>
+    <circle r=".45" fill="#c0261b"/>
+  </svg></div>
+  <div id="top">
+    <div class="stat"><span class="lbl">Frags</span><b id="tFrags">0</b></div>
+    <div class="stat"><span class="lbl">Puesto</span><b id="tRank">–</b></div>
+    <div class="stat" id="tCrBox"><span class="lbl">Créditos</span><b id="tCr" class="cash">¤ 300</b></div>
+    <div class="stat" id="tLvlBox" hidden><span class="lbl">Nivel</span><b id="tLvl">1/20</b></div>
+    <div class="stat" id="tNextBox" hidden><span class="lbl">Siguiente</span><b id="tNext" class="small">–</b></div>
+    <div class="stat"><span class="lbl">Tiempo</span><b id="tTime">10:00</b></div>
+    <div class="stat" id="tPingBox"><span class="lbl">Ping</span><b id="tPing" class="small">–</b></div>
+    <div class="stat"><span class="lbl">FPS</span><b id="tFps" class="small">–</b></div>
+    <div id="quadChip" hidden>CUÁDRUPLE <span id="quadT">30</span></div>
+  </div>
+  <div id="ctfBox" hidden>
+    <div class="tm tr" id="ctfR"><span class="sc" id="tsR">0</span><span class="fs" id="fsR">en base</span></div>
+    <div class="mid" id="ctfMid">a 5</div>
+    <div class="tm tb" id="ctfB"><span class="sc" id="tsB">0</span><span class="fs" id="fsB">en base</span></div>
+  </div>
+  <div id="lobbyBox" hidden><div class="lt" id="lobbyT"></div><div class="ls" id="lobbyS"></div></div>
+  <div id="carry" hidden>LLEVÁS LA BANDERA · VOLVÉ A TU BASE</div>
+  <div id="feed"></div>
+  <div id="center"><div id="cMsg"></div><div id="cSub"></div></div>
+  <div id="pick"></div>
+  <div id="deathBox" hidden><div class="big">ELIMINADO</div><div class="small" id="deathBy"></div><div class="small" id="deathHint"></div></div>
+  <div id="bar">
+    <div class="cell"><div class="lbl" id="hWName">Escopeta</div><div class="num" id="hAmmo">10</div></div>
+    <div class="cell"><div class="lbl">Salud</div><div class="num" id="hHp">100</div></div>
+    <div class="cell"><div class="lbl">Blindaje</div><div class="num ar" id="hAr">0</div></div>
+  </div>
+  <div id="kickHint" hidden>Y · KICKEAR</div>
+  <div id="shopHint">B · TIENDA</div>
+  <div id="slots"></div>
+  <div id="voteBox" hidden role="status" aria-live="polite"></div>
+  <div id="grabHint" hidden></div>
+  <div id="dmgPop" aria-hidden="true"></div><div id="dmgTot" aria-hidden="true"></div>
+  <div id="chat"><div id="chatLog"></div><input id="chatIn" maxlength="1000" placeholder="Escribí y apretá Enter · /map pan · /bots N" hidden autocomplete="off"></div>
+</div>
+<div id="board" hidden>
+  <h2 id="bTitle">dm1 · La Represa</h2>
+  <div class="meta" id="bMeta"></div>
+  <table><thead><tr><th>#</th><th>Jugador</th><th>Frags</th><th>Muertes</th><th id="thX">Créditos</th><th>Ping</th></tr></thead><tbody id="bBody"></tbody></table>
+</div>
+<div id="inter" hidden><div class="interbox"><div id="interT"></div><div class="note" id="interS" style="text-align:center"></div>
+  <div id="mapVote" hidden><div class="mvT">VOTÁ EL PRÓXIMO MAPA <small>· click o 1 · 2 · 3 · si nadie vota, sale uno al azar</small></div><div class="mvRow" id="mvRow"></div></div>
+  <div id="interC">Próxima partida en <b id="interN">25</b> segundos</div>
+  <div id="interReady" aria-live="polite"></div>
+  <div class="mrow" style="justify-content:center;margin-bottom:12px"><button type="button" class="btn primary" id="bStay">Jugar de nuevo</button><button type="button" class="btn" id="bQuit">Volver al menú</button></div>
+  <div id="interPod"></div>
+  <div id="interTabW"><table id="interTab"></table></div>
+  <div id="interXP"></div>
+  <div style="display:none"></div></div></div>
+<div id="kickMenu" hidden>
+  <div class="kmBox">
+    <div class="kmHead"><span class="kmIcon" aria-hidden="true">⚖</span><div><h2>VOTAR PARA ECHAR</h2><small>Elegí a quién (click o número). Los demás votan sí o no durante 30 s.</small></div><span class="kmKey">Y · Esc cerrar</span></div>
+    <div id="kmList"></div>
+    <div id="kmConfirm" hidden>
+      <div class="kmQ">¿Abrir votación para echar a <b id="kmName"></b>?</div>
+      <div class="kmBtns"><button type="button" class="btn primary" id="kmYes">Sí, a votación <kbd>Enter</kbd></button><button type="button" class="btn" id="kmNo">Mejor no <kbd>Esc</kbd></button></div>
+    </div>
+    <div id="kmMsg"></div>
+    <div class="kmRules">Pasa si vota que sí más de la mitad de los demás. La 1ª vez el echado puede volver; la 2ª no entra hasta que termine la partida. Cada uno puede pedir una votación cada 90 s.</div>
+  </div>
+</div>
+<div id="shop" hidden>
+  <div class="shopbox">
+    <div class="shophead"><h2>TIENDA</h2><div class="wallet"><small>Tus créditos</small><span id="shopCr">¤ 0</span></div></div>
+    <div id="shopMsg"></div>
+    <div class="shopgrid" id="shopGrid"></div>
+    <div class="shopfoot">Ganás ¤ 200 por frag, ¤ 100 extra si cortás una racha de 3 y ¤ 100 extra con pistola. Como en Counter-Strike llevás una sola <b>arma principal</b> (tecla 1): la que comprás reemplaza a la anterior y aparecés con ella hasta que termina la partida. Pistola en el 2, cuchillo en el 3 y molotov en el 4. Con <b>E</b> cambiás tu principal por un arma tirada en el piso. <b>B</b> o <b>Esc</b> para cerrar.</div>
+  </div>
+</div>
+<div id="menu">
+  <div class="mbox">
+    <div class="kicker" id="mKick">Arena · Gungame · Team Deathmatch · Captura la bandera</div>
+    <h1 id="mTitle">CUENK<span>ARENA</span><small>SNIPER UPDATE</small></h1>
+    <div id="acctBox" hidden></div>
+    <div class="idrow"><label for="pName">Tu nombre</label><input id="pName" maxlength="16" autocomplete="off" spellcheck="false"></div>
+    <div class="mrow">
+      <button id="bOnline" class="btn primary" type="button" disabled>Jugar online</button>
+      <button id="bOffline" class="btn" type="button">Práctica con bots</button>
+      <button id="bLocker" class="btn" type="button" aria-expanded="false" aria-controls="lockerPanel">Taquilla</button>
+      <button id="bSet" class="btn" type="button" aria-expanded="false" aria-controls="settings">Ajustes</button>
+      <button id="bLeave" class="btn" type="button" hidden>Salir de la partida</button>
+    </div>
+    <div id="kickNote" role="status" aria-live="polite" hidden><div class="kt"></div><div class="ks"></div><button type="button" aria-label="Cerrar">×</button></div>
+    <details id="kickPanel" hidden>
+      <summary>Votar para echar a alguien</summary>
+      <div class="kRow"><select id="kickSel" aria-label="Jugador"></select><button type="button" id="bKick">Votar</button></div>
+      <div class="kNote">Pasa si vota que sí más de la mitad de los demás (Y sí · N no). La 1ª vez el echado puede volver; la 2ª no entra hasta que termine la partida.</div>
+    </details>
+    <div id="modePanel" class="panel" hidden>
+      <div class="ptitle" id="modeTitle">Elegí el modo</div>
+      <div class="srow" id="modeLimitRow"><span>Bajas para ganar (Team Deathmatch)</span><div class="seg" id="mLimit" role="group" aria-label="Bajas para ganar"><button type="button" data-v="25">25</button><button type="button" data-v="50">50</button><button type="button" data-v="75">75</button><button type="button" data-v="100">100</button><input type="number" id="mLimitN" min="5" max="500" step="1" aria-label="Otra cantidad" style="width:70px;font-family:var(--mono);font-size:14px;background:#120e0b;color:var(--ink);border:1px solid #000;padding:5px 6px"></div></div>
+      <div class="srow" id="modeSkillRow"><span>Dificultad de los bots</span><div class="seg" id="mSkill" role="group" aria-label="Dificultad de los bots"><button type="button" data-v="0">Fácil</button><button type="button" data-v="1">Normal</button><button type="button" data-v="2">Difícil</button><button type="button" data-v="3">Pesadilla</button></div></div>
+      <div class="modes" id="modeGrid"></div>
+      <p class="note" id="modeNote"></p>
+    </div>
+    <div id="netNote"><span class="dot" id="netDot"></span><span id="netTxt">Buscando servidor…</span></div>
+    <div id="limitPanel" class="panel" hidden>
+      <div class="ptitle">Team Deathmatch · bajas para ganar</div>
+      <div class="srow"><span>Límite del equipo</span><div class="seg" id="pLimit" role="group" aria-label="Bajas para ganar"><button type="button" data-v="25">25</button><button type="button" data-v="50">50</button><button type="button" data-v="75">75</button><button type="button" data-v="100">100</button><input type="number" id="pLimitN" min="5" max="500" step="1" aria-label="Otra cantidad" style="width:70px;font-family:var(--mono);font-size:14px;background:#120e0b;color:var(--ink);border:1px solid #000;padding:5px 6px"></div></div>
+      <p class="note">Se puede cambiar mientras esperan jugadores. Cuando arranca la partida queda fijo.</p>
+    </div>
+    <div id="lockerPanel" class="panel" hidden>
+      <div class="ptitle">Taquilla</div>
+      <div class="locker">
+        <canvas id="lockPrev" width="440" height="520"></canvas>
+        <div class="lockopts">
+          <div class="lab">Armadura</div><div class="sw-row" id="swBody"></div>
+          <div class="lab">Visor</div><div class="sw-row" id="swVisor"></div>
+          <div class="lab">Accesorio</div><div class="seg" id="segAcc" role="group" aria-label="Accesorio" style="grid-column:auto"></div>
+          <div class="lab">Imagen en el pecho</div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <img id="chestPrev" alt="Imagen del pecho" width="56" height="56" style="width:56px;height:56px;border:1px solid #000;background:#2e2a26;object-fit:cover" hidden>
+            <label class="btn" for="chestFile" style="cursor:pointer">Elegir foto…</label>
+            <input type="file" id="chestFile" accept="image/png,image/jpeg,image/webp" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
+            <button type="button" class="btn" id="chestDel" hidden>Quitar</button>
+          </div>
+          <p class="note" id="chestNote" style="margin:0">PNG o JPG. Se recorta cuadrada al centro y cubre todo el pecho.</p>
+          <p class="note">Los cambios se guardan solos. Si estás en una partida online, los demás te ven así al instante.</p>
+        </div>
+      </div>
+    </div>
+    <div id="settings" class="panel" hidden>
+      <div class="ptitle">Controles</div>
+      <div class="srow"><label for="sSens">Sensibilidad del mouse</label><input type="range" id="sSens" min="0.1" max="4" step="0.05"><output id="oSens"></output></div>
+      <div class="srow"><label for="sFov">Campo de visión</label><input type="range" id="sFov" min="70" max="120" step="1"><output id="oFov"></output></div>
+      <div class="srow"><label for="sVol">Volumen</label><input type="range" id="sVol" min="0" max="1" step="0.05"><output id="oVol"></output></div>
+      <div class="srow"><label for="sMus">Música del boliche</label><input type="range" id="sMus" min="0" max="1" step="0.05"><output id="oMus"></output></div>
+      <div class="srow"><label for="sInv">Invertir eje vertical</label><input type="checkbox" id="sInv"></div>
+      <div class="srow"><label for="sHop">Salto automático (bunny hop)</label><input type="checkbox" id="sHop"></div>
+      <div class="sep"></div>
+      <div class="ptitle">Mira</div>
+      <div class="srow"><span>Forma</span><div class="xhgrid" id="xhGrid" role="group" aria-label="Forma de la mira"></div></div>
+      <div class="srow"><span>Color</span><div class="sw-row" id="xhCols" style="grid-column:2 / 4"></div></div>
+      <div class="srow"><label for="sXz">Tamaño</label><input type="range" id="sXz" min="0.5" max="2.5" step="0.05"><output id="oXz"></output></div>
+      <div class="srow"><span>Vista previa</span><div id="xhPrev"><div id="xhPrevIn"></div></div></div>
+      <div class="sep"></div>
+      <div class="srow"><label for="sFps">Mostrar FPS (cuadros por segundo)</label><input type="checkbox" id="sFps"></div>
+      <div class="srow"><label for="sImg">Ver las imágenes que los demás tienen en el pecho</label><input type="checkbox" id="sImg"></div>
+      <div class="srow"><label for="sFs">Pantalla completa al jugar (permite agacharse con Ctrl sin que el navegador cierre la pestaña)</label><input type="checkbox" id="sFs"></div>
+      <div class="srow"><span>Sombras</span><div class="seg" id="sSh" role="group" aria-label="Sombras"><button type="button" data-v="1">Sí</button><button type="button" data-v="0">No</button></div></div>
+      <div class="srow"><span>Calidad gráfica</span><div class="seg" id="sQ" role="group" aria-label="Calidad"><button type="button" data-v="1">Alta</button><button type="button" data-v="0">Liviana</button></div></div>
+      <div class="sep"></div>
+      <div class="ptitle">Práctica con bots</div>
+      <div class="srow"><span>Mapa</span><div class="seg" id="sMap" role="group" aria-label="Mapa"><button type="button" data-v="represa">La Represa</button><button type="button" data-v="panymanteca">Humita</button><button type="button" data-v="lacuenca">La Cuenca</button></div></div>
+      <div class="srow"><span>Bots en la arena</span><div class="stepper"><button type="button" id="bMinus" aria-label="Sacar un bot">−</button><output id="oBots"></output><button type="button" id="bPlus" aria-label="Agregar un bot">+</button></div></div>
+      <div class="srow"><span>Dificultad</span><div class="seg" id="sSkill" role="group" aria-label="Dificultad"><button type="button" data-v="0">Fácil</button><button type="button" data-v="1">Normal</button><button type="button" data-v="2">Difícil</button><button type="button" data-v="3">Pesadilla</button></div></div>
+      <div class="srow"><span>Límite de frags</span><div class="seg" id="sFl" role="group" aria-label="Límite de frags"><button type="button" data-v="10">10</button><button type="button" data-v="20">20</button><button type="button" data-v="30">30</button><button type="button" data-v="50">50</button></div></div>
+      <p class="note">El mapa vale para Arena, Gungame y Team Deathmatch; Captura la bandera se juega en El Puente. En la práctica, los bots se agregan o sacan al instante con <b>+</b> y <b>−</b>. Online, desde el chat: <b>/bots 6</b>, <b>/skill 2</b>, <b>/fraglimit 30</b>, <b>/caplimit 3</b>, <b>/map pan</b>.</p>
+    </div>
+    <div class="keys" id="mKeys">
+      <kbd>W A S D</kbd><span>moverse</span><kbd>Espacio</kbd><span>saltar (mantené para bunny hop)</span>
+      <kbd>Click</kbd><span>disparar (click derecho: mira del francotirador)</span><kbd>1 · 2 · 3 · 4</kbd><span>arma principal · pistola · cuchillo · molotov · Q arma anterior · E agarrar arma del piso · F inspeccionar · R recargar</span>
+      <kbd>Ctrl · C</kbd><span>agacharse (saltá y agachate para pasar por ventanas)</span>
+      <kbd>B</kbd><span>tienda</span><kbd>Tab</kbd><span>tabla de frags</span>
+      <kbd>T · Enter</kbd><span>chat</span><kbd>Esc</kbd><span>menú</span>
+    </div>
+    <p class="legal"><a href="/privacidad.html" target="_blank" rel="noopener">Privacidad</a> · <a href="/terminos.html" target="_blank" rel="noopener">Condiciones</a> · <a href="editor.html" target="_blank" rel="noopener">Editor de mapas</a></p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin></script>
+<script>/* "Probar en práctica" desde el editor de mapas (editor.html): index.html?editor carga el mapa que dejó guardado el editor */
+if(/[?&]editor\b/.test(location.search)){try{self.CK_MAPA_EDITOR=JSON.parse(localStorage.getItem('cuenk_mapa_editor')||'null');}catch(e){}}</script>
+<script src="game.js"></script>
+<script>
+@@CODIGO@@
+</script>

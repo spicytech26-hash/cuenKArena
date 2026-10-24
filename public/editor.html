@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Editor de mapas · CuenkArena</title>
+<style>
+:root{--bg:#15130f;--panel:#1f1c17;--line:#3a342b;--tx:#ece5d8;--dim:#9d9384;--acc:#ff8a3d;--sel:#4fd1ff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:13px/1.35 system-ui,Segoe UI,Arial,sans-serif;height:100vh;display:grid;grid-template-columns:270px 1fr 300px;overflow:hidden}
+aside{background:var(--panel);border-right:1px solid var(--line);overflow:auto;padding:10px}
+aside.der{border-right:0;border-left:1px solid var(--line);display:flex;flex-direction:column;padding:0}
+h1{font-size:15px;margin:0 0 8px;color:var(--acc)}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin:14px 0 6px}
+label{display:flex;align-items:center;gap:6px;margin:4px 0}
+label>span{min-width:74px;color:var(--dim)}
+input,select,button{font:inherit;color:var(--tx);background:#2a261f;border:1px solid var(--line);border-radius:5px;padding:4px 6px}
+input[type=number]{width:72px}
+input[type=text]{flex:1;min-width:0}
+label select{flex:1;min-width:0;max-width:100%}
+button{cursor:pointer}
+button:hover{border-color:var(--acc)}
+button.on{background:var(--acc);color:#1a1208;border-color:var(--acc)}
+.fila{display:flex;flex-wrap:wrap;gap:4px}
+.fila button{flex:1 1 auto}
+.ayuda{color:var(--dim);font-size:12px;margin:6px 0}
+#centro{position:relative;overflow:hidden}
+#plano{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;background:#0e0d0b}
+#estado{position:absolute;left:8px;bottom:6px;color:var(--dim);font-size:12px;pointer-events:none;background:rgba(0,0,0,.45);padding:3px 6px;border-radius:4px}
+#vista{width:100%;height:260px;display:block;background:#0b0a09;border-bottom:1px solid var(--line);cursor:grab}
+#props{padding:10px;overflow:auto;flex:1}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.grid3 input{width:100%}
+small{color:var(--dim)}
+kbd{background:#2a261f;border:1px solid var(--line);border-radius:3px;padding:0 4px;font-size:11px}
+</style>
+</head>
+<body>
+<aside>
+  <h1>Editor de mapas</h1>
+  <h2>Mapa</h2>
+  <label><span>Abrir</span><select id="abrir"></select></label>
+  <div class="fila"><button id="bNuevo">Nuevo</button><button id="bImportar">Importar archivo</button><input type="file" id="fArchivo" accept=".js,.json" hidden></div>
+  <label><span>Id</span><input type="text" id="mId" placeholder="mimapa (sin espacios)"></label>
+  <label><span>Nombre</span><input type="text" id="mNombre" placeholder="dm4 · Mi mapa"></label>
+  <label><span>Cielo</span><select id="mCielo"><option value="day">Día</option><option value="dusk">Atardecer</option><option value="night">Noche</option></select></label>
+  <label><span>Modos</span><span class="fila" id="mModos" style="color:var(--tx);min-width:0"></span></label>
+  <h2>Herramienta</h2>
+  <div class="fila" id="tools">
+    <button data-t="sel" class="on" title="Elegir y mover (V)">Elegir</button>
+    <button data-t="caja" title="Dibujar un bloque arrastrando (B)">Bloque</button>
+    <button data-t="item" title="Poner un ítem (I)">Ítem</button>
+    <button data-t="spawn" title="Poner una aparición (P)">Aparición</button>
+    <button data-t="pad" title="Saltador: clic donde va y clic adonde lanza (J)">Saltador</button>
+  </div>
+  <label><span>Material</span><select id="tMat"></select></label>
+  <label><span>Ítem</span><select id="tItem"></select></label>
+  <label><span>Piso (y)</span><input type="number" id="tY0" value="0" step="0.5"><small>alto</small><input type="number" id="tH" value="3" step="0.5" min="0.05"></label>
+  <label><span>Cuadrícula</span><select id="tSnap"><option>1</option><option selected>0.5</option><option>0.25</option><option>0.1</option></select></label>
+  <label><span>Ver hasta</span><input type="number" id="tVer" value="99" step="1"><small>m de altura</small></label>
+  <p class="ayuda">Rueda: zoom · arrastrar con clic derecho: mover la vista · <kbd>Supr</kbd> borra · <kbd>Ctrl+D</kbd> duplica · <kbd>Ctrl+Z</kbd> deshace · flechas mueven lo elegido · <kbd>Re Pág</kbd>/<kbd>Av Pág</kbd> lo suben o bajan.</p>
+  <h2>Guardar</h2>
+  <div class="fila"><button id="bProbar" title="Abre el juego en práctica con este mapa">Probar en práctica</button></div>
+  <div class="fila" style="margin-top:4px"><button id="bExportar" title="Baja el archivo para src/nucleo/02-mapas/">Exportar .js</button></div>
+  <p class="ayuda">El archivo exportado va en <b>src/nucleo/02-mapas/</b> con un número adelante (por ejemplo <b>6-mimapa.js</b>). Después: <b>node herramientas/armar.js</b> y subir a GitHub. El borrador se guarda solo en este navegador.</p>
+  <p class="ayuda" id="resumen"></p>
+</aside>
+<div id="centro"><canvas id="plano"></canvas><div id="estado"></div></div>
+<aside class="der"><canvas id="vista" title="Vista 3D: arrastrá para girar, rueda para acercar"></canvas><div id="props"></div></aside>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin></script>
+<script src="game.js"></script>
+<script>
+(function(){
+'use strict';
+const C=window.CUENK,$=id=>document.getElementById(id);
+/* ---------- materiales: colores aproximados para el plano y la vista 3D (las texturas reales están en el juego) ---------- */
+const MATC={wall:'#6d6156',floor:'#5b5148',concrete:'#7d7a74',grate:'#55585a',metal:'#7f858a',tower:'#4c4a52',trim:'#8a6a3a',step:'#6e655a',crate:'#6a4c2e',rock:'#3e3430',
+  basalt:'#2b2420',pillar:'#3a4036',block:'#3a332e',roof:'#2e2823',club:'#2a2233',black:'#16131b',chrome:'#b8b6c4',speaker:'#1c1b20',stage:'#2e2a36',truss:'#6a6874',
+  glass:'#2bb6d8',mirror:'#8d86b0',velvet:'#5a1a48',lift:'#2be6ff',led:'#ff2bd6',whitewall:'#dcdedc',navy:'#253246',tiles:'#c9ae86',brick:'#a8563e',smooth:'#8d8f90',
+  rail:'#6f777d',fence:'#a9b0b5',wood:'#7a5232',board:'#2d4a3a',soil:'#4a3524',canyon:'#c4693a',falls:'#78c8ff',grass:'#5f9a3a',barn:'#a8302a',barnB:'#2f5fa8',hay:'#d8b450',
+  roofTiles:'#9c4b31',booth:'#dfe3e6',tube:'#78dcff',neonP:'#ff3fd2',neonC:'#2be6ff',light:'#ffd7a0',neonR:'#ff3a2a',neonB:'#2a7bff'};
+const ITEM_TXT={health:'+',mega:'M',armor:'A',armorH:'AA',quad:'Q',shells:'c',bullets:'b',rockets:'r',grenades:'g',slugs:'p',caza:'k',molotov:'m'};
+/* ---------- estado ---------- */
+let M=null,sel=null,tool='sel',padFirst=null;const hist=[];
+const view={s:8,x:0,z:0};
+const snapV=()=>+$('tSnap').value,snap=v=>Math.round(v/snapV())*snapV(),r3=v=>Math.round(v*1000)/1000;
+function vacio(){return {id:'mimapa',name:'dm · Mapa nuevo',modos:['arena'],theme:{sky:'day',fog:0xbfd3e6,fogD:.006,amb:0xc9d0da,ambI:.5,hemi:[0xbcd8ff,0x8a7a62,.42],sun:true},
+  brushes:[{min:[-30,-1,-30],max:[30,0,30],mat:'concrete'},{min:[-31,-1,-31],max:[-30,8,31],mat:'block'},{min:[30,-1,-31],max:[31,8,31],mat:'block'},{min:[-30,-1,-31],max:[30,8,-30],mat:'block'},{min:[-30,-1,30],max:[30,8,31],mat:'block'}],
+  items:[{type:'health',x:0,y:0,z:0}],spawns:[{x:-20,y:0,z:-20,yaw:0},{x:20,y:0,z:20,yaw:3.14},{x:-20,y:0,z:20,yaw:0},{x:20,y:0,z:-20,yaw:3.14}],pads:[],teles:[],lava:[],lights:[],deco:[]};}
+// mapa del juego (ya armado) → datos para el editor: se sacan los campos que calcula el juego
+function aDatos(W){const o={};for(const k in W){if(['movers','_safe','t','brushes'].includes(k))continue;o[k]=JSON.parse(JSON.stringify(W[k]));}
+  o.brushes=W.brushes.map(b=>{const n={min:b.mover?b.mover.min0.slice():b.min.slice(),max:b.mover?b.mover.max0.slice():b.max.slice(),mat:b.mat};
+    for(const k in b){if(['min','max','mat','id','off'].includes(k))continue;n[k]=JSON.parse(JSON.stringify(b[k]));}
+    if(n.mover){delete n.mover.min0;delete n.mover.max0;}return n;});
+  for(const k of ['items','spawns','pads','teles','lava','lights','deco'])o[k]=o[k]||[];
+  if(!o.modos)o.modos=Object.keys(C.MODES).filter(m=>C.MODES[m].maps.includes(W.id));return o;}
+/* ---------- borrador y deshacer ---------- */
+function guardarBorrador(){try{localStorage.setItem('cuenk_editor_borrador',JSON.stringify(M));}catch(e){}}
+function marcar(){hist.push(JSON.stringify(M));if(hist.length>60)hist.shift();}
+function deshacer(){if(!hist.length)return;M=JSON.parse(hist.pop());sel=null;todo();}
+function cambio(){guardarBorrador();dibujar();props();vista3d();resumen();}
+function todo(){metaEnPanel();cambio();}
+/* ---------- panel del mapa ---------- */
+function metaEnPanel(){$('mId').value=M.id||'';$('mNombre').value=M.name||'';$('mCielo').value=(M.theme&&M.theme.sky)||'day';
+  $('mModos').innerHTML=['arena','gungame','tdm'].map(m=>'<label style="margin:0"><input type="checkbox" data-m="'+m+'"'+((M.modos||[]).includes(m)?' checked':'')+'>'+C.MODES[m].name+'</label>').join('');}
+$('mId').oninput=e=>{M.id=e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,'');guardarBorrador();resumen();};
+$('mNombre').oninput=e=>{M.name=e.target.value;guardarBorrador();};
+$('mCielo').onchange=e=>{marcar();M.theme=Object.assign({},M.theme,{sky:e.target.value,sun:e.target.value!=='night'});cambio();};
+$('mModos').onchange=()=>{M.modos=[...$('mModos').querySelectorAll('input:checked')].map(i=>i.dataset.m);guardarBorrador();};
+$('abrir').innerHTML='<option value="">— elegir —</option><option value="_borrador">Borrador guardado</option>'+C.MAP_IDS.map(id=>'<option value="'+id+'">'+C.MAPS[id].name+' (copia)</option>').join('');
+$('abrir').onchange=e=>{const v=e.target.value;e.target.value='';if(!v)return;
+  if(v==='_borrador'){try{const b=JSON.parse(localStorage.getItem('cuenk_editor_borrador'));if(b){M=b;sel=null;centrar();todo();}}catch(err){}return;}
+  marcar();M=aDatos(C.MAPS[v]);M.id=v+'2';M.name=M.name+' (editado)';sel=null;centrar();todo();};
+$('bNuevo').onclick=()=>{marcar();M=vacio();sel=null;centrar();todo();};
+$('bImportar').onclick=()=>$('fArchivo').click();
+$('fArchivo').onchange=async e=>{const f=e.target.files[0];if(!f)return;const t=await f.text();e.target.value='';
+  try{const a=t.indexOf('mapFromData('),j=a>=0?t.slice(a+12,t.lastIndexOf(')')):t;marcar();M=JSON.parse(j);sel=null;centrar();todo();}catch(err){alert('No pude leer ese archivo: '+err.message);}};
+for(const m in MATC)$('tMat').insertAdjacentHTML('beforeend','<option>'+m+'</option>');$('tMat').value='concrete';
+for(const t in C.ITEMS)$('tItem').insertAdjacentHTML('beforeend','<option value="'+t+'">'+(C.ITEMS[t].name||t)+' ('+t+')</option>');
+$('tools').onclick=e=>{const t=e.target.dataset.t;if(t)setTool(t);};
+function setTool(t){tool=t;padFirst=null;[...$('tools').children].forEach(b=>b.classList.toggle('on',b.dataset.t===t));dibujar();}
+['tVer','tSnap'].forEach(id=>$(id).oninput=dibujar);
+/* ---------- exportar y probar ---------- */
+function limpio(){const d=JSON.parse(JSON.stringify(M));if(!d.id)d.id='mimapa';
+  let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;for(const b of d.brushes){x0=Math.min(x0,b.min[0]);x1=Math.max(x1,b.max[0]);z0=Math.min(z0,b.min[2]);z1=Math.max(z1,b.max[2]);}
+  if(d.brushes.length)d.bounds={x0:Math.floor(x0),x1:Math.ceil(x1),z0:Math.floor(z0),z1:Math.ceil(z1)};return d;}
+$('bExportar').onclick=()=>{const d=limpio();const txt='/* Mapa hecho con el editor de CuenkArena (public/editor.html).\n   Va en src/nucleo/02-mapas/ con un número adelante; después: node herramientas/armar.js */\n'
+  +'MAPDEFS['+JSON.stringify(d.id)+'] = () => mapFromData('+JSON.stringify(d)+');\n';
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/javascript'}));a.download=d.id+'.js';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);};
+$('bProbar').onclick=()=>{const d=limpio();if(!d.spawns.length){alert('Poné al menos una aparición.');return;}
+  if(C.MAPS[d.id]&&!/2$/.test(d.id)){d.id=d.id+'_prueba';}
+  try{localStorage.setItem('cuenk_mapa_editor',JSON.stringify(d));}catch(e){alert('No se pudo guardar para probar.');return;}window.open('index.html?editor','_blank');};
+function resumen(){$('resumen').textContent=M.brushes.length+' bloques · '+M.items.length+' ítems · '+M.spawns.length+' apariciones · '+(M.pads||[]).length+' saltadores';}
+/* ---------- plano (vista desde arriba) ---------- */
+const cv=$('plano'),g=cv.getContext('2d');
+function tam(){const r=cv.getBoundingClientRect(),d=devicePixelRatio||1;cv.width=r.width*d;cv.height=r.height*d;g.setTransform(d,0,0,d,0,0);dibujar();}
+const aPx=(x,z)=>[(x-view.x)*view.s+cv.clientWidth/2,(z-view.z)*view.s+cv.clientHeight/2];
+const aM=(px,pz)=>[(px-cv.clientWidth/2)/view.s+view.x,(pz-cv.clientHeight/2)/view.s+view.z];
+function centrar(){let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;for(const b of M.brushes){x0=Math.min(x0,b.min[0]);x1=Math.max(x1,b.max[0]);z0=Math.min(z0,b.min[2]);z1=Math.max(z1,b.max[2]);}
+  if(x0>x1){view.x=view.z=0;view.s=8;return;}if(R3)R3.orb.set=0;view.x=(x0+x1)/2;view.z=(z0+z1)/2;view.s=Math.max(2,Math.min(40,Math.min(cv.clientWidth/(x1-x0+4),cv.clientHeight/(z1-z0+4))));}
+function sombra(hex,k){const n=parseInt(hex.slice(1),16);const f=c=>Math.max(0,Math.min(255,Math.round(c*k)));return 'rgb('+f(n>>16&255)+','+f(n>>8&255)+','+f(n&255)+')';}
+function visibles(){const lim=+$('tVer').value;return M.brushes.map((b,i)=>[b,i]).filter(([b])=>b.min[1]<lim).sort((a,b)=>a[0].max[1]-b[0].max[1]);}
+function dibujar(){if(!M)return;const W=cv.clientWidth,H=cv.clientHeight;g.clearRect(0,0,W,H);
+  // cuadrícula
+  const st=view.s<4?10:view.s<12?5:1;g.lineWidth=1;const [ax,az]=aM(0,0),[bx,bz]=aM(W,H);
+  for(let x=Math.floor(ax/st)*st;x<=bx;x+=st){const p=aPx(x,0)[0];g.strokeStyle=x===0?'#4a4136':'#1d1b17';g.beginPath();g.moveTo(p,0);g.lineTo(p,H);g.stroke();}
+  for(let z=Math.floor(az/st)*st;z<=bz;z+=st){const p=aPx(0,z)[1];g.strokeStyle=z===0?'#4a4136':'#1d1b17';g.beginPath();g.moveTo(0,p);g.lineTo(W,p);g.stroke();}
+  // bloques (los más altos arriba, más claros)
+  let hmin=1e9,hmax=-1e9;for(const b of M.brushes){hmin=Math.min(hmin,b.max[1]);hmax=Math.max(hmax,b.max[1]);}
+  for(const [b,i] of visibles()){const [x0,z0]=aPx(b.min[0],b.min[2]),[x1,z1]=aPx(b.max[0],b.max[2]);const k=.55+.75*((b.max[1]-hmin)/((hmax-hmin)||1));
+    g.fillStyle=sombra(MATC[b.mat]||'#888888',k);g.globalAlpha=b.nc?.45:.92;g.fillRect(x0,z0,x1-x0,z1-z0);g.globalAlpha=1;
+    g.strokeStyle='rgba(0,0,0,.55)';g.strokeRect(x0+.5,z0+.5,x1-x0-1,z1-z0-1);
+    if(b.ramp){g.strokeStyle='rgba(255,255,255,.35)';g.beginPath();if(b.ramp.axis==='x'){for(let x=x0;x<x1;x+=6){g.moveTo(x,z0);g.lineTo(x,z1);}}else{for(let z=z0;z<z1;z+=6){g.moveTo(x0,z);g.lineTo(x1,z);}}g.stroke();}
+    if(b.mover){g.strokeStyle='#2be6ff';g.setLineDash([4,3]);g.strokeRect(x0,z0,x1-x0,z1-z0);g.setLineDash([]);}
+    if(sel&&sel.k==='b'&&sel.i===i){g.strokeStyle=getComputedStyle(document.body).getPropertyValue('--sel');g.lineWidth=2;g.strokeRect(x0,z0,x1-x0,z1-z0);g.lineWidth=1;
+      g.fillStyle='#4fd1ff';for(const [hx,hz] of [[x0,z0],[x1,z0],[x0,z1],[x1,z1]])g.fillRect(hx-4,hz-4,8,8);}}
+  // saltadores
+  (M.pads||[]).forEach((p,i)=>{const [x,z]=aPx(p.x,p.z),[tx,tz]=aPx(p.t[0],p.t[2]);g.strokeStyle='#ffcf3a';g.setLineDash([5,4]);g.beginPath();g.moveTo(x,z);g.lineTo(tx,tz);g.stroke();g.setLineDash([]);
+    g.beginPath();g.arc(x,z,Math.max(4,(p.r||1)*view.s),0,7);g.fillStyle=sel&&sel.k==='pad'&&sel.i===i?'#4fd1ff':'#ffcf3a';g.globalAlpha=.6;g.fill();g.globalAlpha=1;g.beginPath();g.arc(tx,tz,4,0,7);g.stroke();});
+  // ítems y apariciones
+  g.font='bold 11px system-ui';g.textAlign='center';g.textBaseline='middle';
+  M.items.forEach((it,i)=>{const [x,z]=aPx(it.x,it.z);const on=sel&&sel.k==='item'&&sel.i===i;g.fillStyle=on?'#4fd1ff':it.type==='health'||it.type==='mega'?'#e8e2d6':/armor/.test(it.type)?'#9ccc3c':it.type==='quad'?'#c45cff':/^w/.test(it.type)?'#ff8a3d':'#ffcc33';
+    g.beginPath();g.arc(x,z,7,0,7);g.fill();g.fillStyle='#1a1208';g.fillText(ITEM_TXT[it.type]||it.type.replace('w',''),x,z+.5);});
+  M.spawns.forEach((s,i)=>{const [x,z]=aPx(s.x,s.z);const on=sel&&sel.k==='spawn'&&sel.i===i;const dx=-Math.sin(s.yaw||0),dz=-Math.cos(s.yaw||0);
+    g.fillStyle=on?'#4fd1ff':'#3fa7ff';g.beginPath();g.moveTo(x+dx*11,z+dz*11);g.lineTo(x-dz*6-dx*5,z+dx*6-dz*5);g.lineTo(x+dz*6-dx*5,z-dx*6-dz*5);g.closePath();g.fill();});
+  if(drag&&drag.m==='caja'){const [x0,z0]=aPx(Math.min(drag.a[0],drag.b[0]),Math.min(drag.a[1],drag.b[1])),[x1,z1]=aPx(Math.max(drag.a[0],drag.b[0]),Math.max(drag.a[1],drag.b[1]));g.strokeStyle='#ff8a3d';g.setLineDash([6,4]);g.strokeRect(x0,z0,x1-x0,z1-z0);g.setLineDash([]);}
+  if(padFirst){const [x,z]=aPx(padFirst.x,padFirst.z);g.strokeStyle='#ffcf3a';g.beginPath();g.arc(x,z,8,0,7);g.stroke();}}
+/* ---------- elegir, dibujar y mover con el mouse ---------- */
+// altura del piso en (x, z): el techo del bloque más alto que no supere "piso + 1 m" (para poner ítems y apariciones arriba de las cosas)
+function pisoEn(x,z){const lim=+$('tY0').value+1;let y=null;for(const b of M.brushes)if(!b.nc&&x>=b.min[0]&&x<=b.max[0]&&z>=b.min[2]&&z<=b.max[2]&&b.max[1]<=lim)y=y==null?b.max[1]:Math.max(y,b.max[1]);return y==null?+$('tY0').value:r3(y);}
+function pick(x,z){const d=10/view.s;
+  for(let i=M.spawns.length-1;i>=0;i--)if(Math.hypot(M.spawns[i].x-x,M.spawns[i].z-z)<d)return {k:'spawn',i};
+  for(let i=M.items.length-1;i>=0;i--)if(Math.hypot(M.items[i].x-x,M.items[i].z-z)<d)return {k:'item',i};
+  for(let i=(M.pads||[]).length-1;i>=0;i--)if(Math.hypot(M.pads[i].x-x,M.pads[i].z-z)<Math.max(d,M.pads[i].r||1))return {k:'pad',i};
+  const v=visibles();for(let k=v.length-1;k>=0;k--){const [b,i]=v[k];if(x>=b.min[0]&&x<=b.max[0]&&z>=b.min[2]&&z<=b.max[2])return {k:'b',i};}return null;}
+let drag=null;
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('wheel',e=>{e.preventDefault();const [mx,mz]=aM(e.offsetX,e.offsetY);view.s=Math.max(1,Math.min(80,view.s*(e.deltaY<0?1.15:1/1.15)));const [nx,nz]=aM(e.offsetX,e.offsetY);view.x+=mx-nx;view.z+=mz-nz;dibujar();},{passive:false});
+cv.addEventListener('mousedown',e=>{const [x,z]=aM(e.offsetX,e.offsetY);
+  if(e.button===2||e.button===1){drag={m:'pan',px:e.clientX,pz:e.clientY,vx:view.x,vz:view.z};return;}
+  if(tool==='caja'){drag={m:'caja',a:[snap(x),snap(z)],b:[snap(x),snap(z)]};return;}
+  if(tool==='item'){marcar();M.items.push({type:$('tItem').value,x:snap(x),y:pisoEn(x,z),z:snap(z)});sel={k:'item',i:M.items.length-1};cambio();return;}
+  if(tool==='spawn'){marcar();M.spawns.push({x:snap(x),y:pisoEn(x,z),z:snap(z),yaw:0});sel={k:'spawn',i:M.spawns.length-1};cambio();return;}
+  if(tool==='pad'){if(!padFirst){padFirst={x:snap(x),y:pisoEn(x,z),z:snap(z)};dibujar();return;}
+    marcar();M.pads=M.pads||[];M.pads.push({x:padFirst.x,y:padFirst.y,z:padFirst.z,r:1,t:[snap(x),pisoEn(x,z),snap(z)],apex:2});padFirst=null;sel={k:'pad',i:M.pads.length-1};cambio();return;}
+  // elegir: primero las esquinas del bloque elegido (cambiar tamaño), después lo que esté debajo del mouse (mover)
+  if(sel&&sel.k==='b'){const b=M.brushes[sel.i],d=8/view.s;for(const [cx,cz] of [[0,0],[1,0],[0,1],[1,1]]){const hx=cx?b.max[0]:b.min[0],hz=cz?b.max[2]:b.min[2];
+    if(Math.abs(hx-x)<d&&Math.abs(hz-z)<d){marcar();drag={m:'tam',cx,cz};return;}}}
+  sel=pick(x,z);if(sel){marcar();drag={m:'mover',x0:x,z0:z,orig:JSON.stringify(obj(sel))};}cambio();});
+addEventListener('mousemove',e=>{const r=cv.getBoundingClientRect(),[x,z]=aM(e.clientX-r.left,e.clientY-r.top);
+  $('estado').textContent='x '+x.toFixed(1)+'  z '+z.toFixed(1)+'   ·   piso en este punto: '+pisoEn(x,z)+' m';
+  if(!drag)return;
+  if(drag.m==='pan'){view.x=drag.vx-(e.clientX-drag.px)/view.s;view.z=drag.vz-(e.clientY-drag.pz)/view.s;dibujar();return;}
+  if(drag.m==='caja'){drag.b=[snap(x),snap(z)];dibujar();return;}
+  if(drag.m==='tam'){const b=M.brushes[sel.i];b[drag.cx?'max':'min'][0]=snap(x);b[drag.cz?'max':'min'][2]=snap(z);arreglar(b);dibujar();return;}
+  if(drag.m==='mover'){const o=JSON.parse(drag.orig),dx=snap(x-drag.x0),dz=snap(z-drag.z0);mover(sel,o,dx,dz);dibujar();}});
+addEventListener('mouseup',()=>{if(!drag)return;const d=drag;drag=null;
+  if(d.m==='caja'){const x0=Math.min(d.a[0],d.b[0]),x1=Math.max(d.a[0],d.b[0]),z0=Math.min(d.a[1],d.b[1]),z1=Math.max(d.a[1],d.b[1]);
+    if(x1-x0>=.05&&z1-z0>=.05){marcar();const y0=+$('tY0').value;M.brushes.push({min:[x0,y0,z0],max:[x1,r3(y0+Math.max(.05,+$('tH').value)),z1],mat:$('tMat').value});sel={k:'b',i:M.brushes.length-1};}}
+  if(d.m==='mover'&&JSON.stringify(obj(sel))===d.orig)hist.pop();
+  cambio();});
+function arreglar(b){for(let k=0;k<3;k++)if(b.min[k]>b.max[k]){const t=b.min[k];b.min[k]=b.max[k];b.max[k]=t;}}
+const LIST={b:'brushes',item:'items',spawn:'spawns',pad:'pads'};
+function obj(s){return s?M[LIST[s.k]][s.i]:null;}
+function mover(s,o,dx,dz){const t=obj(s);if(s.k==='b'){t.min[0]=r3(o.min[0]+dx);t.max[0]=r3(o.max[0]+dx);t.min[2]=r3(o.min[2]+dz);t.max[2]=r3(o.max[2]+dz);}
+  else{t.x=r3(o.x+dx);t.z=r3(o.z+dz);if(s.k==='pad'){t.t=[r3(o.t[0]+dx),o.t[1],r3(o.t[2]+dz)];}}}
+addEventListener('keydown',e=>{if(/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();deshacer();return;}
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='d'&&sel){e.preventDefault();marcar();const c=JSON.parse(JSON.stringify(obj(sel)));M[LIST[sel.k]].push(c);sel={k:sel.k,i:M[LIST[sel.k]].length-1};mover(sel,JSON.parse(JSON.stringify(c)),snapV()*2,snapV()*2);cambio();return;}
+  const T={v:'sel',b:'caja',i:'item',p:'spawn',j:'pad'}[e.key.toLowerCase()];if(T&&!e.ctrlKey){setTool(T);return;}
+  if(e.key==='Escape'){sel=null;padFirst=null;cambio();return;}
+  if(!sel)return;
+  if(e.key==='Delete'||e.key==='Backspace'){marcar();M[LIST[sel.k]].splice(sel.i,1);sel=null;cambio();return;}
+  const st=snapV()*(e.shiftKey?4:1),mv={ArrowLeft:[-st,0],ArrowRight:[st,0],ArrowUp:[0,-st],ArrowDown:[0,st]}[e.key];
+  if(mv){e.preventDefault();marcar();mover(sel,JSON.parse(JSON.stringify(obj(sel))),mv[0],mv[1]);cambio();return;}
+  if(e.key==='PageUp'||e.key==='PageDown'){e.preventDefault();marcar();const d=(e.key==='PageUp'?1:-1)*snapV(),t=obj(sel);if(sel.k==='b'){t.min[1]=r3(t.min[1]+d);t.max[1]=r3(t.max[1]+d);}else t.y=r3(t.y+d);cambio();}});
+/* ---------- propiedades de lo elegido ---------- */
+function num(lbl,val,cb,step){return {lbl,val,cb,step:step||.25};}
+function props(){const P=$('props');if(!sel||!obj(sel)){P.innerHTML='<h2 style="margin-top:0">Nada elegido</h2><p class="ayuda">Elegí un bloque, ítem, aparición o saltador en el plano para ver y cambiar sus datos acá.</p>';return;}
+  const o=obj(sel);let h='';const campos=[];
+  const inp=(id,v,step)=>'<input type="number" id="'+id+'" value="'+v+'" step="'+(step||.25)+'">';
+  if(sel.k==='b'){h+='<h2 style="margin-top:0">Bloque #'+sel.i+'</h2>';
+    h+='<div class="grid3"><small>x</small><small>y (alto)</small><small>z</small>'+inp('p_x0',o.min[0])+inp('p_y0',o.min[1])+inp('p_z0',o.min[2])+inp('p_x1',o.max[0])+inp('p_y1',o.max[1])+inp('p_z1',o.max[2])+'</div><small>arriba: esquina mínima · abajo: esquina máxima</small>';
+    h+='<label><span>Material</span><select id="p_mat">'+Object.keys(MATC).map(m=>'<option'+(m===o.mat?' selected':'')+'>'+m+'</option>').join('')+'</select></label>';
+    h+='<label><input type="checkbox" id="p_nc"'+(o.nc?' checked':'')+'> sin choque (solo se ve)</label>';
+    h+='<label><input type="checkbox" id="p_ramp"'+(o.ramp?' checked':'')+'> rampa</label>';
+    if(o.ramp)h+='<label><span>Sube por</span><select id="p_rax"><option value="x"'+(o.ramp.axis==='x'?' selected':'')+'>x</option><option value="z"'+(o.ramp.axis==='z'?' selected':'')+'>z</option></select><select id="p_rdir"><option value="1"'+(o.ramp.dir>0?' selected':'')+'>hacia +</option><option value="-1"'+(o.ramp.dir<0?' selected':'')+'>hacia −</option></select></label><label><span>Altura baja</span>'+inp('p_rlo',o.ramp.lo)+'</label>';
+    h+='<label><input type="checkbox" id="p_mov"'+(o.mover?' checked':'')+'> plataforma móvil</label>';
+    if(o.mover)h+='<label><span>Eje</span><select id="p_max">'+['x','y','z'].map((a,k)=>'<option value="'+k+'"'+(o.mover.axis===k?' selected':'')+'>'+a+'</option>').join('')+'</select></label><label><span>Recorre</span>'+inp('p_mamp',o.mover.amp,.5)+'<small>m</small></label><label><span>Vuelta</span>'+inp('p_mper',o.mover.period,.5)+'<small>s</small></label>';}
+  if(sel.k==='item'){h+='<h2 style="margin-top:0">Ítem #'+sel.i+'</h2><label><span>Tipo</span><select id="p_type">'+Object.keys(C.ITEMS).map(t=>'<option value="'+t+'"'+(t===o.type?' selected':'')+'>'+(C.ITEMS[t].name||t)+'</option>').join('')+'</select></label>';
+    h+='<div class="grid3"><small>x</small><small>y</small><small>z</small>'+inp('p_x',o.x)+inp('p_y',o.y)+inp('p_z',o.z)+'</div>';}
+  if(sel.k==='spawn'){h+='<h2 style="margin-top:0">Aparición #'+sel.i+'</h2><div class="grid3"><small>x</small><small>y</small><small>z</small>'+inp('p_x',o.x)+inp('p_y',o.y)+inp('p_z',o.z)+'</div>';
+    h+='<label><span>Mira hacia</span><select id="p_yaw">'+[['Norte (−z)',0],['Oeste (−x)',1.571],['Sur (+z)',3.142],['Este (+x)',-1.571]].map(([n,v])=>'<option value="'+v+'"'+(Math.abs((o.yaw||0)-v)<.05?' selected':'')+'>'+n+'</option>').join('')+'</select></label>';}
+  if(sel.k==='pad'){h+='<h2 style="margin-top:0">Saltador #'+sel.i+'</h2><div class="grid3"><small>x</small><small>y</small><small>z</small>'+inp('p_x',o.x)+inp('p_y',o.y)+inp('p_z',o.z)+inp('p_tx',o.t[0])+inp('p_ty',o.t[1])+inp('p_tz',o.t[2])+'</div><small>abajo: adónde cae</small>';
+    h+='<label><span>Radio</span>'+inp('p_r',o.r||1)+'</label><label><span>Altura extra</span>'+inp('p_apex',o.apex||2)+'<small>m sobre el destino</small></label>';}
+  h+='<div class="fila" style="margin-top:10px"><button id="p_dup">Duplicar</button><button id="p_del">Borrar</button></div>';
+  P.innerHTML=h;
+  const on=(id,fn)=>{const el=$(id);if(el)el.onchange=()=>{marcar();fn(el.type==='checkbox'?el.checked:el.tagName==='SELECT'?el.value:+el.value);if(sel.k==='b')arreglar(obj(sel));cambio();};};
+  if(sel.k==='b'){['x0','y0','z0'].forEach((k,j)=>on('p_'+k,v=>o.min[j]=v));['x1','y1','z1'].forEach((k,j)=>on('p_'+k,v=>o.max[j]=v));on('p_mat',v=>o.mat=v);on('p_nc',v=>{if(v)o.nc=1;else delete o.nc;});
+    on('p_ramp',v=>{if(v)o.ramp={axis:'x',dir:1,lo:o.min[1],hi:o.max[1]};else delete o.ramp;});on('p_rax',v=>o.ramp.axis=v);on('p_rdir',v=>o.ramp.dir=+v);on('p_rlo',v=>o.ramp.lo=v);
+    on('p_mov',v=>{if(v)o.mover={axis:1,amp:3,period:6,phase:0};else delete o.mover;});on('p_max',v=>o.mover.axis=+v);on('p_mamp',v=>o.mover.amp=v);on('p_mper',v=>o.mover.period=Math.max(.5,v));
+    if(o.ramp)o.ramp.hi=o.max[1];}
+  else{on('p_x',v=>o.x=v);on('p_y',v=>o.y=v);on('p_z',v=>o.z=v);on('p_type',v=>o.type=v);on('p_yaw',v=>o.yaw=+v);on('p_r',v=>o.r=v);on('p_apex',v=>o.apex=v);on('p_tx',v=>o.t[0]=v);on('p_ty',v=>o.t[1]=v);on('p_tz',v=>o.t[2]=v);}
+  $('p_del').onclick=()=>{marcar();M[LIST[sel.k]].splice(sel.i,1);sel=null;cambio();};
+  $('p_dup').onclick=()=>{marcar();const c=JSON.parse(JSON.stringify(o));M[LIST[sel.k]].push(c);sel={k:sel.k,i:M[LIST[sel.k]].length-1};mover(sel,JSON.parse(JSON.stringify(c)),snapV()*2,snapV()*2);cambio();};}
+/* ---------- vista 3D (cajas de colores; las texturas de verdad se ven en "Probar en práctica") ---------- */
+const v3=$('vista');let R3=null;
+if(window.THREE){const ren=new THREE.WebGLRenderer({canvas:v3,antialias:true});const sc=new THREE.Scene();sc.background=new THREE.Color(0x0b0a09);
+  const cam=new THREE.PerspectiveCamera(55,1,.1,600);sc.add(new THREE.HemisphereLight(0xdde6ff,0x3a3028,.9));const sun=new THREE.DirectionalLight(0xffffff,.6);sun.position.set(.5,1,.3);sc.add(sun);
+  const grp=new THREE.Group();sc.add(grp);const geo=new THREE.BoxGeometry(1,1,1),mats={};
+  const orb={yaw:.7,pitch:.75,d:70,tx:0,ty:0,tz:0};
+  R3={ren,sc,cam,grp,geo,mats,orb};
+  let dn=null;v3.addEventListener('mousedown',e=>{dn={x:e.clientX,y:e.clientY,yaw:orb.yaw,pitch:orb.pitch};});
+  addEventListener('mouseup',()=>dn=null);
+  addEventListener('mousemove',e=>{if(!dn)return;orb.yaw=dn.yaw-(e.clientX-dn.x)*.008;orb.pitch=Math.max(.05,Math.min(1.5,dn.pitch+(e.clientY-dn.y)*.006));pinta3d();});
+  v3.addEventListener('wheel',e=>{e.preventDefault();orb.d=Math.max(5,Math.min(400,orb.d*(e.deltaY<0?.88:1.14)));pinta3d();},{passive:false});}
+let t3=0;function vista3d(){clearTimeout(t3);t3=setTimeout(arma3d,120);}
+function arma3d(){if(!R3||!M)return;const {grp,geo,mats,orb}=R3;while(grp.children.length)grp.remove(grp.children[0]);
+  let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;const lim=+$('tVer').value;
+  M.brushes.forEach((b,i)=>{if(b.min[1]>=lim)return;const m=mats[b.mat+(b.nc?'n':'')]||(mats[b.mat+(b.nc?'n':'')]=new THREE.MeshLambertMaterial({color:MATC[b.mat]||'#888888',transparent:!!b.nc||b.mat==='glass'||b.mat==='fence',opacity:b.nc?.5:b.mat==='glass'||b.mat==='fence'?.55:1}));
+    const me=new THREE.Mesh(geo,sel&&sel.k==='b'&&sel.i===i?new THREE.MeshLambertMaterial({color:0x4fd1ff,emissive:0x0a3a4a}):m);
+    me.scale.set(Math.max(.02,b.max[0]-b.min[0]),Math.max(.02,b.max[1]-b.min[1]),Math.max(.02,b.max[2]-b.min[2]));me.position.set((b.min[0]+b.max[0])/2,(b.min[1]+b.max[1])/2,(b.min[2]+b.max[2])/2);grp.add(me);
+    x0=Math.min(x0,b.min[0]);x1=Math.max(x1,b.max[0]);z0=Math.min(z0,b.min[2]);z1=Math.max(z1,b.max[2]);});
+  const dot=(x,y,z,c,r)=>{const s=new THREE.Mesh(new THREE.SphereGeometry(r||.4,8,6),new THREE.MeshBasicMaterial({color:c}));s.position.set(x,y+.5,z);grp.add(s);};
+  M.items.forEach(it=>dot(it.x,it.y,it.z,0xffcc33,.35));M.spawns.forEach(s=>dot(s.x,s.y+.4,s.z,0x3fa7ff,.45));(M.pads||[]).forEach(p=>dot(p.x,p.y-.3,p.z,0xffcf3a,.6));
+  if(x0<x1&&!orb.set){orb.tx=(x0+x1)/2;orb.tz=(z0+z1)/2;orb.d=Math.max(30,Math.max(x1-x0,z1-z0)*1.1);orb.set=1;}
+  pinta3d();}
+function pinta3d(){if(!R3)return;const {ren,sc,cam,orb}=R3;const w=v3.clientWidth,h=v3.clientHeight;ren.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();
+  cam.position.set(orb.tx+Math.sin(orb.yaw)*Math.cos(orb.pitch)*orb.d,orb.ty+Math.sin(orb.pitch)*orb.d,orb.tz+Math.cos(orb.yaw)*Math.cos(orb.pitch)*orb.d);cam.lookAt(orb.tx,orb.ty,orb.tz);ren.render(sc,cam);}
+/* ---------- arranque ---------- */
+addEventListener('resize',()=>{tam();pinta3d();});
+try{const b=JSON.parse(localStorage.getItem('cuenk_editor_borrador')||'null');M=b&&b.brushes?b:vacio();}catch(e){M=vacio();}
+tam();centrar();todo();
+window.__editor={get M(){return M;},set M(v){M=v;todo();}};
+})();
+</script>
+</body>
+</html>

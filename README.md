@@ -201,9 +201,16 @@ Para ganar velocidad como en Quake: saltá, soltá W, mantené A o D y girá el 
 ```
 server.js          servidor HTTP + WebSocket propio (sin librerías), corre la partida a 40 Hz con paso fijo; sirve los archivos comprimidos con gzip y con ETag
 cuentas.js         inicio de sesión con Google, sesiones firmadas y perfiles en Supabase (o archivo local)
-public/index.html  cliente: render con three.js, HUD, menú, sonido sintetizado, red
-public/game.js     núcleo compartido: mapa, física, armas, ítems, reglas y bots
+src/nucleo/        núcleo compartido en piezas chicas: datos (armas, ítems, modos), un archivo por mapa, física, bots y la partida
+src/cliente/       cliente en piezas chicas: página, estilos y js/ (render, mapa, sonido, un archivo por arma, red, HUD, menú)
+herramientas/      armar.js (junta las piezas) y probar.js (prueba rápida sin navegador)
+public/game.js     ARMADO desde src/nucleo (no se edita a mano)
+public/index.html  ARMADO desde src/cliente (no se edita a mano)
+public/editor.html editor de mapas
+public/modelos/    modelos 3D .glb opcionales (modelos.json dice qué reemplaza a qué)
 ```
+
+Después de cambiar algo en `src/` hay que correr `node herramientas/armar.js` (y `node herramientas/probar.js` para revisar). La guía completa para trabajar en el proyecto está en [CLAUDE.md](CLAUDE.md).
 
 `game.js` lo usan los dos lados. El servidor es la autoridad sobre salud, munición, ítems, frags, proyectiles y bots. Cada cliente simula su propio movimiento (para que se sienta instantáneo) y le avisa al servidor dónde está 30 veces por segundo; el servidor manda el estado de todos 20 veces por segundo y el cliente interpola a los demás con un colchón que se adapta al jitter de la conexión. Los disparos instantáneos los detecta el cliente que dispara y el servidor los valida (distancia, ángulo y que no haya una pared en el medio).
 
@@ -211,7 +218,9 @@ La práctica con bots del menú corre la misma clase `Game` dentro del navegador
 
 ### Editar el mapa
 
-Los mapas están en `buildRepresa()`, `buildPanYManteca()`, `buildLaCuenca()` y `buildPuente()` dentro de `public/game.js`. Todo son cajas, como los *brushes* de Quake:
+**Con el editor (sin programar):** abrí `editor.html` (hay un link abajo en el menú del juego). Dibujás bloques desde arriba, ponés ítems, apariciones y saltadores, lo probás en práctica con un botón y lo exportás como archivo `.js` que va en `src/nucleo/02-mapas/`.
+
+**A mano:** cada mapa es un archivo en `src/nucleo/02-mapas/` (`1-represa.js`, `2-panymanteca.js`, `3-lacuenca.js`, `4-puente.js`, `5-fuertes.js`). Todo son cajas, como los *brushes* de Quake:
 
 - `add(x0, y0, z0, x1, y1, z1, 'material')` agrega un bloque sólido.
 - `stairs(...)`, `ramp(...)` y `wall(... , [puertas])` arman escaleras, rampas y paredes con aberturas.

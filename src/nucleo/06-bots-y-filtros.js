@@ -19,9 +19,13 @@ const SKILL = [
    Se comparan palabras enteras después de normalizar: sin tildes, números y símbolos como letras (4→a, 1→i, 0→o…),
    y→i, b→v, th→t, letras repetidas juntas una sola vez y sin puntos ni guiones entre letras. "banana" o "mañana" no se tocan. */
 const BAD_WORDS = ['fati', 'fatima', 'fatimita', 'fatita', 'fatii', 'ana', 'anita', 'anana', 'vani', 'vanina', 'vaninita', 'vanita', 'vagina', 'vajina', 'vrenda', 'vrendita',
-  'varvie', 'varvi', 'varvara', 'varvarita', 'varvita', 'varvis',
+  'var', 'varvie', 'varvi', 'varvara', 'varvarita', 'varvita', 'varvis',   // bar, barbie, barbi, bárbara...
   'agasoni', 'agason', 'agasonis', 'leguisamon', 'legisamon', 'leguisamones', 'leguisa'];   // agazzoni, leguizamón (la z se compara como s)   // barbie, barbi, barbara (la b se compara como v)
 const BAD_SET = new Set(BAD_WORDS.flatMap(w => [w, w + 's']));
+// Raíces que se censuran aunque estén pegadas a otras letras ("barbieteamo", "xXbarbaraXx"). Se compara ya normalizado (b→v).
+// Se salvan palabras comunes que arrancan igual: barbijo, barbilla, barbitúrico.
+const BAD_STEMS = ['varvie', 'varvara', 'varvi'];
+const STEM_OK = /varvijo|varvila|varvitur/g;
 const LEET = { '4': 'a', '@': 'a', '1': 'i', '!': 'i', '|': 'i', '3': 'e', '0': 'o', '5': 's', '$': 's', '7': 't', '8': 'v', '6': 'g', '9': 'g' };
 function normWord(w) {
   let x = w.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -30,7 +34,7 @@ function normWord(w) {
   return x;
 }
 function isBad(w) {
-  const t = n => n.length >= 3 && BAD_SET.has(n);
+  const t = n => n.length >= 3 && (BAD_SET.has(n) || BAD_STEMS.some(r => n.replace(STEM_OK, '').includes(r)));
   // con y sin los signos de los bordes ("vanina!!", "¡ana!")
   const edge = String(w).replace(/^[^\p{L}\d]+|[^\p{L}\d]+$/gu, '');
   return t(normWord(w)) || t(normWord(edge)) || t(normWord(edge.replace(/^\d+|\d+$/g, '')));

@@ -903,7 +903,7 @@ function buildDeco(group,list){
     const m=new THREE.BufferGeometry();m.setAttribute('position',new THREE.Float32BufferAttribute(P,3));m.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));m.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));m.setIndex(X);return m;};
   const cil=(r1,r2,h,x,y,z,eje)=>{const g=new THREE.CylinderGeometry(r1,r2,h,eje==='z'?24:16);if(eje==='x')g.rotateZ(Math.PI/2);else if(eje==='z')g.rotateX(Math.PI/2);g.translate(x,y,z);return g;};
   const bake=(g,x,y,z,ry,rx)=>{const o=new THREE.Object3D();o.position.set(x,y,z);o.rotation.set(0,ry||0,0);if(rx)o.rotateX(rx);o.updateMatrix();g.applyMatrix4(o.matrix);return g;};
-  const vTr=[],vLf=[],vBu=[],vCo=[];
+  const vTr=[],vLf=[],vBu=[],vCo=[],vAv=[];
   for(const d of list){
     if(d.t==='palm'){
       const tg=new THREE.CylinderGeometry(.2,.32,d.h,8);tg.rotateZ(.05);tg.translate(d.x,d.y+d.h/2,d.z);vTr.push(tg);
@@ -973,7 +973,13 @@ function buildDeco(group,list){
       const c=cv(512,Math.round(512*d.h/d.w),(g,w,h)=>{
         g.fillStyle=d.bg||'#1b1b1b';g.fillRect(0,0,w,h);g.strokeStyle=d.fg||'#f1e7d0';g.lineWidth=6;g.strokeRect(6,6,w-12,h-12);
         g.fillStyle=d.fg||'#f1e7d0';g.textAlign='center';g.textBaseline='middle';g.font='bold '+Math.round(h*.52)+'px Arial, Helvetica, sans-serif';g.fillText(d.txt,w/2,h/2+2);});
-      const m=new THREE.Mesh(new THREE.PlaneGeometry(d.w,d.h),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));m.position.set(d.x,d.y,d.z);m.rotation.y=d.ry||0;group.add(m);
+      // doble cara: se lee desde los dos lados (la de atrás da vuelta y no sale espejada)
+      const cm=new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}),ry0=d.ry||0,nx=Math.sin(ry0),nz=Math.cos(ry0);
+      const m=new THREE.Mesh(new THREE.PlaneGeometry(d.w,d.h),cm);m.position.set(d.x+nx*.015,d.y,d.z+nz*.015);m.rotation.y=ry0;group.add(m);
+      const m2=new THREE.Mesh(new THREE.PlaneGeometry(d.w,d.h),cm);m2.position.set(d.x-nx*.015,d.y,d.z-nz*.015);m2.rotation.y=ry0+Math.PI;group.add(m2);
+    }else if(d.t==='aviso'){
+      // cartel de «prohibido nadar» (cuadrado blanco, círculo rojo tachado y nadador): todos los avisos van en una sola malla, con las dos caras
+      for(const sg of [1,-1]){const g=new THREE.PlaneGeometry(1.1,1.1);if(sg<0)g.rotateY(Math.PI);g.translate(0,0,.02*sg);vAv.push(bake(g,d.x,d.y,d.z,d.ry||0,0));}
     }else if(d.t==='portal'){
       // portal vertical (solo se ve; el teletransporte lo hace el servidor con 'teles'): aro y remolino de luz, de color d.color
       const col=d.color==='yellow'?['255,210,60','255,150,20']:['110,200,255','40,110,255'],ry=d.r*1.25;
@@ -1003,7 +1009,16 @@ function buildDeco(group,list){
     }
   }
   const volcar=(arr,mat)=>{if(!arr.length)return;const m=new THREE.Mesh(unir(arr),mat);group.add(m);};
-  volcar(vTr,trunk);volcar(vLf,leaf);volcar(vBu,bushM);volcar(vCo,M_('copa',()=>new THREE.MeshLambertMaterial({color:0x2e5f2a,flatShading:true})));
+  volcar(vTr,trunk);volcar(vLf,leaf);volcar(vBu,bushM);
+  volcar(vAv,M_('aviso',()=>new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv(256,256,(g,w,h)=>{
+    g.fillStyle='#f4f4f0';g.fillRect(0,0,w,h);g.strokeStyle='#c9c9c2';g.lineWidth=6;g.strokeRect(3,3,w-6,h-6);
+    g.strokeStyle='#d62b2b';g.lineWidth=16;g.beginPath();g.arc(128,110,78,0,7);g.stroke();
+    g.fillStyle='#111';g.beginPath();g.arc(98,96,13,0,7);g.fill();                                                   // cabeza del nadador
+    g.strokeStyle='#111';g.lineWidth=11;g.lineCap='round';g.beginPath();g.moveTo(108,108);g.lineTo(150,114);g.moveTo(108,108);g.lineTo(138,88);g.lineTo(168,86);g.stroke();   // cuerpo y brazos
+    g.lineWidth=7;for(const dy of [128,142]){g.beginPath();g.moveTo(80,dy);g.quadraticCurveTo(100,dy-12,120,dy);g.quadraticCurveTo(140,dy+12,160,dy);g.quadraticCurveTo(172,dy-6,178,dy);g.stroke();}   // olas
+    g.strokeStyle='#d62b2b';g.lineWidth=16;g.beginPath();g.moveTo(72,54);g.lineTo(184,166);g.stroke();                // tachado
+    g.fillStyle='#d62b2b';g.font='bold 27px Arial, Helvetica, sans-serif';g.textAlign='center';g.fillText('PROHIBIDO NADAR',128,222);
+  }))})));volcar(vCo,M_('copa',()=>new THREE.MeshLambertMaterial({color:0x2e5f2a,flatShading:true})));
 }
 
 /* ---------- banderas de captura ---------- */

@@ -277,6 +277,8 @@ Inspirado en el cuarto tramo de la Costanera de Posadas, **al atardecer** (cielo
 - **Andén con vías y la locomotora «La Posadeña»**: elevada sobre el chasis y las ruedas rojas, con caldera redonda y chimenea. La cabina del maquinista está a 1,6 m (se sube por escalones), se atraviesa por las dos puertas y guarda el daño cuádruple; arriba de la caldera hay un botiquín (se sube con los cajones).
 - **Vereda y costanera:** vereda de ladrillo bajo la galería y, más al sur, el paseo elevado con baldosas, bancos, glorietas, palmeras, farolas y gradas hasta el agua.
 - **El Paraná** al sur y al este, sin rejas: el agua llega hasta el horizonte y mata al instante. Cada muelle guarda una armadura pesada.
+- **Adentro:** el hall y las dos alas tienen boleterías, bancos, muros bajos, tabiques con pasos y un depósito al fondo; cada ala tiene su **escalera interna** al piso alto. El **alero de chapa** sobre el balcón se pisa (pasarela alta a 10 m, se llega desde el mirador de la torre este).
+- **Orilla segura:** barandas bajas que se saltan (si las saltás, caés al agua) y carteles de «prohibido nadar» frenan al que viene corriendo. La valla del oeste tiene un muro invisible por arriba.
 - **Al oeste** hay una valla transparente: del otro lado la costanera sigue (paseo, farolas, bancos, árboles y casas), pero solo se ve.
 - **Detalles de la estación real:** alero de chapa sobre el balcón con columnas de hierro, marcos blancos en puertas y ventanas, canteros con plantas, banderines, farolas con farol, buzón, cartel «POSADAS», banderas de Argentina y Misiones, y lanchas sobre el río.
 - **Dos portales enfrentados:** el amarillo está en el andén oeste y el azul en el balcón este (lejos entre sí). Entrás por uno y salís delante del otro.

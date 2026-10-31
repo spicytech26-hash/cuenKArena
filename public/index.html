@@ -968,8 +968,11 @@ function buildDeco(group,list){
       const sw=cv(128,160,(g,w,h)=>{g.clearRect(0,0,w,h);const rg=g.createRadialGradient(w/2,h/2,4,w/2,h/2,w/2);rg.addColorStop(0,'rgba(255,255,255,.9)');rg.addColorStop(.35,'rgba('+col[0]+',.55)');rg.addColorStop(1,'rgba('+col[1]+',.12)');g.fillStyle=rg;g.beginPath();g.ellipse(w/2,h/2,w/2-2,h/2-2,0,0,7);g.fill();
         g.strokeStyle='rgba(255,255,255,.7)';g.lineWidth=3;for(let k=0;k<3;k++){g.beginPath();for(let a=0;a<9;a+=.2){const rr=4+a*5.2;g.lineTo(w/2+Math.cos(a+k*2.1)*rr*.95,h/2+Math.sin(a+k*2.1)*rr*1.2);}g.stroke();}});
       const g3=new THREE.Group();g3.position.set(d.x,d.y+ry,d.z);g3.rotation.y=d.ry||0;
-      g3.add(new THREE.Mesh(new THREE.PlaneGeometry(d.r*2,ry*2),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(sw),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide})));
-      const ring=new THREE.Mesh(new THREE.TorusGeometry(d.r,.09,6,28),new THREE.MeshBasicMaterial({color:d.color==='yellow'?0xffd24a:0x7fd8ff}));ring.scale.y=1.25;g3.add(ring);group.add(g3);
+      const swM=new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(sw),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}),ringM=new THREE.MeshBasicMaterial({color:d.color==='yellow'?0xffd24a:0x7fd8ff});
+      // dos aros cruzados: se ve de frente desde cualquier lado
+      for(const ry2 of [0,Math.PI/2]){const pg=new THREE.Group();pg.rotation.y=ry2;pg.add(new THREE.Mesh(new THREE.PlaneGeometry(d.r*2,ry*2),swM));
+        const ring=new THREE.Mesh(new THREE.TorusGeometry(d.r,.09,6,28),ringM);ring.scale.y=1.25;pg.add(ring);g3.add(pg);}
+      group.add(g3);
     }else if(d.t==='logo'){
       const c=cv(256,256,(g)=>ucpLogo(g,128,128,124));
       const m=new THREE.Mesh(new THREE.CircleGeometry(d.r,40),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));m.position.set(d.x,d.y,d.z);group.add(m);

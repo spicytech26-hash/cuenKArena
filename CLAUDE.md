@@ -25,7 +25,7 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `src/nucleo/00-encabezado.js` | apertura del módulo (UMD) |
 | `src/nucleo/01-datos.js` | física `K`, **`WEAPONS` (daño, cadencia, cargador)**, `ITEMS` (respawn), munición, `SHOP` (tienda y precios), `ECON`, **`MODES`** (modos y qué mapas usan), gungame, equipos, XP, niveles y medallas |
 | `src/nucleo/02-kit-mapas.js` | `mapKit()` (`add`, `ramp`, `wall`, `stairs`, `mover`, `I`, `finish`), `MAPDEFS` y `mapFromData()` (mapas del editor) |
-| `src/nucleo/02-mapas/N-id.js` | **un archivo por mapa**: 1 represa, 2 panymanteca (Humita), 3 lacuenca, 4 puente (CTF), 5 fuertes (francotiradores). Cada uno termina con `MAPDEFS.id = función;` |
+| `src/nucleo/02-mapas/N-id.js` | **un archivo por mapa**: 1 represa, 2 humita (el id interno sigue siendo `panymanteca`, no cambiarlo: lo usan los ajustes guardados, la votación y `public/maps/panymanteca.jpg`), 3 lacuenca, 4 puente (CTF), 5 fuertes (francotiradores). Cada uno termina con `MAPDEFS.id = función;` (el `id`, no el nombre del archivo) |
 | `src/nucleo/03-registro-mapas.js` | arma `MAPS`, apariciones seguras, alias de mapas viejos, plataformas móviles, mapa de prueba del editor |
 | `src/nucleo/04-fisica.js` | movimiento estilo Quake (`pmove`), saltadores, raycast, impactos a jugadores, proyectiles |
 | `src/nucleo/05-navegacion.js` | grafo de navegación de los bots |
@@ -98,6 +98,21 @@ El daño, la cadencia y el cargador de cada arma están en `WEAPONS` (`src/nucle
 - Ítems: la clave es el tipo (`health`, `mega`, `armor`, `armorH`, `quad`, `shells`, `bullets`, `rockets`, `grenades`, `slugs`, `caza`, `w1`…`w9`).
 - Formato: `.glb` (glTF binario), idealmente con menos de 5.000 triángulos por arma y texturas de 512 px o menos. GLTFLoader se baja solo si hay algún modelo en la lista.
 
+## Flujo de trabajo (rama + prueba local, siempre)
+
+1. **Todo cambio se hace en una rama** (`git checkout -b nombre-corto`), nunca directo en `main`. Cada push a `main` se publica solo en Render.
+2. Al terminar: `node herramientas/armar.js` y `node herramientas/probar.js` (tiene que decir "Todo bien."), commit en la rama y push de la rama.
+3. **Decirle al usuario cómo probarlo en su PC (Windows, PowerShell):**
+   ```
+   git fetch
+   git checkout nombre-corto
+   node herramientas/armar.js
+   $env:PORT=3999; node server.js
+   ```
+   y abrir http://localhost:3999 (práctica y online; para online con varios jugadores, varias pestañas). Mapas del editor: http://localhost:3999/editor.html.
+4. **Nunca hacer merge ni push a `main` hasta que el usuario pruebe y diga que está bien.** Si algo se ve mal, corregir en la misma rama.
+5. Las cuentas de Google/Supabase pueden no andar en local (las claves no están en el repo, a propósito); para armas, mapas y balance no hacen falta.
+
 ## Probar y publicar
 
 ```bash
@@ -105,7 +120,7 @@ node herramientas/armar.js        # después de cada cambio en src/
 node herramientas/probar.js       # prueba rápida; tiene que terminar en "Todo bien."
 PORT=3999 node server.js          # jugar localmente en http://localhost:3999 (práctica y online)
 ```
-Publicar: commit en `main` y `git push` (Render despliega solo; si no, "Manual Deploy → Deploy latest commit"). Después actualizar la práctica: publicar el artifact con `public/index.html` y los archivos `game.js`, `editor.html`, `modelos/modelos.json` y los `.glb` que haya.
+Publicar (solo después de que el usuario probó la rama): merge a `main` y `git push` (Render despliega solo; si no, "Manual Deploy → Deploy latest commit"). Después actualizar la práctica: publicar el artifact con `public/index.html` y los archivos `game.js`, `editor.html`, `modelos/modelos.json` y los `.glb` que haya.
 
 ## Reglas que no se rompen
 

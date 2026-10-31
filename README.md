@@ -220,7 +220,7 @@ La práctica con bots del menú corre la misma clase `Game` dentro del navegador
 
 **Con el editor (sin programar):** abrí `editor.html` (hay un link abajo en el menú del juego). Dibujás bloques desde arriba, ponés ítems, apariciones y saltadores, lo probás en práctica con un botón y lo exportás como archivo `.js` que va en `src/nucleo/02-mapas/`.
 
-**A mano:** cada mapa es un archivo en `src/nucleo/02-mapas/` (`1-represa.js`, `2-panymanteca.js`, `3-lacuenca.js`, `4-puente.js`, `5-fuertes.js`). Todo son cajas, como los *brushes* de Quake:
+**A mano:** cada mapa es un archivo en `src/nucleo/02-mapas/` (`1-represa.js`, `2-humita.js`, `3-lacuenca.js`, `4-puente.js`, `5-fuertes.js`). Todo son cajas, como los *brushes* de Quake:
 
 - `add(x0, y0, z0, x1, y1, z1, 'material')` agrega un bloque sólido.
 - `stairs(...)`, `ramp(...)` y `wall(... , [puertas])` arman escaleras, rampas y paredes con aberturas.

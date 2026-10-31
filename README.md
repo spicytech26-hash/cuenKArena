@@ -131,7 +131,7 @@ Cada impacto muestra al lado de la mira cuánto le sacaste (con un "ding" como e
 
 **Rocket jump (lanzacohetes estilo Soldier de TF2):** a los enemigos les hace el mismo daño de siempre, pero tu propio cohete te saca mucho menos (más o menos 17 de vida si explota a tus pies) y te empuja fuerte hacia arriba y hacia adelante. Disparando al piso quieto subís unos 4 m; si saltás y disparás al piso en el mismo momento (mejor agachado) llegás a unos 7 m, ideal para subir a lugares altos o cruzar el mapa rápido.
 
-**Chat:** cada jugador tiene su propio color de nombre en el chat (claro y fácil de leer, sin importar el color de su armadura). En los modos por equipos, un cuadradito al lado del nombre muestra de qué equipo es.
+**Chat:** queda siempre visible abajo a la izquierda, como en TF2 (muestra los últimos 10 mensajes y no se desvanece). Cada jugador tiene su propio color de nombre en el chat (claro y fácil de leer, sin importar el color de su armadura). En los modos por equipos, un cuadradito al lado del nombre muestra de qué equipo es.
 
 ## Al morir
 

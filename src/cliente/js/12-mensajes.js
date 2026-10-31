@@ -235,7 +235,7 @@ function onPickup(type){
 }
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function feedLine(html,mine){const d=document.createElement('div');d.innerHTML=html;if(mine)d.className='me';const f=$('feed');f.appendChild(d);while(f.children.length>6)f.firstChild.remove();setTimeout(()=>d.remove(),5200);}
-function chatLine(html,cls){const d=document.createElement('div');d.innerHTML=html;if(cls)d.className=cls;const L=d.textContent.length;if(L>80)d.style.animationDuration=Math.min(22,9+L/25)+'s';const f=$('chatLog');f.appendChild(d);while(f.children.length>8)f.firstChild.remove();}
+function chatLine(html,cls){const d=document.createElement('div');d.innerHTML=html;if(cls)d.className=cls;const f=$('chatLog');f.appendChild(d);while(f.children.length>10)f.firstChild.remove();}
 // cada impacto suma; si en 0,9 s no le volvés a pegar, aparece el total de la ráfaga
 const DMG={sum:0,t:0,timer:0};
 function showDamage(n,kill,head){

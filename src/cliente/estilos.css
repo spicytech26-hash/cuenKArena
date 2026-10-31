@@ -200,7 +200,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 .kmEmpty{grid-column:1/-1;color:#9fb6d8;font-size:13px;padding:14px;text-align:center;border:1px dashed #23406e}
 #shopHint{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(214px + env(safe-area-inset-bottom,0px));font-size:12px;color:var(--cash);text-shadow:0 1px 0 #000;letter-spacing:.08em}
 #chat{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(120px + env(safe-area-inset-bottom,0px));width:min(440px,calc(100vw - 32px));display:flex;flex-direction:column;gap:2px;font-size:14px}
-#chatLog div{text-shadow:0 1px 0 #000,0 0 4px #000;animation:fade 9s forwards;overflow-wrap:anywhere}
+#chatLog div{text-shadow:0 1px 0 #000,0 0 4px #000;overflow-wrap:anywhere}   /* el chat queda siempre a la vista (como en TF2): las líneas no se desvanecen, solo salen las más viejas */
 #chatLog b{font-weight:400}
 #fpsBox{position:fixed;left:8px;top:6px;z-index:5;font:600 12px/1 ui-monospace,Consolas,monospace;color:#d8f0c8;background:rgba(0,0,0,.45);padding:4px 7px;border-radius:4px;pointer-events:none}
 #kickNote{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:60;max-width:min(560px,calc(100vw - 32px));background:#1d1410;border:2px solid #e8703a;box-shadow:0 8px 30px rgba(0,0,0,.6);padding:12px 40px 12px 16px;font-family:var(--mono);color:var(--ink);animation:knIn .25s ease-out}
@@ -218,7 +218,6 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 #kickPanel .kNote{margin-top:4px;font-size:11px;opacity:.8;max-width:420px}
 #chatLog .tdot{display:inline-block;width:8px;height:8px;margin-right:5px;border:1px solid #000;vertical-align:1px}
 #chatLog .sys{color:var(--rail)}
-#chat.open #chatLog div{animation:none;opacity:1}
 #chatIn{pointer-events:auto;font-family:var(--mono);font-size:14px;background:rgba(11,9,7,.85);color:var(--ink);border:1px solid var(--amber);padding:6px 8px;outline:none}
 #board{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(620px,calc(100vw - 32px));background:rgba(15,12,10,.92);border:1px solid #000;box-shadow:0 6px 0 #000,inset 0 1px 0 rgba(255,220,170,.08);padding:16px 18px}
 #board h2{margin:0 0 4px;font-family:var(--display);font-weight:400;font-size:28px;color:var(--amber);letter-spacing:.04em}

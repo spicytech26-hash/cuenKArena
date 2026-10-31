@@ -148,7 +148,8 @@ function updEffects(dt){
     if(shards.size)updShards(dt);
     level.lavaTexs.forEach((t,i)=>{t.offset.x=(G.time*.04+i*.3)%1;t.offset.y=Math.sin(G.time*.35+i)*.06;});
     level.waterTexs.forEach(t=>{t.offset.x=(G.time*.035)%1;t.offset.y=Math.sin(G.time*.2)*.03;});
-    for(const q of portalAnim){q.g.rotation.y=Math.atan2(camera.position.x-q.g.position.x,camera.position.z-q.g.position.z);q.t1.rotation=G.time*1.1+q.ph;q.t2.rotation=-G.time*.8;q.pts.rotation.z=G.time*.45+q.ph;q.m2.opacity=.72+.25*Math.sin(G.time*3+q.ph);}
+    for(const q of portalAnim){q.g.rotation.y=Math.atan2(camera.position.x-q.g.position.x,camera.position.z-q.g.position.z);q.t1.rotation=G.time*1.1+q.ph;q.t2.rotation=-G.time*.8;q.pts.rotation.z=G.time*.45+q.ph;q.pts2.rotation.z=-G.time*.3+q.ph;q.pts.position.y=Math.sin(G.time*1.3+q.ph)*.1;q.m2.opacity=.72+.25*Math.sin(G.time*3+q.ph);}
+    for(const q of animTex){q.t.offset.x=(G.time*q.sx)%1;q.t.offset.y=(G.time*q.sy)%1;}
     const club=!!level.club;
     for(const pm of level.pads)if(Math.random()<dt*14)emit(sparks,pm.p.x+R(1.4),pm.p.y+.15,pm.p.z+R(1.4),0,2+Math.random()*3,0,.5,1,club?.25:.65,club?.85:.2,0);
     if(level.geysers)for(const gy of level.geysers){

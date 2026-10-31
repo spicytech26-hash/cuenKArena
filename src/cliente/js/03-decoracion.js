@@ -1,6 +1,7 @@
 /* ---------- decoración de La Cuenca: nada de esto choca, es solo visual ---------- */
 const decoMat={};
 const portalAnim=[];   // portales con vórtice animado (se mueven en el bucle de la cámara)
+const animTex=[];      // texturas que se desplazan solas (bruma del río)
 function ucpLogo(g,cx,cy,r){
   // logo circular: aro verde-amarillo, centro blanco y la onda azul del río
   const gr=g.createLinearGradient(cx-r,cy-r,cx+r,cy+r);gr.addColorStop(0,'#0f8d48');gr.addColorStop(.6,'#5fb43a');gr.addColorStop(1,'#d7d630');
@@ -22,7 +23,8 @@ function buildDeco(group,list){
   const cil=(r1,r2,h,x,y,z,eje)=>{const g=new THREE.CylinderGeometry(r1,r2,h,eje==='z'?24:16);if(eje==='x')g.rotateZ(Math.PI/2);else if(eje==='z')g.rotateX(Math.PI/2);g.translate(x,y,z);return g;};
   const bake=(g,x,y,z,ry,rx)=>{const o=new THREE.Object3D();o.position.set(x,y,z);o.rotation.set(0,ry||0,0);if(rx)o.rotateX(rx);o.updateMatrix();g.applyMatrix4(o.matrix);return g;};
   const vTr=[],vLf=[],vBu=[],vCo=[],vAv=[];
-  portalAnim.length=0;
+  portalAnim.length=0;animTex.length=0;
+  const vGl=[],vHz=[],vVn=[];   // brillos de farolas, haces de luz y enredaderas: una sola malla por tipo
   for(const d of list){
     if(d.t==='palm'){
       const tg=new THREE.CylinderGeometry(.2,.32,d.h,8);tg.rotateZ(.05);tg.translate(d.x,d.y+d.h/2,d.z);vTr.push(tg);
@@ -100,38 +102,41 @@ function buildDeco(group,list){
       // cartel de «prohibido nadar» (cuadrado blanco, círculo rojo tachado y nadador): todos los avisos van en una sola malla, con las dos caras
       for(const sg of [1,-1]){const g=new THREE.PlaneGeometry(1.1,1.1);if(sg<0)g.rotateY(Math.PI);g.translate(0,0,.02*sg);vAv.push(bake(g,d.x,d.y,d.z,d.ry||0,0));}
     }else if(d.t==='portal'){
-      // portal: marco de metal oscuro con pilares y runas, aro de luz, vórtice de dos capas que gira, halo y chispas (solo se ve; el teletransporte lo hace el servidor con 'teles')
-      const am=d.color==='yellow',hex=am?0xffc43a:0x4aa8ff,c1=am?'255,215,90':'150,220,255',c2=am?'255,140,20':'40,110,255',ch=am?'255,170,40':'60,140,255';
-      const rx=d.r*1.05,ry=d.r*1.55,cy=ry+.14,g3=new THREE.Group();g3.position.set(d.x,d.y+cy,d.z);g3.rotation.y=d.ry||0;
-      const seg=[],lum=[];
-      for(let i=0;i<28;i++){const a=i/28*Math.PI*2,px=Math.cos(a)*(rx+.13),py=Math.sin(a)*(ry+.13),tg=Math.atan2(ry*Math.cos(a),-rx*Math.sin(a));
-        const b=new THREE.BoxGeometry(.4,.3,.42);b.rotateZ(tg);b.translate(px,py,0);seg.push(b);
-        if(i%2===0){const r2=new THREE.BoxGeometry(.13,.13,.5);r2.rotateZ(tg);r2.translate(px,py,0);lum.push(r2);}}
-      const bs=new THREE.BoxGeometry(rx*3,.3,1.2);bs.translate(0,-cy+.15,0);seg.push(bs);                                   // base
-      for(const sx of [-1,1]){const pl=new THREE.BoxGeometry(.36,ry*1.35,.7);pl.translate(sx*(rx+.62),-cy+.3+ry*.675,0);seg.push(pl);   // pilares a los lados
-        const tp=new THREE.BoxGeometry(.2,.2,.8);tp.translate(sx*(rx+.62),-cy+.3+ry*1.35+.1,0);lum.push(tp);}
-      const frM=M_('pMarco',()=>new THREE.MeshPhongMaterial({color:0x2b2e34,shininess:70,flatShading:true}));
-      g3.add(new THREE.Mesh(unir(seg),frM));
-      g3.add(new THREE.Mesh(unir(lum),new THREE.MeshBasicMaterial({color:hex})));
-      const aro=new THREE.Mesh(new THREE.TorusGeometry(1,.045,8,64),new THREE.MeshBasicMaterial({color:hex}));aro.scale.set(rx,ry,1);g3.add(aro);
-      // vórtice: dos capas en espiral (cuadradas en el canvas, se estiran a la elipse) que giran en sentidos opuestos
-      const swirl=(arms,rev)=>{const t=new THREE.CanvasTexture(cv(256,256,(g,w,h)=>{
-          g.clearRect(0,0,w,h);const rg=g.createRadialGradient(128,128,4,128,128,124);rg.addColorStop(0,'rgba(255,255,255,.95)');rg.addColorStop(.25,'rgba('+c1+',.7)');rg.addColorStop(.7,'rgba('+c2+',.35)');rg.addColorStop(1,'rgba('+c2+',0)');
-          g.fillStyle=rg;g.beginPath();g.arc(128,128,124,0,7);g.fill();g.lineCap='round';
-          for(let k=0;k<arms;k++)for(let u=0;u<1;u+=.012){const r=8+u*112,an=k*Math.PI*2/arms+u*5.2*rev;g.strokeStyle='rgba(255,255,255,'+(.85*(1-u))+')';g.lineWidth=2+(1-u)*9;g.beginPath();g.moveTo(128+Math.cos(an)*r,128+Math.sin(an)*r);g.lineTo(128+Math.cos(an+.07*rev)*(r+1.4),128+Math.sin(an+.07*rev)*(r+1.4));g.stroke();}
-          g.strokeStyle='rgba('+c1+',.35)';g.lineWidth=2;for(const rr of [40,70,100]){g.beginPath();g.arc(128,128,rr,0,7);g.stroke();}
-        }));t.center.set(.5,.5);return t;};
-      const t1=swirl(5,1),t2=swirl(3,-1);
+      // portal de energía pura flotando (sin marco, base ni estructura): vórtice en espiral con núcleo blanco y borde de luz, y partículas cuadradas que derivan. Siempre mira a la cámara
+      const am=d.color==='yellow',hex=am?0xffc43a:0x58b4ff,hex2=am?0xfff2c0:0xdff6ff;
+      const c0=am?'255,248,215':'235,252,255',c1=am?'255,215,95':'110,225,255',c2=am?'255,150,30':'45,125,255',c3=am?'210,90,10':'20,70,210',ch=am?'255,170,40':'60,150,255';
+      const rx=d.r,ry=d.r*1.4,g3=new THREE.Group();g3.position.set(d.x,d.y+ry+.15,d.z);
+      const swirl=(arms,rev,tw)=>{const t=new THREE.CanvasTexture(cv(256,256,(g,w,h)=>{
+        g.clearRect(0,0,w,h);const rg=g.createRadialGradient(128,128,2,128,128,124);rg.addColorStop(0,'rgba('+c0+',1)');rg.addColorStop(.14,'rgba('+c0+',.92)');rg.addColorStop(.34,'rgba('+c1+',.8)');rg.addColorStop(.66,'rgba('+c2+',.55)');rg.addColorStop(.93,'rgba('+c3+',.5)');rg.addColorStop(1,'rgba('+c3+',0)');
+        g.fillStyle=rg;g.beginPath();g.arc(128,128,124,0,7);g.fill();g.lineCap='round';
+        for(let k=0;k<arms;k++)for(let u=0;u<1;u+=.01){const r=6+u*114,an=k*Math.PI*2/arms+u*tw*rev;g.strokeStyle='rgba('+c0+','+(.95*(1-u*.8))+')';g.lineWidth=2+(1-u)*10;g.beginPath();g.moveTo(128+Math.cos(an)*r,128+Math.sin(an)*r);g.lineTo(128+Math.cos(an+.08*rev)*(r+1.6),128+Math.sin(an+.08*rev)*(r+1.6));g.stroke();}
+        for(const [wd,al] of [[22,.10],[14,.22],[7,.55]]){g.strokeStyle='rgba('+c1+','+al+')';g.lineWidth=wd;g.beginPath();g.arc(128,128,112,0,7);g.stroke();}    // borde de luz
+        g.strokeStyle='rgba('+c0+',.9)';g.lineWidth=3;g.beginPath();g.arc(128,128,112,0,7);g.stroke();
+      }));t.center.set(.5,.5);return t;};
+      const t1=swirl(4,1,5.6),t2=swirl(3,-1,7.4);
       const am1={transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide};
       const m1=new THREE.MeshBasicMaterial(Object.assign({map:t1},am1)),m2=new THREE.MeshBasicMaterial(Object.assign({map:t2},am1));
-      const v1=new THREE.Mesh(new THREE.PlaneGeometry(rx*2,ry*2),m1),v2=new THREE.Mesh(new THREE.PlaneGeometry(rx*1.7,ry*1.7),m2);v2.position.z=.03;g3.add(v1,v2);
-      const halo=new THREE.Mesh(new THREE.PlaneGeometry(rx*3.4,ry*3),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv(128,128,(g,w,h)=>{const r=g.createRadialGradient(64,64,6,64,64,64);r.addColorStop(0,'rgba('+ch+',.55)');r.addColorStop(1,'rgba('+ch+',0)');g.fillStyle=r;g.fillRect(0,0,w,h);})),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
-      halo.position.z=-.05;g3.add(halo);
-      // chispas alrededor del marco
-      const pp=[];for(let i=0;i<46;i++){const a=Math.random()*Math.PI*2,k=1.05+Math.random()*.6;pp.push(Math.cos(a)*rx*k,Math.sin(a)*ry*k,(Math.random()-.5)*1.1);}
-      const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.Float32BufferAttribute(pp,3));
-      const pts=new THREE.Points(pg,new THREE.PointsMaterial({color:hex,size:.13,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));g3.add(pts);
-      group.add(g3);portalAnim.push({g:g3,t1,t2,pts,m2,ph:Math.random()*6});
+      const v1=new THREE.Mesh(new THREE.PlaneGeometry(rx*2,ry*2),m1),v2=new THREE.Mesh(new THREE.PlaneGeometry(rx*1.6,ry*1.6),m2);v2.position.z=.03;g3.add(v1,v2);
+      const soft=(r0,r1,col)=>new THREE.CanvasTexture(cv(128,128,(g,w,h)=>{const r=g.createRadialGradient(64,64,r0,64,64,64);r.addColorStop(0,'rgba('+col+','+r1+')');r.addColorStop(1,'rgba('+col+',0)');g.fillStyle=r;g.fillRect(0,0,w,h);}));
+      const halo=new THREE.Mesh(new THREE.PlaneGeometry(rx*3.4,ry*2.7),new THREE.MeshBasicMaterial(Object.assign({map:soft(4,.5,ch)},am1)));halo.position.z=-.06;g3.add(halo);
+      const core=new THREE.Mesh(new THREE.PlaneGeometry(rx*.9,ry*.9),new THREE.MeshBasicMaterial(Object.assign({map:soft(0,.9,c0)},am1)));core.position.z=.06;g3.add(core);
+      // partículas cuadradas que derivan alrededor (azules/amarillas y blancas)
+      const mkPts=(n,col,sz)=>{const pp=[];for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,k=.85+Math.random()*.75;pp.push(Math.cos(a)*rx*k,Math.sin(a)*ry*k,(Math.random()-.5)*1.1);}
+        const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.Float32BufferAttribute(pp,3));return new THREE.Points(pg,new THREE.PointsMaterial({color:col,size:sz,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));};
+      const pts=mkPts(34,hex,.17),pts2=mkPts(18,hex2,.11);g3.add(pts,pts2);
+      group.add(g3);portalAnim.push({g:g3,t1,t2,pts,pts2,m2,ph:Math.random()*6});
+    }else if(d.t==='glow'){
+      // brillo suave de una luz (farola, farol de pared): todos juntos en una sola malla de puntos
+      vGl.push(d);
+    }else if(d.t==='enredadera'){
+      // enredadera colgando (hojas oscuras): tiras que se juntan en una sola malla
+      const g=new THREE.PlaneGeometry(.55,d.len);g.translate(0,-d.len/2,0);vVn.push(bake(g,d.x,d.y,d.z,d.ry||0,0));
+    }else if(d.t==='bruma'){
+      // bruma baja sobre el río: plano translúcido que se desliza despacio
+      const t=M_('bruma',()=>new THREE.CanvasTexture(cv(256,256,(g,w,h)=>{g.clearRect(0,0,w,h);for(let k=0;k<70;k++){const x=Math.random()*w,y=Math.random()*h,r=20+Math.random()*50,gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,'rgba(200,225,225,'+(.25+Math.random()*.3)+')');gr.addColorStop(1,'rgba(200,225,225,0)');g.fillStyle=gr;for(const ox of [-w,0,w])for(const oy of [-h,0,h]){g.save();g.translate(ox,oy);g.beginPath();g.arc(x,y,r,0,7);g.fill();g.restore();}}})));
+      t.wrapS=t.wrapT=THREE.RepeatWrapping;const tt=t.clone();tt.needsUpdate=true;tt.repeat.set((d.x1-d.x0)/70,(d.z1-d.z0)/70);animTex.push({t:tt,sx:.004*(d.dir||1),sy:.0025});
+      const m=new THREE.Mesh(new THREE.PlaneGeometry(d.x1-d.x0,d.z1-d.z0),new THREE.MeshBasicMaterial({map:tt,transparent:true,opacity:d.o||.2,depthWrite:false,side:THREE.DoubleSide}));
+      m.rotation.x=-Math.PI/2;m.position.set((d.x0+d.x1)/2,d.y,(d.z0+d.z1)/2);m.renderOrder=2;group.add(m);
     }else if(d.t==='logo'){
       const c=cv(256,256,(g)=>ucpLogo(g,128,128,124));
       const m=new THREE.Mesh(new THREE.CircleGeometry(d.r,40),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));m.position.set(d.x,d.y,d.z);group.add(m);
@@ -151,6 +156,11 @@ function buildDeco(group,list){
   }
   const volcar=(arr,mat)=>{if(!arr.length)return;const m=new THREE.Mesh(unir(arr),mat);group.add(m);};
   volcar(vTr,trunk);volcar(vLf,leaf);volcar(vBu,bushM);
+  if(vVn.length)volcar(vVn,M_('vid',()=>new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(cv(32,128,(g,w,h)=>{g.clearRect(0,0,w,h);g.strokeStyle='#1d3a22';g.lineWidth=2;g.beginPath();g.moveTo(16,0);for(let y=0;y<h;y+=8)g.lineTo(16+Math.sin(y*.13)*5,y);g.stroke();
+    for(let y=6;y<h;y+=7){const x=16+Math.sin(y*.13)*5,s=y%14?1:-1;g.fillStyle=(y%3)?'#2c5a30':'#1f4426';g.beginPath();g.ellipse(x+s*5,y,5,2.6,s*.5,0,7);g.fill();}})),transparent:true,alphaTest:.4,side:THREE.DoubleSide})));
+  if(vGl.length){const pos=[],col=[];for(const q of vGl){const c=new THREE.Color(q.c||0xffd08a);pos.push(q.x,q.y,q.z);col.push(c.r,c.g,c.b);}
+    const gg=new THREE.BufferGeometry();gg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));gg.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+    group.add(new THREE.Points(gg,new THREE.PointsMaterial({map:M_('glowTex',()=>new THREE.CanvasTexture(cv(64,64,(g,w,h)=>{const r=g.createRadialGradient(32,32,0,32,32,32);r.addColorStop(0,'rgba(255,255,255,1)');r.addColorStop(.25,'rgba(255,255,255,.5)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,w,h);}))),size:2.6,vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false})));}
   volcar(vAv,M_('aviso',()=>new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv(256,256,(g,w,h)=>{
     g.fillStyle='#f4f4f0';g.fillRect(0,0,w,h);g.strokeStyle='#c9c9c2';g.lineWidth=6;g.strokeRect(3,3,w-6,h-6);
     g.strokeStyle='#d62b2b';g.lineWidth=16;g.beginPath();g.arc(128,110,78,0,7);g.stroke();

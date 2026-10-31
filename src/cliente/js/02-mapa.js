@@ -45,6 +45,7 @@ function matOf(m){
   if(md.alpha){mat.transparent=true;mat.side=THREE.DoubleSide;if(m==='tube'){mat.depthWrite=false;}else mat.alphaTest=.4;}
   if(md.em){mat.emissiveMap=md.em;mat.emissive=new THREE.Color(m==='led'?0xbbbbbb:0xffffff);}
   if(md.emc)mat.emissive=new THREE.Color(md.emc);
+  if(md.spec){mat.specularMap=md.spec;mat.specular=new THREE.Color(0x99a0aa);}   // zonas húmedas que reflejan más la luz
   return matCache[m]=mat;
 }
 const padTex=new THREE.CanvasTexture(cv(64,64,(g)=>{g.fillStyle='#120a06';g.fillRect(0,0,64,64);g.strokeStyle='#ffb12b';g.lineWidth=4;g.beginPath();g.arc(32,32,26,0,7);g.stroke();g.fillStyle='#ffb12b';for(let k=0;k<3;k++){g.beginPath();g.moveTo(32,8+k*14);g.lineTo(44,20+k*14);g.lineTo(38,20+k*14);g.lineTo(32,14+k*14);g.lineTo(26,20+k*14);g.lineTo(20,20+k*14);g.fill();}}));
@@ -142,7 +143,7 @@ function loadMap(id){
   }
   for(const t of M.teles){
     const ring=new THREE.Mesh(new THREE.TorusGeometry(t.r,.08,8,24),new THREE.MeshBasicMaterial({color:t.color==='yellow'?0xffc83a:0x6fd8ff}));ring.rotation.x=Math.PI/2;ring.position.set(t.x,t.y+.05,t.z);if(!t.color)group.add(ring);
-    const disc=new THREE.Mesh(new THREE.CircleGeometry(t.r,24),new THREE.MeshBasicMaterial({color:t.color==='yellow'?0xffa81a:0x2a8cff,transparent:true,opacity:t.color?.22:.5,blending:THREE.AdditiveBlending,depthWrite:false}));disc.rotation.x=-Math.PI/2;disc.position.set(t.x,t.y+.04,t.z);group.add(disc);
+    const disc=new THREE.Mesh(new THREE.CircleGeometry(t.r,24),new THREE.MeshBasicMaterial({color:t.color==='yellow'?0xffa81a:0x2a8cff,transparent:true,opacity:t.color?.32:.5,blending:THREE.AdditiveBlending,depthWrite:false}));disc.rotation.x=-Math.PI/2;disc.position.set(t.x,t.y+.04,t.z);group.add(disc);
     L.teles.push(t);
   }
   L.items=M.items.map(it=>{const g=buildItem(it.type);g.position.set(it.x,it.y+.6,it.z);group.add(g);return {g,it,ty:it.type,ph:Math.random()*6};});

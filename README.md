@@ -273,10 +273,12 @@ En la pantalla final hay una tarjeta por cada mapa del modo, con su nombre y una
 
 Inspirado en el cuarto tramo de la Costanera de Posadas, **al atardecer** (cielo naranja, rosa y violeta, sol bajo y sombras largas). Mapa grande (unos 124 × 84 m) pensado para moverse rápido, con varios caminos a distintas alturas. Se juega en **Arena** y **Gungame**.
 - **Estación de ladrillo** de dos plantas: galería cubierta abajo y **balcón corrido a 6 m con barandas** arriba, con puertas y ventanas a las habitaciones altas. Adentro hay un hall con escaleras y dos alas con habitaciones en planta baja y alta.
-- **Cómo subir al balcón:** dos **rampas anchas** (una a cada lado de la locomotora), el **andamio del oeste** (plataforma a 3 m con la megasalud), la **torre del este** (plataforma a 3 m con dos rifles de plasma, pasarela a 6 m con puerta al piso alto, y mirador a 9 m con el francotirador y los cohetes) y un **saltador** de cada lado.
+- **Cómo subir al balcón:** dos **escaleras de reja** frente a la fachada (una a cada lado de la locomotora), el **andamio del oeste** (plataforma a 3 m con la megasalud), la **torre del este** (plataforma a 3 m con dos rifles de plasma, pasarela a 6 m con puerta al piso alto, y mirador a 9 m con el francotirador y los cohetes) y un **saltador** de cada lado.
 - **Andén con vías y la locomotora «La Posadeña»**: elevada sobre el chasis y las ruedas rojas, con caldera redonda y chimenea. La cabina del maquinista está a 1,6 m (se sube por escalones), se atraviesa por las dos puertas y guarda el daño cuádruple; arriba de la caldera hay un botiquín (se sube con los cajones).
 - **Vereda y costanera:** vereda de ladrillo bajo la galería y, más al sur, el paseo elevado con baldosas, bancos, glorietas, palmeras, farolas y gradas hasta el agua.
 - **El Paraná** al sur y al este, sin rejas: el agua llega hasta el horizonte y mata al instante. Cada muelle guarda una armadura pesada.
+- **Al oeste** hay una valla transparente: del otro lado la costanera sigue (paseo, farolas, bancos, árboles y casas), pero solo se ve.
+- **Detalles de la estación real:** alero de chapa sobre el balcón con columnas de hierro, marcos blancos en puertas y ventanas, canteros con plantas, banderines, farolas con farol, buzón, cartel «POSADAS», banderas de Argentina y Misiones, y lanchas sobre el río.
 - **Dos portales enfrentados:** el amarillo está en el andén oeste y el azul en el balcón este (lejos entre sí). Entrás por uno y salís delante del otro.
 - Los botones del menú y la votación lo toman solos; la foto de la votación es opcional (`public/maps/cuartotramo.jpg`).
 

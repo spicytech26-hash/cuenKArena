@@ -897,13 +897,23 @@ function buildDeco(group,list){
   const trunk=M_('trunk',()=>new THREE.MeshPhongMaterial({map:new THREE.CanvasTexture(cv(16,64,(g)=>{for(let y=0;y<64;y+=4){g.fillStyle=y%8?'#7d6a52':'#5e4f3c';g.fillRect(0,y,16,4);}})),flatShading:true}));
   const leaf=M_('leaf',()=>new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(cv(32,128,(g)=>{g.clearRect(0,0,32,128);g.strokeStyle='#5a7a2a';g.lineWidth=2;g.beginPath();g.moveTo(16,0);g.lineTo(16,128);g.stroke();for(let y=4;y<124;y+=5){const L=14*Math.sin(y/128*Math.PI);g.strokeStyle=y%10?'#3f7d2c':'#4e9134';g.beginPath();g.moveTo(16,y);g.lineTo(16-L,y+7);g.moveTo(16,y);g.lineTo(16+L,y+7);g.stroke();}})),transparent:true,alphaTest:.3,side:THREE.DoubleSide}));
   const bushM=M_('bush',()=>new THREE.MeshLambertMaterial({color:0x3f6e2e,flatShading:true}));
+  // toda la vegetación (palmeras, arbustos, árboles) se junta en pocas mallas: así se puede decorar sin gastar dibujos
+  const unir=gs=>{const P=[],N=[],U=[],X=[];let off=0;for(const g of gs){const p=g.attributes.position.array,n=g.attributes.normal.array,u=g.attributes.uv.array,cnt=p.length/3;for(let i=0;i<p.length;i++){P.push(p[i]);N.push(n[i]);}for(let i=0;i<u.length;i++)U.push(u[i]);
+      if(g.index){const ix=g.index.array;for(let i=0;i<ix.length;i++)X.push(ix[i]+off);}else for(let i=0;i<cnt;i++)X.push(off+i);off+=cnt;}
+    const m=new THREE.BufferGeometry();m.setAttribute('position',new THREE.Float32BufferAttribute(P,3));m.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));m.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));m.setIndex(X);return m;};
+  const cil=(r1,r2,h,x,y,z,eje)=>{const g=new THREE.CylinderGeometry(r1,r2,h,eje==='z'?24:16);if(eje==='x')g.rotateZ(Math.PI/2);else if(eje==='z')g.rotateX(Math.PI/2);g.translate(x,y,z);return g;};
+  const bake=(g,x,y,z,ry,rx)=>{const o=new THREE.Object3D();o.position.set(x,y,z);o.rotation.set(0,ry||0,0);if(rx)o.rotateX(rx);o.updateMatrix();g.applyMatrix4(o.matrix);return g;};
+  const vTr=[],vLf=[],vBu=[],vCo=[];
   for(const d of list){
     if(d.t==='palm'){
-      const tr=new THREE.Mesh(new THREE.CylinderGeometry(.2,.32,d.h,8),trunk);tr.position.set(d.x,d.y+d.h/2,d.z);tr.rotation.z=.05;group.add(tr);
-      for(let i=0;i<11;i++){const a=i/11*Math.PI*2,fr=new THREE.Mesh(new THREE.PlaneGeometry(1.3,4.2),leaf);fr.geometry.translate(0,2.1,0);
-        fr.position.set(d.x+.2,d.y+d.h,d.z);fr.rotation.set(0,a,0);fr.rotateX(1.05+(i%3)*.18);group.add(fr);}
+      const tg=new THREE.CylinderGeometry(.2,.32,d.h,8);tg.rotateZ(.05);tg.translate(d.x,d.y+d.h/2,d.z);vTr.push(tg);
+      for(let i=0;i<11;i++){const g=new THREE.PlaneGeometry(1.3,4.2);g.translate(0,2.1,0);vLf.push(bake(g,d.x+.2,d.y+d.h,d.z,i/11*Math.PI*2,1.05+(i%3)*.18));}
     }else if(d.t==='bush'){
-      for(let k=0;k<3;k++){const b=new THREE.Mesh(new THREE.IcosahedronGeometry(d.r*(.7+k*.15),1),bushM);b.position.set(d.x+(k-1)*d.r*.6,d.y+d.r*.6,d.z+((k*7)%3-1)*d.r*.3);group.add(b);}
+      for(let k=0;k<3;k++){const g=new THREE.IcosahedronGeometry(d.r*(.7+k*.15),1);g.translate(d.x+(k-1)*d.r*.6,d.y+d.r*.6,d.z+((k*7)%3-1)*d.r*.3);vBu.push(g);}
+    }else if(d.t==='tree'){
+      // árbol de copa redonda (como los de la costanera): tronco y tres bolas de hojas
+      const tg=new THREE.CylinderGeometry(.22,.38,d.h*.7,8);tg.translate(d.x,d.y+d.h*.35,d.z);vTr.push(tg);
+      for(const [ox,oy,oz,k] of [[0,.95,0,1],[.55,.75,.3,.75],[-.5,.8,-.3,.8]]){const g=new THREE.IcosahedronGeometry(d.r*k,1);g.translate(d.x+ox*d.r*.6,d.y+d.h*oy,d.z+oz*d.r*.6);vCo.push(g);}
     }else if(d.t==='roof'){
       const r=new THREE.Mesh(new THREE.ConeGeometry(d.w*.78,d.h,4),M_('tin',()=>new THREE.MeshPhongMaterial({color:0x9aa3aa,shininess:80,flatShading:true})));r.rotation.y=Math.PI/4;r.position.set(d.x,d.y+d.h/2,d.z);group.add(r);
     }else if(d.t==='pole'){
@@ -947,11 +957,13 @@ function buildDeco(group,list){
         const f=new THREE.Mesh(new THREE.PlaneGeometry(.4,.28),M_('cflag',()=>new THREE.MeshLambertMaterial({color:0xffd21a,side:THREE.DoubleSide})));f.position.set(x+(x<(d.lx0+d.lx1)/2?.2:-.2),d.y+1.35,z);group.add(f);}
     }else if(d.t==='tren'){
       // locomotora «La Posadeña»: caldera redonda, chimenea, domos, ruedas rojas y bielas; son 2 mallas (una por color). La colisión son los bloques del mapa
-      const unir=gs=>{const P=[],N=[],U=[],X=[];let off=0;for(const g of gs){const p=g.attributes.position.array,n=g.attributes.normal.array,u=g.attributes.uv.array,ix=g.index.array;for(let i=0;i<p.length;i++){P.push(p[i]);N.push(n[i]);}for(let i=0;i<u.length;i++)U.push(u[i]);for(let i=0;i<ix.length;i++)X.push(ix[i]+off);off+=p.length/3;}
-        const m=new THREE.BufferGeometry();m.setAttribute('position',new THREE.Float32BufferAttribute(P,3));m.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));m.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));m.setIndex(X);return m;};
-      const cil=(r1,r2,h,x,y,z,eje)=>{const g=new THREE.CylinderGeometry(r1,r2,h,eje==='z'?24:16);if(eje==='x')g.rotateZ(Math.PI/2);else if(eje==='z')g.rotateX(Math.PI/2);g.translate(x,y,z);return g;};
       const negro=[cil(1.3,1.3,16.2,-8.1,2.9,-14,'x'),cil(1.4,1.4,.9,-16.55,2.9,-14,'x'),cil(.55,.4,2.1,-14.8,5.25,-14),cil(.78,.55,.3,-14.8,6.4,-14),cil(.6,.7,.8,-9,4.6,-14),cil(.6,.7,.8,-4.5,4.6,-14)],rojo=[];
-      for(const [x,r] of [[-13.5,1.1],[-10.2,1.1],[-6.9,1.1],[-15.7,.65],[1.6,.9],[7.2,.9],[10.2,.8],[12.8,.8],[15.4,.8]])for(const zc of [-15.4,-12.6])rojo.push(cil(r,r,.3,x,r+.1,zc,'z'));
+      // ruedas rojas con llanta, rayos y cubo; farol delantero rojo
+      for(const [x,r] of [[-13.5,1.1],[-10.2,1.1],[-6.9,1.1],[-15.7,.65],[1.6,.9],[7.2,.9],[10.2,.8],[12.8,.8],[15.4,.8]])for(const zc of [-15.4,-12.6]){
+        const t=new THREE.TorusGeometry(r-.1,.12,6,24);t.translate(x,r+.1,zc);rojo.push(t);
+        for(let k=0;k<3;k++){const b=new THREE.BoxGeometry(2*(r-.1),.12,.1);b.rotateZ(k*Math.PI/3);b.translate(x,r+.1,zc);rojo.push(b);}
+        rojo.push(cil(.16,.16,.3,x,r+.1,zc,'z'));}
+      rojo.push(cil(.8,.8,.12,-17.05,2.9,-14,'x'));
       for(const zb of [-15.75,-12.25]){const b=new THREE.BoxGeometry(6.6,.18,.12);b.translate(-10.2,1.2,zb);negro.push(b);}
       const mn=new THREE.Mesh(unir(negro),M_('tr_negro',()=>new THREE.MeshPhongMaterial({color:0x16181b,shininess:45})));
       const mr=new THREE.Mesh(unir(rojo),M_('tr_rojo',()=>new THREE.MeshPhongMaterial({color:0x9a1f18,shininess:30})));
@@ -990,6 +1002,8 @@ function buildDeco(group,list){
       const m=new THREE.Mesh(new THREE.PlaneGeometry(d.w,d.h),new THREE.MeshBasicMaterial({map:t}));m.position.set(d.x,d.y,d.z);group.add(m);
     }
   }
+  const volcar=(arr,mat)=>{if(!arr.length)return;const m=new THREE.Mesh(unir(arr),mat);group.add(m);};
+  volcar(vTr,trunk);volcar(vLf,leaf);volcar(vBu,bushM);volcar(vCo,M_('copa',()=>new THREE.MeshLambertMaterial({color:0x2e5f2a,flatShading:true})));
 }
 
 /* ---------- banderas de captura ---------- */

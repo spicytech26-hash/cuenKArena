@@ -2,15 +2,31 @@
    La vieja estación de ladrillo al atardecer, frente al Paraná. Norte = -z (el edificio), sur = +z (el río).
    · Un solo edificio largo de dos plantas, con galería cubierta abajo y balcón corrido arriba (6 m) con barandas.
      Adentro: hall central con escaleras y dos alas con habitaciones en planta baja y alta.
-   · Al balcón se sube por rampas anchas (a los costados de la locomotora), por el andamio del oeste (plataforma
-     a 3 m con la megasalud) y por la torre del este: plataforma a 3 m, pasarela a 6 m con puerta al piso alto
+   · Al balcón se sube por escaleras de reja frente a la fachada (a los costados de la locomotora), por el andamio
+     del oeste (plataforma a 3 m con la megasalud) y por la torre del este: plataforma a 3 m, pasarela a 6 m con puerta al piso alto
      y mirador a 9 m. Un saltador por lado sube de golpe al balcón.
    · Andén con vías y la locomotora «La Posadeña» (la cabina se atraviesa), vereda, la costanera con gradas
-     y dos muelles. Al sur y al este, solo agua hasta el horizonte: mata al instante.
+     y dos muelles. Al sur y al este, solo agua hasta el horizonte: mata al instante. Al oeste, una valla
+     transparente: del otro lado la costanera sigue (solo se ve). Farolas, canteros, banderines y árboles dan vida.
    · Dos portales enfrentados: amarillo en el andén oeste y azul en el balcón este; cada uno te deja delante del otro. */
 function buildCuartoTramo() {
   const { pads, teles, lava, spawns, lights, add, ramp, wall, stairs, D, face, I, finish } = mapKit();
   const deco = [];
+  // farola de hierro con farol, como las de la costanera
+  const farola = (x, z, y) => {
+    add(x - .1, y, z - .1, x + .1, y + 4.6, z + .1, 'metal'); add(x - .22, y, z - .22, x + .22, y + .5, z + .22, 'metal', { nc: 1 });
+    add(x - .3, y + 4.6, z - .3, x + .3, y + 5.2, z + .3, 'light', { nc: 1 }); add(x - .4, y + 5.2, z - .4, x + .4, y + 5.35, z + .4, 'black', { nc: 1 }); add(x - .2, y + 5.35, z - .2, x + .2, y + 5.55, z + .2, 'black', { nc: 1 });
+  };
+  // escalera de reja: peldaños finos con pilares, vacía por debajo a la vista (la colisión de abajo es invisible) y baranda
+  const escalera = (x0, x1, z0, z1, n, dir) => {
+    const L = (x1 - x0) / n;
+    for (let i = 1; i <= n; i++) {
+      const a = dir > 0 ? x0 + (i - 1) * L : x1 - i * L, b = a + L, top = .5 * i;
+      add(a, top - .2, z0, b, top, z1, 'grate'); add(a, 0, z0, b, top - .2, z1, 'clip');
+      add(a, top, z1 - .06, b, top + 1, z1, 'rail', { nc: 1 });
+      if (i % 2 === 0) { add(a, 0, z0, a + .12, top - .2, z0 + .12, 'metal', { nc: 1 }); add(a, 0, z1 - .12, a + .12, top - .2, z1, 'metal', { nc: 1 }); }
+    }
+  };
   /* ---- suelo, río y límites ---- */
   add(-62, -2, -40, 62, -.03, 24, 'grass');                              // pasto base (patios laterales)
   add(-50, -2, -26, 50, 0, 8, 'concrete');                               // andén / explanada
@@ -22,11 +38,21 @@ function buildCuartoTramo() {
   lava.push({ min: [-200, -4, 24], max: [200, -1, 150], water: true, dps: 0 });   // el Paraná al sur: agua que mata, hasta el horizonte
   lava.push({ min: [62, -4, -40], max: [200, -1, 24], water: true, dps: 0 });     // y al este
   add(-62, -6, 24, 62, -4, 42, 'rock');
-  // límites: loma de pasto al oeste y al fondo de los patios, el frente del fondo es la pared del edificio
-  add(-63, -4, -43, -62, 10, 42, 'grass'); add(-63, -4, -43, -50.4, 10, -40, 'grass'); add(50.4, -4, -43, 62, 10, -40, 'grass');
-  add(-50.4, -4, -43, 50.4, 12, -40, 'brick');
-  for (const z of [-36, -26, -16, -6, 4, 14, 24, 34]) deco.push({ t: 'palm', x: -62.5, y: 10, z, h: 9 });
-  deco.push({ t: 'palm', x: -56, y: 10, z: -41.5, h: 9 }, { t: 'palm', x: 56, y: 10, z: -41.5, h: 9 });
+  // límites: el fondo es la pared del edificio, al este una loma, al oeste una valla transparente
+  add(50.4, -4, -43, 62, 10, -40, 'grass'); add(-50.4, -4, -43, 50.4, 12, -40, 'brick');
+  deco.push({ t: 'palm', x: 56, y: 10, z: -41.5, h: 9 });
+  add(-62.2, -4, -43, -62, 4, 42, 'fence'); add(-62.2, -4, -40.2, -50.4, 4, -40, 'fence');
+  for (let z = -43; z <= 42; z += 6) add(-62.3, 0, z, -62, 4.3, z + .3, 'metal'); add(-62.3, 4, -43, -62, 4.3, 42, 'metal');
+  for (let x = -62; x <= -50.4; x += 6) add(x, 0, -40.3, x + .3, 4.3, -40, 'metal');
+  add(-62.2, -1, -43, -50.4, 0, -40, 'metal', { nc: 1 });
+  // del otro lado de la valla la costanera sigue (solo se ve, no se puede ir)
+  add(-170, -.2, -40, -62, -.03, 8, 'grass', { nc: 1 }); add(-170, -.03, -26, -62, 0, 8, 'concrete', { nc: 1 });
+  add(-170, -.2, 8, -62, 1, 20, 'tiles', { nc: 1 }); add(-170, 1, 11.8, -62, 1.02, 12.2, 'brick', { nc: 1 }); add(-170, 1, 16.8, -62, 1.02, 17.2, 'brick', { nc: 1 });
+  for (let i = 0; i < 4; i++) add(-170, -1.2, 23 - i, -62, -.5 + i * .5, 24 - i, 'step', { nc: 1 });
+  for (let x = -76; x >= -160; x -= 14) { farola(x, 19.6, 1); deco.push({ t: 'palm', x: x + 4, y: 1, z: 10.2, h: 8 }); }
+  for (let x = -70; x >= -150; x -= 16) { add(x, 1, 12, x + 3.4, 1.45, 12.6, 'wood', { nc: 1 }); add(x, 1.45, 12.5, x + 3.4, 2, 12.6, 'wood', { nc: 1 }); }
+  for (const [x, z] of [[-70, -30], [-86, -33], [-104, -29], [-122, -34], [-140, -30]]) deco.push({ t: 'tree', x, y: -.03, z, h: 6, r: 2.6 });
+  for (const [x0, x1, h] of [[-110, -94, 7], [-132, -116, 9], [-154, -138, 7]]) { add(x0, 0, -52, x1, h, -43, 'whitewall', { nc: 1 }); add(x0 - .6, h, -52.6, x1 + .6, h + 1.4, -42.4, 'roofTiles', { nc: 1 }); }
   // rampas anchas desde el andén a la costanera
   for (const x of [-42, -6, 32]) ramp(x, 2, x + 10, 8, 0, 0, 1, 'z', 1, 'concrete');
   // franjas rojas de la costanera (solo pintura)
@@ -53,8 +79,8 @@ function buildCuartoTramo() {
   add(-50, 6, -22.5, 50, 7, -22.4, 'rail', { nc: 1 });
   for (let x = -48; x <= 48; x += 8) add(x - .25, 0, -22.9, x + .25, 5.6, -22.4, 'whitewall');
   for (const x of [-40, -24, -8, 8, 24, 40]) add(x - .2, 5.2, -24.3, x + .2, 5.6, -23.9, 'light', { nc: 1 });
-  // rampas anchas del andén al balcón (a los dos lados de la locomotora)
-  ramp(22, -22.4, 26, -8.4, 0, 0, 6, 'z', -1, 'concrete'); ramp(-26, -22.4, -22, -8.4, 0, 0, 6, 'z', -1, 'concrete');
+  // escaleras de reja frente a la fachada, del andén al balcón (a los dos lados de la locomotora)
+  escalera(20, 32, -22.4, -19, 12, 1); escalera(-32, -20, -22.4, -19, 12, -1);
   // saltador desde el andén hasta el balcón
   for (const s of [-1, 1]) pads.push({ x: s * 40, y: 0, z: -8, r: 1.1, t: [s * 40, 6, -24.2], apex: 3 });
   // hall: columnas, boletería y cajones
@@ -72,7 +98,7 @@ function buildCuartoTramo() {
     for (const [x, z] of [[28, 11], [36, 11], [28, 17], [36, 17]]) ax(x, 1, z, x + .3, 4.4, z + .3, 'wood');
     ax(27.6, 4.4, 10.6, 36.4, 4.7, 17.4, 'roof');
     for (const x of [-8, 8, 20, 44, 56]) { const x0 = Math.min(s * x, s * x + 2); add(x0, 1, 9.2, x0 + 2, 1.6, 11.2, 'smooth'); deco.push({ t: 'palm', x: x0 + 1, y: 1.6, z: 10.2, h: 8 }); }
-    for (const x of [12, 30, 48, 60]) { ax(x, 1, 19.5, x + .25, 5.6, 19.75, 'metal'); ax(x - .15, 5.6, 19.4, x + .4, 5.8, 19.85, 'light', { nc: 1 }); }
+    for (const x of [12, 30, 48, 60]) farola(s * x, 19.6, 1);
     ax(2, 1, 19.9, 62, 2, 20, 'rail', { nc: 1 });
     // muelle sobre el río
     add(Math.min(s * 36, s * 46), -.9, 24, Math.max(s * 36, s * 46), -.5, 36, 'wood');
@@ -125,6 +151,38 @@ function buildCuartoTramo() {
   deco.push({ t: 'tren' });
   deco.push({ t: 'cartel', x: 13, y: 2.7, z: -12.47, w: 4.6, h: .9, txt: 'LA POSADEÑA', bg: '#111', fg: '#f4f4f4' }, { t: 'cartel', x: 13, y: 2.7, z: -15.53, w: 4.6, h: .9, txt: 'LA POSADEÑA', bg: '#111', fg: '#f4f4f4', ry: Math.PI });
   add(-12, 0, -12.7, -10.4, 1.2, -11.1, 'crate'); add(-10.4, 0, -12.7, -8.8, 2.4, -11.1, 'crate'); add(-8.8, 0, -12.7, -7.2, 3.6, -11.1, 'crate');   // cajones escalonados hasta la caldera
+  /* ---- marcos blancos, farolas, canteros, banderines, alero y detalles de la estación real ---- */
+  for (const [a0, a1, y0, y1] of puertas) {
+    add(a0 - .4, y0, -26, a0, y1 + .4, -25.8, 'whitewall', { nc: 1 }); add(a1, y0, -26, a1 + .4, y1 + .4, -25.8, 'whitewall', { nc: 1 }); add(a0 - .4, y1, -26, a1 + .4, y1 + .4, -25.8, 'whitewall', { nc: 1 });
+    if (y0 > 6.5) add(a0 - .3, y0 - .2, -26, a1 + .3, y0, -25.7, 'whitewall', { nc: 1 });
+  }
+  for (const [a0, a1] of puertas.slice(0, 4)) add(a0 + .5, 4.6, -26, a1 - .5, 4.9, -25.85, 'whitewall', { nc: 1 });          // remate de las arcadas
+  for (const x of [-9, -3, 3, 9]) add(x - 1, 3.2, -26.05, x + 1, 4.2, -26, 'navy', { nc: 1 });                              // vidrio sobre las puertas
+  for (const x of [-34, -14, 14, 34]) add(x - .15, 3, -26, x + .15, 3.5, -25.8, 'light', { nc: 1 });                         // faroles de pared
+  add(-39.4, 1.2, -26, -38.8, 1.9, -25.75, 'barn', { nc: 1 });                                                               // buzón rojo
+  // alero de chapa sobre el balcón, con columnas finas de hierro
+  for (const x of [-46, -34, -26, -14, -6, 6, 14, 26, 34, 46]) add(x - .1, 6, -22.8, x + .1, 9.9, -22.6, 'metal');
+  add(-50.5, 9.9, -26.6, 50.5, 10.15, -22.3, 'roof', { nc: 1 }); add(-50.5, 9.6, -22.4, 50.5, 9.9, -22.3, 'metal', { nc: 1 });
+  // canteros blancos con plantas bajo la galería
+  for (const x of [-44, -28, -12, 12, 28, 44]) { add(x - .45, 0, -25.05, x + .45, .55, -24.15, 'whitewall'); deco.push({ t: 'bush', x, y: .55, z: -24.6, r: .5 }); }
+  // banderines colgados bajo el balcón
+  const banderin = ['barn', 'navy', 'light'];
+  for (let x = -24; x <= 24; x++) add(x - .14, 5.1 - .35 * (1 - Math.abs(((x + 48) % 8) - 4) / 4), -23.4, x + .14, 5.45 - .35 * (1 - Math.abs(((x + 48) % 8) - 4) / 4), -23.38, banderin[(x + 24) % 3], { nc: 1 });
+  // farolas, bancos y tachos en el andén
+  for (const [x, z] of [[-46, -1], [-34, -10], [-18, -9], [18, -9], [34, -10], [46, -1], [-20, 6], [20, 6]]) farola(x, z, 0);
+  add(-28, 0, -10.6, -25, .45, -10, 'wood'); add(-28, .45, -10.1, -25, 1, -10, 'wood'); add(25, 0, -10.6, 28, .45, -10, 'wood'); add(25, .45, -10.1, 28, 1, -10, 'wood');
+  for (const [x, z] of [[-18, -8], [18, -8], [-32, -10], [32, -10], [0, 6.5], [-46, 6]]) add(x - .25, 0, z - .25, x + .25, .9, z + .25, 'metal');
+  // balasto de las vías y cartel del andén
+  add(-62, 0, -16.4, 62, .05, -11.6, 'rock', { nc: 1 });
+  add(-39.4, 0, -10.2, -39.2, 2, -10, 'metal'); add(-35.4, 0, -10.2, -35.2, 2, -10, 'metal');
+  deco.push({ t: 'cartel', x: -37.3, y: 1.55, z: -9.95, w: 3.6, h: .9, txt: 'POSADAS', bg: '#111', fg: '#fff', ry: Math.PI });
+  deco.push({ t: 'pole', x: -13, y: 0, z: -21, h: 9, flag: 'ar' }, { t: 'pole', x: 13, y: 0, z: -21, h: 9, flag: 'mis' });
+  deco.push({ t: 'tree', x: -54, y: -.03, z: -36, h: 6, r: 2.6 }, { t: 'tree', x: -58, y: -.03, z: -33, h: 5.5, r: 2.3 });
+  // lanchas sobre el río (solo se ven)
+  for (const [x, z, r] of [[-22, 62, 0], [30, 80, 1], [75, 55, 0]]) {
+    add(x, -1.2, z, x + 3, -.4, z + 9, 'wood', { nc: 1 }); add(x + .4, -.4, z + 2, x + 2.6, .9, z + 5.5, 'whitewall', { nc: 1 }); add(x + .3, .9, z + 1.8, x + 2.7, 1.1, z + 5.7, 'barn', { nc: 1 });
+    if (r) add(x + 1.4, .9, z + 3, x + 1.6, 3.2, z + 3.2, 'metal', { nc: 1 });
+  }
   /* ---- carteles ---- */
   deco.push({ t: 'cartel', x: 0, y: 10.9, z: -25.97, w: 10, h: 1.4, txt: 'ESTACIÓN POSADAS', bg: '#5a2a1c', fg: '#f3d9a8' });
   add(-3.6, 1, 8.9, -3.4, 3.4, 9.1, 'metal'); add(3.4, 1, 8.9, 3.6, 3.4, 9.1, 'metal');
@@ -159,7 +217,7 @@ function buildCuartoTramo() {
   I('mega', -58.5, 3, -22); I('health', -58.5, 3, -19.5);
   I('w6', 58.5, 3, -24); I('w6', 58.5, 3, -20); I('health', 55, 6, -37); I('w8', 58.5, 9, -22); I('w5', 54.5, 9, -20.5);
   /* ---- apariciones: andén, balcón, costanera, patios, hall, alas y habitaciones ---- */
-  [[-30, 0, -20], [-12, 0, -20], [12, 0, -20], [30, 0, -20], [-20, 0, -8], [0, 0, -6], [20, 0, -8], [-40, 0, 0], [40, 0, 0], [-10, 0, 5], [10, 0, 5],
+  [[-36, 0, -17], [-12, 0, -20], [12, 0, -20], [36, 0, -17], [-20, 0, -8], [0, 0, -6], [20, 0, -8], [-40, 0, 0], [40, 0, 0], [-10, 0, 5], [10, 0, 5],
    [-50, 1, 14], [-25, 1, 16], [0, 1, 12], [25, 1, 16], [50, 1, 14], [-56, 0, -10], [56, 0, -10],
    [-14, 0, -34], [14, 0, -34], [0, 0, -30], [-14, 6, -36], [14, 6, -36], [-32, 0, -37], [32, 0, -37], [-34, 6, -30], [34, 6, -30],
    [-30, 6, -24.2], [-10, 6, -24.2], [10, 6, -24.2], [30, 6, -24.2]]

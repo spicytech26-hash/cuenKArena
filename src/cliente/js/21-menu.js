@@ -63,7 +63,7 @@ function syncSettings(){
   $('sFov').value=S.fov;$('oFov').textContent=S.fov+'°';
   $('sVol').value=S.vol;$('oVol').textContent=Math.round(S.vol*100)+'%';
   $('sMus').value=S.music;$('oMus').textContent=Math.round(S.music*100)+'%';
-  $('sInv').checked=S.invY;$('sHop').checked=S.hop;$('sKc').checked=S.killcam!==false;$('sFs').checked=S.fs;$('sImg').checked=S.showImg!==false;$('sFps').checked=!!S.fpsOn;$('oBots').textContent=S.bots;
+  $('sInv').checked=S.invY;$('sHop').checked=S.hop;$('sFs').checked=S.fs;$('sImg').checked=S.showImg!==false;$('sFps').checked=!!S.fpsOn;$('oBots').textContent=S.bots;
   [...$('sSkill').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.skill)));
   [...$('mSkill').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.skill)));
   [...$('sFl').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.fl)));
@@ -77,7 +77,6 @@ $('sVol').addEventListener('input',e=>{S.vol=+e.target.value;if(master)master.ga
 $('sMus').addEventListener('input',e=>{S.music=+e.target.value;if(musicGain)musicGain.gain.value=S.music*.5;saveS();syncSettings();});
 $('sInv').addEventListener('change',e=>{S.invY=e.target.checked;saveS();});
 $('sHop').addEventListener('change',e=>{S.hop=e.target.checked;saveS();});
-$('sKc').addEventListener('change',e=>{S.killcam=e.target.checked;saveS();});
 $('sFs').addEventListener('change',e=>{S.fs=e.target.checked;saveS();});
 $('sFps').addEventListener('change',e=>{S.fpsOn=e.target.checked;saveS();if(!S.fpsOn)$('fpsBox').hidden=true;});
 $('sImg').addEventListener('change',e=>{S.showImg=e.target.checked;saveS();for(const p of players.values())if(p.model){scene.remove(p.model.g);p.model=null;ensurePlayer(p.id);}});

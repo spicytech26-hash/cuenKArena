@@ -35,14 +35,15 @@ canvas.addEventListener('mousedown',e=>{
   if(chatOpen)closeChat(false,false);
   if(!$('inter').hidden)return;   // en el fin de partida el mouse queda libre para los botones
   if(document.pointerLockElement!==canvas){lockPointer();return;}
-  if(e.button===0){mouseDown=true;if(!me.alive)kcClick();}
+  if(e.button===0){mouseDown=true;if(!me.alive)spClick();}
   // click derecho corto = la mira queda puesta (otro click la saca); mantenido = se saca al soltar
   if(e.button===2&&me.alive&&WEAPONS[me.w].scope){if(me.scope){me.scope=false;me.scopeHold=0;}else{me.scope=true;me.scopeHold=performance.now();SFX.ui();}}
 });
 addEventListener('mouseup',e=>{if(e.button===0)mouseDown=false;if(e.button===2&&me.scope&&me.scopeHold&&performance.now()-me.scopeHold>280)me.scope=false;});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('mousemove',e=>{
-  if(!inGame||document.pointerLockElement!==canvas||!me.alive)return;
+  if(!inGame||document.pointerLockElement!==canvas)return;
+  if(!me.alive){spLook(e.movementX,e.movementY);return;}
   if(mouseSpike(e.movementX,e.movementY))return;
   // con mira, la sensibilidad baja en proporción al zoom: el movimiento en pantalla se siente igual que sin mira
   const sc=me.scope&&WEAPONS[me.w].scope?Math.tan((WEAPONS[me.w].zoom||22)*Math.PI/360)/Math.tan(S.fov*Math.PI/360):1;
@@ -105,6 +106,7 @@ addEventListener('keydown',e=>{
   if(!inGame||!$('menu').hidden){if(e.code==='Escape'&&inGame&&!$('menu').hidden&&document.activeElement!==$('pName')){e.preventDefault();resumeGame();}return;}
   if(e.code==='Escape'){e.preventDefault();if(!$('inter').hidden)return;if(document.pointerLockElement)document.exitPointerLock();openPause();return;}
   keys[e.code]=true;
+  if(e.code==='Space'&&!e.repeat&&!me.alive)spSpace();
   if(['Space','Tab','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)||e.ctrlKey)e.preventDefault();
   // 1 arma principal · 2 pistola · 3 cuchillo · 4 molotov (en Gungame: 1 el arma del nivel, 3 el cuchillo)
   const ggW=MODE==='gungame'?me.ow.findIndex((v,i)=>v&&i!==7):-1;

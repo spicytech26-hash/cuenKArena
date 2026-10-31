@@ -92,7 +92,7 @@ function startGame(isOnline,mode,auto){
 }
 function leaveGame(){
   if(net){net.close();net=null;}renderVote(null);
-  kcEnd();meHist.length=0;
+  spEnd();
   inGame=false;me.alive=false;$('bLeave').hidden=true;$('hud').hidden=true;$('board').hidden=true;$('inter').hidden=true;closeShop(true);
   if(level)for(const o of level.items)o.g.visible=true;
 }

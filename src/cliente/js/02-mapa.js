@@ -28,8 +28,8 @@ function brushFaces(g,b,sc,ox,oy,oz){
   let nx=0,ny=1,nz=0;
   if(b.ramp){const r=b.ramp,L=r.axis==='x'?x1-x0:z1-z0,k=(r.hi-r.lo)/L*(r.dir>0?1:-1);if(r.axis==='x')nx=-k;else nz=-k;const l=Math.hypot(nx,ny,nz);nx/=l;ny/=l;nz/=l;}
   const U=(a,c)=>[(a+ox)/sc,(c+oz)/sc];
-  quad(g,[[x0,t00,z0],[x1,t10,z0],[x1,t11,z1],[x0,t01,z1]],[nx,ny,nz],[U(x0,z0),U(x1,z0),U(x1,z1),U(x0,z1)],1);
-  if(b.min[1]>-5.9)quad(g,[[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1]],[0,-1,0],[U(x0,z0),U(x1,z0),U(x1,z1),U(x0,z1)],.55);
+  if(b.mat!=='rail')quad(g,[[x0,t00,z0],[x1,t10,z0],[x1,t11,z1],[x0,t01,z1]],[nx,ny,nz],[U(x0,z0),U(x1,z0),U(x1,z1),U(x0,z1)],1);
+  if(b.min[1]>-5.9&&b.mat!=='rail')quad(g,[[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1]],[0,-1,0],[U(x0,z0),U(x1,z0),U(x1,z1),U(x0,z1)],.55);
   const V=(a,y)=>[a/sc,(y+oy)/sc];
   quad(g,[[x0,y0,z0],[x0,y0,z1],[x0,t01,z1],[x0,t00,z0]],[-1,0,0],[V(z0+oz,y0),V(z1+oz,y0),V(z1+oz,t01),V(z0+oz,t00)],.8);
   quad(g,[[x1,y0,z0],[x1,y0,z1],[x1,t11,z1],[x1,t10,z0]],[1,0,0],[V(z0+oz,y0),V(z1+oz,y0),V(z1+oz,t11),V(z0+oz,t10)],.8);
@@ -114,9 +114,9 @@ function loadMap(id){
   if(th.sun){const sun=new THREE.DirectionalLight(th.sunC||0xffb48a,(th.sunI||.35)*(shOn?1.7:1));
     const B=M.bounds,cx=(B.x0+B.x1)/2,cz=(B.z0+B.z1)/2,R=Math.max(B.x1-B.x0,B.z1-B.z0)*.62;
     const sp=th.sunPos||[-40,60,28];sun.position.set(cx+sp[0],sp[1],cz+sp[2]);sun.target.position.set(cx,0,cz);group.add(sun.target);
-    sun.castShadow=S.sh!==0;sun.shadow.mapSize.set(2048,2048);
+    sun.castShadow=S.sh!==0;sun.shadow.mapSize.set(th.shadowRes||2048,th.shadowRes||2048);
     Object.assign(sun.shadow.camera,{left:-R,right:R,top:R,bottom:-R,near:5,far:160});sun.shadow.camera.updateProjectionMatrix();
-    sun.shadow.bias=-.0006;sun.shadow.normalBias=.04;L.sun=sun;group.add(sun);}
+    sun.shadow.bias=th.shBias!=null?th.shBias:-.0006;sun.shadow.normalBias=th.shNormal!=null?th.shNormal:.04;L.sun=sun;group.add(sun);}
   // todo el mapa recibe sombra y la proyecta (menos lo transparente y los neones)
   group.traverse(o=>{if(!o.isMesh)return;const mt=o.material;if(mt&&(mt.transparent||mt.isMeshBasicMaterial))return;o.castShadow=true;o.receiveShadow=true;});
   // las sombras del mapa se calculan una sola vez (el mapa no se mueve): las plataformas móviles reciben sombra pero no la proyectan

@@ -78,17 +78,33 @@ function buildDeco(group,list){
         const f=new THREE.Mesh(new THREE.PlaneGeometry(.4,.28),M_('cflag',()=>new THREE.MeshLambertMaterial({color:0xffd21a,side:THREE.DoubleSide})));f.position.set(x+(x<(d.lx0+d.lx1)/2?.2:-.2),d.y+1.35,z);group.add(f);}
     }else if(d.t==='tren'){
       // locomotora «La Posadeña»: caldera redonda, chimenea, domos, ruedas rojas y bielas; son 2 mallas (una por color). La colisión son los bloques del mapa
-      const negro=[cil(1.3,1.3,16.2,-8.1,2.9,-14,'x'),cil(1.4,1.4,.9,-16.55,2.9,-14,'x'),cil(.55,.4,2.1,-14.8,5.25,-14),cil(.78,.55,.3,-14.8,6.4,-14),cil(.6,.7,.8,-9,4.6,-14),cil(.6,.7,.8,-4.5,4.6,-14)],rojo=[];
-      // ruedas rojas con llanta, rayos y cubo; farol delantero rojo
+      // listas por material: hierro negro, acero oscuro, latón, rojo y luz (cada una es una sola malla)
+      const negro=[cil(1.3,1.3,16.2,-8.1,2.9,-14,'x'),cil(1.38,1.38,1.4,-16.7,2.9,-14,'x'),cil(.5,.38,2.3,-14.4,5.35,-14),cil(.55,.55,.5,-4.5,4.5,-14),cil(.5,.62,.8,-9,4.6,-14)],acero=[],laton=[],rojo=[],luz=[];
+      for(const x of [-13.5,-10.5,-7.5,-4.5,-1.5]){const b=cil(1.35,1.35,.16,x,2.9,-14,'x');acero.push(b);}                                  // fajas de la caldera
+      for(const zz of [-15.42,-12.58]){acero.push(cil(.035,.035,14.6,-8.4,3.45,zz,'x'));for(const x of [-15,-11,-7,-3]){acero.push(cil(.03,.03,.45,x,3.25,zz));}}   // pasamanos con sus soportes
+      laton.push(cil(.62,.62,.12,-14.4,6.5),cil(.46,.46,.12,-9,5.05),cil(.4,.4,.12,-4.5,4.8));                                         // borde de chimenea y tapas de domos
+      // frente: puerta de la caja de humo con aro y bulones, chapa roja con el número, farol con lente, travesaño rojo con topes y trompa
+      acero.push(cil(1.3,1.3,.1,-17.45,2.9,-14,'x'));
+      const aro=new THREE.TorusGeometry(1.12,.07,8,32);aro.rotateY(Math.PI/2);aro.translate(-17.52,2.9,-14);acero.push(aro);
+      for(let k=0;k<10;k++){const an=k/10*Math.PI*2,bo=cil(.06,.06,.1,-17.56,2.9+Math.cos(an)*1.12,-14+Math.sin(an)*1.12,'x');laton.push(bo);}
+      rojo.push(cil(.55,.55,.08,-17.52,2.9,-14,'x'));luz.push(cil(.2,.2,.06,-17.57,2.9,-14,'x'));
+      negro.push(new THREE.BoxGeometry(.34,.3,.34).translate(-17.0,4.22,-14));
+      laton.push(cil(.36,.36,.5,-17.05,4.6,-14,'x'));luz.push(cil(.27,.27,.05,-17.32,4.6,-14,'x'));                                      // farol delantero
+      rojo.push(new THREE.BoxGeometry(.4,.7,2.6).translate(-17.6,1.1,-14));                                                            // travesaño
+      for(const zz of [-14.95,-13.05]){acero.push(cil(.2,.2,.5,-18.05,1.1,zz,'x'),cil(.32,.32,.08,-18.33,1.1,zz,'x'));}                // topes
+      acero.push(new THREE.BoxGeometry(.5,.2,.2).translate(-18.1,.85,-14));                                                            // enganche
+      for(let k=-2;k<=2;k++){const b=new THREE.BoxGeometry(.06,.9,.06);b.rotateZ(.75);b.translate(-18.0,.45,-14+k*.5);negro.push(b);}   // trompa
+      negro.push(new THREE.BoxGeometry(1,.06,2.7).translate(-18.1,.14,-14));
+      // ruedas rojas con llanta, rayos y cubo
       for(const [x,r] of [[-13.5,1.1],[-10.2,1.1],[-6.9,1.1],[-15.7,.65],[1.6,.9],[7.2,.9],[10.2,.8],[12.8,.8],[15.4,.8]])for(const zc of [-15.4,-12.6]){
         const t=new THREE.TorusGeometry(r-.1,.12,6,24);t.translate(x,r+.1,zc);rojo.push(t);
         for(let k=0;k<3;k++){const b=new THREE.BoxGeometry(2*(r-.1),.12,.1);b.rotateZ(k*Math.PI/3);b.translate(x,r+.1,zc);rojo.push(b);}
         rojo.push(cil(.16,.16,.3,x,r+.1,zc,'z'));}
-      rojo.push(cil(.8,.8,.12,-17.05,2.9,-14,'x'));
-      for(const zb of [-15.75,-12.25]){const b=new THREE.BoxGeometry(6.6,.18,.12);b.translate(-10.2,1.2,zb);negro.push(b);}
-      const mn=new THREE.Mesh(unir(negro),M_('tr_negro',()=>new THREE.MeshPhongMaterial({color:0x16181b,shininess:45})));
-      const mr=new THREE.Mesh(unir(rojo),M_('tr_rojo',()=>new THREE.MeshPhongMaterial({color:0x9a1f18,shininess:30})));
-      for(const m of [mn,mr]){m.castShadow=true;m.receiveShadow=true;group.add(m);}
+      for(const zb of [-15.75,-12.25]){const b=new THREE.BoxGeometry(6.6,.18,.12);b.translate(-10.2,1.2,zb);acero.push(b);}              // bielas
+      const mat=(k,o)=>M_(k,()=>new THREE.MeshPhongMaterial(o));
+      for(const [list,m] of [[negro,mat('tr_negro',{color:0x1a1c20,shininess:50})],[acero,mat('tr_acero',{color:0x3a4148,shininess:90})],[laton,mat('tr_laton',{color:0xb58a3c,shininess:110,emissive:0x2a1c08})],[rojo,mat('tr_rojo',{color:0x9a1f18,shininess:30})]]){
+        const me=new THREE.Mesh(unir(list),m);me.castShadow=true;me.receiveShadow=true;group.add(me);}
+      group.add(new THREE.Mesh(unir(luz),M_('tr_luz',()=>new THREE.MeshBasicMaterial({color:0xfff0c8}))));
     }else if(d.t==='cartel'){
       // cartel de chapa con letras (estación, andén): d.txt, colores d.bg / d.fg
       const c=cv(512,Math.round(512*d.h/d.w),(g,w,h)=>{

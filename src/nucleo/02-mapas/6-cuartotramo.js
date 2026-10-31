@@ -200,7 +200,6 @@ function buildCuartoTramo() {
   add(-.3, 4.6, -16.1, 8.9, 5, -11.9, 'black');
   add(5.6, 1.6, -15.5, 7.6, 2.4, -14.6, 'metal'); add(.3, 1.6, -14.4, 1.3, 2.8, -13.6, 'metal');
   stairs(3.3, -12.2, 5.3, -9.8, 0, .4, 4, 'z', -1, 'step'); stairs(3.3, -18.2, 5.3, -15.8, 0, .4, 4, 'z', 1, 'step');
-  add(-17.3, .7, -15.3, -17, 1.5, -12.7, 'barn', { nc: 1 }); add(-17.4, 2.3, -14.4, -17.3, 3.3, -13.6, 'light', { nc: 1 });
   deco.push({ t: 'tren' });
   deco.push({ t: 'cartel', x: 13, y: 2.7, z: -12.47, w: 4.6, h: .9, txt: 'LA POSADEÑA', bg: '#111', fg: '#f4f4f4' }, { t: 'cartel', x: 13, y: 2.7, z: -15.53, w: 4.6, h: .9, txt: 'LA POSADEÑA', bg: '#111', fg: '#f4f4f4', ry: Math.PI });
   add(-12, 0, -12.7, -10.4, 1.2, -11.1, 'crate'); add(-10.4, 0, -12.7, -8.8, 2.4, -11.1, 'crate'); add(-8.8, 0, -12.7, -7.2, 3.6, -11.1, 'crate');   // cajones escalonados hasta la caldera
@@ -217,9 +216,8 @@ function buildCuartoTramo() {
   for (const x of [-46, -34, -26, -14, -6, 6, 14, 26, 34, 46]) add(x - .1, 6, -22.8, x + .1, 9.9, -22.6, 'metal');
   add(-50.5, 9.9, -26.6, 50.6, 10.15, -22.3, 'roof'); add(-50.5, 9.6, -22.4, 50.6, 9.9, -22.3, 'metal', { nc: 1 }); add(-50.5, 10.15, -22.4, 50.6, 11.15, -22.3, 'rail');   // el alero se pisa: pasarela alta sobre el balcón
   add(51.6, 8.7, -26, 52.6, 9.5, -22.4, 'grate'); add(50.6, 8.7, -26, 51.6, 10, -22.4, 'grate');   // dos escalones del mirador al alero
-  // enredaderas colgando del alero y bruma baja sobre el río (ambiente)
+  // enredaderas colgando del alero (ambiente)
   for (let x = -48; x <= 48; x += 2.7) deco.push({ t: 'enredadera', x, y: 9.62, z: -22.34, len: 1.1 + Math.abs(Math.sin(x * 3.1)) * 1.8, ry: 0 });
-  deco.push({ t: 'bruma', x0: -300, x1: 300, z0: 26, z1: 150, y: .45, o: .22 }, { t: 'bruma', x0: -300, x1: 300, z0: 26, z1: 150, y: 1.1, o: .13, dir: -1 });
   // canteros blancos con plantas bajo la galería
   for (const x of [-44, -28, -12, 12, 28, 44]) { add(x - .45, 0, -25.05, x + .45, .55, -24.15, 'whitewall'); deco.push({ t: 'bush', x, y: .55, z: -24.6, r: .5 }); }
   // banderines colgados bajo el balcón
@@ -294,8 +292,20 @@ function buildCuartoTramo() {
     { x: -20, y: 6, z: -10, c: 0xff9a60, i: .5, d: 28 }, { x: 20, y: 6, z: -10, c: 0xff9a60, i: .5, d: 28 }, { x: 0, y: 5, z: -8, c: 0xffa060, i: .5, d: 28 },
     { x: -30, y: 5, z: 14, c: 0xffa060, i: .6, d: 24 }, { x: 30, y: 5, z: 14, c: 0xffa060, i: .6, d: 24 },
     { x: -44, y: 3, z: -6, c: 0xffc840, i: .9, d: 14 }, { x: 44, y: 3, z: -6, c: 0x4aa0ff, i: .9, d: 14 });
+  {   // juntas: los bloques sólidos del mismo material que se tocan se solapan 6 mm (sin grietas de un píxel entre ellos)
+    const S = B.filter(b => !b.nc && !b.mover && !b.ramp && b.mat !== 'clip'), g = S.map(() => [[0, 0], [0, 0], [0, 0]]);
+    for (let i = 0; i < S.length; i++) for (let j = i + 1; j < S.length; j++) {
+      const a = S[i], b = S[j]; if (a.mat !== b.mat) continue;
+      for (let ax = 0; ax < 3; ax++) {
+        const u = (ax + 1) % 3, v = (ax + 2) % 3;
+        if (Math.min(a.max[u], b.max[u]) - Math.max(a.min[u], b.min[u]) < .01 || Math.min(a.max[v], b.max[v]) - Math.max(a.min[v], b.min[v]) < .01) continue;
+        if (Math.abs(a.max[ax] - b.min[ax]) < 1e-6) { g[i][ax][1] = 1; g[j][ax][0] = 1; } else if (Math.abs(b.max[ax] - a.min[ax]) < 1e-6) { g[j][ax][1] = 1; g[i][ax][0] = 1; }
+      }
+    }
+    S.forEach((b, i) => { for (let ax = 0; ax < 3; ax++) { if (g[i][ax][0]) b.min[ax] -= .006; if (g[i][ax][1]) b.max[ax] += .006; } });
+  }
   for (const b of B) if (b.nc && b.mat !== 'clip') for (let k = 0; k < 3; k++) { b.min[k] -= .012; b.max[k] += .012; }   // evita caras coplanares (z-fighting)
   return finish({ id: 'cuartotramo', name: 'El Cuarto Tramo', bounds: { x0: -62, x1: 62, z0: -42, z1: 42 }, deco,
-    theme: { sky: 'sunset', tex: 'ut', fog: 0x8a5262, fogD: .0042, amb: 0xb88a80, ambI: .78, hemi: [0xff9a84, 0x34364e, .7], sun: true, sunC: 0xff8a40, sunI: .85, sunPos: [-52, 17, -34] } });
+    theme: { sky: 'sunset', tex: 'ut', fog: 0x8a5262, fogD: .0042, amb: 0xb88a80, ambI: .78, hemi: [0xff9a84, 0x34364e, .7], sun: true, sunC: 0xff8a40, sunI: .85, sunPos: [-46, 21, -30], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
 }
 MAPDEFS.cuartotramo = buildCuartoTramo;

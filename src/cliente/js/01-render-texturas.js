@@ -9,7 +9,7 @@ const setTimeout0=f=>f();
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x1c1310);
 scene.fog=new THREE.FogExp2(0x1c1310,.0105);
-const camera=new THREE.PerspectiveCamera(S.fov,1,.05,500);camera.rotation.order='YXZ';
+const camera=new THREE.PerspectiveCamera(S.fov,1,.08,500);camera.rotation.order='YXZ';
 const wScene=new THREE.Scene(),wCam=new THREE.PerspectiveCamera(62,1,.01,10);
 // resolución dinámica: si la compu no llega a ~50 cuadros, se baja un poco la resolución (hasta 75%) en vez de que el juego se trabe
 const DR={s:1,acc:0,n:0,good:0,upT:0,block:0,fps:0};
@@ -88,7 +88,7 @@ function skySunset(){return cv(1024,512,(g,w,h)=>{
   // atardecer sobre el Paraná: violeta arriba, rosa, naranja y dorado hacia el horizonte, sol bajo al noroeste y su reflejo en el río
   const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#241a4a');gr.addColorStop(.2,'#4e3478');gr.addColorStop(.32,'#a8497e');gr.addColorStop(.41,'#ee7a52');gr.addColorStop(.47,'#ffb468');gr.addColorStop(.5,'#ffd9a0');gr.addColorStop(.52,'#d9704c');gr.addColorStop(.7,'#6e3a56');gr.addColorStop(1,'#26182e');
   g.fillStyle=gr;g.fillRect(0,0,w,h);
-  const sx=w*.908,sy=h*.415;
+  const sx=w*.908,sy=h*.394;
   for(const ox of [0,-w,w]){const rg=g.createRadialGradient(sx+ox,sy,4,sx+ox,sy,300);rg.addColorStop(0,'rgba(255,244,214,1)');rg.addColorStop(.08,'rgba(255,196,120,.85)');rg.addColorStop(.3,'rgba(255,140,80,.35)');rg.addColorStop(1,'rgba(255,110,90,0)');g.fillStyle=rg;g.fillRect(0,0,w,h*.5);}
   g.fillStyle='#fff6dc';g.beginPath();g.arc(sx,sy,15,0,7);g.fill();
   // nubes alargadas teñidas de naranja cerca del sol y de violeta arriba

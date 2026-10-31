@@ -1064,7 +1064,7 @@ function buildCuartoTramo() {
   add(-50.4, 12, -40, 50.4, 12.4, -25.8, 'roof');                        // techo
   add(-8, 12.4, -26.4, 8, 13.4, -26, 'brick'); add(-5, 13.4, -26.4, 5, 14.2, -26, 'brick');   // frontis
   add(-50.5, 11.4, -26.6, 50.5, 12.05, -25.8, 'whitewall', { nc: 1 });      // cornisa
-  for (let x = -48; x <= 48; x += 12) add(x - .3, 0, -26, x + .3, 11.4, -25.72, 'whitewall', { nc: 1 });   // pilastras
+  for (let x = -48; x <= 48; x += 12) if (puertas.every(d => x + .3 < d[0] - .5 || x - .3 > d[1] + .5)) add(x - .3, 0, -26, x + .3, 11.4, -25.72, 'whitewall', { nc: 1 });   // pilastras (nunca dentro de una puerta o ventana)
   // piso alto: losa con huecos para las dos escaleras del hall
   add(-50, 5.6, -40, 50, 6, -38, 'tiles'); add(-50, 5.6, -38, -8, 6, -30, 'tiles'); add(8, 5.6, -38, 50, 6, -30, 'tiles');   // piso alto con un atrio abierto en el medio del hall (x -8..8)
   // barandas físicas del atrio, con entradas donde llegan los saltadores
@@ -1211,6 +1211,7 @@ function buildCuartoTramo() {
   /* ---- muros invisibles (nadie sale por arriba de la valla ni de las paredes) y barandas bajas en la orilla ---- */
   add(-62.5, -4, -43, -62, 40, 43, 'clip'); add(-62.5, -4, -40.5, -50.4, 40, -40, 'clip');
   add(-63, 12, -43, 63, 40, -40, 'clip'); add(50.4, 10, -43, 62, 40, -40, 'clip');
+  add(-50.6, 12.4, -40, 50.7, 60, -25.4, 'clip');   // el techo del edificio es inalcanzable (ni con rocket jump): todo el volumen de arriba es sólido
   add(-62, .25, 23.8, -46, 1.35, 24, 'rail'); add(-36, .25, 23.8, 36, 1.35, 24, 'rail'); add(46, .25, 23.8, 62, 1.35, 24, 'rail');   // sobre el último escalón de la costanera
   add(61.5, 0, -40, 62, 1, 8, 'rail'); add(61.5, 1, 8, 62, 2, 20, 'rail'); add(61.5, -1, 20, 62, 1.6, 24, 'rail');             // borde este
   for (const x of [-30, 30]) { add(x - .07, .25, 23.45, x + .07, 1.95, 23.59, 'wood'); deco.push({ t: 'aviso', x, y: 2.3, z: 23.52, ry: 0 }); }

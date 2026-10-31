@@ -15,9 +15,9 @@ function buildCuartoTramo() {
   lava.push({ min: [20, -3, 12], max: [37, -.5, 25], water: true, dps: 0 });   // el Paraná: agua que mata
   add(20, -5, 12, 37, -3, 25, 'rock');
   add(-38, -4, -25, 38, 12, -24, 'brick');                            // límites: norte (fondo de la galería), sur, oeste y este
-  add(-38, -4, 25, 38, 8, 26, 'block');
+  add(-38, -4, 25, 38, 8, 26, 'fence');                                // sur: alambrado, para ver el río
   add(-38, -4, -25, -37, 12, 25, 'block');
-  add(37, -4, -25, 38, 12, 25, 'block');
+  add(37, -4, -25, 38, 12, 12, 'block'); add(37, -4, 12, 38, 8, 25, 'fence');
   /* ---- galería de ladrillo (norte): seis puertas al andén y una a cada punta ---- */
   wall(-30, -12.4, 26, -12, 0, 6, [D(-27, -23, 0, 3.4), D(-17, -13, 0, 3.4), D(-7, -3, 0, 3.4), D(3, 7, 0, 3.4), D(13, 17, 0, 3.4), D(21, 25, 0, 3.4)], 'brick');
   wall(-30.4, -24, -30, -12, 0, 6, [D(-19, -15, 0, 3.4)], 'brick');
@@ -64,6 +64,21 @@ function buildCuartoTramo() {
   add(20, -.3, 12, 28, 0, 16, 'wood');
   add(28, -.3, 13, 35, 0, 16, 'wood');
   for (const [x, z] of [[20.2, 15.6], [27.6, 15.6], [27.6, 12.2], [34.6, 13.2], [34.6, 15.6]]) add(x, -3, z, x + .25, 0, z + .25, 'wood');
+  /* ---- locomotora: chimenea, domos, cabina, ruedas rojas, farol y carbón (solo se ven) ---- */
+  add(-8.2, 3.4, -4, -7.2, 4.9, -3, 'black', { nc: 1 }); add(-8.6, 4.7, -4.3, -6.8, 5.1, -2.7, 'black', { nc: 1 });
+  add(-4.4, 3.4, -4, -3.2, 4.2, -3, 'black', { nc: 1 }); add(-1.4, 3.4, -4, -.4, 4, -3, 'black', { nc: 1 });
+  add(1.2, 3.4, -4.7, 4, 5.2, -2.3, 'black', { nc: 1 }); add(1, 5.2, -4.8, 4.2, 5.4, -2.2, 'trim', { nc: 1 });
+  for (const x of [-7.5, -4.8, -2.1, .6]) { add(x, 0, -4.72, x + 1.8, 1.2, -4.6, 'barn', { nc: 1 }); add(x, 0, -2.4, x + 1.8, 1.2, -2.28, 'barn', { nc: 1 }); }
+  add(-9.1, 1.6, -3.8, -9, 2.2, -3.2, 'light', { nc: 1 });
+  add(5, 3.8, -4.5, 11.5, 4.2, -2.5, 'rock', { nc: 1 });
+  /* ---- carteles, portales visibles, palmeras y arbustos ---- */
+  add(-33.3, 0, -9.5, -33.1, 1.9, -9.3, 'metal'); add(-30.1, 0, -9.5, -29.9, 1.9, -9.3, 'metal');
+  deco.push({ t: 'cartel', x: -31.6, y: 1.45, z: -9.3, w: 3.4, h: 1, txt: 'POSADAS', bg: '#111', fg: '#fff' });
+  deco.push({ t: 'cartel', x: 0, y: 5.25, z: -11.98, w: 10, h: 1, txt: 'ESTACIÓN POSADAS', bg: '#5a2a1c', fg: '#f3d9a8' });
+  deco.push({ t: 'portal', x: -18, y: 0, z: 4.5, r: 1, color: 'yellow', ry: 0 }, { t: 'portal', x: 28, y: 3, z: 9, r: .9, color: 'blue', ry: Math.PI / 2 });
+  for (const [x, z] of [[-34.5, -16], [-34.5, 20], [-20, 21.5], [4, 22], [14, 21.5]]) deco.push({ t: 'palm', x, y: -.03, z, h: 9 });
+  for (const [x, z, r] of [[-28, 21, 1.1], [-8, 22, 1], [10, 21, 1.2], [-34, 12, 1], [-26, 23, .9]]) deco.push({ t: 'bush', x, y: -.03, z, r });
+  for (const x of [-20, -10, 0, 10, 19]) deco.push({ t: 'lamp', x, y: 3.8, z: -11.98 });
   /* ---- portales: el amarillo (suelo, oeste) lleva a la plataforma baja del este; el azul (plataforma baja) vuelve al oeste ---- */
   teles.push({ x: -18, y: 0, z: 4.5, r: 1, to: [24.5, 3, 9], yaw: face(24.5, 9, 0, 0), color: 'yellow' });
   teles.push({ x: 28, y: 3, z: 9, r: .9, to: [-21, 0, 7.5], yaw: face(-21, 7.5, 0, 0), color: 'blue' });
@@ -83,8 +98,9 @@ function buildCuartoTramo() {
   [[-18, 0, 7.5], [10, 0, 7], [0, 0, 11], [18, 0, 3], [-26, 0, 10], [6, 0, -7], [-14, 0, -7], [-24, 0, -16], [-10, 0, -16], [2, 0, -20],
    [16, 0, -19], [24, 0, -14], [-32, 3, 4], [22, 3, 8], [31, 0, -4], [14, 0, 14]]
     .forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
-  lights.push({ x: 0, y: 5, z: -17, c: 0xffb070, i: .7, d: 24 }, { x: -6, y: 6, z: 2, c: 0xff9a60, i: .5, d: 26 }, { x: 26, y: 8, z: 2, c: 0xff9a60, i: .5, d: 22 });
+  lights.push({ x: 0, y: 5, z: -17, c: 0xffb070, i: .7, d: 24 }, { x: -6, y: 6, z: 2, c: 0xff9a60, i: .5, d: 26 }, { x: 26, y: 8, z: 2, c: 0xff9a60, i: .5, d: 22 },
+    { x: -18, y: 2, z: 4.5, c: 0xffc840, i: .7, d: 12 }, { x: 28, y: 5, z: 9, c: 0x4aa0ff, i: .7, d: 12 }, { x: -2, y: 3.5, z: -14, c: 0xffa060, i: .6, d: 20 });
   return finish({ id: 'cuartotramo', name: 'El Cuarto Tramo', bounds: { x0: -37, x1: 37, z0: -24, z1: 25 }, deco,
-    theme: { sky: 'dusk', fog: 0x5a3a3a, fogD: .006, amb: 0x8a6a62, ambI: .6, hemi: [0xffb88a, 0x4a3a4a, .5], sun: true, sunC: 0xff9a52, sunI: .8 } });
+    theme: { sky: 'sunset', fog: 0x9a5a62, fogD: .005, amb: 0xb07a6a, ambI: .55, hemi: [0xff9a78, 0x4a3050, .5], sun: true, sunC: 0xff8a40, sunI: .85, sunPos: [-52, 17, -34] } });
 }
 MAPDEFS.cuartotramo = buildCuartoTramo;

@@ -62,6 +62,20 @@ function buildDeco(group,list){
       // banderines de córner
       for(const x of [d.lx0,d.lx1])for(const z of [d.lz0,d.lz1]){const p=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,1.5,5),M_('pole',()=>new THREE.MeshPhongMaterial({color:0xdadfe3,shininess:90})));p.position.set(x,d.y+.75,z);group.add(p);
         const f=new THREE.Mesh(new THREE.PlaneGeometry(.4,.28),M_('cflag',()=>new THREE.MeshLambertMaterial({color:0xffd21a,side:THREE.DoubleSide})));f.position.set(x+(x<(d.lx0+d.lx1)/2?.2:-.2),d.y+1.35,z);group.add(f);}
+    }else if(d.t==='cartel'){
+      // cartel de chapa con letras (estación, andén): d.txt, colores d.bg / d.fg
+      const c=cv(512,Math.round(512*d.h/d.w),(g,w,h)=>{
+        g.fillStyle=d.bg||'#1b1b1b';g.fillRect(0,0,w,h);g.strokeStyle=d.fg||'#f1e7d0';g.lineWidth=6;g.strokeRect(6,6,w-12,h-12);
+        g.fillStyle=d.fg||'#f1e7d0';g.textAlign='center';g.textBaseline='middle';g.font='bold '+Math.round(h*.52)+'px Arial, Helvetica, sans-serif';g.fillText(d.txt,w/2,h/2+2);});
+      const m=new THREE.Mesh(new THREE.PlaneGeometry(d.w,d.h),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));m.position.set(d.x,d.y,d.z);m.rotation.y=d.ry||0;group.add(m);
+    }else if(d.t==='portal'){
+      // portal vertical (solo se ve; el teletransporte lo hace el servidor con 'teles'): aro y remolino de luz, de color d.color
+      const col=d.color==='yellow'?['255,210,60','255,150,20']:['110,200,255','40,110,255'],ry=d.r*1.25;
+      const sw=cv(128,160,(g,w,h)=>{g.clearRect(0,0,w,h);const rg=g.createRadialGradient(w/2,h/2,4,w/2,h/2,w/2);rg.addColorStop(0,'rgba(255,255,255,.9)');rg.addColorStop(.35,'rgba('+col[0]+',.55)');rg.addColorStop(1,'rgba('+col[1]+',.12)');g.fillStyle=rg;g.beginPath();g.ellipse(w/2,h/2,w/2-2,h/2-2,0,0,7);g.fill();
+        g.strokeStyle='rgba(255,255,255,.7)';g.lineWidth=3;for(let k=0;k<3;k++){g.beginPath();for(let a=0;a<9;a+=.2){const rr=4+a*5.2;g.lineTo(w/2+Math.cos(a+k*2.1)*rr*.95,h/2+Math.sin(a+k*2.1)*rr*1.2);}g.stroke();}});
+      const g3=new THREE.Group();g3.position.set(d.x,d.y+ry,d.z);g3.rotation.y=d.ry||0;
+      g3.add(new THREE.Mesh(new THREE.PlaneGeometry(d.r*2,ry*2),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(sw),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide})));
+      const ring=new THREE.Mesh(new THREE.TorusGeometry(d.r,.09,6,28),new THREE.MeshBasicMaterial({color:d.color==='yellow'?0xffd24a:0x7fd8ff}));ring.scale.y=1.25;g3.add(ring);group.add(g3);
     }else if(d.t==='logo'){
       const c=cv(256,256,(g)=>ucpLogo(g,128,128,124));
       const m=new THREE.Mesh(new THREE.CircleGeometry(d.r,40),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));m.position.set(d.x,d.y,d.z);group.add(m);

@@ -1,13 +1,13 @@
 # CuenkArena
 
-Deathmatch online estilo Quake que corre en el navegador. Al terminar cada partida los jugadores votan el próximo mapa, entre ellos **dm3 · La Cuenca** (la Universidad de la Cuenca del Plata de Posadas, con la plaza y el edificio para recorrer por dentro), **dm1 · La Represa** (industrial, con lava) y **dm2 · Humita** (un boliche con pista LED, plataformas móviles, ascensores y subwoofers que te lanzan). Siete armas, tienda con créditos, taquilla para personalizar tu personaje, bots y movimiento con *strafe jump* y *bunny hop*.
+Deathmatch online estilo Quake que corre en el navegador. Al terminar cada partida los jugadores votan el próximo mapa, entre ellos **dm3 · La Cuenca** (la Universidad de la Cuenca del Plata de Posadas, con la plaza y el edificio para recorrer por dentro), **dm1 · La Represa** (industrial, con lava) **dm2 · Humita** (un boliche con pista LED, plataformas móviles, ascensores y subwoofers que te lanzan) y **El Cuarto Tramo** (la vieja estación de la Costanera de Posadas al atardecer, con locomotora, galería, torre de andamios, portales y el Paraná que mata). Siete armas, tienda con créditos, taquilla para personalizar tu personaje, bots y movimiento con *strafe jump* y *bunny hop*.
 
 ## Modos de juego
 
 Al tocar **Jugar online** (o **Práctica con bots**) elegís el modo. Cada modo es una sala aparte del servidor.
 
 - **Francotiradores** (mapa *snp1 · Fuertes del Cañón*): rojo contra azul, cada equipo en su establo a un lado del cañón. Solo francotirador (mata de un tiro, munición infinita) y cuchillo (con el cuchillo en la mano corrés un 30 % más rápido). Una racha de 6 bajas sin morir desbloquea la escopeta doble (tecla 2) hasta que te maten. Sin tienda y sin mira: la retícula aparece solo al apuntar con el clic derecho. Gana el primer equipo a 30 bajas o el que tenga más a los 6 minutos.
-- **Arena**: todos contra todos en La Represa, Humita y La Cuenca, con créditos y tienda. Cada partida dura **5 minutos** (online y en práctica).
+- **Arena**: todos contra todos en La Represa, Humita, La Cuenca y El Cuarto Tramo, con créditos y tienda. Cada partida dura **5 minutos** (online y en práctica).
 - **Gungame**: todos arrancan con la ametralladora y cada baja te da la siguiente arma de una lista de 20 niveles (armas fuertes primero, pistola, riel y francotirador al final, cuchillo en el último). Munición infinita, sin tienda y sin nada tirado en el mapa (ni armas, ni vida, ni blindaje). Además de la del nivel tenés siempre el cuchillo: si te matás solo, o te matan con cuchillo, bajás un nivel. Gana el primero en hacer la baja número 20.
 - **Team Deathmatch**: rojo contra azul, cada baja suma para el equipo hasta llegar al límite. Online la sala espera a tener **4 jugadores** (mientras tanto hay calentamiento y las bajas no cuentan) y arranca con una cuenta regresiva. El límite de bajas lo elige el primero en entrar desde la pantalla de modos, y se puede cambiar desde el menú (Esc) mientras esperan.
 - **Captura la bandera**: rojo (Posadas) contra azul (Encarnación) en **ctf1 · El Puente**. Robá la bandera rival del fortín enemigo y llevala hasta el pedestal de tu base (cuenta aunque tu bandera esté robada). Si matan al que la lleva, la bandera queda tirada 20 segundos: si la toca su equipo vuelve a la base. Gana el primer equipo en capturarla 3 veces (se cambia con `/caplimit N`). No hay fuego amigo y los equipos se equilibran solos con los bots.
@@ -221,7 +221,7 @@ La práctica con bots del menú corre la misma clase `Game` dentro del navegador
 
 **Con el editor (sin programar):** abrí `editor.html` (hay un link abajo en el menú del juego). Dibujás bloques desde arriba, ponés ítems, apariciones y saltadores, lo probás en práctica con un botón y lo exportás como archivo `.js` que va en `src/nucleo/02-mapas/`.
 
-**A mano:** cada mapa es un archivo en `src/nucleo/02-mapas/` (`1-represa.js`, `2-humita.js`, `3-lacuenca.js`, `4-puente.js`, `5-fuertes.js`). Todo son cajas, como los *brushes* de Quake:
+**A mano:** cada mapa es un archivo en `src/nucleo/02-mapas/` (`1-represa.js`, `2-humita.js`, `3-lacuenca.js`, `4-puente.js`, `5-fuertes.js`, `6-cuartotramo.js`). Todo son cajas, como los *brushes* de Quake:
 
 - `add(x0, y0, z0, x1, y1, z1, 'material')` agrega un bloque sólido.
 - `stairs(...)`, `ramp(...)` y `wall(... , [puertas])` arman escaleras, rampas y paredes con aberturas.
@@ -268,6 +268,14 @@ Los ítems de ayuda tienen forma propia: el **blindaje** es un escudo verde, el 
 ## Votación del próximo mapa
 
 En la pantalla final hay una tarjeta por cada mapa del modo, con su nombre y una foto chiquita del mapa (sacadas con el mismo motor del juego, en `public/maps/`). Se vota con un click o con 1, 2, 3; cada tarjeta muestra los votos y una estrella en el que va ganando, y se puede cambiar el voto. Gana el más votado; si hay empate entre los más votados, o si nadie vota, el mapa sale **al azar**.
+
+## El Cuarto Tramo (mapa nuevo)
+
+Inspirado en el cuarto tramo de la Costanera de Posadas, **al atardecer** (cielo naranja, rosa y violeta, sol bajo y sombras largas). Se juega en **Arena** y **Gungame**.
+- **Galería** de ladrillo al norte, con seis puertas al andén y una salida a cada punta; **andén** con las vías, la locomotora «La Posadeña» (se sube con los cajones y arriba espera el daño cuádruple) y la pila de cajones.
+- **Andamio del oeste** con la megasalud y el **portal amarillo**, que te manda a la plataforma baja del este. **Torre del este** de dos pisos: abajo dos rifles de plasma y el **portal azul** (te devuelve al oeste); arriba, el francotirador y el lanzacohetes.
+- **El Paraná** al sureste: el agua mata al instante. En la punta del muelle hay una armadura pesada.
+- Los botones del menú y la votación lo toman solos; la foto de la votación es opcional (`public/maps/cuartotramo.jpg`).
 
 ## Novedades de La Cuenca y Humita
 

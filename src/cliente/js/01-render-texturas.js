@@ -84,6 +84,23 @@ T.basalt=tex(basaltCanvas);
 const basaltEm=tex(cv(64,64,(g)=>{g.drawImage(basaltCanvas,0,0);const d=g.getImageData(0,0,64,64);for(let i=0;i<d.data.length;i+=4){const hot=d.data[i]>150;d.data[i]=hot?d.data[i]:0;d.data[i+1]=hot?d.data[i+1]*.6:0;d.data[i+2]=0;}g.putImageData(d,0,0);}));
 const lavaCanvas=cv(64,64,(g)=>{g.fillStyle='#7a1a05';g.fillRect(0,0,64,64);for(let i=0;i<120;i++){const c=['#c23a0a','#ff6a10','#ffae2a','#9a2205','#ff8c1a'][rnd()*5|0];g.fillStyle=c;g.beginPath();g.arc(rnd()*64,rnd()*64,1+rnd()*5,0,7);g.fill();}});
 const lavaTex=tex(lavaCanvas);
+function skySunset(){return cv(1024,512,(g,w,h)=>{
+  // atardecer sobre el Paraná: violeta arriba, rosa, naranja y dorado hacia el horizonte, sol bajo al noroeste y su reflejo en el río
+  const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#241a4a');gr.addColorStop(.2,'#4e3478');gr.addColorStop(.32,'#a8497e');gr.addColorStop(.41,'#ee7a52');gr.addColorStop(.47,'#ffb468');gr.addColorStop(.5,'#ffd9a0');gr.addColorStop(.52,'#d9704c');gr.addColorStop(.7,'#6e3a56');gr.addColorStop(1,'#26182e');
+  g.fillStyle=gr;g.fillRect(0,0,w,h);
+  const sx=w*.908,sy=h*.415;
+  for(const ox of [0,-w,w]){const rg=g.createRadialGradient(sx+ox,sy,4,sx+ox,sy,300);rg.addColorStop(0,'rgba(255,244,214,1)');rg.addColorStop(.08,'rgba(255,196,120,.85)');rg.addColorStop(.3,'rgba(255,140,80,.35)');rg.addColorStop(1,'rgba(255,110,90,0)');g.fillStyle=rg;g.fillRect(0,0,w,h*.5);}
+  g.fillStyle='#fff6dc';g.beginPath();g.arc(sx,sy,15,0,7);g.fill();
+  // nubes alargadas teñidas de naranja cerca del sol y de violeta arriba
+  for(let c=0;c<34;c++){const cx=rnd()*w,cy=h*(.1+rnd()*.3),s=30+rnd()*60,warm=cy/h>.27;
+    for(let k=0;k<7;k++){g.fillStyle=warm?'rgba(255,'+(130+rnd()*60|0)+','+(100+rnd()*40|0)+','+(.18+rnd()*.25)+')':'rgba(150,90,150,'+(.15+rnd()*.2)+')';
+      g.beginPath();g.ellipse(cx+(rnd()-.5)*s*3,cy+(rnd()-.5)*s*.18,s*(.8+rnd()),s*(.06+rnd()*.07),0,0,7);g.fill();}}
+  // la otra orilla: colinas violetas y la ciudad lejana con algunas luces
+  g.fillStyle='#4a2a4c';g.beginPath();g.moveTo(0,h*.5);for(let x=0;x<=w;x+=12)g.lineTo(x,h*.5-4-Math.abs(Math.sin(x*.009)*10+Math.sin(x*.031)*4));g.lineTo(w,h*.5);g.fill();
+  for(let x=360;x<560;x+=7){const bh=3+rnd()*14;g.fillStyle='#3a2140';g.fillRect(x,h*.5-bh-4,5,bh+4);if(rnd()<.5){g.fillStyle='rgba(255,200,120,.8)';g.fillRect(x+1,h*.5-bh-2,1,1);}}
+  // reflejo del sol en el agua
+  for(let i=0;i<140;i++){const y=h*.5+2+rnd()*h*.22,dx=(rnd()-.5)*(60+(y-h*.5)*2.2),wl=8+rnd()*40;g.fillStyle='rgba(255,'+(170+rnd()*60|0)+',120,'+(.2+rnd()*.35)+')';g.fillRect(sx+dx-wl/2,y,wl,1.5);}
+});}
 const MATS={
   wall:{t:T.wall,sc:3,shin:10},floor:{t:T.floor,sc:2,shin:22},concrete:{t:T.concrete,sc:4,shin:4},grate:{t:T.grate,sc:1.2,shin:30},
   metal:{t:T.metal,sc:2,shin:40},tower:{t:T.tower,sc:3,shin:30,em:towerEm},trim:{t:T.trim,sc:1,shin:10},step:{t:T.step,sc:1,shin:14},

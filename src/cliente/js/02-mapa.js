@@ -9,7 +9,7 @@ function skyDay(){return cv(1024,512,(g,w,h)=>{
   for(let x=0;x<w;x+=5){const bh=4+rnd()*rnd()*40;g.fillStyle=['#c9cdd2','#b7bcc2','#d8d4cc','#a9aeb4'][rnd()*4|0];g.fillRect(x,h*.5-bh,5,bh);}
   for(let x=0;x<w;x+=9){if(rnd()<.35){g.fillStyle='#4f6e3a';g.beginPath();g.arc(x,h*.5-2,4+rnd()*8,Math.PI,0);g.fill();}}
 });}
-const skyTex={dusk:new THREE.CanvasTexture(skyDusk()),night:new THREE.CanvasTexture(skyNight()),day:new THREE.CanvasTexture(skyDay())};
+const skyTex={dusk:new THREE.CanvasTexture(skyDusk()),night:new THREE.CanvasTexture(skyNight()),day:new THREE.CanvasTexture(skyDay()),sunset:new THREE.CanvasTexture(skySunset())};
 function quad(g,v,nrm,uvs,shade){
   const b=g.p.length/3;
   v.forEach(q=>g.p.push(q[0],q[1],q[2]));
@@ -109,7 +109,7 @@ function loadMap(id){
   group.add(new THREE.HemisphereLight(th.hemi[0],th.hemi[1],th.hemi[2]*(shOn?.75:1)));
   if(th.sun){const sun=new THREE.DirectionalLight(th.sunC||0xffb48a,(th.sunI||.35)*(shOn?1.7:1));
     const B=M.bounds,cx=(B.x0+B.x1)/2,cz=(B.z0+B.z1)/2,R=Math.max(B.x1-B.x0,B.z1-B.z0)*.62;
-    sun.position.set(cx-40,60,cz+28);sun.target.position.set(cx,0,cz);group.add(sun.target);
+    const sp=th.sunPos||[-40,60,28];sun.position.set(cx+sp[0],sp[1],cz+sp[2]);sun.target.position.set(cx,0,cz);group.add(sun.target);
     sun.castShadow=S.sh!==0;sun.shadow.mapSize.set(2048,2048);
     Object.assign(sun.shadow.camera,{left:-R,right:R,top:R,bottom:-R,near:5,far:160});sun.shadow.camera.updateProjectionMatrix();
     sun.shadow.bias=-.0006;sun.shadow.normalBias=.04;L.sun=sun;group.add(sun);}
@@ -138,8 +138,8 @@ function loadMap(id){
     m.rotation.y=Math.atan2(p.t[0]-p.x,p.t[2]-p.z)+Math.PI;m.position.set(p.x,p.y+.07,p.z);group.add(m);L.pads.push({m,p});
   }
   for(const t of M.teles){
-    const ring=new THREE.Mesh(new THREE.TorusGeometry(t.r,.08,8,24),new THREE.MeshBasicMaterial({color:0x6fd8ff}));ring.rotation.x=Math.PI/2;ring.position.set(t.x,t.y+.05,t.z);group.add(ring);
-    const disc=new THREE.Mesh(new THREE.CircleGeometry(t.r,24),new THREE.MeshBasicMaterial({color:0x2a8cff,transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false}));disc.rotation.x=-Math.PI/2;disc.position.set(t.x,t.y+.04,t.z);group.add(disc);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(t.r,.08,8,24),new THREE.MeshBasicMaterial({color:t.color==='yellow'?0xffc83a:0x6fd8ff}));ring.rotation.x=Math.PI/2;ring.position.set(t.x,t.y+.05,t.z);group.add(ring);
+    const disc=new THREE.Mesh(new THREE.CircleGeometry(t.r,24),new THREE.MeshBasicMaterial({color:t.color==='yellow'?0xffa81a:0x2a8cff,transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false}));disc.rotation.x=-Math.PI/2;disc.position.set(t.x,t.y+.04,t.z);group.add(disc);
     L.teles.push(t);
   }
   L.items=M.items.map(it=>{const g=buildItem(it.type);g.position.set(it.x,it.y+.6,it.z);group.add(g);return {g,it,ty:it.type,ph:Math.random()*6};});

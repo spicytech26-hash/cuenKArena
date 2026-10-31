@@ -34,9 +34,9 @@ function buildCuartoTramo() {
   add(-22, -2, -40, 22, 0, -26.4, 'tiles');                              // piso del hall
   add(-50, -2, -40, -22, 0, -26.4, 'concrete'); add(22, -2, -40, 50, 0, -26.4, 'concrete');   // pisos de las alas
   add(-50, 0, -26, 50, .2, -23.6, 'brick');                              // vereda de ladrillo bajo la galería
-  stairs(-62, 20, 62, 24, -1, .5, 4, 'z', -1, 'step');                   // gradas de la costanera hasta el río
-  lava.push({ min: [-200, -4, 24], max: [200, -1, 150], water: true, dps: 0 });   // el Paraná al sur: agua que mata, hasta el horizonte
-  lava.push({ min: [62, -4, -40], max: [200, -1, 24], water: true, dps: 0 });     // y al este
+  stairs(-62, 20, 62, 24, 0, .25, 4, 'z', -1, 'step');                   // gradas de la costanera hasta el río
+  lava.push({ min: [-200, -4, 24], max: [200, 0, 150], water: true, dps: 0 });   // el Paraná al sur: agua que mata, hasta el horizonte
+  lava.push({ min: [62, -4, -43], max: [200, 0, 24], water: true, dps: 0 });     // y al este
   add(-62, -6, 24, 62, -4, 42, 'rock');
   // límites: el fondo es la pared del edificio, al este una loma, al oeste una valla transparente
   add(50.4, -4, -43, 62, 10, -40, 'grass'); add(-50.4, -4, -43, 50.4, 12, -40, 'brick');
@@ -48,7 +48,7 @@ function buildCuartoTramo() {
   // del otro lado de la valla la costanera sigue (solo se ve, no se puede ir)
   add(-170, -.2, -40, -62, -.03, 8, 'grass', { nc: 1 }); add(-170, -.03, -26, -62, 0, 8, 'concrete', { nc: 1 });
   add(-170, -.2, 8, -62, 1, 20, 'tiles', { nc: 1 }); add(-170, 1, 11.8, -62, 1.02, 12.2, 'brick', { nc: 1 }); add(-170, 1, 16.8, -62, 1.02, 17.2, 'brick', { nc: 1 });
-  for (let i = 0; i < 4; i++) add(-170, -1.2, 23 - i, -62, -.5 + i * .5, 24 - i, 'step', { nc: 1 });
+  for (let i = 0; i < 4; i++) add(-170, -1, 23 - i, -62, .25 + i * .25, 24 - i, 'step', { nc: 1 });
   for (let x = -76; x >= -160; x -= 14) { farola(x, 19.6, 1); deco.push({ t: 'palm', x: x + 4, y: 1, z: 10.2, h: 8 }); }
   for (let x = -70; x >= -150; x -= 16) { add(x, 1, 12, x + 3.4, 1.45, 12.6, 'wood', { nc: 1 }); add(x, 1.45, 12.5, x + 3.4, 2, 12.6, 'wood', { nc: 1 }); }
   for (const [x, z] of [[-70, -30], [-86, -33], [-104, -29], [-122, -34], [-140, -30]]) deco.push({ t: 'tree', x, y: -.03, z, h: 6, r: 2.6 });
@@ -58,21 +58,23 @@ function buildCuartoTramo() {
   // franjas rojas de la costanera (solo pintura)
   add(-62, 1, 11.8, 62, 1.02, 12.2, 'brick', { nc: 1 }); add(-62, 1, 16.8, 62, 1.02, 17.2, 'brick', { nc: 1 });
   /* ---- edificio: fachada de dos plantas con arcadas, puertas y ventanas al balcón ---- */
-  const puertas = [D(-9.3, -5.7, 0, 4.2), D(-4.3, -.7, 0, 4.2), D(.7, 4.3, 0, 4.2), D(5.7, 9.3, 0, 4.2), D(-32, -28, 0, 3.6), D(28, 32, 0, 3.6)];
+  const puertas = [D(-9.3, -5.7, 0, 4.2), D(-4.3, -.7, 0, 4.2), D(.7, 4.3, 0, 4.2), D(5.7, 9.3, 0, 4.2), D(-32, -28, 0, 3.6), D(28, 32, 0, 3.6), D(-26.6, -24.2, 1, 3), D(24.2, 26.6, 1, 3), D(-36.4, -34, 1, 3), D(34, 36.4, 1, 3)];
   const salidas = [-34, -20, 0, 20, 34];
   for (const c of salidas) puertas.push(D(c - 1.5, c + 1.5, 6, 9.2));                       // puertas al balcón
   for (let c = -46; c <= 46; c += 6) if (salidas.every(d => Math.abs(c - d) >= 3.6)) puertas.push(D(c - 1.2, c + 1.2, 7.2, 9.6));   // ventanas
   wall(-50, -26.4, 50, -26, 0, 12, puertas, 'brick');
   wall(-50.4, -40, -50, -26.4, 0, 12, [D(-35, -31, 0, 3.4)], 'brick');                      // fondo del ala oeste, con puerta al patio
   wall(50, -40, 50.4, -26.4, 0, 12, [D(-35, -31, 0, 3.4), D(-39, -35, 6, 9.4)], 'brick');   // ala este: puerta al patio y puerta de la pasarela a 6 m
-  wall(-22.4, -40, -22, -26.4, 0, 12, [D(-37, -33, 0, 3.4), D(-38, -31, 6, 9.4)], 'brick'); // paredes del hall con paso a las alas, abajo y arriba
-  wall(22, -40, 22.4, -26.4, 0, 12, [D(-37, -33, 0, 3.4), D(-38, -31, 6, 9.4)], 'brick');
+  wall(-22.4, -40, -22, -26.4, 0, 12, [D(-39.5, -30.5, 0, 3.8), D(-38, -31, 6, 9.4)], 'brick'); // paredes del hall con paso a las alas, abajo y arriba
+  wall(22, -40, 22.4, -26.4, 0, 12, [D(-39.5, -30.5, 0, 3.8), D(-38, -31, 6, 9.4)], 'brick');
   add(-50.4, 12, -40, 50.4, 12.4, -25.8, 'roof');                        // techo
   add(-8, 12.4, -26.4, 8, 13.4, -26, 'brick'); add(-5, 13.4, -26.4, 5, 14.2, -26, 'brick');   // frontis
   add(-50.5, 11.4, -26.6, 50.5, 12, -25.8, 'whitewall', { nc: 1 });      // cornisa
   for (let x = -48; x <= 48; x += 12) add(x - .3, 0, -26, x + .3, 11.4, -25.8, 'whitewall', { nc: 1 });   // pilastras
   // piso alto: losa con huecos para las dos escaleras del hall
-  add(-50, 5.6, -40, 50, 6, -30, 'tiles'); add(-38, 5.6, -30, -22, 6, -26.4, 'tiles'); add(-10, 5.6, -30, 10, 6, -26.4, 'tiles'); add(22, 5.6, -30, 38, 6, -26.4, 'tiles');
+  add(-50, 5.6, -40, 50, 6, -38, 'tiles'); add(-50, 5.6, -38, -8, 6, -30, 'tiles'); add(8, 5.6, -38, 50, 6, -30, 'tiles');   // piso alto con un atrio abierto en el medio del hall (x -8..8)
+  add(-8, 6, -38.1, 8, 7, -38, 'rail', { nc: 1 }); add(-8.1, 6, -38, -8, 7, -30, 'rail', { nc: 1 }); add(8, 6, -38, 8.1, 7, -30, 'rail', { nc: 1 });
+  add(-38, 5.6, -30, -22, 6, -26.4, 'tiles'); add(-10, 5.6, -30, 10, 6, -26.4, 'tiles'); add(22, 5.6, -30, 38, 6, -26.4, 'tiles');
   stairs(10, -30, 22, -26.4, 0, .5, 12, 'x', -1, 'step'); stairs(-22, -30, -10, -26.4, 0, .5, 12, 'x', 1, 'step');
   stairs(38, -30, 50, -26.4, 0, .5, 12, 'x', -1, 'step'); stairs(-50, -30, -38, -26.4, 0, .5, 12, 'x', 1, 'step');   // escaleras internas de las alas
   /* ---- galería cubierta (abajo) y balcón corrido a 6 m con barandas ---- */
@@ -89,28 +91,34 @@ function buildCuartoTramo() {
   // saltador desde el andén hasta el balcón
   for (const s of [-1, 1]) pads.push({ x: s * 40, y: 0, z: -8, r: 1.1, t: [s * 40, 6, -24.2], apex: 2 });
   // hall: columnas, boletería y cajones
-  for (const x of [-12, 12]) add(x - .4, 0, -34.4, x + .4, 5.6, -33.6, 'whitewall');
+  for (const [x, z] of [[-8, -38], [8, -38], [-8, -30.3], [8, -30.3]]) add(x - .4, 0, z - .4, x + .4, 5.6, z + .4, 'whitewall');   // columnas del atrio
+  for (const s of [-1, 1]) pads.push({ x: s * 5.5, y: 0, z: -34, r: 1.1, t: [s * 15, 6, -33], apex: 1.5 });   // saltadores del atrio al corredor alto
   add(-4, 0, -39.4, 4, 1.1, -38.2, 'wood'); add(-4, 1.1, -39.4, 4, 1.2, -38.2, 'navy');
-  add(-19, 0, -39, -15, 1.25, -36.6, 'crate'); add(15, 0, -39, 19, 1.25, -36.6, 'crate'); add(-9, 0, -31.6, -6.4, 1.25, -30.6, 'crate'); add(6.4, 0, -31.6, 9, 1.25, -30.6, 'crate');
-  add(-10, 0, -34, -6, .45, -33.4, 'wood'); add(6, 0, -34, 10, .45, -33.4, 'wood'); add(-3, 0, -31.4, 3, 1.25, -30.6, 'whitewall');   // bancos y muro bajo
+  add(-19, 0, -39, -15, 1.25, -36.6, 'crate'); add(15, 0, -39, 19, 1.25, -36.6, 'crate');
+  add(-7, 0, -36.4, -4, .45, -35.8, 'wood'); add(4, 0, -36.4, 7, .45, -35.8, 'wood'); add(-7, 0, -32.2, -4, .45, -31.6, 'wood'); add(4, 0, -32.2, 7, .45, -31.6, 'wood'); add(-1.6, 0, -35.6, 1.6, .8, -32.4, 'smooth');   // bancos y altar del arma central
   add(-14, 0, -39.6, -10, 2.4, -37.4, 'wood'); add(10, 0, -39.6, 14, 2.4, -37.4, 'wood'); add(-14, 2.4, -39.6, -10, 2.6, -37.4, 'navy'); add(10, 2.4, -39.6, 14, 2.6, -37.4, 'navy');   // boleterías
-  add(-18, 6, -36.6, -12, 7.2, -35.4, 'crate'); add(12, 6, -36.6, 18, 7.2, -35.4, 'crate'); add(-3, 6, -33, 3, 7.2, -31.8, 'crate');
+  add(-18, 6, -36.6, -12, 7.2, -35.4, 'crate'); add(12, 6, -36.6, 18, 7.2, -35.4, 'crate');
   /* ---- por lado (oeste s=-1, este s=1): habitaciones, costanera y muelle ---- */
   for (const s of [-1, 1]) {
     const ax = (x0, y0, z0, x1, y1, z1, m, e) => add(s * x0, y0, z0, s * x1, y1, z1, m, e);
-    for (const x of [30, 42]) ax(x - .4, 0, -33.4, x + .4, 5.6, -32.6, 'whitewall');
-    ax(25, 0, -39, 29, 1.25, -37, 'crate'); ax(33, 0, -30.8, 37, 1.25, -29.2, 'crate'); ax(32, 0, -39.2, 35.5, 1.25, -37.6, 'crate'); ax(36, 6, -38, 40, 7.2, -36.6, 'crate'); ax(26, 6, -33.4, 30, 7.2, -32, 'crate');
-    // planta baja del ala: boletería, banco, muros bajos y un depósito al fondo con dos puertas
-    const mw = (x0, z0, x1, z1, y0, y1, doors, mat) => { const a = Math.min(s * x0, s * x1), b = Math.max(s * x0, s * x1); wall(a, z0, b, z1, y0, y1, doors.map(d => { const q = [s * d[0], s * d[1]].sort((u, v) => u - v); return D(q[0], q[1], d[2], d[3]); }), mat); };
-    mw(34, -36.2, 50, -35.8, 0, 5.6, [D(35.5, 37.5, 0, 3), D(45, 47, 0, 3)], 'whitewall');
-    ax(24, 0, -31.4, 31, 1.1, -30.6, 'wood'); ax(24, 1.1, -31.4, 31, 1.2, -30.6, 'navy'); ax(23.4, 0, -28.2, 27, .45, -27.6, 'wood'); ax(23.4, .45, -27.7, 27, 1, -27.6, 'wood');
-    ax(26, 0, -35, 32, 1.2, -34.6, 'whitewall'); ax(31.6, 0, -34.6, 32, 1.2, -32, 'whitewall');
-    ax(38, 0, -39.6, 41.5, 1.25, -38.4, 'crate'); ax(43, 0, -39.6, 48, 1.25, -38.4, 'crate'); ax(45, 1.25, -39.6, 47, 2.5, -38.4, 'crate'); ax(34.2, 0, -39.8, 35, 2.2, -37.4, 'metal');
-    // planta alta del ala: tabique con dos pasos y mesas
-    mw(34, -34.2, 50, -33.8, 6, 12, [D(36, 38, 6, 9), D(44, 47, 6, 9)], 'whitewall');
-    ax(24, 6, -32, 29, 6.9, -31, 'wood'); ax(24, 6.9, -32, 29, 7, -31, 'navy'); ax(34.5, 6, -31.6, 37, 6.45, -31, 'wood');
-    // barandas bajas (se saltan) y postes con aviso en el borde del agua: frenan al que viene corriendo
-    ax(36, -.5, 24, 36.2, .6, 36, 'rail'); ax(45.8, -.5, 24, 46, .6, 36, 'rail'); ax(36, -.5, 35.8, 46, .6, 36, 'rail');
+    for (const x of [30, 42]) ax(x - .4, 0, -33.4, x + .4, 5.6, -32.6, 'whitewall');   // columnas
+    /* planta baja del ala: entrepiso de madera a 3 m al fondo (columnas de hierro, baranda, escalera y un saltador), mostradores, bancos y muros bajos como cobertura */
+    ax(24, 2.8, -40, 48, 3, -36.4, 'wood'); ax(24, 3, -36.5, 48, 4, -36.4, 'rail', { nc: 1 });
+    for (const x of [26, 32, 38, 44]) ax(x - .15, 0, -36.7, x + .15, 2.8, -36.4, 'metal');
+    if (s > 0) stairs(24, -36.4, 30, -34.6, 0, .5, 6, 'x', -1, 'step'); else stairs(-30, -36.4, -24, -34.6, 0, .5, 6, 'x', 1, 'step');
+    pads.push({ x: s * 44, y: 0, z: -31.5, r: 1.1, t: [s * 40, 3, -38.2], apex: 1.2 });
+    ax(24, 0, -33.8, 28.5, 1.1, -33, 'wood'); ax(24, 1.1, -33.8, 28.5, 1.2, -33, 'navy'); ax(43, 0, -33.2, 47.5, 1.1, -32.4, 'wood'); ax(43, 1.1, -33.2, 47.5, 1.2, -32.4, 'navy');
+    ax(23.4, 0, -28.2, 27, .45, -27.6, 'wood'); ax(23.4, .45, -27.7, 27, 1, -27.6, 'wood'); ax(34, 0, -28.2, 37, .45, -27.6, 'wood'); ax(34, .45, -27.7, 37, 1, -27.6, 'wood');
+    ax(33, 0, -31.6, 37, 1.2, -31.2, 'whitewall'); ax(35, 0, -36, 38, 1.2, -35.6, 'whitewall');
+    ax(26, 0, -39.6, 29.5, 1.25, -38.4, 'crate'); ax(34, 0, -39.6, 38, 1.25, -38.4, 'crate'); ax(46, 0, -39.6, 49, 1.25, -38.4, 'crate');
+    /* planta alta del ala: columnas, mesa larga, estantes y cajones de cobertura; baranda en el hueco de la escalera */
+    for (const x of [30, 42]) ax(x - .4, 6, -33.4, x + .4, 12, -32.6, 'whitewall');
+    ax(28, 6, -35, 36, 6.9, -33.6, 'wood'); ax(28, 6.9, -35, 36, 7, -33.6, 'navy');
+    ax(24, 6, -39.8, 31, 8.2, -38.9, 'wood'); ax(39, 6, -39.8, 47, 8.2, -38.9, 'wood');
+    ax(46, 6, -36.6, 48.5, 7.2, -35, 'crate'); ax(36, 6, -38, 40, 7.2, -36.6, 'crate'); ax(26, 6, -33.4, 30, 7.2, -32, 'crate');
+    ax(38, 6, -30.1, 50, 7, -30, 'rail', { nc: 1 });
+    // barandas bajas (se saltan) en los muelles: frenan al que viene corriendo
+    ax(36, .25, 24, 36.2, 1.35, 36, 'rail'); ax(45.8, .25, 24, 46, 1.35, 36, 'rail'); ax(36, .25, 35.8, 46, 1.35, 36, 'rail');
     // costanera: bancos, glorieta, farolas
     ax(14, 1, 12, 18, 1.45, 12.6, 'wood'); ax(14, 1.45, 12.5, 18, 2, 12.6, 'wood'); ax(42, 1, 12, 46, 1.45, 12.6, 'wood'); ax(42, 1.45, 12.5, 46, 2, 12.6, 'wood');
     for (const [x, z] of [[28, 11], [36, 11], [28, 17], [36, 17]]) ax(x, 1, z, x + .3, 4.4, z + .3, 'wood');
@@ -119,8 +127,8 @@ function buildCuartoTramo() {
     for (const x of [12, 30, 48, 60]) farola(s * x, 19.6, 1);
     ax(2, 1, 19.9, 62, 2, 20, 'rail', { nc: 1 });
     // muelle sobre el río
-    add(Math.min(s * 36, s * 46), -.9, 24, Math.max(s * 36, s * 46), -.5, 36, 'wood');
-    for (const [x, z] of [[36, 24.2], [45.7, 24.2], [36, 35.7], [45.7, 35.7]]) ax(x, -4, z, x + .3, -.9, z + .3, 'wood');
+    add(Math.min(s * 36, s * 46), -.15, 24, Math.max(s * 36, s * 46), .25, 36, 'wood');
+    for (const [x, z] of [[36, 24.2], [45.7, 24.2], [36, 35.7], [45.7, 35.7]]) ax(x, -4, z, x + .3, -.15, z + .3, 'wood');
     deco.push({ t: 'bush', x: s * 55, y: -.03, z: -4, r: 1.1 }, { t: 'bush', x: s * 58, y: -.03, z: -8, r: 1 }, { t: 'palm', x: s * 56, y: -.03, z: -2, h: 9 });
   }
   /* ---- andamio del oeste: tramo de abajo, plataforma a 3 m (megasalud) y tramo que entra al balcón ---- */
@@ -199,16 +207,16 @@ function buildCuartoTramo() {
   deco.push({ t: 'tree', x: -54, y: -.03, z: -36, h: 6, r: 2.6 }, { t: 'tree', x: -58, y: -.03, z: -33, h: 5.5, r: 2.3 });
   // lanchas sobre el río (solo se ven)
   for (const [x, z, r] of [[-22, 62, 0], [30, 80, 1], [75, 55, 0]]) {
-    add(x, -1.2, z, x + 3, -.4, z + 9, 'wood', { nc: 1 }); add(x + .4, -.4, z + 2, x + 2.6, .9, z + 5.5, 'whitewall', { nc: 1 }); add(x + .3, .9, z + 1.8, x + 2.7, 1.1, z + 5.7, 'barn', { nc: 1 });
-    if (r) add(x + 1.4, .9, z + 3, x + 1.6, 3.2, z + 3.2, 'metal', { nc: 1 });
+    add(x, -.3, z, x + 3, .5, z + 9, 'wood', { nc: 1 }); add(x + .4, .5, z + 2, x + 2.6, 1.8, z + 5.5, 'whitewall', { nc: 1 }); add(x + .3, 1.8, z + 1.8, x + 2.7, 2, z + 5.7, 'barn', { nc: 1 });
+    if (r) add(x + 1.4, 2, z + 3, x + 1.6, 4.3, z + 3.2, 'metal', { nc: 1 });
   }
   /* ---- muros invisibles (nadie sale por arriba de la valla ni de las paredes) y barandas bajas en la orilla ---- */
   add(-62.5, -4, -43, -62, 40, 43, 'clip'); add(-62.5, -4, -40.5, -50.4, 40, -40, 'clip');
   add(-63, 12, -43, 63, 40, -40, 'clip'); add(50.4, 10, -43, 62, 40, -40, 'clip');
-  add(-62, -.5, 23.8, -46, .6, 24, 'rail'); add(-36, -.5, 23.8, 36, .6, 24, 'rail'); add(46, -.5, 23.8, 62, .6, 24, 'rail');   // sobre el último escalón de la costanera
+  add(-62, .25, 23.8, -46, 1.35, 24, 'rail'); add(-36, .25, 23.8, 36, 1.35, 24, 'rail'); add(46, .25, 23.8, 62, 1.35, 24, 'rail');   // sobre el último escalón de la costanera
   add(61.5, 0, -40, 62, 1, 8, 'rail'); add(61.5, 1, 8, 62, 2, 20, 'rail'); add(61.5, -1, 20, 62, 1.6, 24, 'rail');             // borde este
-  for (const x of [-56, -30, -10, 10, 30, 56, -35, 35]) { add(x - .07, -.5, 23.45, x + .07, 1.25, 23.59, 'wood'); deco.push({ t: 'aviso', x, y: 1.6, z: 23.52, ry: 0 }); }
-  for (const [z, y] of [[-30, 0], [-14, 0], [-2, 0], [14, 1]]) { add(61.1, y, z - .07, 61.24, y + 1.75, z + .07, 'wood'); deco.push({ t: 'aviso', x: 61.17, y: y + 2.1, z, ry: -Math.PI / 2 }); }
+  for (const x of [-30, 30]) { add(x - .07, .25, 23.45, x + .07, 1.95, 23.59, 'wood'); deco.push({ t: 'aviso', x, y: 2.3, z: 23.52, ry: 0 }); }
+  for (const [z, y] of [[-4, 0]]) { add(61.1, y, z - .07, 61.24, y + 1.75, z + .07, 'wood'); deco.push({ t: 'aviso', x: 61.17, y: y + 2.1, z, ry: -Math.PI / 2 }); }
   /* ---- carteles ---- */
   deco.push({ t: 'cartel', x: 0, y: 10.9, z: -25.97, w: 10, h: 1.4, txt: 'ESTACIÓN POSADAS', bg: '#5a2a1c', fg: '#f3d9a8' });
   add(-3.6, 1, 8.9, -3.4, 3.4, 9.1, 'metal'); add(3.4, 1, 8.9, 3.6, 3.4, 9.1, 'metal');
@@ -220,17 +228,17 @@ function buildCuartoTramo() {
   deco.push({ t: 'portal', x: -44, y: 0, z: -6, r: 1, color: 'yellow' }, { t: 'portal', x: 47.5, y: 6, z: -24.2, r: .9, color: 'blue' });
   /* ---- ítems: todo lo que ya existe, repartido por zonas ---- */
   // hall y piso alto
-  I('w2', 0, 0, -34); I('w3', 7, 0, -36.5); I('health', -8, 0, -38); I('health', 8, 0, -38); I('armor', -8, 0, -29.5); I('shells', 8, 0, -29.5);
-  I('bullets', 0, 6, -36); I('armorH', -17, 6, -38); I('health', 17, 6, -38); I('slugs', 0, 6, -28);
+  I('w2', 0, .8, -34); I('w3', 7, 0, -37); I('health', -6, 0, -38.6); I('health', 6, 0, -38.6); I('armor', -8, 0, -29.5); I('shells', 8, 0, -29.5);
+  I('bullets', 0, 6, -39); I('armor', -30, 3, -38.2); I('armor', 30, 3, -38.2); I('armorH', -17, 6, -38); I('health', 17, 6, -38); I('slugs', 0, 6, -28);
   // ala oeste: planta baja y habitación alta
-  I('w1', -36, 0, -34); I('armor', -46, 0, -33); I('health', -30, 0, -30); I('bullets', -40, 0, -31); I('armor', -41, 0, -37.2);
+  I('w1', -36, 0, -34); I('armor', -47, 0, -35.5); I('health', -30, 0, -30); I('bullets', -40, 0, -31); I('armor', -41, 0, -37.2);
   I('w2', -36, 6, -32); I('health', -28, 6, -30); I('grenades', -44, 6, -32); I('shells', -44, 6, -37.5);
   // ala este
-  I('w4', 36, 0, -34); I('armor', 46, 0, -33); I('armor', 41, 0, -37.2); I('health', 30, 0, -30); I('rockets', 40, 0, -31);
+  I('w4', 36, 0, -34); I('armor', 47, 0, -35.5); I('armor', 41, 0, -37.2); I('health', 30, 0, -30); I('rockets', 40, 0, -31);
   I('w9', 36, 6, -32); I('armor', 28, 6, -30); I('rockets', 44, 6, -32); I('health', 44, 6, -37.5);
   // balcón
-  I('health', 0, 6, -24.2); I('armor', -30, 6, -24.2); I('armor', 30, 6, -24.2); I('health', 20, 10.15, -24.4); I('armor', 44, 10.15, -24.4);
-  // locomotora: daño cuádruple en la cabina, botiquín arriba de la caldera
+  I('health', 0, 6, -24.2); I('armor', -30, 6, -24.2); I('armor', 30, 6, -24.2); I('health', 20, 10.15, -24.4); I('health', -44, 3, -38.2); I('health', 44, 3, -38.2); I('armor', 44, 10.15, -24.4);
+  // locomotora: daño triple en la cabina, botiquín arriba de la caldera
   I('quad', 4, 1.6, -14); I('health', -8, 4.2, -14);
   // andén
   I('health', -19, 0, -20); I('health', 19, 0, -20); I('armor', -24, 0, 3); I('armor', 24, 0, 5); I('w1', 4, 0, -2); I('shells', -12, 0, -7); I('bullets', 12, 0, -7);
@@ -239,13 +247,13 @@ function buildCuartoTramo() {
   I('health', -32, 1, 14); I('health', 32, 1, 14); I('health', 0, 1, 16); I('w3', -14, 1, 15); I('caza', 14, 1, 15); I('grenades', -48, 1, 12); I('rockets', 48, 1, 16); I('slugs', -8, 1, 13);
   // patios, andamios y muelles (premios con riesgo: el agua mata)
   I('health', -56, 0, -6); I('health', 56, 0, -6); I('armor', -56, 0, -1); I('slugs', 56, 0, -1);
-  I('armorH', -41, -.5, 32); I('armorH', 41, -.5, 32);
+  I('armorH', -41, .25, 32); I('armorH', 41, .25, 32);
   I('mega', -58.5, 3, -22); I('health', -58.5, 3, -19.5);
   I('w6', 58.5, 3, -24); I('w6', 58.5, 3, -20); I('health', 55, 6, -37); I('w8', 58.5, 9, -22); I('w5', 54.5, 9, -20.5);
   /* ---- apariciones: andén, balcón, costanera, patios, hall, alas y habitaciones ---- */
   [[-36, 0, -17], [-12, 0, -20], [12, 0, -20], [36, 0, -17], [-20, 0, -8], [0, 0, -6], [20, 0, -8], [-40, 0, 0], [40, 0, 0], [-10, 0, 5], [10, 0, 5],
    [-50, 1, 14], [-25, 1, 16], [0, 1, 12], [25, 1, 16], [50, 1, 14], [-56, 0, -10], [56, 0, -10],
-   [-14, 0, -34], [14, 0, -34], [0, 0, -30], [-14, 6, -36], [14, 6, -36], [-32, 0, -37], [32, 0, -37], [-34, 6, -30], [34, 6, -30],
+   [-14, 0, -34], [14, 0, -34], [0, 0, -30], [-14, 6, -33], [14, 6, -33], [-32, 0, -37], [32, 0, -37], [-34, 6, -30], [34, 6, -30],
    [-30, 6, -24.2], [-10, 6, -24.2], [10, 6, -24.2], [30, 6, -24.2]]
     .forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
   /* ---- luces ---- */

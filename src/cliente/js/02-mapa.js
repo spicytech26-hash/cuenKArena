@@ -139,8 +139,8 @@ function loadMap(id){
     m.rotation.y=Math.atan2(p.t[0]-p.x,p.t[2]-p.z)+Math.PI;m.position.set(p.x,p.y+.07,p.z);group.add(m);L.pads.push({m,p});
   }
   for(const t of M.teles){
-    const ring=new THREE.Mesh(new THREE.TorusGeometry(t.r,.08,8,24),new THREE.MeshBasicMaterial({color:t.color==='yellow'?0xffc83a:0x6fd8ff}));ring.rotation.x=Math.PI/2;ring.position.set(t.x,t.y+.05,t.z);group.add(ring);
-    const disc=new THREE.Mesh(new THREE.CircleGeometry(t.r,24),new THREE.MeshBasicMaterial({color:t.color==='yellow'?0xffa81a:0x2a8cff,transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false}));disc.rotation.x=-Math.PI/2;disc.position.set(t.x,t.y+.04,t.z);group.add(disc);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(t.r,.08,8,24),new THREE.MeshBasicMaterial({color:t.color==='yellow'?0xffc83a:0x6fd8ff}));ring.rotation.x=Math.PI/2;ring.position.set(t.x,t.y+.05,t.z);if(!t.color)group.add(ring);
+    const disc=new THREE.Mesh(new THREE.CircleGeometry(t.r,24),new THREE.MeshBasicMaterial({color:t.color==='yellow'?0xffa81a:0x2a8cff,transparent:true,opacity:t.color?.22:.5,blending:THREE.AdditiveBlending,depthWrite:false}));disc.rotation.x=-Math.PI/2;disc.position.set(t.x,t.y+.04,t.z);group.add(disc);
     L.teles.push(t);
   }
   L.items=M.items.map(it=>{const g=buildItem(it.type);g.position.set(it.x,it.y+.6,it.z);group.add(g);return {g,it,ty:it.type,ph:Math.random()*6};});

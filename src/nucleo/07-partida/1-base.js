@@ -79,7 +79,7 @@ class Game {
   humanCount(all) { let n = 0; for (const p of this.players.values()) if (!p.bot && (all || p.joined)) n++; return n; }
   bcast(m, except) { for (const p of this.players.values()) if (p.send && p.joined && p.id !== except) p.send(m); }
   roster() { return [...this.players.values()].filter(p => p.joined).map(p => [p.id, p.name, p.color, p.bot ? 1 : 0, p.skin, p.team]); }
-  mult(p) { return p.quadT > 0 ? 4 : 1; }
+  mult(p) { return p.quadT > 0 ? 3 : 1; }   // el orbe violeta: daño triple
 
   /* ---- mensajes de clientes ---- */
   onMessage(id, m) {

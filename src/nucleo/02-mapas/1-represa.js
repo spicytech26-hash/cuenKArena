@@ -25,7 +25,7 @@ function buildRepresa() {
   //   te suben hasta casi el borde y de ahí saltás afuera. Siempre hay una subiendo.
   [[-3.5, -3.5, 0], [3.5, -3.5, 1], [3.5, 3.5, 2], [-3.5, 3.5, 3]].forEach(([x, z, k]) =>
     mover(x - .9, -4.7, z - .9, x + .9, -3.75, z + .9, 'basalt', 1, 3.2, 4.8, k * Math.PI / 2));
-  // plataforma del daño cuádruple y piedras para llegar
+  // plataforma del daño triple y piedras para llegar
   add(-2, 6.6, -2, 2, 7, 2, 'metal');
   [[6.5, 0], [-6.5, 0], [0, 6.5], [0, -6.5]].forEach(([x, z]) => add(x - 1, 6.1, z - 1, x + 1, 6.5, z + 1, 'metal'));
   // balcón perimetral

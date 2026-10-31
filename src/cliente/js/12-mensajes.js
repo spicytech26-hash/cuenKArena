@@ -230,7 +230,7 @@ function onFlag(m){
 function onPickup(type){
   const inf=C.ITEMS[type];
   G.pick=.5;$('pick').textContent='Recogiste: '+inf.name+(inf.ammo&&inf.weapon==null?' +'+inf.n:'');$('pick').classList.remove('show');void $('pick').offsetWidth;$('pick').classList.add('show');
-  if(type==='quad'){SFX.quad();announce('DAÑO CUÁDRUPLE','30 segundos');}
+  if(type==='quad'){SFX.quad();announce('DAÑO TRIPLE','30 segundos');}
   else if(type==='mega')SFX.mega();else if(type==='armor'||type==='armorH')SFX.armor();else if(inf.weapon!=null)SFX.weapon();else SFX.pick();
 }
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));

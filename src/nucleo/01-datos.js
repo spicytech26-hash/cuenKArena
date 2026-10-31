@@ -51,7 +51,7 @@ const ITEMS = {
   mega:   { name: 'Megasalud', respawn: 35 },
   armor:  { name: 'Chaleco', respawn: 25 },
   armorH: { name: 'Armadura pesada', respawn: 30 },
-  quad:   { name: 'Daño cuádruple', respawn: 60 },
+  quad:   { name: 'Daño triple', respawn: 60 },
   w1: { weapon: 1, ammo: 'shells', n: 10, respawn: 10 },
   w2: { weapon: 2, ammo: 'shells', n: 10, respawn: 10 },
   w3: { weapon: 3, ammo: 'bullets', n: 50, respawn: 10 },

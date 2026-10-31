@@ -1,5 +1,6 @@
 /* ---------- decoración de La Cuenca: nada de esto choca, es solo visual ---------- */
 const decoMat={};
+const portalAnim=[];   // portales con vórtice animado (se mueven en el bucle de la cámara)
 function ucpLogo(g,cx,cy,r){
   // logo circular: aro verde-amarillo, centro blanco y la onda azul del río
   const gr=g.createLinearGradient(cx-r,cy-r,cx+r,cy+r);gr.addColorStop(0,'#0f8d48');gr.addColorStop(.6,'#5fb43a');gr.addColorStop(1,'#d7d630');
@@ -21,6 +22,7 @@ function buildDeco(group,list){
   const cil=(r1,r2,h,x,y,z,eje)=>{const g=new THREE.CylinderGeometry(r1,r2,h,eje==='z'?24:16);if(eje==='x')g.rotateZ(Math.PI/2);else if(eje==='z')g.rotateX(Math.PI/2);g.translate(x,y,z);return g;};
   const bake=(g,x,y,z,ry,rx)=>{const o=new THREE.Object3D();o.position.set(x,y,z);o.rotation.set(0,ry||0,0);if(rx)o.rotateX(rx);o.updateMatrix();g.applyMatrix4(o.matrix);return g;};
   const vTr=[],vLf=[],vBu=[],vCo=[],vAv=[];
+  portalAnim.length=0;
   for(const d of list){
     if(d.t==='palm'){
       const tg=new THREE.CylinderGeometry(.2,.32,d.h,8);tg.rotateZ(.05);tg.translate(d.x,d.y+d.h/2,d.z);vTr.push(tg);
@@ -98,16 +100,38 @@ function buildDeco(group,list){
       // cartel de «prohibido nadar» (cuadrado blanco, círculo rojo tachado y nadador): todos los avisos van en una sola malla, con las dos caras
       for(const sg of [1,-1]){const g=new THREE.PlaneGeometry(1.1,1.1);if(sg<0)g.rotateY(Math.PI);g.translate(0,0,.02*sg);vAv.push(bake(g,d.x,d.y,d.z,d.ry||0,0));}
     }else if(d.t==='portal'){
-      // portal vertical (solo se ve; el teletransporte lo hace el servidor con 'teles'): aro y remolino de luz, de color d.color
-      const col=d.color==='yellow'?['255,210,60','255,150,20']:['110,200,255','40,110,255'],ry=d.r*1.25;
-      const sw=cv(128,160,(g,w,h)=>{g.clearRect(0,0,w,h);const rg=g.createRadialGradient(w/2,h/2,4,w/2,h/2,w/2);rg.addColorStop(0,'rgba(255,255,255,.9)');rg.addColorStop(.35,'rgba('+col[0]+',.55)');rg.addColorStop(1,'rgba('+col[1]+',.12)');g.fillStyle=rg;g.beginPath();g.ellipse(w/2,h/2,w/2-2,h/2-2,0,0,7);g.fill();
-        g.strokeStyle='rgba(255,255,255,.7)';g.lineWidth=3;for(let k=0;k<3;k++){g.beginPath();for(let a=0;a<9;a+=.2){const rr=4+a*5.2;g.lineTo(w/2+Math.cos(a+k*2.1)*rr*.95,h/2+Math.sin(a+k*2.1)*rr*1.2);}g.stroke();}});
-      const g3=new THREE.Group();g3.position.set(d.x,d.y+ry,d.z);g3.rotation.y=d.ry||0;
-      const swM=new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(sw),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}),ringM=new THREE.MeshBasicMaterial({color:d.color==='yellow'?0xffd24a:0x7fd8ff});
-      // dos aros cruzados: se ve de frente desde cualquier lado
-      for(const ry2 of [0,Math.PI/2]){const pg=new THREE.Group();pg.rotation.y=ry2;pg.add(new THREE.Mesh(new THREE.PlaneGeometry(d.r*2,ry*2),swM));
-        const ring=new THREE.Mesh(new THREE.TorusGeometry(d.r,.09,6,28),ringM);ring.scale.y=1.25;pg.add(ring);g3.add(pg);}
-      group.add(g3);
+      // portal: marco de metal oscuro con pilares y runas, aro de luz, vórtice de dos capas que gira, halo y chispas (solo se ve; el teletransporte lo hace el servidor con 'teles')
+      const am=d.color==='yellow',hex=am?0xffc43a:0x4aa8ff,c1=am?'255,215,90':'150,220,255',c2=am?'255,140,20':'40,110,255',ch=am?'255,170,40':'60,140,255';
+      const rx=d.r*1.05,ry=d.r*1.55,cy=ry+.14,g3=new THREE.Group();g3.position.set(d.x,d.y+cy,d.z);g3.rotation.y=d.ry||0;
+      const seg=[],lum=[];
+      for(let i=0;i<28;i++){const a=i/28*Math.PI*2,px=Math.cos(a)*(rx+.13),py=Math.sin(a)*(ry+.13),tg=Math.atan2(ry*Math.cos(a),-rx*Math.sin(a));
+        const b=new THREE.BoxGeometry(.4,.3,.42);b.rotateZ(tg);b.translate(px,py,0);seg.push(b);
+        if(i%2===0){const r2=new THREE.BoxGeometry(.13,.13,.5);r2.rotateZ(tg);r2.translate(px,py,0);lum.push(r2);}}
+      const bs=new THREE.BoxGeometry(rx*3,.3,1.2);bs.translate(0,-cy+.15,0);seg.push(bs);                                   // base
+      for(const sx of [-1,1]){const pl=new THREE.BoxGeometry(.36,ry*1.35,.7);pl.translate(sx*(rx+.62),-cy+.3+ry*.675,0);seg.push(pl);   // pilares a los lados
+        const tp=new THREE.BoxGeometry(.2,.2,.8);tp.translate(sx*(rx+.62),-cy+.3+ry*1.35+.1,0);lum.push(tp);}
+      const frM=M_('pMarco',()=>new THREE.MeshPhongMaterial({color:0x2b2e34,shininess:70,flatShading:true}));
+      g3.add(new THREE.Mesh(unir(seg),frM));
+      g3.add(new THREE.Mesh(unir(lum),new THREE.MeshBasicMaterial({color:hex})));
+      const aro=new THREE.Mesh(new THREE.TorusGeometry(1,.045,8,64),new THREE.MeshBasicMaterial({color:hex}));aro.scale.set(rx,ry,1);g3.add(aro);
+      // vórtice: dos capas en espiral (cuadradas en el canvas, se estiran a la elipse) que giran en sentidos opuestos
+      const swirl=(arms,rev)=>{const t=new THREE.CanvasTexture(cv(256,256,(g,w,h)=>{
+          g.clearRect(0,0,w,h);const rg=g.createRadialGradient(128,128,4,128,128,124);rg.addColorStop(0,'rgba(255,255,255,.95)');rg.addColorStop(.25,'rgba('+c1+',.7)');rg.addColorStop(.7,'rgba('+c2+',.35)');rg.addColorStop(1,'rgba('+c2+',0)');
+          g.fillStyle=rg;g.beginPath();g.arc(128,128,124,0,7);g.fill();g.lineCap='round';
+          for(let k=0;k<arms;k++)for(let u=0;u<1;u+=.012){const r=8+u*112,an=k*Math.PI*2/arms+u*5.2*rev;g.strokeStyle='rgba(255,255,255,'+(.85*(1-u))+')';g.lineWidth=2+(1-u)*9;g.beginPath();g.moveTo(128+Math.cos(an)*r,128+Math.sin(an)*r);g.lineTo(128+Math.cos(an+.07*rev)*(r+1.4),128+Math.sin(an+.07*rev)*(r+1.4));g.stroke();}
+          g.strokeStyle='rgba('+c1+',.35)';g.lineWidth=2;for(const rr of [40,70,100]){g.beginPath();g.arc(128,128,rr,0,7);g.stroke();}
+        }));t.center.set(.5,.5);return t;};
+      const t1=swirl(5,1),t2=swirl(3,-1);
+      const am1={transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide};
+      const m1=new THREE.MeshBasicMaterial(Object.assign({map:t1},am1)),m2=new THREE.MeshBasicMaterial(Object.assign({map:t2},am1));
+      const v1=new THREE.Mesh(new THREE.PlaneGeometry(rx*2,ry*2),m1),v2=new THREE.Mesh(new THREE.PlaneGeometry(rx*1.7,ry*1.7),m2);v2.position.z=.03;g3.add(v1,v2);
+      const halo=new THREE.Mesh(new THREE.PlaneGeometry(rx*3.4,ry*3),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv(128,128,(g,w,h)=>{const r=g.createRadialGradient(64,64,6,64,64,64);r.addColorStop(0,'rgba('+ch+',.55)');r.addColorStop(1,'rgba('+ch+',0)');g.fillStyle=r;g.fillRect(0,0,w,h);})),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+      halo.position.z=-.05;g3.add(halo);
+      // chispas alrededor del marco
+      const pp=[];for(let i=0;i<46;i++){const a=Math.random()*Math.PI*2,k=1.05+Math.random()*.6;pp.push(Math.cos(a)*rx*k,Math.sin(a)*ry*k,(Math.random()-.5)*1.1);}
+      const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.Float32BufferAttribute(pp,3));
+      const pts=new THREE.Points(pg,new THREE.PointsMaterial({color:hex,size:.13,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));g3.add(pts);
+      group.add(g3);portalAnim.push({t1,t2,pts,m2,ph:Math.random()*6});
     }else if(d.t==='logo'){
       const c=cv(256,256,(g)=>ucpLogo(g,128,128,124));
       const m=new THREE.Mesh(new THREE.CircleGeometry(d.r,40),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));m.position.set(d.x,d.y,d.z);group.add(m);

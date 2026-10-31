@@ -281,7 +281,8 @@ Inspirado en el cuarto tramo de la Costanera de Posadas, **al atardecer** (cielo
 - **Orilla segura:** el agua está casi a ras de la costanera, así que tocarla mata al instante. Barandas bajas que se saltan y tres carteles de «prohibido nadar» frenan al que viene corriendo. La valla del oeste tiene un muro invisible por arriba.
 - **Al oeste** hay una valla transparente: del otro lado la costanera sigue (paseo, farolas, bancos, árboles y casas), pero solo se ve.
 - **Detalles de la estación real:** alero de chapa sobre el balcón con columnas de hierro, marcos blancos en puertas y ventanas, canteros con plantas, banderines, farolas con farol, buzón, cartel «POSADAS», banderas de Argentina y Misiones, y lanchas sobre el río.
-- **Dos portales enfrentados** (marco de metal con pilares y runas, vórtice que gira y chispas): el amarillo está en el andén oeste y el azul en el balcón este (lejos entre sí). Entrás por uno y salís delante del otro.
+- **Dos portales enfrentados** a campo abierto, sin nada que los tape: el amarillo en el andén oeste y el azul en el andén este (marco de metal con pilares y runas, vórtice que gira y chispas; se ven de frente desde cualquier lado). Entrás por uno y salís delante del otro.
+- **Texturas «Unreal Tournament lovecraftiano»** solo en este mapa: ladrillo mugriento con musgo, hormigón húmedo con grietas, metal oxidado con pátina verdosa, madera gastada, yeso con manchas de humedad y runas apenas visibles, y un río negro verdoso. Los demás mapas conservan sus texturas.
 - Los botones del menú y la votación lo toman solos; la foto de la votación es opcional (`public/maps/cuartotramo.jpg`).
 
 ## Novedades de La Cuenca y Humita

@@ -131,7 +131,7 @@ function buildDeco(group,list){
       const pp=[];for(let i=0;i<46;i++){const a=Math.random()*Math.PI*2,k=1.05+Math.random()*.6;pp.push(Math.cos(a)*rx*k,Math.sin(a)*ry*k,(Math.random()-.5)*1.1);}
       const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.Float32BufferAttribute(pp,3));
       const pts=new THREE.Points(pg,new THREE.PointsMaterial({color:hex,size:.13,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));g3.add(pts);
-      group.add(g3);portalAnim.push({t1,t2,pts,m2,ph:Math.random()*6});
+      group.add(g3);portalAnim.push({g:g3,t1,t2,pts,m2,ph:Math.random()*6});
     }else if(d.t==='logo'){
       const c=cv(256,256,(g)=>ucpLogo(g,128,128,124));
       const m=new THREE.Mesh(new THREE.CircleGeometry(d.r,40),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));m.position.set(d.x,d.y,d.z);group.add(m);

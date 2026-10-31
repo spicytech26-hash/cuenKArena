@@ -107,7 +107,7 @@ class Game {
         if (!p.joined || !p.alive) return;
         const a = m.p, v = m.v;
         if (!Array.isArray(a) || a.length !== 3 || !a.every(Number.isFinite)) return;
-        p.s.x = clamp(a[0], -60, 60); p.s.y = clamp(a[1], -40, 60); p.s.z = clamp(a[2], -60, 60);
+        p.s.x = clamp(a[0], -260, 260); p.s.y = clamp(a[1], -40, 60); p.s.z = clamp(a[2], -260, 260);   // el mapa ancho y el agua llegan más allá de ±60
         if (Array.isArray(v) && v.length === 3 && v.every(Number.isFinite)) { p.s.vx = clamp(v[0], -80, 80); p.s.vy = clamp(v[1], -80, 80); p.s.vz = clamp(v[2], -80, 80); }
         if (Number.isFinite(m.y)) p.yaw = m.y; if (Number.isFinite(m.x)) p.pitch = clamp(m.x, -1.6, 1.6);
         if (Number.isInteger(m.w) && m.w >= 0 && m.w < NW && p.ow[m.w]) p.w = m.w;

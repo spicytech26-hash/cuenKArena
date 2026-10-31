@@ -1,5 +1,6 @@
 /* =================== GEOMETRÍA DEL MAPA =================== */
 let level=null;
+let MATSX=MATS;   // juego de materiales del mapa actual (las texturas «ut» solo las usan los mapas con theme.tex==='ut')
 const sky=new THREE.Mesh(new THREE.SphereGeometry(400,32,16),new THREE.MeshBasicMaterial({fog:false,side:THREE.BackSide,depthWrite:false}));sky.renderOrder=-1;scene.add(sky);
 function skyDay(){return cv(1024,512,(g,w,h)=>{
   // tarde soleada en Posadas: celeste, nubes de algodón y la ciudad baja en el horizonte
@@ -39,7 +40,7 @@ function geoOf(d){const geo=new THREE.BufferGeometry();geo.setAttribute('positio
 const matCache={};
 function matOf(m){
   if(matCache[m])return matCache[m];
-  const md=MATS[m]||MATS.wall;
+  const md=MATSX[m]||MATSX.wall;
   const mat=new THREE.MeshPhongMaterial({map:md.t,vertexColors:true,shininess:md.shin,specular:0x2a241d});
   if(md.alpha){mat.transparent=true;mat.side=THREE.DoubleSide;if(m==='tube'){mat.depthWrite=false;}else mat.alphaTest=.4;}
   if(md.em){mat.emissiveMap=md.em;mat.emissive=new THREE.Color(m==='led'?0xbbbbbb:0xffffff);}
@@ -75,6 +76,7 @@ function loadMap(id){
   const group=new THREE.Group();scene.add(group);
   const L={group,items:[],pads:[],teles:[],lavaTexs:[],waterTexs:[],movers:[],club:null,maplights:[],flags:[]};
   const th=M.theme;
+  {const ut=th.tex==='ut';if(ut&&!UTset)UTset=buildUT();const nm=ut?UTset.mats:MATS;if(nm!==MATSX){MATSX=nm;for(const k in matCache)delete matCache[k];}}
   scene.fog.color.setHex(th.fog);scene.fog.density=th.fogD;scene.background.setHex(th.fog);
   sky.material.map=skyTex[th.sky]||skyTex.dusk;sky.material.needsUpdate=true;
   const groups={};
@@ -83,12 +85,12 @@ function loadMap(id){
     if(NEON[b.mat]){const m=new THREE.Mesh(new THREE.BoxGeometry(b.max[0]-b.min[0],b.max[1]-b.min[1],b.max[2]-b.min[2]),new THREE.MeshBasicMaterial({color:NEON[b.mat]}));m.position.set((b.min[0]+b.max[0])/2,(b.min[1]+b.max[1])/2,(b.min[2]+b.max[2])/2);group.add(m);continue;}
     if(b.mover)continue;
     const g=groups[b.mat]||(groups[b.mat]={p:[],n:[],u:[],c:[],i:[]});
-    brushFaces(g,b,(MATS[b.mat]||MATS.wall).sc);
+    brushFaces(g,b,(MATSX[b.mat]||MATSX.wall).sc);
   }
   for(const m in groups)group.add(new THREE.Mesh(geoOf(groups[m]),matOf(m)));
   for(const b of M.movers){
     const m0=b.mover,d={p:[],n:[],u:[],c:[],i:[]};
-    brushFaces(d,{min:m0.min0,max:m0.max0},(MATS[b.mat]||MATS.wall).sc,m0.min0[0],m0.min0[1],m0.min0[2]);
+    brushFaces(d,{min:m0.min0,max:m0.max0},(MATSX[b.mat]||MATSX.wall).sc,m0.min0[0],m0.min0[1],m0.min0[2]);
     const mesh=new THREE.Mesh(geoOf(d),matOf(b.mat));group.add(mesh);
     const glow=new THREE.Mesh(new THREE.BoxGeometry(m0.max0[0]-m0.min0[0]+.06,.06,m0.max0[2]-m0.min0[2]+.06),new THREE.MeshBasicMaterial({color:0x2be6ff}));
     glow.position.set((m0.max0[0]-m0.min0[0])/2,-.03,(m0.max0[2]-m0.min0[2])/2);mesh.add(glow);
@@ -96,7 +98,7 @@ function loadMap(id){
   }
   for(const l of M.lava){
     const w=l.max[0]-l.min[0],d=l.max[2]-l.min[2];
-    const t=(l.water?waterTex:lavaTex).clone();t.needsUpdate=true;t.repeat.set(w/(l.water?8:4),d/(l.water?8:4));(l.water?L.waterTexs:L.lavaTexs).push(t);
+    const t=(l.water?(UTset&&MATSX===UTset.mats?UTset.water:waterTex):lavaTex).clone();t.needsUpdate=true;t.repeat.set(w/(l.water?8:4),d/(l.water?8:4));(l.water?L.waterTexs:L.lavaTexs).push(t);
     const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),l.water?new THREE.MeshPhongMaterial({map:t,shininess:120,specular:0xffd0a0,transparent:true,opacity:.92}):new THREE.MeshBasicMaterial({map:t,fog:false}));
     m.rotation.x=-Math.PI/2;m.position.set((l.min[0]+l.max[0])/2,l.max[1],(l.min[2]+l.max[2])/2);group.add(m);
   }

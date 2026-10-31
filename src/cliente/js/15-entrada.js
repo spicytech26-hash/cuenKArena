@@ -35,7 +35,7 @@ canvas.addEventListener('mousedown',e=>{
   if(chatOpen)closeChat(false,false);
   if(!$('inter').hidden)return;   // en el fin de partida el mouse queda libre para los botones
   if(document.pointerLockElement!==canvas){lockPointer();return;}
-  if(e.button===0){mouseDown=true;}
+  if(e.button===0){mouseDown=true;if(!me.alive)kcClick();}
   // click derecho corto = la mira queda puesta (otro click la saca); mantenido = se saca al soltar
   if(e.button===2&&me.alive&&WEAPONS[me.w].scope){if(me.scope){me.scope=false;me.scopeHold=0;}else{me.scope=true;me.scopeHold=performance.now();SFX.ui();}}
 });

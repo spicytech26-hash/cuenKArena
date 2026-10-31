@@ -63,6 +63,7 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `js/16-simulacion.js` | movimiento propio e interpolación de los demás |
 | `js/17-hud.js` | HUD |
 | `js/18-camara.js` | cámara, arma en mano y jugadores remotos (`updRemote`) |
+| `js/18-killcam.js` | **killcam**: historial grabado de cada jugador, repetición en primera persona del asesino, espectador de otros vivos (clic izquierdo), arma en mano del que mirás (`povGun`). Opción `S.killcam` en Ajustes |
 | `js/19-mira-cuenta-fin.js` | mira personalizable, cuentas de Google, pantalla de fin de partida |
 | `js/20-modelos-glb.js` | carga de modelos `.glb` |
 | `js/21-menu.js` | menú, ajustes, botones de mapa |

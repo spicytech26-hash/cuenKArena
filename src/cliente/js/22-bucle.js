@@ -21,11 +21,7 @@ function frame(now){
   updEffects(dt);renderLocker(dt);
   updLightSlots(dt);
   renderer.clear();renderer.render(scene,camera);
-  if(inGame&&!me.alive&&G.pov){
-    // arma del que te mató en primera persona
-    vms.forEach((v,k)=>v.visible=k===G.pov.w);const g=vms[G.pov.w];g.position.copy(vmBase[G.pov.w]);g.rotation.set(G.pov.w===7?.1:0,G.pov.w===7?.5:0,G.pov.w===7?.25:0);
-    VEV.cu=-1;VEV.cf=9;vRig(G.pov.w,g,-1,9);knArm.visible=lhG.visible=lhArm.visible=sweep.visible=false;if(G.pov.w===7)updKnifeArm();
-  }
+  if(inGame&&!me.alive&&G.pov)povGun(paused?0:dt);   // arma del que te mató (o del que mirás) en primera persona
   if(inGame&&(me.alive||G.pov)){renderer.clearDepth();renderer.render(wScene,wCam);}
 }
 requestAnimationFrame(frame);

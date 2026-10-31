@@ -23,6 +23,7 @@ function onMsg(m){
       me.mag=fullMags();me.rel=0;me.scope=false;me.inspT=9;me.lastW=me.w===0?C.primaryOf(m.ow||me.ow):0;
       if(MODE==='gungame'&&m.w!=null)me.w=m.w;
       else{me.w=[6,5,3,2,4,1].find(i=>me.ow[i]&&hasAmmo(i));if(me.w==null)me.w=0;}
+      kcEnd();meHist.length=0;
       $('deathBox').hidden=true;showWeapon();SFX.respawn(1);updateHUD();
       break;
     case 'you': {
@@ -45,8 +46,10 @@ function onMsg(m){
       for(const r of m.ps){
         if(r[0]===myId)continue;
         const p=ensurePlayer(r[0]);
-        p.buf.push({t:m.tm,x:r[1],y:r[2],z:r[3],yaw:r[4],pitch:r[5],w:r[6],fl:r[7],vx:r[8]||0,vy:r[9]||0,vz:r[10]||0});
+        const smp={t:m.tm,x:r[1],y:r[2],z:r[3],yaw:r[4],pitch:r[5],w:r[6],fl:r[7],vx:r[8]||0,vy:r[9]||0,vz:r[10]||0};
+        p.buf.push(smp);
         if(p.buf.length>40)p.buf.shift();
+        kcRecRemote(p,smp,m.tm);
       }
       break;
     }
@@ -60,6 +63,7 @@ function onMsg(m){
       break;
     case 'end':
       matchState='inter';scores=m.l;closeShop(true);
+      kcEnd();
       $('interT').textContent=m.w?m.w+' GANA LA PARTIDA':teamsMode()?'EMPATE':'FIN DE LA PARTIDA';
       $('interT').style.color=teamsMode()&&m.wt>=0?TEAMS[m.wt].c:'';
       $('interS').textContent=m.mv?'':'Próximo mapa: '+(m.nextName||'');G.myMapVote=null;renderMapVote(m.mv);
@@ -114,6 +118,7 @@ function onEvent(m){
     case 'skin': if(m.id!==myId)ensurePlayer(m.id,null,null,undefined,m.s);break;
     case 'shot': {
       const p=players.get(m.id);const o=m.o,d=m.d,W_=WEAPONS[m.w];
+      kcRecShot(m.id,{k:'s',w:m.w,o:m.o,d:m.d});
       const h=C.raycast(W,o[0],o[1],o[2],d[0],d[1],d[2],W_.range||300),L=h?h.t:(W_.range||300);
       const end=[o[0]+d[0]*L,o[1]+d[1]*L,o[2]+d[2]*L];
       const gp=p&&p.model?gunTip(p):o;
@@ -128,6 +133,7 @@ function onEvent(m){
     case 'proj': {
       if(m.own===myId)break;
       spawnProjVis(m.k,m.p,m.v,false,m.pid,m.own);
+      kcRecShot(m.own,{k:'p',pk:m.k,w:m.k==='rocket'?5:m.k==='bullet'?9:m.k==='molotov'?10:4,p:m.p,v:m.v});
       const p=players.get(m.own);if(p)p.fire=.1;
       SFX[m.k==='rocket'?5:m.k==='bullet'?9:m.k==='molotov'?10:4](vAt(m.p[0],m.p[1],m.p[2]));
       break;
@@ -196,8 +202,11 @@ function onKill(m){
     me.alive=false;me.deadT=0;me.killer=m.k;me.respawnAsk=false;me.deathPos=[me.s.x,me.s.y,me.s.z];
     $('deathBy').textContent=m.how==='water'?'Te llevó el río':m.how==='lava'?'Te derretiste en la lava':m.how==='void'?'Caíste al vacío':(!m.k||m.k===myId)?'Te volaste a vos mismo':'Te eliminó '+nameOf(m.k)+(m.ns?' SIN USAR MIRA':W_?' con '+W_.name:'');
     $('deathBox').hidden=false;$('deathHint').textContent='';
-    if(m.gib)fxGib(me.s.x,me.s.y,me.s.z);else fxBlood(me.s.x,me.s.y+1,me.s.z,20);
-    SFX.die(1);
+    // killcam: si arranca la repetición, el efecto de tu muerte se hace recién al final de ella
+    if(kcOnDeath(m)!=='replay'){
+      if(m.gib)fxGib(me.s.x,me.s.y,me.s.z);else fxBlood(me.s.x,me.s.y+1,me.s.z,20);
+      SFX.die(1);
+    }
   }else{
     const p=players.get(m.v);
     if(p){p.alive=false;p.deadT=0;p.gib=!!m.gib;if(m.gib){fxGib(m.p[0],m.p[1],m.p[2]);if(p.model)p.model.g.visible=false;}else fxBlood(m.p[0],m.p[1]+1.1,m.p[2],18);SFX.die(vAt(m.p[0],m.p[1],m.p[2]));}

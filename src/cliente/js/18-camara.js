@@ -2,7 +2,8 @@
 const tipTmp=new THREE.Vector3();
 const DEATH_T=3.6,dcTmp=new THREE.Vector3();
 // cámara de muerte: primero caés, después la cámara vuela hasta quedar enfrente del que te mató, mirándolo
-function deathCam(){
+function deathCam(dt){
+  if(KC.mode&&kcCamera(dt))return;
   const t=me.deadT,d=me.deathPos||[me.s.x,me.s.y,me.s.z],k=me.killer&&me.killer!==myId?players.get(me.killer):null;
   const fall=Math.max(.35,K.EYE-t*2.2),base=[d[0],d[1]+fall,d[2]];
   G.pov=null;
@@ -28,7 +29,7 @@ function deathCam(){
   sky.position.copy(camera.position);
 }
 function updCamera(dt){
-  if(!me.alive&&inGame&&me.deadT>.05){me.dip=0;deathCam();$('scopeOv').hidden=true;$('huntOv').hidden=true;return;}
+  if(!me.alive&&inGame&&me.deadT>.05){me.dip=0;deathCam(dt);$('scopeOv').hidden=true;$('huntOv').hidden=true;return;}
   me.dip=Math.max(0,me.dip-dt*.9);me.roll*=Math.pow(.02,dt);shake=Math.max(0,shake-dt*1.5);
   const bobY=me.s.on&&me.alive?Math.sin(me.bob*2)*.05:0;
   me.eyeC+=((me.s.crouch?K.EYEC:K.EYE)-me.eyeC)*Math.min(1,dt*14);
@@ -135,8 +136,8 @@ function updEffects(dt){
   updSys(sparks,dt);updSys(gore,dt);
   if(!$('inter').hidden&&G.interEnd)setTxt('interN',String(Math.max(0,Math.ceil(G.interEnd-performance.now()/1000))));
   G.hurt=Math.max(0,G.hurt-dt*1.6);G.predHit=(G.predHit||0)-dt;G.pick=Math.max(0,G.pick-dt*2.5);G.hitT=Math.max(0,G.hitT-dt);G.dmgT=Math.max(0,G.dmgT-dt*1.2);
-  setOp('flash',!inGame?0:!me.alive?Math.min(.7,.3+me.deadT*.25):Math.min(.85,G.hurt+(me.hp<25?.12+Math.sin(G.time*5)*.05:0)));
-  setOp('pflash',G.pick*.8);setOp('lavatint',G.lava);
+  setOp('flash',!inGame?0:!me.alive?(kcWatching()?0:Math.min(.7,.3+me.deadT*.25)):Math.min(.85,G.hurt+(me.hp<25?.12+Math.sin(G.time*5)*.05:0)));
+  setOp('pflash',G.pick*.8);setOp('lavatint',kcWatching()?0:G.lava);
   setOp('qtint',me.q>0&&me.alive?.6+Math.sin(G.time*6)*.15:0);
   setOp('hitm',G.hitT>0?1:0);
   setOp('dmgdir',G.dmgT);if(G.dmgT>0)$('dmgdir').style.transform='rotate('+(-(G.dmgAng-me.yaw)).toFixed(3)+'rad)';
@@ -150,7 +151,7 @@ function updEffects(dt){
     const club=!!level.club;
     for(const pm of level.pads)if(Math.random()<dt*14)emit(sparks,pm.p.x+R(1.4),pm.p.y+.15,pm.p.z+R(1.4),0,2+Math.random()*3,0,.5,1,club?.25:.65,club?.85:.2,0);
     if(level.geysers)for(const gy of level.geysers){
-      const p=gy.p,g=p.geyser,ph=C.geyserPhase(p,serverNow()),on=ph<g.on,warn=Math.max(0,1-(g.period-ph)/1.2);
+      const p=gy.p,g=p.geyser,ph=C.geyserPhase(p,kcNow()),on=ph<g.on,warn=Math.max(0,1-(g.period-ph)/1.2);
       // burbujeo que avisa, después la columna de magma
       gy.core.material.opacity=on?1:.35+warn*.6;gy.core.material.color.setHex(on?0xffd27a:warn>.1?0xff8a20:0xb03a0a);
       gy.gl.intensity=S.q?(on?3.2+Math.random():warn*1.6):0;

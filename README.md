@@ -38,6 +38,7 @@ Se elige al escoger el modo (y en práctica también desde Ajustes, en plena par
 
 ## Detalles de juego
 
+- **Killcam**: cuando te eliminan, se repiten en primera persona los últimos ~3,6 segundos desde los ojos de quien te mató (con su arma en mano, sus disparos, y un cartel con su nombre y el arma). **Clic izquierdo** saltea la repetición y pasa a mirar a otro jugador o bot vivo; otro clic, al siguiente. Si no hay tirador (lava, caída, río o tu propia explosión) no hay repetición y pasás directo a mirar a otro. Al terminar el tiempo de reaparición volvés a jugar. Se puede apagar en **Ajustes → Killcam** (viene activada) y anda igual en práctica y online.
 - Al terminar una partida se ve el ganador, el próximo mapa y la cuenta regresiva (25 s), con **Seguir jugando** y **Volver al menú**.
 - Agacharse con **Ctrl** necesita pantalla completa: el juego la pide al empezar (se desactiva en Ajustes). Sin pantalla completa, Ctrl+W cierra la pestaña en el navegador, así que usá **C**; igual el juego pide confirmación antes de cerrar.
 - El rifle de caza se apunta con sus miras de hierro (click derecho), sin mira telescópica.

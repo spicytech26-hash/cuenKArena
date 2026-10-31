@@ -12,10 +12,11 @@ function updMe(dt){
     const h=$('grabHint');if(h.dataset.t!==txt){h.dataset.t=txt;h.innerHTML=txt;h.hidden=!txt;}}
   if(!me.alive){me.deadT+=dt;
     // como en TF2: unos segundos mirando al que te mató y reaparecés solo
-    const left=Math.max(0,DEATH_T-me.deadT);
-    setTxt('deathHint',(G.pov?'Viendo a '+nameOf(G.pov.id)+' · ':'')+(liveState()?(left>0?'Reaparecés en '+Math.ceil(left)+(C.MODES[MODE].shop?' · B abre la tienda':''):'Reapareciendo…'):''));
-    if(me.deadT>=DEATH_T&&!me.respawnAsk&&liveState()&&net){me.respawnAsk=true;net.send({t:'respawn'});}
-    if(me.respawnAsk&&me.deadT>DEATH_T+1.5)me.respawnAsk=false; // si no llegó, se vuelve a pedir
+    const DT_=me.deathLen||DEATH_T,left=Math.max(0,DT_-me.deadT);
+    kcTick(dt);
+    setTxt('deathHint',kcHintPrefix()+(liveState()?(left>0?'Reaparecés en '+Math.ceil(left)+(C.MODES[MODE].shop?' · B abre la tienda':''):'Reapareciendo…'):''));
+    if(me.deadT>=DT_&&!me.respawnAsk&&liveState()&&net){me.respawnAsk=true;net.send({t:'respawn'});}
+    if(me.respawnAsk&&me.deadT>DT_+1.5)me.respawnAsk=false; // si no llegó, se vuelve a pedir
     return;}
   let f=0,s=0;
   const free=!chatOpen&&$('shop').hidden;
@@ -45,7 +46,7 @@ function updMe(dt){
   if(mouseDown&&me.cool<=0&&me.raise<.4&&!(W_.semi&&me.held)&&liveState()&&$('shop').hidden){fire();me.held=true;}
   G.sendT-=dt;if(G.sendT<=0){G.sendT=1/30;sendState();}
 }
-function sendState(){if(net)net.send({t:'st',p:r3([me.s.x,me.s.y,me.s.z]),v:r3([me.s.vx,me.s.vy,me.s.vz]),y:Math.round(me.yaw*1000)/1000,x:Math.round(me.pitch*1000)/1000,w:me.w,o:me.s.on?1:0,c:me.s.crouch?1:0});}
+function sendState(){kcRecMe();if(net)net.send({t:'st',p:r3([me.s.x,me.s.y,me.s.z]),v:r3([me.s.vx,me.s.vy,me.s.vz]),y:Math.round(me.yaw*1000)/1000,x:Math.round(me.pitch*1000)/1000,w:me.w,o:me.s.on?1:0,c:me.s.crouch?1:0});}
 
 /* ---------- jugadores remotos: interpolación con colchón adaptativo ---------- */
 const angLerp=(a,b,t)=>{let d=b-a;while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;return a+d*t;};
@@ -72,10 +73,10 @@ function placeBlob(i,x,y,z,k){
   return true;
 }
 function updRemote(dt){
-  const rt=renderClock(dt);let nb=0;
-  for(const p of players.values()){
+  const rt=KC.on?KC.t:renderClock(dt);let nb=0;   // en la repetición del killcam los jugadores salen del historial grabado
+  for(const p of KC.on?kcList():players.values()){
     const m=p.model;if(!m)continue;
-    const b=p.buf;if(!b.length){m.g.visible=false;continue;}
+    const b=KC.on?(KC.snap.get(p.id)||[]):p.buf;if(!b.length){m.g.visible=false;continue;}
     let a=null,c=null;
     for(let i=b.length-1;i>=0;i--)if(b[i].t<=rt){a=b[i];c=b[i+1]||null;break;}
     let x,y,z,yaw,pitch,cur;
@@ -130,7 +131,7 @@ function updRemote(dt){
 }
 function updMovers(){
   if(!level||!level.movers.length)return;
-  C.updateMovers(W,serverNow());
+  C.updateMovers(W,kcNow());
   for(const mv of level.movers)mv.mesh.position.set(mv.b.min[0],mv.b.min[1],mv.b.min[2]);
 }
 

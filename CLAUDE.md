@@ -103,15 +103,8 @@ El daño, la cadencia y el cargador de cada arma están en `WEAPONS` (`src/nucle
 
 1. **Todo cambio se hace en una rama** (`git checkout -b nombre-corto`), nunca directo en `main`. Cada push a `main` se publica solo en Render.
 2. Al terminar: `node herramientas/armar.js` y `node herramientas/probar.js` (tiene que decir "Todo bien."), commit en la rama y push de la rama.
-3. **Decirle al usuario cómo probarlo en su PC (Windows, PowerShell):**
-   ```
-   git fetch
-   git checkout nombre-corto
-   node herramientas/armar.js
-   $env:PORT=3999; node server.js
-   ```
-   y abrir http://localhost:3999 (práctica y online; para online con varios jugadores, varias pestañas). Mapas del editor: http://localhost:3999/editor.html.
-4. **Nunca hacer merge ni push a `main` hasta que el usuario pruebe y diga que está bien.** Si algo se ve mal, corregir en la misma rama.
+3. **El usuario prueba desde el artifact de práctica** (no en su PC): después del push de la rama, publicar `public/index.html`, `game.js`, `editor.html` y `modelos/modelos.json` en el artifact de práctica (ver "Probar y publicar") y avisarle. Si pide los comandos para correrlo en local (Windows, PowerShell): `git fetch`, `git checkout nombre-corto`, `node herramientas/armar.js`, `$env:PORT=3999; node server.js` y abrir http://localhost:3999.
+4. **Nunca hacer merge ni push a `main` hasta que el usuario pruebe y diga que está bien o pida publicar.** Si algo se ve mal, corregir en la misma rama.
 5. Las cuentas de Google/Supabase pueden no andar en local (las claves no están en el repo, a propósito); para armas, mapas y balance no hacen falta.
 
 ## Probar y publicar

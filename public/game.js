@@ -1032,8 +1032,24 @@ function buildCuartoTramo() {
   add(20, -.3, 12, 28, 0, 16, 'wood');
   add(28, -.3, 13, 35, 0, 16, 'wood');
   for (const [x, z] of [[20.2, 15.6], [27.6, 15.6], [27.6, 12.2], [34.6, 13.2], [34.6, 15.6]]) add(x, -3, z, x + .25, 0, z + .25, 'wood');
-  /* ---- apariciones (por ahora, solo para poder probar el esqueleto) ---- */
-  [[-18, 0, 6], [10, 0, 6], [0, 0, 10], [18, 0, 2], [-24, 0, -16], [16, 0, -16], [0, 0, -18], [-26, 0, 10]]
+  /* ---- portales: el amarillo (suelo, oeste) lleva a la plataforma baja del este; el azul (plataforma baja) vuelve al oeste ---- */
+  teles.push({ x: -18, y: 0, z: 4.5, r: 1, to: [24.5, 3, 9], yaw: face(24.5, 9, 0, 0), color: 'yellow' });
+  teles.push({ x: 28, y: 3, z: 9, r: .9, to: [-21, 0, 7.5], yaw: face(-21, 7.5, 0, 0), color: 'blue' });
+  /* ---- ítems: todo lo que ya existe, repartido por zonas ---- */
+  // armas: escopeta y ametralladora en la galería, doble en el andén, cohetes y francotirador arriba de la torre,
+  // dos rifles de plasma en la plataforma baja, caza en la galería oeste, granadas en la explanada
+  I('w1', -6, 0, -14); I('w3', 16, 0, -20); I('w9', -27, 0, -20); I('w2', -2, 0, 6);
+  I('w5', 24, 6.5, -3); I('w8', 30, 6.5, -8); I('w6', 22.5, 3, 8.5); I('w6', 24.5, 3, 10.5); I('w4', 33, 0, 0);
+  // premios y riesgos: megasalud en el andamio oeste, daño cuádruple sobre la locomotora, armadura pesada en la punta del muelle y en el andén
+  I('mega', -33, 3, 5); I('quad', 4, 3.4, -3.5); I('armorH', 34, 0, 14.5); I('armorH', 6, 0, 5);
+  I('armor', -10, 0, 12); I('armor', 22, 0, -14); I('armor', -27, 0, -14);
+  I('health', 2, 0, 3); I('health', -20, 0, -14); I('health', 18, 0, -14); I('health', 27, 0, 3); I('health', -24, 0, 13);
+  I('health', 13, 0, 15); I('health', -14, 0, -6); I('health', 26, 3, 7);
+  I('shells', -26, 0, -22); I('shells', -12, 0, 10); I('bullets', 12, 0, -16); I('bullets', -16, 0, 2);
+  I('grenades', 33, 0, 6); I('rockets', 28, 3, 7.5); I('slugs', 28, 3, 10.5); I('caza', -30, 3, 3);
+  /* ---- apariciones: andén, galería, andamio oeste, plataforma baja y explanada este ---- */
+  [[-18, 0, 7.5], [10, 0, 7], [0, 0, 11], [18, 0, 3], [-26, 0, 10], [6, 0, -7], [-14, 0, -7], [-24, 0, -16], [-10, 0, -16], [2, 0, -20],
+   [16, 0, -19], [24, 0, -14], [-32, 3, 4], [22, 3, 8], [31, 0, -4], [14, 0, 14]]
     .forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
   lights.push({ x: 0, y: 5, z: -17, c: 0xffb070, i: .7, d: 24 }, { x: -6, y: 6, z: 2, c: 0xff9a60, i: .5, d: 26 }, { x: 26, y: 8, z: 2, c: 0xff9a60, i: .5, d: 22 });
   return finish({ id: 'cuartotramo', name: 'El Cuarto Tramo', bounds: { x0: -37, x1: 37, z0: -24, z1: 25 }, deco,

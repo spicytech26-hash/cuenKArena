@@ -271,10 +271,12 @@ En la pantalla final hay una tarjeta por cada mapa del modo, con su nombre y una
 
 ## El Cuarto Tramo (mapa nuevo)
 
-Inspirado en el cuarto tramo de la Costanera de Posadas, **al atardecer** (cielo naranja, rosa y violeta, sol bajo y sombras largas). Se juega en **Arena** y **Gungame**.
-- **Galería** de ladrillo al norte, con seis puertas al andén y una salida a cada punta; **andén** con las vías, la locomotora «La Posadeña» (se sube con los cajones y arriba espera el daño cuádruple) y la pila de cajones.
-- **Andamio del oeste** con la megasalud y el **portal amarillo**, que te manda a la plataforma baja del este. **Torre del este** de dos pisos: abajo dos rifles de plasma y el **portal azul** (te devuelve al oeste); arriba, el francotirador y el lanzacohetes.
-- **El Paraná** al sureste: el agua mata al instante. En la punta del muelle hay una armadura pesada.
+Inspirado en el cuarto tramo de la Costanera de Posadas, **al atardecer** (cielo naranja, rosa y violeta, sol bajo y sombras largas). Mapa grande (unos 124 × 84 m) pensado para moverse rápido, con varios caminos a distintas alturas. Se juega en **Arena** y **Gungame**.
+- **Estación de ladrillo** de dos pisos con cuatro arcadas, hall, escaleras por dentro y un balcón sobre la fachada. Las dos **alas** tienen el techo transitable (6 m): se sube por las escaleras de andamio de afuera, por un **saltador** del andén o desde el piso alto del edificio.
+- **Andén con vías y la locomotora «La Posadeña»**: la cabina del maquinista se atraviesa (puerta a un lado y al otro) y guarda el daño cuádruple; arriba de la caldera hay un botiquín (se sube con los cajones).
+- **Vereda y costanera:** frente a la estación hay una vereda de ladrillo y, más al sur, el paseo elevado de la costanera con baldosas, bancos, glorietas, palmeras, farolas y gradas hasta el agua.
+- **El Paraná** al sur: el agua mata al instante. Dos muelles guardan la megasalud (oeste) y una armadura pesada (este).
+- **Portales escondidos y lejos entre sí:** el amarillo está en un rincón cerrado del ala oeste y te deja en el extremo este de la costanera; el azul está al fondo del techo del ala este y te deja en el extremo oeste.
 - Los botones del menú y la votación lo toman solos; la foto de la votación es opcional (`public/maps/cuartotramo.jpg`).
 
 ## Novedades de La Cuenca y Humita

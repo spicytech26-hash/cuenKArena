@@ -18,12 +18,11 @@ function buildCuartoTramo() {
   add(-50, -2, -40, -22, 0, -26, 'concrete'); add(22, -2, -40, 50, 0, -26, 'concrete');   // pisos de las alas
   add(-50, 0, -26, 50, .2, -23.6, 'brick');                              // vereda de ladrillo frente al edificio
   stairs(-62, 20, 62, 24, -1, .5, 4, 'z', -1, 'step');                   // gradas de la costanera hasta el río
-  lava.push({ min: [-62, -4, 24], max: [62, -1, 42], water: true, dps: 0 });   // el Paraná: agua que mata
+  lava.push({ min: [-200, -4, 24], max: [200, -1, 150], water: true, dps: 0 });   // el Paraná: agua que mata, hasta el horizonte (sin reja)
   add(-62, -6, 24, 62, -4, 42, 'rock');
   add(-63, -4, -43, 63, 12, -40, 'brick');                               // límites: norte (fondo del edificio), oeste, este y sur
   add(-63, -4, -43, -62, 12, 42, 'block'); add(62, -4, -43, 63, 12, 42, 'block');
-  add(-63, -4, 42, 63, 8, 43, 'fence');
-  // rampas anchas desde el andén a la costanera
+    // rampas anchas desde el andén a la costanera
   for (const x of [-42, -6, 32]) ramp(x, 2, x + 10, 8, 0, 0, 1, 'z', 1, 'concrete');
   // franjas rojas y celestes de la costanera (solo pintura)
   add(-62, 1, 11.8, 62, 1.02, 12.2, 'brick', { nc: 1 }); add(-62, 1, 16.8, 62, 1.02, 17.2, 'brick', { nc: 1 });
@@ -51,17 +50,23 @@ function buildCuartoTramo() {
       wall(a, z0, b, z1, y0, y1, alongX ? doors.map(d => { const p = [s * d[0], s * d[1]].sort((u, v) => u - v); return D(p[0], p[1], d[2], d[3]); }) : doors, mat);
     };
     /* ---- ala (oeste s=-1, este s=1): planta baja con puertas, techo transitable a 6 m ---- */
-    mw(22.4, -26.4, 50.4, -26, 0, 5.6, [D(28, 32, 0, 3.6), D(40, 44, 0, 3.6)], 'brick');   // frente
+    mw(22.4, -26.4, 50.4, -26, 0, 5.6, [D(28, 32, 0, 3.6)], 'brick');   // frente
     mw(50, -40, 50.4, -26, 0, 5.6, [D(-32, -28, 0, 3.4)], 'brick');                           // fondo, con puerta al patio
     ax(22.4, 5.6, -40, 50.4, 6, -25.8, 'roof');                                               // techo / pasarela
     ax(22.4, 6, -26.2, 50.4, 7, -26, 'rail', { nc: 1 });
     for (const x of [30, 42]) ax(x - .4, 0, -33.4, x + .4, 5.6, -32.6, 'whitewall');
     ax(25, 0, -39, 29, 1.25, -37, 'crate'); ax(33, 0, -30.8, 37, 1.25, -29.2, 'crate'); ax(32, 0, -39.2, 35.5, 1.25, -37.6, 'crate'); ax(36, 6, -38, 40, 7.2, -36.6, 'crate');
-    // escalera de andamio por afuera hasta el techo del ala
-    stairs(s * 57, -38, s * 61, -26, 0, .5, 12, 'z', -1, 'step');
+    // andamio en zigzag por afuera: tramo de abajo, plataforma a 3 m (con ítems), tramo de arriba y descanso a 6 m que entra al techo del ala
+    stairs(s * 57, -26, s * 61, -20, 0, .5, 6, 'z', -1, 'step');
+    add(Math.min(s * 54, s * 61), 2.7, -32, Math.max(s * 54, s * 61), 3, -26, 'grate');
+    stairs(s * 57, -38, s * 61, -32, 3, .5, 6, 'z', -1, 'step');
     add(Math.min(s * 61, s * 50.4), 5.7, -41, Math.max(s * 61, s * 50.4), 6, -38, 'grate');
-    ax(61, 6, -38, 61.1, 7, -26, 'rail', { nc: 1 }); ax(57, 6, -26.1, 61, 7, -26, 'rail', { nc: 1 }); ax(57, 6, -41, 61, 7, -40.9, 'rail', { nc: 1 });
-    for (const z of [-40.6, -31, -26.4]) ax(60.7, 0, z, 61, z === -26.4 ? 1 : 5.7, z + .3, 'metal');
+    for (const [x, z] of [[54, -32], [60.8, -32], [54, -26.2], [60.8, -26.2]]) ax(x, 0, z, x + .2, 2.7, z + .2, 'metal');
+    for (const [x, z] of [[50.6, -40.8], [60.8, -40.8]]) ax(x, 0, z, x + .2, 5.7, z + .2, 'metal');
+    ax(61, 3, -32, 61.1, 4, -26, 'rail', { nc: 1 }); ax(54, 3, -32, 54.1, 4, -26, 'rail', { nc: 1 }); ax(54, 3, -32.1, 61, 4, -32, 'rail', { nc: 1 });
+    ax(61, 6, -41, 61.1, 7, -38, 'rail', { nc: 1 }); ax(50.4, 6, -41, 61, 7, -40.9, 'rail', { nc: 1 });
+    // rampa larga frente al ala: del andén al techo (y de ahí a la puerta del piso alto del edificio)
+    if (s < 0) ramp(-50, -25.8, -36, -21.8, 0, 0, 6, 'x', 1, 'concrete'); else ramp(36, -25.8, 50, -21.8, 0, 0, 6, 'x', -1, 'concrete');
     // saltador desde el andén hasta el techo del ala
     pads.push({ x: s * 40, y: 0, z: -8, r: 1.1, t: [s * 40, 6, -30], apex: 3 });
     /* ---- patio lateral, grúa de fondo (solo se ve) ---- */
@@ -84,26 +89,27 @@ function buildCuartoTramo() {
   add(4, 0, 0, 6.5, 1.25, 2.5, 'crate'); add(6.5, 0, 0, 8, 2.5, 1.5, 'crate');
   add(-26, 0, -10, -23.5, 1.25, -7.5, 'crate'); add(24, 0, -8, 26.5, 1.25, -5.5, 'crate'); add(-30, 0, 0, -27.5, 1.25, 2.5, 'crate'); add(28, 0, 2, 30.5, 1.25, 4.5, 'crate');
   add(-16, 0, -22, -14, 1.25, -20, 'crate'); add(14, 0, -22, 16, 1.25, -20, 'crate');
-  /* ---- vías y locomotora «La Posadeña» (cabina enterable) ---- */
+  /* ---- vías y locomotora «La Posadeña»: elevada sobre el chasis y las ruedas, con la cabina enterable ---- */
   add(-62, 0, -15.1, 62, .14, -14.95, 'metal', { nc: 1 }); add(-62, 0, -13.05, 62, .14, -12.9, 'metal', { nc: 1 });
   for (let x = -62; x < 62; x += 1.6) add(x, 0, -15.8, x + .4, .07, -12.2, 'wood', { nc: 1 });
-  add(-16, 0, -15.8, 0, 4.4, -12.2, 'black');                              // caldera
-  add(8.6, 0, -15.8, 16, 3.6, -12.2, 'black');                             // ténder
-  // cabina: paredes con dos puertas enfrentadas (se entra por el sur y se sale por el norte), ventanillas y techo
-  wall(0, -15.8, 8.6, -15.5, 0, 3.4, [D(3.3, 5.3, 0, 2.6), D(1, 2.6, 1.6, 2.8), D(6.2, 7.8, 1.6, 2.8)], 'black');
-  wall(0, -12.5, 8.6, -12.2, 0, 3.4, [D(3.3, 5.3, 0, 2.6), D(1, 2.6, 1.6, 2.8), D(6.2, 7.8, 1.6, 2.8)], 'black');
-  add(8.3, 0, -15.5, 8.6, 3.4, -12.5, 'black');                            // cierre trasero contra el ténder
-  add(-.3, 3.4, -16.1, 8.9, 3.9, -11.9, 'black');                          // techo de la cabina
-  add(5.6, 0, -15.5, 7.6, .8, -14.6, 'metal'); add(.3, 0, -14.4, 1.3, 1.2, -13.6, 'metal');   // asiento y válvulas
-  // chimenea, domos, ruedas rojas, farol y carbón (solo se ven)
-  add(-14.2, 4.4, -14.6, -12.8, 6.6, -13.4, 'black', { nc: 1 }); add(-14.8, 6.2, -15, -12.2, 6.7, -13, 'black', { nc: 1 });
-  add(-9, 4.4, -14.7, -7.4, 5.4, -13.3, 'black', { nc: 1 }); add(-4.5, 4.4, -14.7, -3, 5.2, -13.3, 'black', { nc: 1 });
-  for (const x of [-14, -11.2, -8.4, -5.6, -2.8]) { add(x, 0, -15.92, x + 2, 1.5, -15.8, 'barn', { nc: 1 }); add(x, 0, -12.2, x + 2, 1.5, -12.08, 'barn', { nc: 1 }); }
-  for (const x of [9.2, 12.6]) { add(x, 0, -15.92, x + 2.4, 1.2, -15.8, 'barn', { nc: 1 }); add(x, 0, -12.2, x + 2.4, 1.2, -12.08, 'barn', { nc: 1 }); }
-  add(-16.1, 1.8, -14.4, -16, 2.6, -13.6, 'light', { nc: 1 });
-  add(9, 3.6, -15.2, 15.6, 4.1, -12.8, 'rock', { nc: 1 });
-  // para subirse al techo de la caldera: tres cajones escalonados
-  add(-12, 0, -12.2, -10.4, 1.2, -10.6, 'crate'); add(-10.4, 0, -12.2, -8.8, 2.4, -10.6, 'crate'); add(-8.8, 0, -12.2, -7.2, 3.6, -10.6, 'crate');
+  add(-17, .7, -15.2, 17, 1.6, -12.8, 'black');                            // chasis (el hueco de abajo no se pasa)
+  add(-16.4, 1.6, -15.3, 0, 4.2, -12.7, 'clip');                           // caldera: la forma redonda es visual, esto es la colisión
+  add(8.9, 1.6, -15.5, 17, 3.8, -12.5, 'black');                           // ténder
+  add(9.3, 3.8, -15.2, 16.6, 4.2, -12.8, 'rock', { nc: 1 });               // carbón
+  // cabina a 1,6 m del suelo: se sube por unos escalones, se cruza por las dos puertas y tiene ventanillas
+  add(0, 1.4, -15.8, 8.6, 1.6, -12.2, 'metal');
+  wall(0, -15.8, 8.6, -15.5, 1.6, 4.6, [D(3.3, 5.3, 1.6, 4), D(1, 2.6, 2.8, 4), D(6.2, 7.8, 2.8, 4)], 'black');
+  wall(0, -12.5, 8.6, -12.2, 1.6, 4.6, [D(3.3, 5.3, 1.6, 4), D(1, 2.6, 2.8, 4), D(6.2, 7.8, 2.8, 4)], 'black');
+  add(0, 1.6, -15.5, .3, 4.6, -12.5, 'black'); add(8.3, 1.6, -15.5, 8.6, 4.6, -12.5, 'black');   // frente y fondo de la cabina
+  add(-.3, 4.6, -16.1, 8.9, 5, -11.9, 'black');                            // techo
+  add(5.6, 1.6, -15.5, 7.6, 2.4, -14.6, 'metal'); add(.3, 1.6, -14.4, 1.3, 2.8, -13.6, 'metal');   // asiento y válvulas
+  stairs(3.3, -12.2, 5.3, -9.8, 0, .4, 4, 'z', -1, 'step'); stairs(3.3, -18.2, 5.3, -15.8, 0, .4, 4, 'z', 1, 'step');
+  add(-17.3, .7, -15.3, -17, 1.5, -12.7, 'barn', { nc: 1 });               // travesaño delantero rojo
+  add(-17.4, 2.3, -14.4, -17.3, 3.3, -13.6, 'light', { nc: 1 });           // farol
+  deco.push({ t: 'tren' });                                                // caldera, chimenea, domos, ruedas y bielas
+  deco.push({ t: 'cartel', x: 13, y: 2.7, z: -12.47, w: 4.6, h: .9, txt: 'LA POSADEÑA', bg: '#111', fg: '#f4f4f4' }, { t: 'cartel', x: 13, y: 2.7, z: -15.53, w: 4.6, h: .9, txt: 'LA POSADEÑA', bg: '#111', fg: '#f4f4f4', ry: Math.PI });
+  // para subirse a la caldera: tres cajones escalonados
+  add(-12, 0, -12.7, -10.4, 1.2, -11.1, 'crate'); add(-10.4, 0, -12.7, -8.8, 2.4, -11.1, 'crate'); add(-8.8, 0, -12.7, -7.2, 3.6, -11.1, 'crate');
   /* ---- cartel de la estación, cartel de la costanera, tablero ---- */
   deco.push({ t: 'cartel', x: 0, y: 10.9, z: -25.98, w: 10, h: 1.4, txt: 'ESTACIÓN POSADAS', bg: '#5a2a1c', fg: '#f3d9a8' });
   add(-3.6, 1, 8.9, -3.4, 3.4, 9.1, 'metal'); add(3.4, 1, 8.9, 3.6, 3.4, 9.1, 'metal');
@@ -117,23 +123,26 @@ function buildCuartoTramo() {
   /* ---- ítems: todo lo que ya existe, repartido por zonas ---- */
   // hall y piso alto
   I('w2', 0, 0, -34); I('w3', 7, 0, -36.5); I('health', -13, 0, -38); I('health', 13, 0, -38); I('armor', -8, 0, -29.5); I('shells', 8, 0, -29.5);
-  I('w6', 0, 6, -36); I('armorH', -17, 6, -38); I('health', 17, 6, -38); I('slugs', 0, 6, -28);
+  I('bullets', 0, 6, -36); I('armorH', -17, 6, -38); I('health', 17, 6, -38); I('slugs', 0, 6, -28);
   // ala oeste (planta baja y techo) y rincón del portal
   I('w1', -36, 0, -34); I('armor', -46, 0, -29); I('health', -30, 0, -30); I('bullets', -40, 0, -31); I('health', -44.5, 0, -38.5);
-  I('w8', -36, 6, -34); I('health', -28, 6, -30); I('grenades', -44, 6, -30);
+  I('w2', -36, 6, -34); I('health', -28, 6, -30); I('grenades', -44, 6, -30);
   // ala este
   I('w4', 36, 0, -34); I('armor', 46, 0, -29); I('health', 30, 0, -30); I('rockets', 40, 0, -31);
-  I('w5', 36, 6, -34); I('armor', 28, 6, -30); I('rockets', 44, 6, -29);
+  I('w9', 36, 6, -34); I('armor', 28, 6, -30); I('rockets', 44, 6, -29);
   // locomotora: daño cuádruple en la cabina, botiquín arriba de la caldera
-  I('quad', 4, 0, -14); I('health', -8, 4.4, -14);
+  I('quad', 4, 1.6, -14); I('health', -8, 4.2, -14);
   // andén
   I('health', -22, 0, -20); I('health', 22, 0, -20); I('armor', -24, 0, 3); I('armor', 24, 0, 5); I('w1', 4, 0, -2); I('shells', -12, 0, -7); I('bullets', 12, 0, -7);
   I('bullets', -34, 0, -19); I('shells', 34, 0, -19); I('health', 0, 0, -3);
   // costanera
-  I('health', -32, 1, 14); I('health', 32, 1, 14); I('health', 0, 1, 16); I('w9', -14, 1, 15); I('caza', 14, 1, 15); I('grenades', -48, 1, 12); I('rockets', 48, 1, 16); I('slugs', -8, 1, 13);
+  I('health', -32, 1, 14); I('health', 32, 1, 14); I('health', 0, 1, 16); I('w3', -14, 1, 15); I('caza', 14, 1, 15); I('grenades', -48, 1, 12); I('rockets', 48, 1, 16); I('slugs', -8, 1, 13);
   // patios y muelles (premios con riesgo: el agua mata)
   I('health', -58, 0, -20); I('health', 58, 0, -20); I('armor', -58, 0, -4); I('slugs', 58, 0, -4);
-  I('mega', -41, -.5, 32); I('armorH', 41, -.5, 32);
+  I('armorH', -41, -.5, 32); I('armorH', 41, -.5, 32);
+  // andamios en zigzag: oeste = megasalud en la plataforma; este = 2 rifles de plasma en la plataforma y francotirador + cohetes arriba
+  I('mega', -55.5, 3, -29.5); I('health', -58.5, 3, -28); I('w9', -58, 6, -39.5); I('health', -54, 6, -39.5);
+  I('w6', 55.5, 3, -29.5); I('w6', 58.5, 3, -28); I('w8', 58, 6, -39.5); I('w5', 54, 6, -39.5);
   /* ---- apariciones: andén, costanera, patios, hall, alas y techos ---- */
   [[-30, 0, -20], [-12, 0, -20], [12, 0, -20], [30, 0, -20], [-20, 0, -8], [0, 0, -6], [20, 0, -8], [-40, 0, 0], [40, 0, 0], [-10, 0, 5], [10, 0, 5],
    [-50, 1, 14], [-25, 1, 16], [0, 1, 12], [25, 1, 16], [50, 1, 14], [-58, 0, -12], [58, 0, -12],

@@ -79,6 +79,7 @@ function loadMap(id){
   sky.material.map=skyTex[th.sky]||skyTex.dusk;sky.material.needsUpdate=true;
   const groups={};
   for(const b of M.brushes){
+    if(b.mat==='clip')continue;   // bloque de colisión invisible
     if(NEON[b.mat]){const m=new THREE.Mesh(new THREE.BoxGeometry(b.max[0]-b.min[0],b.max[1]-b.min[1],b.max[2]-b.min[2]),new THREE.MeshBasicMaterial({color:NEON[b.mat]}));m.position.set((b.min[0]+b.max[0])/2,(b.min[1]+b.max[1])/2,(b.min[2]+b.max[2])/2);group.add(m);continue;}
     if(b.mover)continue;
     const g=groups[b.mat]||(groups[b.mat]={p:[],n:[],u:[],c:[],i:[]});

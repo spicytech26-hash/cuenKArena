@@ -272,10 +272,10 @@ En la pantalla final hay una tarjeta por cada mapa del modo, con su nombre y una
 ## El Cuarto Tramo (mapa nuevo)
 
 Inspirado en el cuarto tramo de la Costanera de Posadas, **al atardecer** (cielo naranja, rosa y violeta, sol bajo y sombras largas). Mapa grande (unos 124 × 84 m) pensado para moverse rápido, con varios caminos a distintas alturas. Se juega en **Arena** y **Gungame**.
-- **Estación de ladrillo** de dos pisos con cuatro arcadas, hall, escaleras por dentro y un balcón sobre la fachada. Las dos **alas** tienen el techo transitable (6 m): se sube por las escaleras de andamio de afuera, por un **saltador** del andén o desde el piso alto del edificio.
-- **Andén con vías y la locomotora «La Posadeña»**: la cabina del maquinista se atraviesa (puerta a un lado y al otro) y guarda el daño cuádruple; arriba de la caldera hay un botiquín (se sube con los cajones).
+- **Estación de ladrillo** de dos pisos con cuatro arcadas, hall, escaleras por dentro y un balcón sobre la fachada. Las dos **alas** tienen el techo transitable (6 m): se sube por una **rampa larga** frente al ala, por el **andamio en zigzag** del patio (plataforma a 3 m con ítems y descanso a 6 m), por un **saltador** del andén o desde el piso alto del edificio, y los techos entran al piso alto por una puerta.
+- **Andén con vías y la locomotora «La Posadeña»**: elevada sobre el chasis y las ruedas rojas, con caldera redonda y chimenea. La cabina del maquinista está a 1,6 m (se sube por escalones), se atraviesa por las dos puertas y guarda el daño cuádruple; arriba de la caldera hay un botiquín (se sube con los cajones).
 - **Vereda y costanera:** frente a la estación hay una vereda de ladrillo y, más al sur, el paseo elevado de la costanera con baldosas, bancos, glorietas, palmeras, farolas y gradas hasta el agua.
-- **El Paraná** al sur: el agua mata al instante. Dos muelles guardan la megasalud (oeste) y una armadura pesada (este).
+- **El Paraná** al sur, sin rejas: el agua se extiende hasta el horizonte y mata al instante. Cada muelle guarda una armadura pesada. En el andamio oeste está la megasalud; en el este, dos rifles de plasma en la plataforma y el francotirador y los cohetes arriba.
 - **Portales escondidos y lejos entre sí:** el amarillo está en un rincón cerrado del ala oeste y te deja en el extremo este de la costanera; el azul está al fondo del techo del ala este y te deja en el extremo oeste.
 - Los botones del menú y la votación lo toman solos; la foto de la votación es opcional (`public/maps/cuartotramo.jpg`).
 

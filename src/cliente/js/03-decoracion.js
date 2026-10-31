@@ -62,6 +62,17 @@ function buildDeco(group,list){
       // banderines de córner
       for(const x of [d.lx0,d.lx1])for(const z of [d.lz0,d.lz1]){const p=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,1.5,5),M_('pole',()=>new THREE.MeshPhongMaterial({color:0xdadfe3,shininess:90})));p.position.set(x,d.y+.75,z);group.add(p);
         const f=new THREE.Mesh(new THREE.PlaneGeometry(.4,.28),M_('cflag',()=>new THREE.MeshLambertMaterial({color:0xffd21a,side:THREE.DoubleSide})));f.position.set(x+(x<(d.lx0+d.lx1)/2?.2:-.2),d.y+1.35,z);group.add(f);}
+    }else if(d.t==='tren'){
+      // locomotora «La Posadeña»: caldera redonda, chimenea, domos, ruedas rojas y bielas; son 2 mallas (una por color). La colisión son los bloques del mapa
+      const unir=gs=>{const P=[],N=[],U=[],X=[];let off=0;for(const g of gs){const p=g.attributes.position.array,n=g.attributes.normal.array,u=g.attributes.uv.array,ix=g.index.array;for(let i=0;i<p.length;i++){P.push(p[i]);N.push(n[i]);}for(let i=0;i<u.length;i++)U.push(u[i]);for(let i=0;i<ix.length;i++)X.push(ix[i]+off);off+=p.length/3;}
+        const m=new THREE.BufferGeometry();m.setAttribute('position',new THREE.Float32BufferAttribute(P,3));m.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));m.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));m.setIndex(X);return m;};
+      const cil=(r1,r2,h,x,y,z,eje)=>{const g=new THREE.CylinderGeometry(r1,r2,h,eje==='z'?24:16);if(eje==='x')g.rotateZ(Math.PI/2);else if(eje==='z')g.rotateX(Math.PI/2);g.translate(x,y,z);return g;};
+      const negro=[cil(1.3,1.3,16.2,-8.1,2.9,-14,'x'),cil(1.4,1.4,.9,-16.55,2.9,-14,'x'),cil(.55,.4,2.1,-14.8,5.25,-14),cil(.78,.55,.3,-14.8,6.4,-14),cil(.6,.7,.8,-9,4.6,-14),cil(.6,.7,.8,-4.5,4.6,-14)],rojo=[];
+      for(const [x,r] of [[-13.5,1.1],[-10.2,1.1],[-6.9,1.1],[-15.7,.65],[1.6,.9],[7.2,.9],[10.2,.8],[12.8,.8],[15.4,.8]])for(const zc of [-15.4,-12.6])rojo.push(cil(r,r,.3,x,r+.1,zc,'z'));
+      for(const zb of [-15.75,-12.25]){const b=new THREE.BoxGeometry(6.6,.18,.12);b.translate(-10.2,1.2,zb);negro.push(b);}
+      const mn=new THREE.Mesh(unir(negro),M_('tr_negro',()=>new THREE.MeshPhongMaterial({color:0x16181b,shininess:45})));
+      const mr=new THREE.Mesh(unir(rojo),M_('tr_rojo',()=>new THREE.MeshPhongMaterial({color:0x9a1f18,shininess:30})));
+      for(const m of [mn,mr]){m.castShadow=true;m.receiveShadow=true;group.add(m);}
     }else if(d.t==='cartel'){
       // cartel de chapa con letras (estación, andén): d.txt, colores d.bg / d.fg
       const c=cv(512,Math.round(512*d.h/d.w),(g,w,h)=>{

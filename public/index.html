@@ -728,7 +728,7 @@ function buildUT(){
       if(o[4]!=null){if(!sc){sc=document.createElement('canvas');sc.width=w;sc.height=h;sg=sc.getContext('2d');sdt=sg.createImageData(w,h);}const v=cl(o[4]);sdt.data[i]=sdt.data[i+1]=sdt.data[i+2]=v;sdt.data[i+3]=255;}}
     g.putImageData(d,0,0);if(post)post(g,w,h);
     const mkT=cc=>{const t=new THREE.CanvasTexture(cc);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.magFilter=THREE.LinearFilter;t.minFilter=THREE.LinearMipmapLinearFilter;t.anisotropy=8;return t;};
-    const t=mkT(c);if(sc){sg.putImageData(sdt,0,0);t.userData.spec=mkT(sc);}return t;};   // t.userData.spec: qué zonas son húmedas/brillantes
+    const t=mkT(c);if(sc){sg.putImageData(sdt,0,0);t.utSpec=mkT(sc);}return t;};   // t.utSpec: qué zonas son húmedas/brillantes
   const crack=(g,w,h,n,a)=>{g.lineCap='round';for(let k=0;k<n;k++){let x=R()*w,y=R()*h,an=R()*6.28;g.strokeStyle='rgba(8,6,6,'+(a||.7)+')';g.lineWidth=.8+R()*1.2;g.beginPath();g.moveTo(x,y);const L=14+R()*16;for(let s=0;s<L;s++){an+=(R()-.5)*1.1;x+=Math.cos(an)*(3+R()*5);y+=Math.sin(an)*(3+R()*5);g.lineTo(x,y);}g.stroke();}};
   // runa circular apenas insinuada (guiño a los mitos)
   const glyph=(g,x,y,r,col)=>{g.strokeStyle=col;g.lineWidth=1.2;g.beginPath();g.arc(x,y,r,0,7);g.stroke();g.beginPath();g.arc(x,y,r*.35,0,7);g.stroke();for(let k=0;k<5;k++){const an=k*1.2566+.3;g.beginPath();g.moveTo(x+Math.cos(an)*r*.3,y+Math.sin(an)*r*.3);g.lineTo(x+Math.cos(an+2.5)*r*.9,y+Math.sin(an+2.5)*r*.9);g.stroke();}};
@@ -818,9 +818,9 @@ function buildUT(){
   },(g,w,h)=>{g.strokeStyle='rgba(60,110,100,.22)';g.lineWidth=1.4;for(let k=0;k<7;k++){const x=R()*w,y=R()*h;g.beginPath();g.moveTo(x,y);g.bezierCurveTo(x+20,y-14,x+40,y+14,x+60,y);g.stroke();}});
 
   const o=Object.assign({},MATS);
-  o.brick={t:brick,sc:2,shin:14,spec:brick.userData.spec};o.concrete={t:concrete,sc:4,shin:30,spec:concrete.userData.spec};o.tiles={t:tiles,sc:2.4,shin:34,spec:tiles.userData.spec};o.wood={t:wood,sc:1,shin:12};o.crate={t:crate,sc:1.5,shin:6};
-  o.grate={t:grate,sc:1.2,shin:50};o.metal={t:metal,sc:2,shin:70,spec:metal.userData.spec};o.grass={t:grass,sc:2,shin:6};o.smooth={t:smooth,sc:3,shin:16,spec:smooth.userData.spec};o.whitewall={t:whitewall,sc:3,shin:10,spec:whitewall.userData.spec};
-  o.roof={t:roof,sc:3,shin:50,spec:roof.userData.spec};o.step={t:step,sc:1,shin:50,spec:step.userData.spec};o.rock={t:rock,sc:3,shin:30,spec:rock.userData.spec};o.black={t:black,sc:2,shin:55};o.navy={t:navy,sc:1,shin:60};
+  o.brick={t:brick,sc:2,shin:14,spec:brick.utSpec};o.concrete={t:concrete,sc:4,shin:30,spec:concrete.utSpec};o.tiles={t:tiles,sc:2.4,shin:34,spec:tiles.utSpec};o.wood={t:wood,sc:1,shin:12};o.crate={t:crate,sc:1.5,shin:6};
+  o.grate={t:grate,sc:1.2,shin:50};o.metal={t:metal,sc:2,shin:70,spec:metal.utSpec};o.grass={t:grass,sc:2,shin:6};o.smooth={t:smooth,sc:3,shin:16,spec:smooth.utSpec};o.whitewall={t:whitewall,sc:3,shin:10,spec:whitewall.utSpec};
+  o.roof={t:roof,sc:3,shin:50,spec:roof.utSpec};o.step={t:step,sc:1,shin:50,spec:step.utSpec};o.rock={t:rock,sc:3,shin:30,spec:rock.utSpec};o.black={t:black,sc:2,shin:55};o.navy={t:navy,sc:1,shin:60};
   o.roofTiles={t:roofTiles,sc:1.5,shin:10};o.soil={t:soil,sc:1.5,shin:4};o.barn={t:barn,sc:2,shin:14};o.rail={t:rail,sc:1,shin:60,alpha:true};
   return {mats:o,water};
 }

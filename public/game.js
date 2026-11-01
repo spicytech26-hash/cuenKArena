@@ -1328,7 +1328,7 @@ function buildSkatenight() {
   /* ---- suelo: subsuelo de roca, plaza con dos huecos (bowls) y borde ---- */
   add(-70, -8, -60, 70, -3.5, 60, 'rock');
   const slab = (x0, z0, x1, z1) => add(x0, -3.5, z0, x1, 0, z1, 'concrete');
-  slab(-26, -32, 55.8, -10); slab(-55.8, -10, 55.8, -4); slab(-34, -4, 55.8, 12); slab(-55.8, 12, 55.8, 38);
+  slab(-26, -32, 55.8, -10); slab(-55.8, -10, 55.8, -4); slab(-34, -4, 55.8, 12); slab(-55.8, 12, 55.8, 52);
   slab(-55.8, -36, 55.8, -32); slab(-55.8, -32, -52, -10); slab(-55.8, -4, -52, 12);
   // bowl 1 (grande, oeste-norte): piso a -3
   add(-52, -3.5, -32, -26, -3, -10, 'concrete');
@@ -1340,23 +1340,24 @@ function buildSkatenight() {
   ramp(-52, -4, -48, 12, -2, -2, 0, 'x', -1, 'concrete'); ramp(-38, -4, -34, 12, -2, -2, 0, 'x', 1, 'concrete');
   ramp(-52, -4, -34, 0, -2, -2, 0, 'z', -1, 'concrete'); ramp(-52, 8, -34, 12, -2, -2, 0, 'z', 1, 'concrete');
   coping(-52, -4, -34, 12);
+  deco.push({ t: 'bruma', x0: -56, x1: 56, z0: -36, z1: 52, y: .8, o: .16, dir: 1 }, { t: 'bruma', x0: -56, x1: 56, z0: -36, z1: 52, y: 3.4, o: .1, dir: -1 });
   deco.push({ t: 'bruma', x0: -52, x1: -26, z0: -32, z1: -10, y: -2.3, o: .28, dir: 1 }, { t: 'bruma', x0: -52, x1: -34, z0: -4, z1: 12, y: -1.3, o: .26, dir: -1 });
 
   /* ---- límites: valla al oeste y al este, mural al sur y al norte-oeste, río al norte; todo cerrado por arriba y por los costados ---- */
-  add(-56, 0, -36, -55.8, 4.2, 38, 'fence'); add(55.8, 0, -32, 56, 4.2, 38, 'fence');
-  for (let z = -36; z <= 38; z += 6) { add(-56.1, 0, z, -55.8, 4.4, z + .3, 'metal'); if (z >= -32) add(55.8, 0, z, 56.1, 4.4, z + .3, 'metal'); }
-  add(-56.1, 4.2, -36, -55.8, 4.4, 38, 'metal'); add(55.8, 4.2, -32, 56.1, 4.4, 38, 'metal');
-  add(-55.8, 0, 37, 55.8, 4, 38, 'concrete');                                    // mural sur
+  add(-56, 0, -36, -55.8, 4.2, 52, 'fence'); add(55.8, 0, -32, 56, 4.2, 52, 'fence');
+  for (let z = -36; z <= 52; z += 6) { add(-56.1, 0, z, -55.8, 4.4, z + .3, 'metal'); if (z >= -32) add(55.8, 0, z, 56.1, 4.4, z + .3, 'metal'); }
+  add(-56.1, 4.2, -36, -55.8, 4.4, 52, 'metal'); add(55.8, 4.2, -32, 56.1, 4.4, 52, 'metal');
+  add(-55.8, 0, 51, 55.8, 4, 52, 'concrete');                                    // mural sur
   add(-55.8, 0, -36.5, -2, 2.6, -36, 'concrete');                                  // mural norte (del lado del río)
-  add(-60, -8, -44, -55.8, 60, 44, 'clip'); add(55.8, -8, -44, 60, 60, 44, 'clip'); add(-60, -8, -44, 60, 60, -36.2, 'clip');
-  add(-60, -8, 38, 60, 60, 44, 'clip'); add(-60, 24, -44, 60, 60, 44, 'clip');     // techo del mapa: inalcanzable ni con rocket jump
+  add(-60, -8, -44, -55.8, 60, 58, 'clip'); add(55.8, -8, -44, 60, 60, 58, 'clip'); add(-60, -8, -44, 60, 60, -36.2, 'clip');
+  add(-60, -8, 52, 60, 60, 58, 'clip'); add(-60, 24, -44, 60, 60, 58, 'clip');     // techo del mapa: inalcanzable ni con rocket jump
   lava.push({ min: [-420, -4, -260], max: [420, 0, -36.6], water: true, dps: 0 });   // el Paraná, al otro lado del muro: solo se ve
   // afuera: pasto oscuro y la calle con autos estacionados (solo se ven)
-  add(-420, -.5, -36.6, -56.5, -.05, 400, 'grass', { nc: 1 }); add(56.5, -.5, -36.6, 420, -.05, 400, 'grass', { nc: 1 }); add(-56.5, -.5, 38, 56.5, -.05, 400, 'grass', { nc: 1 });
-  add(-56.5, -.05, 43, 56.5, 0, 52, 'rock', { nc: 1 });
-  for (const [x, z, c] of [[-34, 46.5, 'barn'], [8, 47.5, 'navy'], [38, 46.5, 'barn']]) { add(x, 0, z, x + 4.4, 1, z + 1.9, c, { nc: 1 }); add(x + 1, 1, z + .1, x + 3.2, 1.7, z + 1.8, 'black', { nc: 1 }); }
+  add(-420, -.5, -36.6, -56.5, -.05, 400, 'grass', { nc: 1 }); add(56.5, -.5, -36.6, 420, -.05, 400, 'grass', { nc: 1 }); add(-56.5, -.5, 52, 56.5, -.05, 400, 'grass', { nc: 1 });
+  add(-56.5, -.05, 57, 56.5, 0, 66, 'rock', { nc: 1 });
+  for (const [x, z, c] of [[-34, 60.5, 'barn'], [8, 61.5, 'navy'], [38, 60.5, 'barn']]) { add(x, 0, z, x + 4.4, 1, z + 1.9, c, { nc: 1 }); add(x + 1, 1, z + .1, x + 3.2, 1.7, z + 1.8, 'black', { nc: 1 }); }
   palma(-53.5, -34, 9); palma(-53.5, 35, 8); palma(53.5, 35, 9); palma(-53.5, 10, 8); palma(53.5, -2, 8); palma(-10, 35.5, 7);
-  palma(-60, 20, 8); palma(62, 14, 9); palma(-30, 41, 8); palma(24, 41, 9);
+  palma(-60, 20, 8); palma(62, 14, 9); palma(-30, 55, 8); palma(24, 55, 9); palma(-53.5, 49, 8); palma(53.5, 49, 9);
 
   /* ---- tribuna al norte: 10 gradas hasta 5 m, pasillo de arriba con baranda sobre el río ---- */
   // las 4 primeras gradas son macizas (con dos entradas de 3 m en x 14..17 y 36..39); de la 5 en adelante están huecas por debajo (a 2 m):
@@ -1381,21 +1382,26 @@ function buildSkatenight() {
   bar(44, -30.8, 44, 10, 5); bar(46, -30.8, 46, 10, 5);
   for (const z of [-14, -4, 6]) { add(43.9, 0, z, 44.1, 4.7, z + .2, 'metal'); add(45.9, 0, z, 46.1, 4.7, z + .2, 'metal'); }
   // plataforma sur (2 m) con escalera al norte y rampa al este
-  add(18, 0, 26, 34, 2, 37, 'concrete'); stairs(18, 22, 34, 26, 0, .5, 4, 'z', 1, 'concrete'); ramp(34, 26, 40, 37, 0, 0, 2, 'x', -1, 'concrete');
+  add(18, 0, 26, 34, 2, 37, 'concrete'); stairs(18, 22, 34, 26, 0, .5, 4, 'z', 1, 'concrete'); ramp(34, 26, 40, 37, 0, 0, 2, 'x', -1, 'concrete'); bar(18, 36.9, 34, 36.9, 2);
   /* ---- pirámides, bank con cartel, billboard y terraza contra la valla ---- */
   hip(-12, 2, 3, 2.5, 1.5, 4); hip(14, 2, 4, 3, 2.4, 5);
   ramp(-6, 24, 0, 30, 0, 0, 1, 'x', 1, 'concrete'); add(0, 0, 24, 8, 1, 30, 'smooth'); ramp(8, 24, 14, 30, 0, 0, 1, 'x', -1, 'concrete');   // bank to ledge
   add(0, 1, 24, 8, 1.08, 24.2, 'rail', { nc: 1 });
   graf(4, .5, 30.02, 7.6, .8, 'PROHIBIDO NIÑOS ZOMBIES', '#2a2a28', '#6e6c66');
   ramp(46, 20, 52, 31, 0, 0, 2.6, 'x', 1, 'concrete'); add(52, 0, 20, 55.8, 2.6, 31, 'smooth'); bar(46, 20, 55.8, 20, 2.6); bar(46, 31, 55.8, 31, 2.6);
-  // el cartel grande de Misiones (marco de hierro con panel sólido, se pasa por abajo)
-  add(-9.2, 0, 15.9, -8.8, 3.8, 16.1, 'metal'); add(8.8, 0, 15.9, 9.2, 3.8, 16.1, 'metal'); add(-8.8, 2.3, 15.85, 8.8, 3.7, 16.15, 'clip');
-  deco.push({ t: 'cartel', x: 0, y: 3, z: 15.82, w: 17.6, h: 1.4, txt: 'MISIONES', bg: '#1c1c5c', fg: '#b8b8d8', ry: Math.PI }, { t: 'cartel', x: 0, y: 3, z: 16.18, w: 17.6, h: 1.4, txt: 'MISIONES', bg: '#1c1c5c', fg: '#b8b8d8', ry: 0 });
   // poste de luz con transformador, como el de la foto
   add(-46.3, 0, 29.7, -45.7, 11, 30.3, 'concrete'); add(-48.2, 9.6, 29.85, -43.8, 9.8, 30.15, 'metal', { nc: 1 }); add(-47.4, 7.6, 29.5, -46.6, 8.8, 30.5, 'metal', { nc: 1 }); add(-45.4, 7.6, 29.5, -44.6, 8.8, 30.5, 'metal', { nc: 1 });
   // cajones, muretes y cobertura baja
   for (const [x, z, s] of [[-6, -16, 1.5], [30, -6, 1.2], [-20, 14, 1.2], [4, 20, 1.2], [38, 2, 1.5], [-42, 20, 1.2], [22, -14, 1.2], [8, -12, 1.2]]) add(x, 0, z, x + s * 1.4, s, z + s, 'crate');
   add(-28, 0, 8, -22, .9, 8.6, 'smooth'); add(34, 0, -14, 40, .9, -13.4, 'smooth');
+  // zona sur nueva (z 38..51): media caña (mini ramp) al oeste, escalera con terraza al medio, muros de cobertura y salida con saltador
+  ramp(-34, 42, -29, 50, 0, 0, 1.8, 'x', -1, 'concrete'); add(-38, 0, 42, -34, 1.8, 50, 'smooth'); ramp(-21, 42, -16, 50, 0, 0, 1.8, 'x', 1, 'concrete'); add(-16, 0, 42, -12, 1.8, 50, 'smooth');
+  stairs(8, 40, 20, 46, 0, .5, 4, 'x', 1, 'concrete'); add(20, 0, 40, 30, 2, 46, 'smooth'); ramp(30, 40, 36, 46, 0, 0, 2, 'x', -1, 'concrete'); bar(20, 40, 30, 40, 2); bar(20, 46, 30, 46, 2);
+  for (const [x0, z0, x1, z1] of [[-8, 40, -7.6, 48], [40, 46, 48, 46.4], [0, 38.6, 6, 39], [-45, 42, -44.6, 49], [46, 40, 46.4, 44]]) add(x0, 0, z0, x1, 3, z1, 'concrete');
+  add(38, 0, 49, 42, 1.2, 50.6, 'crate'); add(-4, 0, 47, -1, 1.2, 48.6, 'crate'); add(-48, 0, 41, -46.4, 1.2, 44, 'crate');
+  pads.push({ x: -24, y: 0, z: 46, r: 1.1, t: [-25.5, 5, 21], apex: 3 });          // media caña -> piso alto de la torre sur-oeste
+  I('health', -36, 1.8, 46); I('armor', -14, 1.8, 46); I('shells', 25, 2, 43); I('rockets', 0, 0, 44); I('bullets', 44, 0, 44); I('health', 14, 0, 49); I('slugs', -42, 0, 46); I('grenades', 48, 0, 48); I('armor', 6, 0, 42);
+  [[-24, 0, 48], [0, 0, 44], [14, 0, 48], [44, 0, 44], [25, 2, 43], [-42, 0, 46]].forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
   // ascensor rápido: sube del piso de la plaza a la pasarela de la tribuna (5 m) cada 10 s; el costado cyan se enciende solo
   mover(-7.6, -.36, -30, -4, .04, -26.6, 'metal', 1, 5, 10, -Math.PI / 2);
   // muros de cobertura (3 m): cortan la línea de tiro de la plaza y dejan esquinas para esperar a oscuras
@@ -1407,8 +1413,8 @@ function buildSkatenight() {
   bar(-29, -1.2, -21.8, -1.2, 3); bar(-31.2, -1.2, -31.2, 6.2, 3); bar(-31.2, 6.2, -21.8, 6.2, 3); bar(-21.8, -1.2, -21.8, 6.2, 3);
   deco.push({ t: 'cartel', x: -26.5, y: 2.5, z: -1.03, w: 3.2, h: .5, txt: 'KIOSCO 24 HS', bg: '#2a1c14', fg: '#a8844a', ry: Math.PI });
   // murales (pintura sobre el muro, carteles apagados)
-  graf(-40, 1.2, 36.98, 6, 1.6, 'OXIDE', '#7a4a9a', '#1d1d22', Math.PI); graf(-14, 1.2, 36.98, 5, 1.6, 'SKATE', '#3a8a6a', '#1d1d22', Math.PI);
-  graf(12, 1.2, 36.98, 6, 1.6, 'LOST', '#9a7a3a', '#1d1d22', Math.PI); graf(42, 1.2, 36.98, 5, 1.6, 'CRAZE', '#9a3a5a', '#1d1d22', Math.PI);
+  graf(-40, 1.2, 50.98, 6, 1.6, 'OXIDE', '#7a4a9a', '#1d1d22', Math.PI); graf(-14, 1.2, 50.98, 5, 1.6, 'SKATE', '#3a8a6a', '#1d1d22', Math.PI);
+  graf(12, 1.2, 50.98, 6, 1.6, 'LOST', '#9a7a3a', '#1d1d22', Math.PI); graf(42, 1.2, 50.98, 5, 1.6, 'CRAZE', '#9a3a5a', '#1d1d22', Math.PI);
   graf(-46, 1.3, -35.98, 6, 1.6, 'FREE SKATE', '#4a7aa0', '#1d1d22', 0); graf(-24, 1.3, -35.98, 5, 1.6, 'OXIDE', '#a0502a', '#1d1d22', 0);
   graf(-8, 1.3, -35.98, 3.4, 1.6, '720', '#8a8a3a', '#1d1d22', 0);
   // reflectores: casi todos apagados
@@ -1449,7 +1455,7 @@ function buildSkatenight() {
   lights.push({ x: -50, y: 6, z: 22, c: 0xffa860, i: .55, d: 20 }, { x: -10, y: 6, z: -34, c: 0xffa860, i: .55, d: 20 }, { x: 52, y: 6, z: 34, c: 0xffa860, i: .55, d: 20 }, { x: 20, y: 6, z: 12, c: 0xffa860, i: .55, d: 20 },
     { x: -16.5, y: 6.3, z: -23.5, c: 0x6aa0ff, i: .4, d: 14 }, { x: -24.5, y: 6.3, z: 18.5, c: 0x6aa0ff, i: .4, d: 14 }, { x: 45.5, y: 6.3, z: 10.5, c: 0x6aa0ff, i: .4, d: 14 },
     { x: -46, y: 3, z: 34, c: 0xffc840, i: .9, d: 13 }, { x: 51, y: 8, z: -33.8, c: 0x4aa0ff, i: .9, d: 13 },
-    { x: -39, y: -1, z: -21, c: 0x4a8a6a, i: .35, d: 14 }, { x: -43, y: 0, z: 4, c: 0x8a4a8a, i: .35, d: 12 });
+    { x: -24, y: 3, z: 46, c: 0x4a8a6a, i: .35, d: 14 }, { x: 36, y: 6, z: 48, c: 0xffa860, i: .5, d: 18 }, { x: -39, y: -1, z: -21, c: 0x4a8a6a, i: .35, d: 14 }, { x: -43, y: 0, z: 4, c: 0x8a4a8a, i: .35, d: 12 });
   {   // juntas: los bloques sólidos del mismo material que se tocan se solapan 6 mm (sin grietas de un píxel entre ellos)
     const S = B.filter(b => !b.nc && !b.mover && !b.ramp && b.mat !== 'clip'), g = S.map(() => [[0, 0], [0, 0], [0, 0]]);
     for (let i = 0; i < S.length; i++) for (let j = i + 1; j < S.length; j++) {
@@ -1463,8 +1469,8 @@ function buildSkatenight() {
     S.forEach((b, i) => { for (let ax = 0; ax < 3; ax++) { if (g[i][ax][0]) b.min[ax] -= .006; if (g[i][ax][1]) b.max[ax] += .006; } });
   }
   for (const b of B) if (b.nc && b.mat !== 'clip') for (let k = 0; k < 3; k++) { b.min[k] -= .012; b.max[k] += .012; }   // evita caras coplanares (z-fighting)
-  return finish({ id: 'skatenight', name: 'Skatenight', bounds: { x0: -56, x1: 56, z0: -40, z1: 40 }, deco, modos: ['arena', 'gungame'],
-    theme: { sky: 'night', tex: 'ut', noche: true, skyDim: .3, fog: 0x010204, fogD: .024, amb: 0x1a2440, ambI: .09, hemi: [0x20345c, 0x04060a, .08], sun: true, sunC: 0x5a78c0, sunI: .1, sunPos: [34, 60, -46], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
+  return finish({ id: 'skatenight', name: 'Skatenight', bounds: { x0: -56, x1: 56, z0: -40, z1: 54 }, deco, modos: ['arena', 'gungame'],
+    theme: { sky: 'night', tex: 'ut', noche: true, skyDim: .3, fog: 0x010204, fogD: .031, amb: 0x1a2440, ambI: .09, hemi: [0x20345c, 0x04060a, .08], sun: true, sunC: 0x5a78c0, sunI: .1, sunPos: [34, 60, -46], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
 }
 MAPDEFS.skatenight = buildSkatenight;
 const MAPS = {};

@@ -248,7 +248,8 @@ function buildCuartoTramo() {
   for (const [z, y] of [[-4, 0]]) { add(61.1, y, z - .07, 61.24, y + 1.75, z + .07, 'wood'); deco.push({ t: 'aviso', x: 61.17, y: y + 2.1, z, ry: -Math.PI / 2 }); }
   /* ---- carteles ---- */
   deco.push({ t: 'cartel', x: 0, y: 10.9, z: -25.97, w: 10, h: 1.4, txt: 'ESTACIÓN POSADAS', bg: '#5a2a1c', fg: '#f3d9a8' });
-  add(-3.6, 1, 8.9, -3.4, 3.4, 9.1, 'metal'); add(3.4, 1, 8.9, 3.6, 3.4, 9.1, 'metal');
+  add(-3.6, 0, 8.9, -3.4, 3.4, 9.1, 'metal'); add(3.4, 0, 8.9, 3.6, 3.4, 9.1, 'metal');
+  add(-3.6, 2.25, 8.8, 3.6, 3.35, 8.92, 'clip');                                     // el panel del cartel es sólido (colisión invisible)
   deco.push({ t: 'cartel', x: 0, y: 2.8, z: 8.85, w: 7.4, h: 1.1, txt: 'COSTANERA · POSADAS', bg: '#1f3a2e', fg: '#f3d9a8', ry: Math.PI });
   /* ---- portales enfrentados: el amarillo en el andén oeste, el azul en el andén este (a campo abierto); cada uno te deja delante del otro ---- */
     teles.push({ x: -44, y: 0, z: -6, r: 1, to: [37.5, 0, -6], yaw: face(37.5, -6, 0, 0), color: 'yellow' });

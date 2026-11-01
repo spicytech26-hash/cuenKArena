@@ -19,12 +19,29 @@ function buildSkatenight() {
     for (const dx of [-.66, -.22, .22, .66]) { add(x + dx - .17, y0 + 6.95, z - .22, x + dx + .17, y0 + 7.4, z + .22, 'black', { nc: 1 }); if (on) add(x + dx - .13, y0 + 6.9, z - .16, x + dx + .13, y0 + 6.95, z + .16, 'light', { nc: 1 }); }
     if (on) deco.push({ t: 'glow', x, y: y0 + 6.7, z, c: 0xffc070 });
   };
-  // graffitis (deco 'graf'): sobre rampas, piso y muros; en colores de aerosol, se ven bien solo con la linterna
-  const NEON = ['#ff3fd2', '#2be6ff', '#ffe03a', '#5dff7a', '#ff7a2a', '#b46cff', '#ff4a5a', '#4aa0ff']; let tn = 0;
-  const tag = (x, y, z, w, h, txt, rx, ry) => deco.push({ t: 'graf', x, y, z, w, h, txt, fg: NEON[(tn++) % NEON.length], rx, ry });
-  const flat = (x, z, y, w, h, txt, ry) => tag(x, y + .03, z, w, h, txt, -Math.PI / 2, ry || 0);                 // en el piso
-  const wallTag = (x, y, z, w, h, txt, ry) => tag(x, y, z, w, h, txt, 0, ry);                                    // en un muro vertical (ry: hacia dónde mira)
-  const slope = (cx, cy, cz, ry, alpha, w, h, txt) => { const hx = Math.sin(ry), hz = Math.cos(ry), sa = Math.sin(alpha), ca = Math.cos(alpha); tag(cx + hx * sa * .04, cy + ca * .04, cz + hz * sa * .04, w, h, txt, alpha - Math.PI / 2, ry); };   // sobre una rampa que mira hacia ry
+  // graffitis (deco 'graf'): cada pieza es un cuadro del atlas de aerosol (64 diseños, ver 03-decoracion.js) apoyado sobre una superficie.
+  // cover() cubre un rectángulo de una pared, rampa o piso con piezas superpuestas; el azar es fijo, así que el mapa sale siempre igual
+  let gs = 7; const rnd = () => { gs = (gs * 1664525 + 1013904223) >>> 0; return gs / 4294967296; };
+  const piece = (cx, cy, cz, rx, ry, u, v, w, h, k) => {
+    const cr = Math.cos(ry), sr = Math.sin(ry), sx = Math.sin(rx), cxr = Math.cos(rx);
+    deco.push({ t: 'graf', x: cx + u * cr + v * sx * sr, y: cy + v * cxr, z: cz - u * sr + v * sx * cr, w, h, k, rx, ry, fl: k >= 28 && rnd() < .5 });
+  };
+  // (cx, cy, cz) = centro de la superficie · ry = hacia dónde mira · alpha = inclinación (0 piso, PI/2 pared) · W ancho · H alto (largo de la pendiente)
+  const cover = (cx, cy, cz, ry, alpha, W, H, dens) => {
+    const rx = alpha - Math.PI / 2, nx = Math.sin(ry) * Math.sin(alpha), ny = Math.cos(alpha), nz = Math.cos(ry) * Math.sin(alpha);
+    cx += nx * .05; cy += ny * .05; cz += nz * .05;
+    const cols = Math.max(1, Math.round(W / 4.8)), rows = Math.max(1, Math.round(H / 2.7));
+    for (let a = 0; a < cols; a++) for (let b = 0; b < rows; b++) {
+      if (rnd() > (dens || 1)) continue;
+      const w = 4.4 + rnd() * 2, h = Math.min(w * .52, H * 1.06);
+      piece(cx, cy, cz, rx, ry, (a + .5 + (rnd() - .5) * .5) * W / cols - W / 2, (b + .5 + (rnd() - .5) * .4) * H / rows - H / 2, w, h, Math.floor(rnd() * 64));
+    }
+  };
+  // las dos caras de un muro fino (ry: hacia dónde mira cada cara)
+  const wallArt = (x0, z0, x1, z1, h) => {
+    if (x1 - x0 >= z1 - z0) { const cx = (x0 + x1) / 2, W = x1 - x0; cover(cx, h / 2, z0, Math.PI, Math.PI / 2, W, h, .95); cover(cx, h / 2, z1, 0, Math.PI / 2, W, h, .95); }
+    else { const cz = (z0 + z1) / 2, W = z1 - z0; cover(x0, h / 2, cz, -Math.PI / 2, Math.PI / 2, W, h, .95); cover(x1, h / 2, cz, Math.PI / 2, Math.PI / 2, W, h, .95); }
+  };
   // palmera con tronco sólido (el tronco es invisible, la copa la dibuja la decoración)
   const palma = (x, z, h) => { deco.push({ t: 'palm', x, y: 0, z, h }); add(x - .25, 0, z - .25, x + .25, 4, z + .25, 'clip'); };
   // coronamiento (borde liso) de la boca de un bowl
@@ -95,6 +112,8 @@ function buildSkatenight() {
     else add(-2, 2, za, 54, top, zb, 'concrete');
   }
   for (const x of [6, 22, 30, 46]) add(x, 0, -29.3, x + .6, 2, -28.7, 'concrete');
+  // muro bajo (1,1 m, se salta) al pie de la tribuna, con los dos pasos a la galería: es el lienzo de graffitis largo que se ve en el render
+  for (const [a, b] of [[-2, 14], [17, 36], [39, 54]]) add(a, 0, -19.8, b, 1.1, -19.4, 'concrete');
   add(-2, 0, -36, 54, 5, -32, 'concrete');
   bar(-2, -36, 54, -36, 5);
   add(54, 0, -36, 55.8, 5, -20, 'concrete');                                       // cabecera este de la tribuna
@@ -144,19 +163,25 @@ function buildSkatenight() {
   add(-31.2, 2.7, -1.2, -21.8, 3, 6.2, 'roof'); stairs(-31, -6, -29, -1, 0, .5, 6, 'z', 1, 'concrete');
   bar(-29, -1.2, -21.8, -1.2, 3); bar(-31.2, -1.2, -31.2, 6.2, 3); bar(-31.2, 6.2, -21.8, 6.2, 3); bar(-21.8, -1.2, -21.8, 6.2, 3);
   deco.push({ t: 'cartel', x: -26.5, y: 2.5, z: -1.03, w: 3.2, h: .5, txt: 'KIOSCO 24 HS', bg: '#2a1c14', fg: '#a8844a', ry: Math.PI });
-  /* ---- graffitis: bowls, pirámides, muros y piso ---- */
-  const A1 = Math.atan2(3, 5), A2 = Math.atan2(2, 4), P = Math.PI;
-  for (const [x, txt] of [[-44, 'OXIDE'], [-34, 'LOST']]) slope(x, -1.5, -29.5, 0, A1, 4.6, 2.4, txt);
-  slope(-30, -1.5, -12.5, P, A1, 4.6, 2.4, 'RISE');
-  for (const [z, txt] of [[-24, '720'], [-18, 'CRAZE']]) slope(-49.5, -1.5, z, P / 2, A1, 4.6, 2.4, txt);
-  for (const [z, txt] of [[-24, 'DEAD'], [-18, 'SKATE']]) slope(-28.5, -1.5, z, -P / 2, A1, 4.6, 2.4, txt);
-  flat(-39, -21, -3, 7, 3.2, 'CKATE HOME', .3); flat(-45, -28, -3, 4, 2, 'XX', -.4);
-  slope(-43, -1.5, 10, P, A2, 4.4, 2.2, 'OXIDE'); slope(-49.75, -1.5, 4, P / 2, A2, 4.4, 2.2, 'NOCHE'); slope(-36.25, -1.5, 4, -P / 2, A2, 3.6, 2, 'ZZ'); slope(-36.25, -1.5, -7, -P / 2, A2, 3.6, 2, 'LOST');
-  flat(-43, 3.5, -3, 5.5, 2.6, 'SKATE DIE', -.5); flat(33, 37, -3.2, 7, 3, 'OXIDE', .4); slope(33, -1.6, 24.5, 0, Math.atan2(3.2, 5), 5, 2.4, 'LOST');
-  slope(-12, .75, -2.5, P, Math.atan2(1.5, 4), 3.6, 1.6, 'RIDE'); slope(14, 1.2, -3.5, P, Math.atan2(2.4, 5), 5, 2.4, 'OXIDE'); slope(14, 1.2, 7.5, 0, Math.atan2(2.4, 5), 5, 2.4, 'LOST');
-  flat(-14, -26, 0, 6, 3, 'OXIDE', .2); flat(20, -14, 0, 5, 2.5, 'LOST', -.3); flat(38, 18, 0, 5, 2.5, 'RISE', .6); flat(-10, 40, 0, 6, 3, 'SKATE', 0); flat(-40, 30, 0, 5, 2.5, '720', .9); flat(51, 46, 0, 4, 2, 'CRAZE', -.5); flat(0, 6, 0, 5, 2, 'NO DIE', 1.2);
-  wallTag(-11.58, 1.5, -14, 5, 2, 'FREE SKATE', P / 2); wallTag(26, 1.5, -8.58, 5, 2, 'RISE', 0); wallTag(40.98, 1.5, 1, 5, 2, 'LOST', -P / 2); wallTag(-22, 1.5, 27.98, 5, 2, 'CRAZE', P);
-  wallTag(14, 1.5, 18.42, 5, 2, 'DEAD', 0); wallTag(-8.02, 1.5, 12.5, 5, 2, '720', -P / 2);
+  /* ---- graffitis: todo el mapa está pintado, como en el render (paredes de los pozos, rampas, muros, tribuna y algo de piso) ---- */
+  const P = Math.PI, al = (d, w) => Math.atan2(d, w);
+  // pozo en L del oeste (3 m): pared oeste (44 m de largo), norte, este del bowl grande, sur, este del canal y sur del bowl chico
+  cover(-49.75, -1.5, -10, P / 2, al(3, 4.5), 44, 5.4, 1); cover(-39, -1.5, -29.5, 0, al(3, 5), 26, 5.8, 1); cover(-28.5, -1.5, -21, -P / 2, al(3, 5), 22, 5.8, 1);
+  cover(-30, -1.5, -12.5, P, al(3, 5), 8, 5.8, 1); cover(-36.25, -1.5, 1, -P / 2, al(3, 4.5), 22, 5.4, 1); cover(-43, -1.5, 10, P, al(3, 4), 18, 5, 1);
+  // pozo en L grande del sureste (3,2 m)
+  cover(22.5, -1.6, 30, P / 2, al(3.2, 5), 16, 5.9, 1); cover(33, -1.6, 24.5, 0, al(3.2, 5), 26, 5.9, 1); cover(43.5, -1.6, 36, -P / 2, al(3.2, 5), 28, 5.9, 1);
+  cover(24, -1.6, 35.5, P, al(3.2, 5), 8, 5.9, 1); cover(30.5, -1.6, 44, P / 2, al(3.2, 5), 12, 5.9, 1); cover(37, -1.6, 47.5, P, al(3.2, 5), 18, 5.9, 1);
+  // pirámides, spine, hip, bancos, bank to ledge y media caña (las cuatro rampas de cada una)
+  cover(-12, .75, -2.5, P, al(1.5, 4), 6, 4.3, 1); cover(-12, .75, 6.5, 0, al(1.5, 4), 6, 4.3, 1); cover(-17, .75, 2, -P / 2, al(1.5, 4), 5, 4.3, 1); cover(-7, .75, 2, P / 2, al(1.5, 4), 5, 4.3, 1);
+  cover(14, 1.2, -3.5, P, al(2.4, 5), 8, 5.5, 1); cover(14, 1.2, 7.5, 0, al(2.4, 5), 8, 5.5, 1); cover(7.5, 1.2, 2, -P / 2, al(2.4, 5), 6, 5.5, 1); cover(20.5, 1.2, 2, P / 2, al(2.4, 5), 6, 5.5, 1);
+  cover(32, .9, 3.8, P, al(1.8, 4), 8, 4.4, 1); cover(32, .9, 10.2, 0, al(1.8, 4), 8, 4.4, 1); cover(-2.5, .7, 2, -P / 2, al(1.4, 4), 8, 4.2, 1); cover(2.5, .7, 2, P / 2, al(1.4, 4), 8, 4.2, 1);
+  cover(-49, .9, 19, P / 2, al(1.8, 6), 10, 6.3, 1); cover(49, .9, -11, -P / 2, al(1.8, 6), 10, 6.3, 1); cover(49, 1.3, 25.5, -P / 2, al(2.6, 6), 11, 6.5, 1);
+  cover(-3, .5, 27, -P / 2, al(1, 6), 6, 6.1, 1); cover(11, .5, 27, P / 2, al(1, 6), 6, 6.1, 1); cover(-31.5, .9, 46, P / 2, al(1.8, 5), 8, 5.3, 1); cover(-18.5, .9, 46, -P / 2, al(1.8, 5), 8, 5.3, 1);
+  // muros de cobertura (las dos caras) y el muro bajo al pie de la tribuna
+  for (const [x0, z0, x1, z1] of [[-12, -18, -11.6, -10], [22, -9, 30, -8.6], [41, -4, 41.4, 6], [-26, 28, -18, 28.4], [10, 18, 18, 18.4], [-8, 9, -7.6, 16], [0, 38.6, 6, 39], [-8, 40, -7.6, 48], [-45, 42, -44.6, 49], [8, 48, 16, 48.4]]) wallArt(x0, z0, x1, z1, 3);
+  for (const [a, b] of [[-2, 14], [17, 36], [39, 54]]) cover((a + b) / 2, .55, -19.37, 0, P / 2, b - a, 1.1, 1);
+  // piso: manchones y firmas sueltas (pocas, como en el render)
+  for (const [x, z] of [[-14, -26], [8, -5], [18, 16], [-30, 38], [0, 34], [36, -8], [52, 10], [-24, 16], [-10, 20], [50, 40], [12, 36], [-40, 24], [26, 20], [-4, -20]]) cover(x, 0, z, rnd() * 6.28, 0, 5, 3.4, 1);
   // basura y escombros afuera de las vallas (solo se ven): palets y rocas
   for (const [x, z] of [[-60, -20], [-61, 6], [-59, 30], [-26, 56], [14, 57], [44, 56], [60, 20], [61, -4]]) { add(x, 0, z, x + 1.4, .14, z + 1.1, 'wood', { nc: 1 }); add(x + .1, .14, z + .1, x + 1.3, .28, z + 1, 'wood', { nc: 1 }); add(x + 1.9, 0, z + .4, x + 2.6, .5, z + 1.1, 'rock', { nc: 1 }); }
   // orilla del río al norte: banco de pasto con juncos

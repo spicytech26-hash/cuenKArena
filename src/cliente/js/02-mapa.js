@@ -80,7 +80,7 @@ function loadMap(id){
   const th=M.theme;
   {const ut=th.tex==='ut';if(ut&&!UTset)UTset=buildUT();const nm=ut?UTset.mats:MATS;if(nm!==MATSX){MATSX=nm;for(const k in matCache)delete matCache[k];}}
   scene.fog.color.setHex(th.fog);scene.fog.density=th.fogD;scene.background.setHex(th.fog);
-  sky.material.map=skyTex[th.sky]||skyTex.dusk;sky.material.needsUpdate=true;
+  sky.material.map=skyTex[th.sky]||skyTex.dusk;sky.material.color.setScalar(th.skyDim||1);sky.material.needsUpdate=true;   // skyDim: oscurece el cielo (noche cerrada)
   const groups={};
   for(const b of M.brushes){
     if(b.mat==='clip')continue;   // bloque de colisión invisible
@@ -120,7 +120,7 @@ function loadMap(id){
     sun.shadow.bias=th.shBias!=null?th.shBias:-.0006;sun.shadow.normalBias=th.shNormal!=null?th.shNormal:.04;L.sun=sun;group.add(sun);}
   // modo noche: 3 focos reales (el mío y los de los 2 rivales más cercanos); se mueven en updNight
   NIGHT=!!th.noche;
-  if(NIGHT)L.spots=[[2.8,58,.46],[2.3,44,.42],[2.3,44,.42]].map(([i,d,a])=>{const sp=new THREE.SpotLight(0xfff0cc,i,d,a,.6,1.15);sp.castShadow=false;sp.userData.i0=i;sp.userData.pid=null;group.add(sp,sp.target);return sp;});
+  if(NIGHT)L.spots=[[3.6,64,.46],[3.0,46,.42],[3.0,46,.42]].map(([i,d,a])=>{const sp=new THREE.SpotLight(0xfff0cc,i,d,a,.6,1.15);sp.castShadow=false;sp.userData.i0=i;sp.userData.pid=null;group.add(sp,sp.target);return sp;});
   try{for(const v of vms)if(v.userData.lin)v.userData.lin.visible=NIGHT;}catch(e){}
   // todo el mapa recibe sombra y la proyecta (menos lo transparente y los neones)
   group.traverse(o=>{if(!o.isMesh)return;const mt=o.material;if(mt&&(mt.transparent||mt.isMeshBasicMaterial))return;o.castShadow=true;o.receiveShadow=true;});

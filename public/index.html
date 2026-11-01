@@ -906,7 +906,7 @@ function loadMap(id){
   const th=M.theme;
   {const ut=th.tex==='ut';if(ut&&!UTset)UTset=buildUT();const nm=ut?UTset.mats:MATS;if(nm!==MATSX){MATSX=nm;for(const k in matCache)delete matCache[k];}}
   scene.fog.color.setHex(th.fog);scene.fog.density=th.fogD;scene.background.setHex(th.fog);
-  sky.material.map=skyTex[th.sky]||skyTex.dusk;sky.material.needsUpdate=true;
+  sky.material.map=skyTex[th.sky]||skyTex.dusk;sky.material.color.setScalar(th.skyDim||1);sky.material.needsUpdate=true;   // skyDim: oscurece el cielo (noche cerrada)
   const groups={};
   for(const b of M.brushes){
     if(b.mat==='clip')continue;   // bloque de colisión invisible
@@ -946,7 +946,7 @@ function loadMap(id){
     sun.shadow.bias=th.shBias!=null?th.shBias:-.0006;sun.shadow.normalBias=th.shNormal!=null?th.shNormal:.04;L.sun=sun;group.add(sun);}
   // modo noche: 3 focos reales (el mío y los de los 2 rivales más cercanos); se mueven en updNight
   NIGHT=!!th.noche;
-  if(NIGHT)L.spots=[[2.8,58,.46],[2.3,44,.42],[2.3,44,.42]].map(([i,d,a])=>{const sp=new THREE.SpotLight(0xfff0cc,i,d,a,.6,1.15);sp.castShadow=false;sp.userData.i0=i;sp.userData.pid=null;group.add(sp,sp.target);return sp;});
+  if(NIGHT)L.spots=[[3.6,64,.46],[3.0,46,.42],[3.0,46,.42]].map(([i,d,a])=>{const sp=new THREE.SpotLight(0xfff0cc,i,d,a,.6,1.15);sp.castShadow=false;sp.userData.i0=i;sp.userData.pid=null;group.add(sp,sp.target);return sp;});
   try{for(const v of vms)if(v.userData.lin)v.userData.lin.visible=NIGHT;}catch(e){}
   // todo el mapa recibe sombra y la proyecta (menos lo transparente y los neones)
   group.traverse(o=>{if(!o.isMesh)return;const mt=o.material;if(mt&&(mt.transparent||mt.isMeshBasicMaterial))return;o.castShadow=true;o.receiveShadow=true;});
@@ -3410,13 +3410,15 @@ function povGun(dt){
      salvo que estén cerca (menos de 5 m) o los estés alumbrando; el nombre aparece solo si los alumbrás. */
 const nBeamGeo=(()=>{const g=new THREE.ConeGeometry(5.4,26,18,1,true);g.translate(0,-13,0);g.rotateX(-Math.PI/2);return g;})();   // la punta en el origen, apunta a +z
 const nBeamMat=new THREE.MeshBasicMaterial({color:0xfff0c8,transparent:true,opacity:.055,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
-const nLinBody=new THREE.MeshPhongMaterial({color:0x15171a,shininess:40}),nLinLens=new THREE.MeshBasicMaterial({color:0xfff4cc});
+const nLinBody=new THREE.MeshPhongMaterial({color:0x5a5e66,shininess:60,emissive:0x16181c}),nLinLens=new THREE.MeshBasicMaterial({color:0xfff4cc});
 const nDir=new THREE.Vector3(),nRight=new THREE.Vector3(),nUp=new THREE.Vector3(0,1,0);
-// linterna chiquita pegada al arma en mano (a la izquierda y abajo del caño)
-function makeLin(){
+// linterna chiquita pegada a cada arma en mano, a la izquierda del caño; dónde va en cada arma (x, y, z del modelo; la 7 es el cuchillo y la 10 el molotov)
+const LIN_POS=[[-.05,-.02,-.1],[-.07,-.035,-.44],[-.07,-.03,-.34],[-.07,-.03,-.35],[-.07,-.03,-.3],[-.09,-.02,-.42],[-.07,-.03,-.4],[-.05,0,-.05],[-.07,-.03,-.55],[-.07,-.03,-.6],[-.07,.05,-.02]];
+function makeLin(i){
   const gp=new THREE.Group(),body=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.09,10),nLinBody);body.rotation.x=Math.PI/2;
   const lens=new THREE.Mesh(new THREE.CircleGeometry(.019,10),nLinLens);lens.position.z=-.047;lens.rotation.y=Math.PI;
-  gp.add(body,lens);gp.position.set(-.07,-.035,-.44);return gp;
+  const ring=new THREE.Mesh(new THREE.CylinderGeometry(.0175,.0175,.014,10),nLinLens);ring.rotation.x=Math.PI/2;ring.position.z=-.03;   // aro de luz: se ve de costado
+  gp.add(body,lens,ring);gp.position.fromArray(LIN_POS[i]||LIN_POS[1]);return gp;
 }
 // haz y lente de un rival (cuelgan de su modelo, así se limpian solos)
 function buildBeam(m){
@@ -3450,7 +3452,7 @@ function updNight(dt){
   if(!level)return;
   if(!NIGHT){for(const v of vms)if(v.userData.lin)v.userData.lin.visible=false;return;}
   const sp=level.spots;if(!sp)return;
-  const vm=vms[me.w];if(vm){if(!vm.userData.lin){vm.userData.lin=makeLin();vm.add(vm.userData.lin);}vm.userData.lin.visible=true;}
+  vms.forEach((v,i)=>{if(!v.userData.lin){v.userData.lin=makeLin(i);v.add(v.userData.lin);}v.userData.lin.visible=true;});   // todas las armas llevan linterna
   nLook(camera.rotation.y,camera.rotation.x,nDir);nRight.crossVectors(nDir,nUp).normalize();
   const mine=sp[0],on=me.alive||spWatching();
   mine.position.copy(camera.position).addScaledVector(nRight,.16).addScaledVector(nUp,-.1).addScaledVector(nDir,.2);

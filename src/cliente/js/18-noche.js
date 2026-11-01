@@ -6,13 +6,15 @@
      salvo que estén cerca (menos de 5 m) o los estés alumbrando; el nombre aparece solo si los alumbrás. */
 const nBeamGeo=(()=>{const g=new THREE.ConeGeometry(5.4,26,18,1,true);g.translate(0,-13,0);g.rotateX(-Math.PI/2);return g;})();   // la punta en el origen, apunta a +z
 const nBeamMat=new THREE.MeshBasicMaterial({color:0xfff0c8,transparent:true,opacity:.055,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
-const nLinBody=new THREE.MeshPhongMaterial({color:0x15171a,shininess:40}),nLinLens=new THREE.MeshBasicMaterial({color:0xfff4cc});
+const nLinBody=new THREE.MeshPhongMaterial({color:0x5a5e66,shininess:60,emissive:0x16181c}),nLinLens=new THREE.MeshBasicMaterial({color:0xfff4cc});
 const nDir=new THREE.Vector3(),nRight=new THREE.Vector3(),nUp=new THREE.Vector3(0,1,0);
-// linterna chiquita pegada al arma en mano (a la izquierda y abajo del caño)
-function makeLin(){
+// linterna chiquita pegada a cada arma en mano, a la izquierda del caño; dónde va en cada arma (x, y, z del modelo; la 7 es el cuchillo y la 10 el molotov)
+const LIN_POS=[[-.05,-.02,-.1],[-.07,-.035,-.44],[-.07,-.03,-.34],[-.07,-.03,-.35],[-.07,-.03,-.3],[-.09,-.02,-.42],[-.07,-.03,-.4],[-.05,0,-.05],[-.07,-.03,-.55],[-.07,-.03,-.6],[-.07,.05,-.02]];
+function makeLin(i){
   const gp=new THREE.Group(),body=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.09,10),nLinBody);body.rotation.x=Math.PI/2;
   const lens=new THREE.Mesh(new THREE.CircleGeometry(.019,10),nLinLens);lens.position.z=-.047;lens.rotation.y=Math.PI;
-  gp.add(body,lens);gp.position.set(-.07,-.035,-.44);return gp;
+  const ring=new THREE.Mesh(new THREE.CylinderGeometry(.0175,.0175,.014,10),nLinLens);ring.rotation.x=Math.PI/2;ring.position.z=-.03;   // aro de luz: se ve de costado
+  gp.add(body,lens,ring);gp.position.fromArray(LIN_POS[i]||LIN_POS[1]);return gp;
 }
 // haz y lente de un rival (cuelgan de su modelo, así se limpian solos)
 function buildBeam(m){
@@ -46,7 +48,7 @@ function updNight(dt){
   if(!level)return;
   if(!NIGHT){for(const v of vms)if(v.userData.lin)v.userData.lin.visible=false;return;}
   const sp=level.spots;if(!sp)return;
-  const vm=vms[me.w];if(vm){if(!vm.userData.lin){vm.userData.lin=makeLin();vm.add(vm.userData.lin);}vm.userData.lin.visible=true;}
+  vms.forEach((v,i)=>{if(!v.userData.lin){v.userData.lin=makeLin(i);v.add(v.userData.lin);}v.userData.lin.visible=true;});   // todas las armas llevan linterna
   nLook(camera.rotation.y,camera.rotation.x,nDir);nRight.crossVectors(nDir,nUp).normalize();
   const mine=sp[0],on=me.alive||spWatching();
   mine.position.copy(camera.position).addScaledVector(nRight,.16).addScaledVector(nUp,-.1).addScaledVector(nDir,.2);

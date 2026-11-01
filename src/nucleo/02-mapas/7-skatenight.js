@@ -8,7 +8,7 @@
    · Cuatro saltadores y dos portales (uno en el rincón sur-oeste y otro arriba de la tribuna: lejísimos entre sí).
    · Casi todos los reflectores están apagados: solo algunos pozos de luz, la linterna y la luna. */
 function buildSkatenight() {
-  const { B, pads, teles, lava, spawns, lights, add, ramp, stairs, face, I, finish } = mapKit();
+  const { B, pads, teles, lava, spawns, lights, add, ramp, wall, stairs, D, face, I, mover, finish } = mapKit();
   const deco = [];
   // baranda física de 1 m (se puede saltar, no se atraviesa); si es un tramo corto en x o en z se le da grosor solo
   const bar = (x0, z0, x1, z1, y) => add(Math.min(x0, x1), y, Math.min(z0, z1), Math.max(x0, x1) + (x0 === x1 ? .1 : 0), y + 1, Math.max(z0, z1) + (z0 === z1 ? .1 : 0), 'rail');
@@ -79,7 +79,14 @@ function buildSkatenight() {
   palma(-60, 20, 8); palma(62, 14, 9); palma(-30, 41, 8); palma(24, 41, 9);
 
   /* ---- tribuna al norte: 10 gradas hasta 5 m, pasillo de arriba con baranda sobre el río ---- */
-  stairs(-2, -32, 54, -20, 0, .5, 10, 'z', -1, 'concrete');
+  // las 4 primeras gradas son macizas (con dos entradas de 3 m en x 14..17 y 36..39); de la 5 en adelante están huecas por debajo (a 2 m):
+  // abajo queda una galería oscura de 7 m de fondo, abierta al oeste, con pilares y botín: el escondite del mapa
+  for (let i = 1; i <= 10; i++) {
+    const za = -20 - 1.2 * i, zb = za + 1.2, top = .5 * i;
+    if (i <= 4) { for (const [a, b] of [[-2, 14], [17, 36], [39, 54]]) add(a, 0, za, b, top, zb, 'concrete'); }
+    else add(-2, 2, za, 54, top, zb, 'concrete');
+  }
+  for (const x of [6, 22, 30, 46]) add(x, 0, -29.3, x + .6, 2, -28.7, 'concrete');
   add(-2, 0, -36, 54, 5, -32, 'concrete');
   bar(-2, -36, 54, -36, 5);
   add(54, 0, -36, 55.8, 5, -20, 'concrete');                                       // cabecera este de la tribuna
@@ -87,7 +94,7 @@ function buildSkatenight() {
   torre(-22, -24, 'e'); torre(-30, 18, ''); torre(40, 10, 'n');
   // pasarela 1: de la torre norte-oeste a la tribuna, a 5 m (L: 12 m al este y 16 m al norte)
   add(-16, 4.7, -22, -4, 5, -20, 'grate'); add(-4, 4.7, -36, -2, 5, -20, 'grate');
-  bar(-16, -22, -4, -22, 5); bar(-16, -20, -4, -20, 5); bar(-4, -36, -4, -22, 5); bar(-2.1, -32, -2.1, -20, 5); bar(-4, -36, -2, -36, 5);
+  bar(-16, -22, -4, -22, 5); bar(-16, -20, -4, -20, 5); bar(-4, -36, -4, -30, 5); bar(-4, -26.6, -4, -22, 5); bar(-2.1, -32, -2.1, -20, 5); bar(-4, -36, -2, -36, 5);
   for (const [x, z] of [[-10.1, -22], [-10.1, -20.2], [-3.1, -26], [-3.1, -22.4]]) add(x, 0, z, x + .2, 4.7, z + .2, 'metal');
   // pasarela 2: de la tribuna a la torre este, a 5 m (2 m de ancho sobre la plaza)
   add(44, 4.7, -30.8, 46, 5, 10, 'grate');
@@ -108,7 +115,17 @@ function buildSkatenight() {
   add(-46.3, 0, 29.7, -45.7, 11, 30.3, 'concrete'); add(-48.2, 9.6, 29.85, -43.8, 9.8, 30.15, 'metal', { nc: 1 }); add(-47.4, 7.6, 29.5, -46.6, 8.8, 30.5, 'metal', { nc: 1 }); add(-45.4, 7.6, 29.5, -44.6, 8.8, 30.5, 'metal', { nc: 1 });
   // cajones, muretes y cobertura baja
   for (const [x, z, s] of [[-6, -16, 1.5], [30, -6, 1.2], [-20, 14, 1.2], [4, 20, 1.2], [38, 2, 1.5], [-42, 20, 1.2], [22, -14, 1.2], [8, -12, 1.2]]) add(x, 0, z, x + s * 1.4, s, z + s, 'crate');
-  add(-28, 0, 8, -22, .9, 8.6, 'smooth'); add(34, 0, -14, 40, .9, -13.4, 'smooth'); add(-8, 0, -30, -2, .9, -29.4, 'smooth');
+  add(-28, 0, 8, -22, .9, 8.6, 'smooth'); add(34, 0, -14, 40, .9, -13.4, 'smooth');
+  // ascensor rápido: sube del piso de la plaza a la pasarela de la tribuna (5 m) cada 10 s; el costado cyan se enciende solo
+  mover(-7.6, -.36, -30, -4, .04, -26.6, 'metal', 1, 5, 10, -Math.PI / 2);
+  // muros de cobertura (3 m): cortan la línea de tiro de la plaza y dejan esquinas para esperar a oscuras
+  for (const [x0, z0, x1, z1] of [[-12, -18, -11.6, -10], [22, -9, 30, -8.6], [41, -4, 41.4, 6], [-26, 28, -18, 28.4], [-2, -2, -1.6, 6], [10, 18, 18, 18.4], [44, 34, 52, 34.4], [-8, 9, -7.6, 16]]) add(x0, 0, z0, x1, 3, z1, 'concrete');
+  // kiosko con techo: dos puertas al norte y al sur, una al este; se sube al techo (3 m) por una escalera de afuera
+  wall(-31, -1, -22, -.6, 0, 2.8, [D(-28, -25, 0, 2.2)], 'brick'); wall(-31, 5.6, -22, 6, 0, 2.8, [D(-30, -27, 0, 2.2)], 'brick');
+  wall(-31, -.6, -30.6, 5.6, 0, 2.8, [], 'brick'); wall(-22.4, -.6, -22, 5.6, 0, 2.8, [D(1, 3.4, 0, 2.2)], 'brick');
+  add(-31.2, 2.7, -1.2, -21.8, 3, 6.2, 'roof'); stairs(-31, -6, -29, -1, 0, .5, 6, 'z', 1, 'concrete');
+  bar(-29, -1.2, -21.8, -1.2, 3); bar(-31.2, -1.2, -31.2, 6.2, 3); bar(-31.2, 6.2, -21.8, 6.2, 3); bar(-21.8, -1.2, -21.8, 6.2, 3);
+  deco.push({ t: 'cartel', x: -26.5, y: 2.5, z: -1.03, w: 3.2, h: .5, txt: 'KIOSCO 24 HS', bg: '#2a1c14', fg: '#a8844a', ry: Math.PI });
   // murales (pintura sobre el muro, carteles apagados)
   graf(-40, 1.2, 36.98, 6, 1.6, 'OXIDE', '#7a4a9a', '#1d1d22', Math.PI); graf(-14, 1.2, 36.98, 5, 1.6, 'SKATE', '#3a8a6a', '#1d1d22', Math.PI);
   graf(12, 1.2, 36.98, 6, 1.6, 'LOST', '#9a7a3a', '#1d1d22', Math.PI); graf(42, 1.2, 36.98, 5, 1.6, 'CRAZE', '#9a3a5a', '#1d1d22', Math.PI);
@@ -139,15 +156,18 @@ function buildSkatenight() {
   // chalecos y botiquines
   I('armor', -14, 1.5, 2); I('armor', 30, 0, -14); I('armor', -34, -3, -17); I('armor', 24, 5, -34); I('armor', 42, 0, 28); I('armor', -6, 0, 33);
   I('health', -40, -3, -18); I('health', -43, -2, 4); I('health', 14, 2.4, 0); I('health', 6, 5, -34); I('health', 36, 5, -34); I('health', -18, 2.5, -19.5); I('health', -27, 2.5, 21);
-  I('health', 42.5, 2.5, 12.5); I('health', 54, 2.6, 22); I('health', -2, 0, -2); I('health', 30, 0, 8); I('health', -8, 0, 24); I('health', 44, 0, 36); I('health', -50, 0, -34); I('health', 8, 0, -17);
+  I('health', 42.5, 2.5, 12.5); I('health', 54, 2.6, 22); I('health', -3, 0, -2); I('health', 30, 0, 8); I('health', -8, 0, 24); I('health', 44, 0, 36); I('health', -50, 0, -34); I('health', 8, 0, -17);
 
+  // galería bajo la tribuna y kiosko: botín en la oscuridad
+  I('armor', 10, 0, -28.2); I('bullets', 44, 0, -28); I('health', 26, 0, -29); I('shells', 34, 0, -27); I('rockets', 2, 0, -27);
+  I('armor', -26, 0, 2); I('rockets', -29, 0, 4); I('slugs', -26, 3, 2); I('health', -24, 3, 5);
   /* ---- apariciones: repartidas por todos los niveles ---- */
   [[-12, 0, -34], [-8, 0, -14], [4, 0, -8], [22, 0, -10], [38, 0, -12], [50, 0, -8], [50, 0, 6], [30, 0, 2], [38, 0, 18], [8, 0, 34], [-20, 0, 32], [-36, 0, 22], [-50, 0, 20], [-48, 0, -34], [-20, 0, -33], [-24, 0, -6],
-   [-40, -3, -20], [-34, -3, -24], [-43, -2, 3], [6, 5, -34], [20, 5, -34], [34, 5, -34], [26, 3, -26.6], [-17, 5, -21], [-25.5, 5, 21], [44.5, 5, 13], [45, 5, -10], [26, 2, 31], [14, 2.4, 2], [-12, 1.5, 2], [42, 2.5, 13], [-20, 2.5, -21]]
+   [-40, -3, -20], [-34, -3, -24], [-43, -2, 3], [6, 5, -34], [20, 5, -34], [34, 5, -34], [26, 3, -26.6], [-17, 5, -21], [-25.5, 5, 21], [44.5, 5, 13], [45, 5, -10], [26, 2, 31], [14, 2.4, 2], [-12, 1.5, 2], [42, 2.5, 13], [-20, 2.5, -21], [20, 0, -28], [44, 0, -28], [8, 0, -27], [-26, 0, 3], [-26, 3, 4]]
     .forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
   /* ---- luces: unos pocos pozos de luz en la oscuridad (la linterna hace el resto) ---- */
-  lights.push({ x: -50, y: 6, z: 22, c: 0xffa860, i: .8, d: 22 }, { x: -10, y: 6, z: -34, c: 0xffa860, i: .8, d: 22 }, { x: 52, y: 6, z: 34, c: 0xffa860, i: .8, d: 22 }, { x: 20, y: 6, z: 12, c: 0xffa860, i: .8, d: 22 },
-    { x: -16.5, y: 6.3, z: -23.5, c: 0x6aa0ff, i: .55, d: 16 }, { x: -24.5, y: 6.3, z: 18.5, c: 0x6aa0ff, i: .55, d: 16 }, { x: 45.5, y: 6.3, z: 10.5, c: 0x6aa0ff, i: .55, d: 16 },
+  lights.push({ x: -50, y: 6, z: 22, c: 0xffa860, i: .55, d: 20 }, { x: -10, y: 6, z: -34, c: 0xffa860, i: .55, d: 20 }, { x: 52, y: 6, z: 34, c: 0xffa860, i: .55, d: 20 }, { x: 20, y: 6, z: 12, c: 0xffa860, i: .55, d: 20 },
+    { x: -16.5, y: 6.3, z: -23.5, c: 0x6aa0ff, i: .4, d: 14 }, { x: -24.5, y: 6.3, z: 18.5, c: 0x6aa0ff, i: .4, d: 14 }, { x: 45.5, y: 6.3, z: 10.5, c: 0x6aa0ff, i: .4, d: 14 },
     { x: -46, y: 3, z: 34, c: 0xffc840, i: .9, d: 13 }, { x: 51, y: 8, z: -33.8, c: 0x4aa0ff, i: .9, d: 13 },
     { x: -39, y: -1, z: -21, c: 0x4a8a6a, i: .35, d: 14 }, { x: -43, y: 0, z: 4, c: 0x8a4a8a, i: .35, d: 12 });
   {   // juntas: los bloques sólidos del mismo material que se tocan se solapan 6 mm (sin grietas de un píxel entre ellos)
@@ -164,6 +184,6 @@ function buildSkatenight() {
   }
   for (const b of B) if (b.nc && b.mat !== 'clip') for (let k = 0; k < 3; k++) { b.min[k] -= .012; b.max[k] += .012; }   // evita caras coplanares (z-fighting)
   return finish({ id: 'skatenight', name: 'Skatenight', bounds: { x0: -56, x1: 56, z0: -40, z1: 40 }, deco, modos: ['arena', 'gungame'],
-    theme: { sky: 'night', tex: 'ut', noche: true, fog: 0x050911, fogD: .016, amb: 0x1c2a48, ambI: .3, hemi: [0x2a4270, 0x080c12, .24], sun: true, sunC: 0x6a88d0, sunI: .32, sunPos: [34, 60, -46], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
+    theme: { sky: 'night', tex: 'ut', noche: true, skyDim: .3, fog: 0x010204, fogD: .024, amb: 0x1a2440, ambI: .09, hemi: [0x20345c, 0x04060a, .08], sun: true, sunC: 0x5a78c0, sunI: .1, sunPos: [34, 60, -46], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
 }
 MAPDEFS.skatenight = buildSkatenight;

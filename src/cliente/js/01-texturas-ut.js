@@ -42,8 +42,8 @@ function buildUT(ruina){
     const l=(r+g+b)/3;return [mx(r,l,.18),mx(g,l,.12),mx(b,l,.1),255,28+gm*150+ms*170];
   },(g,w,h)=>{crack(g,w,h,4,.6);glyph(g,60+R()*120,60+R()*120,16,'rgba(20,10,8,.35)');});
 
-  const concrete=mk(256,256,(x,y,u,v)=>{
-    const n=fbm(u*5,v*5),n2=fbm(u*28,v*28,4),st=fbm(u*3+7,v*3),b=88+n*40+n2*18,joint=(x%128<2||y%128<2)?.55:1,w=pos(st-.55)*2.2,alg=pos(fbm(u*7+2,v*7)-.62)*3;
+  const CZ=RUIN?512:256,concrete=mk(CZ,CZ,(x,y,u,v)=>{   // en la variante ruina el hormigón (lo que más se ve) tiene el doble de resolución
+    const n=fbm(u*5,v*5),n2=fbm(u*28,v*28,4),st=fbm(u*3+7,v*3),b=88+n*40+n2*18,joint=((u*2)%1<.009||(v*2)%1<.009)?.55:1,w=pos(st-.55)*2.2,alg=pos(fbm(u*7+2,v*7)-.62)*3;
     let r=b*.98*(1-w*.45),g=b*(1-w*.3),bl=b*.96*(1-w*.2);r=mx(r,40,alg*.6);g=mx(g,64,alg*.6);bl=mx(bl,44,alg*.6);return [r*joint,g*joint,bl*joint*1.03,255,30+w*170+alg*70];
   },(g,w,h)=>crack(g,w,h,5,.55));
 
@@ -120,5 +120,7 @@ function buildUT(ruina){
   o.grate={t:grate,sc:1.2,shin:50};o.metal={t:metal,sc:2,shin:70,spec:metal.utSpec};o.grass={t:grass,sc:2,shin:6};o.smooth={t:smooth,sc:3,shin:16,spec:smooth.utSpec};o.whitewall={t:whitewall,sc:3,shin:10,spec:whitewall.utSpec};
   o.roof={t:roof,sc:3,shin:50,spec:roof.utSpec};o.step={t:step,sc:1,shin:50,spec:step.utSpec};o.rock={t:rock,sc:3,shin:30,spec:rock.utSpec};o.black={t:black,sc:2,shin:55};o.navy={t:navy,sc:1,shin:60};
   o.roofTiles={t:roofTiles,sc:1.5,shin:10};o.soil={t:soil,sc:1.5,shin:4};o.barn={t:barn,sc:2,shin:14};o.rail={t:rail,sc:1,shin:60,alpha:true};
+  // relieve: la propia textura sirve de mapa de relieve (grietas, juntas y manchas se marcan con la luz de la linterna)
+  if(RUIN){const bm={concrete:.5,brick:.8,step:.4,smooth:.4,rock:.8,tiles:.5,whitewall:.3,wood:.5,roof:.3,crate:.5,grass:.3}; /* suaves: más fuerte se ve como agua o purpurina */for(const k in bm)if(o[k])o[k].bump=bm[k];}
   return {mats:o,water};
 }

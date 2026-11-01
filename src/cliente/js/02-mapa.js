@@ -46,6 +46,7 @@ function matOf(m){
   if(md.alpha){mat.transparent=true;mat.side=THREE.DoubleSide;if(m==='tube'){mat.depthWrite=false;}else mat.alphaTest=.4;}
   if(md.em){mat.emissiveMap=md.em;mat.emissive=new THREE.Color(m==='led'?0xbbbbbb:0xffffff);}
   if(md.emc)mat.emissive=new THREE.Color(md.emc);
+  if(md.bump&&S.q){mat.bumpMap=md.t;mat.bumpScale=md.bump;}   // relieve (solo la variante «ruina» y con las luces en calidad alta)
   if(md.spec){mat.specularMap=md.spec;mat.specular=new THREE.Color(0x99a0aa);}   // zonas húmedas que reflejan más la luz
   return matCache[m]=mat;
 }
@@ -119,7 +120,7 @@ function loadMap(id){
     Object.assign(sun.shadow.camera,{left:-R,right:R,top:R,bottom:-R,near:5,far:160});sun.shadow.camera.updateProjectionMatrix();
     sun.shadow.bias=th.shBias!=null?th.shBias:-.0006;sun.shadow.normalBias=th.shNormal!=null?th.shNormal:.04;L.sun=sun;group.add(sun);}
   // modo noche: 3 focos reales (el mío y los de los 2 rivales más cercanos); se mueven en updNight
-  NIGHT=!!th.noche;
+  NIGHT=!!th.noche;document.body.classList.toggle('noche',NIGHT);   // viñeta y grano de película en los mapas de noche
   if(NIGHT)L.spots=[[3.2,28,.4],[2.4,20,.38],[2.4,20,.38]].map(([i,d,a])=>{const sp=new THREE.SpotLight(0xfff0cc,i,d,a,.6,1.15);sp.castShadow=false;sp.userData.i0=i;sp.userData.pid=null;group.add(sp,sp.target);return sp;});
   try{for(const v of vms)if(v.userData.lin)v.userData.lin.visible=NIGHT;}catch(e){}
   // todo el mapa recibe sombra y la proyecta (menos lo transparente y los neones)

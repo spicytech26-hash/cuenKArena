@@ -355,10 +355,17 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
 @media (max-width:900px){#ctfBox{top:auto;bottom:calc(96px + env(safe-area-inset-bottom,0px))}#ctfBox .mid{display:none}}
 @media (max-width:620px){.keys{grid-template-columns:auto 1fr}.cell{min-width:80px}.cell .num{font-size:30px}#slots,#shopHint,#kickHint{display:none}.srow{grid-template-columns:1fr 1fr 44px}.locker{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.show,#crPop.show{animation-name:fade}}
+
+/* mapas de noche: viñeta oscura en los bordes y grano de película apenas visible (no tocan el HUD ni el menú) */
+#nvig,#ngrain{display:none;position:fixed;inset:0;pointer-events:none}
+body.noche #nvig{display:block;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 40%,rgba(0,0,0,.35) 72%,rgba(0,0,0,.72) 100%)}
+body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");animation:ngr .5s steps(5) infinite}
+@keyframes ngr{0%{transform:translate(0,0)}20%{transform:translate(-4%,3%)}40%{transform:translate(3%,-4%)}60%{transform:translate(-3%,-2%)}80%{transform:translate(4%,2%)}100%{transform:translate(0,0)}}
 </style>
 
 <canvas id="c"></canvas>
 <div id="flash" class="ov"></div><div id="pflash" class="ov"></div><div id="qtint" class="ov"></div><div id="lavatint" class="ov"></div>
+<div id="nvig"></div><div id="ngrain"></div>
 <div id="hud" hidden>
   <div id="fpsBox" hidden></div>
   <div id="xh"></div><div id="hitm"></div><div id="dmgdir"></div>
@@ -752,8 +759,8 @@ function buildUT(ruina){
     const l=(r+g+b)/3;return [mx(r,l,.18),mx(g,l,.12),mx(b,l,.1),255,28+gm*150+ms*170];
   },(g,w,h)=>{crack(g,w,h,4,.6);glyph(g,60+R()*120,60+R()*120,16,'rgba(20,10,8,.35)');});
 
-  const concrete=mk(256,256,(x,y,u,v)=>{
-    const n=fbm(u*5,v*5),n2=fbm(u*28,v*28,4),st=fbm(u*3+7,v*3),b=88+n*40+n2*18,joint=(x%128<2||y%128<2)?.55:1,w=pos(st-.55)*2.2,alg=pos(fbm(u*7+2,v*7)-.62)*3;
+  const CZ=RUIN?512:256,concrete=mk(CZ,CZ,(x,y,u,v)=>{   // en la variante ruina el hormigón (lo que más se ve) tiene el doble de resolución
+    const n=fbm(u*5,v*5),n2=fbm(u*28,v*28,4),st=fbm(u*3+7,v*3),b=88+n*40+n2*18,joint=((u*2)%1<.009||(v*2)%1<.009)?.55:1,w=pos(st-.55)*2.2,alg=pos(fbm(u*7+2,v*7)-.62)*3;
     let r=b*.98*(1-w*.45),g=b*(1-w*.3),bl=b*.96*(1-w*.2);r=mx(r,40,alg*.6);g=mx(g,64,alg*.6);bl=mx(bl,44,alg*.6);return [r*joint,g*joint,bl*joint*1.03,255,30+w*170+alg*70];
   },(g,w,h)=>crack(g,w,h,5,.55));
 
@@ -830,6 +837,8 @@ function buildUT(ruina){
   o.grate={t:grate,sc:1.2,shin:50};o.metal={t:metal,sc:2,shin:70,spec:metal.utSpec};o.grass={t:grass,sc:2,shin:6};o.smooth={t:smooth,sc:3,shin:16,spec:smooth.utSpec};o.whitewall={t:whitewall,sc:3,shin:10,spec:whitewall.utSpec};
   o.roof={t:roof,sc:3,shin:50,spec:roof.utSpec};o.step={t:step,sc:1,shin:50,spec:step.utSpec};o.rock={t:rock,sc:3,shin:30,spec:rock.utSpec};o.black={t:black,sc:2,shin:55};o.navy={t:navy,sc:1,shin:60};
   o.roofTiles={t:roofTiles,sc:1.5,shin:10};o.soil={t:soil,sc:1.5,shin:4};o.barn={t:barn,sc:2,shin:14};o.rail={t:rail,sc:1,shin:60,alpha:true};
+  // relieve: la propia textura sirve de mapa de relieve (grietas, juntas y manchas se marcan con la luz de la linterna)
+  if(RUIN){const bm={concrete:.5,brick:.8,step:.4,smooth:.4,rock:.8,tiles:.5,whitewall:.3,wood:.5,roof:.3,crate:.5,grass:.3}; /* suaves: más fuerte se ve como agua o purpurina */for(const k in bm)if(o[k])o[k].bump=bm[k];}
   return {mats:o,water};
 }
 /* =================== GEOMETRÍA DEL MAPA =================== */
@@ -880,6 +889,7 @@ function matOf(m){
   if(md.alpha){mat.transparent=true;mat.side=THREE.DoubleSide;if(m==='tube'){mat.depthWrite=false;}else mat.alphaTest=.4;}
   if(md.em){mat.emissiveMap=md.em;mat.emissive=new THREE.Color(m==='led'?0xbbbbbb:0xffffff);}
   if(md.emc)mat.emissive=new THREE.Color(md.emc);
+  if(md.bump&&S.q){mat.bumpMap=md.t;mat.bumpScale=md.bump;}   // relieve (solo la variante «ruina» y con las luces en calidad alta)
   if(md.spec){mat.specularMap=md.spec;mat.specular=new THREE.Color(0x99a0aa);}   // zonas húmedas que reflejan más la luz
   return matCache[m]=mat;
 }
@@ -953,7 +963,7 @@ function loadMap(id){
     Object.assign(sun.shadow.camera,{left:-R,right:R,top:R,bottom:-R,near:5,far:160});sun.shadow.camera.updateProjectionMatrix();
     sun.shadow.bias=th.shBias!=null?th.shBias:-.0006;sun.shadow.normalBias=th.shNormal!=null?th.shNormal:.04;L.sun=sun;group.add(sun);}
   // modo noche: 3 focos reales (el mío y los de los 2 rivales más cercanos); se mueven en updNight
-  NIGHT=!!th.noche;
+  NIGHT=!!th.noche;document.body.classList.toggle('noche',NIGHT);   // viñeta y grano de película en los mapas de noche
   if(NIGHT)L.spots=[[3.2,28,.4],[2.4,20,.38],[2.4,20,.38]].map(([i,d,a])=>{const sp=new THREE.SpotLight(0xfff0cc,i,d,a,.6,1.15);sp.castShadow=false;sp.userData.i0=i;sp.userData.pid=null;group.add(sp,sp.target);return sp;});
   try{for(const v of vms)if(v.userData.lin)v.userData.lin.visible=NIGHT;}catch(e){}
   // todo el mapa recibe sombra y la proyecta (menos lo transparente y los neones)
@@ -1265,7 +1275,10 @@ function buildDeco(group,list){
       // bruma baja sobre el río: plano translúcido que se desliza despacio
       const t=M_('bruma',()=>new THREE.CanvasTexture(cv(256,256,(g,w,h)=>{g.clearRect(0,0,w,h);for(let k=0;k<70;k++){const x=Math.random()*w,y=Math.random()*h,r=20+Math.random()*50,gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,'rgba(200,225,225,'+(.25+Math.random()*.3)+')');gr.addColorStop(1,'rgba(200,225,225,0)');g.fillStyle=gr;for(const ox of [-w,0,w])for(const oy of [-h,0,h]){g.save();g.translate(ox,oy);g.beginPath();g.arc(x,y,r,0,7);g.fill();g.restore();}}})));
       t.wrapS=t.wrapT=THREE.RepeatWrapping;const tt=t.clone();tt.needsUpdate=true;tt.repeat.set((d.x1-d.x0)/70,(d.z1-d.z0)/70);animTex.push({t:tt,sx:.004*(d.dir||1),sy:.0025});
-      const m=new THREE.Mesh(new THREE.PlaneGeometry(d.x1-d.x0,d.z1-d.z0),new THREE.MeshBasicMaterial({map:tt,transparent:true,opacity:d.o||.2,depthWrite:false,side:THREE.DoubleSide}));
+      // d.soft: nube de borde difuminado (el color de cada vértice se apaga hacia los bordes y se suma a la escena): no se ve como una lámina con bordes
+      const BW=d.x1-d.x0,BD=d.z1-d.z0,geo=d.soft?new THREE.PlaneGeometry(BW,BD,20,20):new THREE.PlaneGeometry(BW,BD);
+      if(d.soft){const ps=geo.attributes.position,col=[];for(let k=0;k<ps.count;k++){const u=ps.getX(k)/BW+.5,v=ps.getY(k)/BD+.5,f=Math.min(1,Math.min(u,1-u,v,1-v)/.36),sm=f*f*(3-2*f);col.push(sm*.62,sm*.7,sm*.8);}geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));}
+      const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:tt,transparent:true,opacity:d.o||.2,depthWrite:false,side:THREE.DoubleSide,vertexColors:!!d.soft,blending:d.soft?THREE.AdditiveBlending:THREE.NormalBlending}));
       m.rotation.x=-Math.PI/2;m.position.set((d.x0+d.x1)/2,d.y,(d.z0+d.z1)/2);m.renderOrder=2;group.add(m);
     }else if(d.t==='logo'){
       const c=cv(256,256,(g)=>ucpLogo(g,128,128,124));

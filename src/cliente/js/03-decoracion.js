@@ -250,7 +250,10 @@ function buildDeco(group,list){
       // bruma baja sobre el río: plano translúcido que se desliza despacio
       const t=M_('bruma',()=>new THREE.CanvasTexture(cv(256,256,(g,w,h)=>{g.clearRect(0,0,w,h);for(let k=0;k<70;k++){const x=Math.random()*w,y=Math.random()*h,r=20+Math.random()*50,gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,'rgba(200,225,225,'+(.25+Math.random()*.3)+')');gr.addColorStop(1,'rgba(200,225,225,0)');g.fillStyle=gr;for(const ox of [-w,0,w])for(const oy of [-h,0,h]){g.save();g.translate(ox,oy);g.beginPath();g.arc(x,y,r,0,7);g.fill();g.restore();}}})));
       t.wrapS=t.wrapT=THREE.RepeatWrapping;const tt=t.clone();tt.needsUpdate=true;tt.repeat.set((d.x1-d.x0)/70,(d.z1-d.z0)/70);animTex.push({t:tt,sx:.004*(d.dir||1),sy:.0025});
-      const m=new THREE.Mesh(new THREE.PlaneGeometry(d.x1-d.x0,d.z1-d.z0),new THREE.MeshBasicMaterial({map:tt,transparent:true,opacity:d.o||.2,depthWrite:false,side:THREE.DoubleSide}));
+      // d.soft: nube de borde difuminado (el color de cada vértice se apaga hacia los bordes y se suma a la escena): no se ve como una lámina con bordes
+      const BW=d.x1-d.x0,BD=d.z1-d.z0,geo=d.soft?new THREE.PlaneGeometry(BW,BD,20,20):new THREE.PlaneGeometry(BW,BD);
+      if(d.soft){const ps=geo.attributes.position,col=[];for(let k=0;k<ps.count;k++){const u=ps.getX(k)/BW+.5,v=ps.getY(k)/BD+.5,f=Math.min(1,Math.min(u,1-u,v,1-v)/.36),sm=f*f*(3-2*f);col.push(sm*.62,sm*.7,sm*.8);}geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));}
+      const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:tt,transparent:true,opacity:d.o||.2,depthWrite:false,side:THREE.DoubleSide,vertexColors:!!d.soft,blending:d.soft?THREE.AdditiveBlending:THREE.NormalBlending}));
       m.rotation.x=-Math.PI/2;m.position.set((d.x0+d.x1)/2,d.y,(d.z0+d.z1)/2);m.renderOrder=2;group.add(m);
     }else if(d.t==='logo'){
       const c=cv(256,256,(g)=>ucpLogo(g,128,128,124));

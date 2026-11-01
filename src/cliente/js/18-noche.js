@@ -38,9 +38,9 @@ function nightRemote(p,m,dt){
   m.beam.position.y=m.glow.position.y=p.crouch?.95:1.38;m.beam.rotation.x=-p.pitch;
   const dx=p.x-camera.position.x,dy=p.y+1.2-camera.position.y,dz=p.z-camera.position.z,d=Math.hypot(dx,dy,dz)||1;
   nLook(camera.rotation.y,camera.rotation.x,nDir);
-  const lit=d<5||(d<46&&(dx*nDir.x+dy*nDir.y+dz*nDir.z)/d>.93);   // cerca, o dentro del cono de mi linterna
+  const lit=d<3||(d<46&&(dx*nDir.x+dy*nDir.y+dz*nDir.z)/d>.93);   // cerca, o dentro del cono de mi linterna
   p.lit=(p.lit||0)+((lit?1:0)-(p.lit||0))*Math.min(1,dt*(lit?14:2.5));   // se prende rápido y se apaga despacio
-  const k=.08+.92*p.lit;
+  const k=.02+.98*p.lit;
   for(let i=0;i<m.bas.length;i++)m.bas[i].color.copy(m.basC[i]).multiplyScalar(k);
   if(m.tag)m.tag.visible=p.lit>.5&&d<34;
   // el lente brilla fuerte si me apunta (cos entre su mirada y la dirección hacia mí)
@@ -50,8 +50,29 @@ function nightRemote(p,m,dt){
 }
 function nightHide(m){if(m.beam)m.beam.visible=m.glow.visible=false;}
 // focos reales: el mío y los de los 2 rivales más cercanos
+// ambiente sonoro de noche: viento bajo que sube y baja, y de tanto en tanto un crujido de metal, un golpe lejano o un susurro
+let nAmb=null,nAmbT=4;
+function nightAmbient(dt){
+  if(!AC||!noiseBuf)return;
+  if(!NIGHT){if(nAmb)nAmb.g.gain.value=0;return;}
+  if(!nAmb){const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=380;const g=AC.createGain();g.gain.value=0;s.connect(f);f.connect(g);g.connect(master);s.start();nAmb={g,f};}
+  const t=AC.currentTime;nAmb.g.gain.setTargetAtTime(.05+.035*Math.sin(t*.35)+.02*Math.sin(t*1.1),t,.4);nAmb.f.frequency.setTargetAtTime(300+160*Math.sin(t*.23),t,.5);
+  nAmbT-=dt;
+  if(nAmbT<=0){nAmbT=6+Math.random()*12;const k=Math.random();
+    if(k<.4){tn({type:'sawtooth',f0:230,f1:150,dur:1.2,vol:.025});nz({dur:1.2,f0:520,f1:300,type:'bandpass',q:7,vol:.05});}
+    else if(k<.75)tn({type:'sine',f0:72,f1:36,dur:.55,vol:.2});
+    else nz({dur:1,f0:2000,f1:900,type:'bandpass',q:5,vol:.035});}
+}
+// la linterna titila: cada tanto se apaga casi del todo un instante, y siempre tiembla un poquito
+let nFl={t:5,d:0};
+function nightFlicker(dt){
+  if(nFl.d>0){nFl.d-=dt;return .12+Math.random()*.4;}
+  nFl.t-=dt;if(nFl.t<=0){nFl.t=5+Math.random()*10;nFl.d=.12+Math.random()*.28;}
+  return .96+Math.random()*.06;
+}
 function updNight(dt){
   if(!level)return;
+  nightAmbient(dt);
   if(!NIGHT){for(const v of vms)if(v.userData.lin)v.userData.lin.visible=false;return;}
   const sp=level.spots;if(!sp)return;
   vms.forEach((v,i)=>{if(!v.userData.lin){v.userData.lin=makeLin(i);v.add(v.userData.lin);}v.userData.lin.visible=true;});   // todas las armas llevan linterna
@@ -59,7 +80,7 @@ function updNight(dt){
   const mine=sp[0],on=me.alive||spWatching();
   mine.position.copy(camera.position).addScaledVector(nRight,.16).addScaledVector(nUp,-.1).addScaledVector(nDir,.2);
   mine.target.position.copy(camera.position).addScaledVector(nDir,14);mine.target.updateMatrixWorld();
-  mine.intensity=mine.userData.i0*(on?1:.2);
+  mine.intensity=mine.userData.i0*(on?1:.2)*nightFlicker(dt);
   // rivales más cercanos con linterna (solo con la calidad de luces encendida)
   const near=[];
   if(S.q)for(const p of players.values()){

@@ -1307,12 +1307,22 @@ function buildSkatenight() {
     deco.push({ t: 'graf', x: cx + u * cr + v * sx * sr, y: cy + v * cxr, z: cz - u * sr + v * sx * cr, w, h, k, rx, ry, fl: k >= 28 && rnd() < .5 });
   };
   // (cx, cy, cz) = centro de la superficie · ry = hacia dónde mira · alpha = inclinación (0 piso, PI/2 pared) · W ancho · H alto (largo de la pendiente)
+  // GD: cuánto del mapa está pintado (menos graffitis = más abandono); los decals de abandono (dpiece) van en las mismas superficies
+  const GD = .3;
+  const dpiece = (cx, cy, cz, rx, ry, u, v, w, k) => {
+    const cr = Math.cos(ry), sr = Math.sin(ry), sx = Math.sin(rx), cxr = Math.cos(rx);
+    deco.push({ t: 'decal', x: cx + u * cr + v * sx * sr, y: cy + v * cxr, z: cz - u * sr + v * sx * cr, w, h: w, k, rx, ry, rz: 0 });
+  };
   const cover = (cx, cy, cz, ry, alpha, W, H, dens) => {
     const rx = alpha - Math.PI / 2, nx = Math.sin(ry) * Math.sin(alpha), ny = Math.cos(alpha), nz = Math.cos(ry) * Math.sin(alpha);
+    if (alpha > .05) for (let n = Math.round(W * H / 16), i = 0; i < n; i++) {   // grietas, manchas, óxido, musgo y sangre sobre pared o rampa
+      const k = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 26, 27, 28, 29][Math.floor(rnd() * 22)];
+      dpiece(cx + nx * .035, cy + ny * .035, cz + nz * .035, rx, ry, (rnd() - .5) * W, (rnd() - .5) * H, 1.8 + rnd() * 2.6, k);
+    }
     cx += nx * .05; cy += ny * .05; cz += nz * .05;
     const cols = Math.max(1, Math.round(W / 4.8)), rows = Math.max(1, Math.round(H / 2.7));
     for (let a = 0; a < cols; a++) for (let b = 0; b < rows; b++) {
-      if (rnd() > (dens || 1)) continue;
+      if (rnd() > (dens || 1) * GD) continue;
       const w = 4.4 + rnd() * 2, h = Math.min(w * .52, H * 1.06);
       piece(cx, cy, cz, rx, ry, (a + .5 + (rnd() - .5) * .5) * W / cols - W / 2, (b + .5 + (rnd() - .5) * .4) * H / rows - H / 2, w, h, Math.floor(rnd() * 64));
     }
@@ -1364,8 +1374,8 @@ function buildSkatenight() {
   add(20, -3.5, 22, 46, -3.2, 38, 'concrete'); add(28, -3.5, 38, 46, -3.2, 50, 'concrete'); add(29, -3.2, 28, 35, -1.6, 32, 'smooth');
   ramp(20, 22, 25, 38, -3.2, -3.2, 0, 'x', -1, 'concrete'); ramp(20, 22, 46, 27, -3.2, -3.2, 0, 'z', -1, 'concrete'); ramp(41, 22, 46, 50, -3.2, -3.2, 0, 'x', 1, 'concrete');
   ramp(20, 33, 28, 38, -3.2, -3.2, 0, 'z', 1, 'concrete'); ramp(28, 38, 33, 50, -3.2, -3.2, 0, 'x', -1, 'concrete'); ramp(28, 45, 46, 50, -3.2, -3.2, 0, 'z', 1, 'concrete');
-  deco.push({ t: 'bruma', x0: -56, x1: 56, z0: -36, z1: 52, y: .35, o: .2, dir: 1 });   // una sola capa baja (a la altura de las rodillas): más capas se ven como franjas
-  deco.push({ t: 'bruma', x0: -52, x1: -26, z0: -32, z1: -10, y: -2.3, o: .36, dir: 1 }, { t: 'bruma', x0: -52, x1: -34, z0: -10, z1: 12, y: -2.3, o: .34, dir: -1 }, { t: 'bruma', x0: 20, x1: 46, z0: 22, z1: 50, y: -2.5, o: .36, dir: 1 });
+  deco.push({ t: 'bruma', x0: -56, x1: 56, z0: -36, z1: 52, y: .35, o: .12, dir: 1 });   // una sola capa baja (a la altura de las rodillas): más capas se ven como franjas
+  deco.push({ t: 'bruma', x0: -52, x1: -26, z0: -32, z1: -10, y: -2.3, o: .22, dir: 1 }, { t: 'bruma', x0: -52, x1: -34, z0: -10, z1: 12, y: -2.3, o: .2, dir: -1 }, { t: 'bruma', x0: 20, x1: 46, z0: 22, z1: 50, y: -2.5, o: .22, dir: 1 });
 
   /* ---- límites: valla al oeste y al este, mural al sur y al norte-oeste, río al norte; todo cerrado por arriba y por los costados ---- */
   add(-56, 0, -36, -55.8, 4.2, 52, 'fence'); add(55.8, 0, -32, 56, 4.2, 52, 'fence');
@@ -1503,10 +1513,43 @@ function buildSkatenight() {
    [-40, -3, -20], [-34, -3, -24], [-43, -3, 3], [6, 5, -34], [20, 5, -34], [34, 5, -34], [26, 3, -26.6], [-17, 5, -21], [-25.5, 5, 21], [44.5, 5, 13], [45, 5, -10], [14, 2.4, 2], [-12, 1.5, 2], [42, 2.5, 13], [-20, 2.5, -21], [20, 0, -28], [44, 0, -28], [8, 0, -27], [-26, 0, 3], [-26, 3, 4]]
     .forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
   /* ---- luces: unos pocos pozos de luz en la oscuridad (la linterna hace el resto) ---- */
-  lights.push({ x: -53, y: 7, z: 28, c: 0xffa860, i: .45, d: 24 }, { x: 53.6, y: 7, z: 6, c: 0xffa860, i: .45, d: 24 }, { x: 2, y: 7, z: 49.6, c: 0xffa860, i: .45, d: 24 }, { x: 28, y: 12, z: -34.6, c: 0xffa860, i: .45, d: 24 },
+  lights.push({ x: -53, y: 7, z: 28, c: 0xffa860, i: .3, d: 22 }, { x: 53.6, y: 7, z: 6, c: 0xffa860, i: .3, d: 22 }, { x: 2, y: 7, z: 49.6, c: 0xffa860, i: .3, d: 22 }, { x: 28, y: 12, z: -34.6, c: 0xffa860, i: .3, d: 22 },
     { x: -16.5, y: 6.3, z: -23.5, c: 0x6aa0ff, i: .4, d: 14 }, { x: -24.5, y: 6.3, z: 18.5, c: 0x6aa0ff, i: .4, d: 14 }, { x: 45.5, y: 6.3, z: 10.5, c: 0x6aa0ff, i: .4, d: 14 },
     { x: -46, y: 3, z: 34, c: 0xffc840, i: .9, d: 13 }, { x: 51, y: 8, z: -33.8, c: 0x4aa0ff, i: .9, d: 13 },
     { x: -24, y: 3, z: 46, c: 0x4a8a6a, i: .35, d: 14 }, { x: 36, y: 6, z: 48, c: 0xffa860, i: .5, d: 18 }, { x: -39, y: -1, z: -21, c: 0x4a8a6a, i: .35, d: 14 }, { x: -43, y: 0, z: 4, c: 0x8a4a8a, i: .35, d: 12 });
+  /* ---- abandono: grietas, manchas, musgo, sangre seca, basura, charcos y yuyos sobre el piso; escombros sólidos en los rincones ---- */
+  // altura del piso plano en (x, z) si en las cinco muestras es el mismo y no es rampa, rejilla, techo ni baranda (si no, null: ahí no se pega nada)
+  const NOPISO = ['grate', 'roof', 'rail', 'fence', 'metal'];
+  const flatTop = (x, z, r) => {
+    let t0 = null;
+    for (const [dx, dz] of [[0, 0], [r, r], [-r, r], [r, -r], [-r, -r]]) {
+      let top = -99, tb = null;
+      for (const b of B) { if (b.nc || b.mat === 'clip' || !(b.min[0] < x + dx && b.max[0] > x + dx && b.min[2] < z + dz && b.max[2] > z + dz)) continue; if (b.max[1] > top) { top = b.max[1]; tb = b; } }
+      if (!tb || tb.ramp || tb.mover || NOPISO.includes(tb.mat)) return null;
+      if (t0 == null) t0 = top; else if (Math.abs(top - t0) > .03) return null;
+    }
+    return t0;
+  };
+  const scatter = (ks, count, smin, smax) => {
+    for (let n = 0, tries = 0; n < count && tries < count * 12; tries++) {
+      const x = -54 + rnd() * 108, z = -34 + rnd() * 84, w = smin + rnd() * (smax - smin), t = flatTop(x, z, w * .35);
+      if (t == null) continue;
+      deco.push({ t: 'decal', x, y: t + .025, z, w, h: w, k: ks[Math.floor(rnd() * ks.length)], rx: -Math.PI / 2, ry: rnd() * 6.28, rz: 0 }); n++;
+    }
+  };
+  scatter([0, 1, 2, 3, 4, 5], 110, 3.5, 7); scatter([6, 7, 8, 9], 26, 2, 4); scatter([14, 15, 16, 17], 20, 1.8, 3.4); scatter([22, 23, 24, 25], 80, 1.5, 2.6);
+  scatter([26, 27, 28, 29], 16, 2.2, 4); scatter([30, 31], 12, 2, 3.4);
+  // yuyos: matas cruzadas (4 cuadros) que se cuelan por las grietas, pegadas a las vallas y a los bordes; no estorban (son bajitos)
+  const tuft = (x, z) => {
+    const t = flatTop(x, z, .5); if (t == null) return;
+    const h = .5 + rnd() * .85, w = h * (1.2 + rnd() * .5), k = 18 + Math.floor(rnd() * 4), ry = rnd() * 3.14;
+    for (const a of [0, Math.PI / 2]) for (const f of [0, Math.PI]) deco.push({ t: 'decal', x, y: t + h / 2 - .02, z, w, h, k, rx: 0, ry: ry + a + f, rz: 0 });
+  };
+  for (let x = -54; x <= 54; x += 3.4) { tuft(x + rnd() * 2, 50.4 - rnd() * .9); tuft(x + rnd() * 2, -35.2 + rnd() * .9); }
+  for (let z = -34; z <= 50; z += 3.4) { tuft(-54.4 + rnd() * .8, z + rnd() * 2); tuft(54.6 - rnd() * .8, z + rnd() * 2); }
+  for (let n = 0; n < 110; n++) tuft(-54 + rnd() * 108, -34 + rnd() * 84);
+  // escombros: pilas de roca rota (sólidas) en los rincones y contra las vallas
+  for (const [x, z] of [[-51, -33.4], [-49, 47], [50, 47], [51, -24.4], [-24, -34.2], [12, -34], [16, 50], [-28, 50], [-52, 24.5], [52, 36]]) { add(x, 0, z, x + 1.6, .6, z + 1.1, 'rock'); add(x + .4, .6, z + .2, x + 1.2, 1.1, z + .8, 'rock'); }
   {   // juntas: los bloques sólidos del mismo material que se tocan se solapan 6 mm (sin grietas de un píxel entre ellos)
     const S = B.filter(b => !b.nc && !b.mover && !b.ramp && b.mat !== 'clip'), g = S.map(() => [[0, 0], [0, 0], [0, 0]]);
     for (let i = 0; i < S.length; i++) for (let j = i + 1; j < S.length; j++) {
@@ -1521,7 +1564,7 @@ function buildSkatenight() {
   }
   for (const b of B) if (b.nc && b.mat !== 'clip') for (let k = 0; k < 3; k++) { b.min[k] -= .012; b.max[k] += .012; }   // evita caras coplanares (z-fighting)
   return finish({ id: 'skatenight', name: 'Skatenight', bounds: { x0: -56, x1: 56, z0: -40, z1: 54 }, deco, modos: ['arena', 'gungame'],
-    theme: { sky: 'night', tex: 'ut', noche: true, skyDim: .16, fog: 0x070d1a, fogD: .042, amb: 0x1a2440, ambI: .04, hemi: [0x20345c, 0x03050a, .035], sun: true, sunC: 0x5a78c0, sunI: .065, sunPos: [34, 60, -46], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
+    theme: { sky: 'night', tex: 'ruina', noche: true, skyDim: .07, fog: 0x03060c, fogD: .05, amb: 0x1a2440, ambI: .012, hemi: [0x20345c, 0x02030a, .01], sun: true, sunC: 0x5a78c0, sunI: .028, sunPos: [34, 60, -46], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
 }
 MAPDEFS.skatenight = buildSkatenight;
 const MAPS = {};

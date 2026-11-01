@@ -78,7 +78,7 @@ function loadMap(id){
   const group=new THREE.Group();scene.add(group);
   const L={group,items:[],pads:[],teles:[],lavaTexs:[],waterTexs:[],movers:[],club:null,maplights:[],flags:[]};
   const th=M.theme;
-  {const ut=th.tex==='ut';if(ut&&!UTset)UTset=buildUT();const nm=ut?UTset.mats:MATS;if(nm!==MATSX){MATSX=nm;for(const k in matCache)delete matCache[k];}}
+  {const ut=th.tex==='ut'||th.tex==='ruina';UTcur=!ut?null:th.tex==='ruina'?(UTruin||(UTruin=buildUT(true))):(UTset||(UTset=buildUT()));const nm=ut?UTcur.mats:MATS;if(nm!==MATSX){MATSX=nm;for(const k in matCache)delete matCache[k];}}
   scene.fog.color.setHex(th.fog);scene.fog.density=th.fogD;scene.background.setHex(th.fog);
   sky.material.map=skyTex[th.sky]||skyTex.dusk;sky.material.color.setScalar(th.skyDim||1);sky.material.needsUpdate=true;   // skyDim: oscurece el cielo (noche cerrada)
   const groups={};
@@ -100,7 +100,7 @@ function loadMap(id){
   }
   for(const l of M.lava){
     const w=l.max[0]-l.min[0],d=l.max[2]-l.min[2];
-    const t=(l.water?(UTset&&MATSX===UTset.mats?UTset.water:waterTex):lavaTex).clone();t.needsUpdate=true;t.repeat.set(w/(l.water?8:4),d/(l.water?8:4));(l.water?L.waterTexs:L.lavaTexs).push(t);
+    const t=(l.water?(UTcur&&MATSX===UTcur.mats?UTcur.water:waterTex):lavaTex).clone();t.needsUpdate=true;t.repeat.set(w/(l.water?8:4),d/(l.water?8:4));(l.water?L.waterTexs:L.lavaTexs).push(t);
     const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),l.water?new THREE.MeshPhongMaterial({map:t,shininess:120,specular:0xffd0a0,transparent:true,opacity:.92}):new THREE.MeshBasicMaterial({map:t,fog:false}));
     m.rotation.x=-Math.PI/2;m.position.set((l.min[0]+l.max[0])/2,l.max[1],(l.min[2]+l.max[2])/2);group.add(m);
   }

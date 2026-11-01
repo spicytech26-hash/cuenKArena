@@ -2,8 +2,9 @@
    Más detalle y más realismo que las texturas de siempre: ladrillo mugriento con musgo viscoso, hormigón húmedo con grietas,
    metal oxidado con pátina verdosa, madera podrida, yeso con manchas de humedad y runas apenas visibles. Se generan una sola
    vez (al cargar el primer mapa que las pide) y el resto de los mapas sigue con sus texturas. */
-let UTset=null;
-function buildUT(){
+let UTset=null,UTruin=null,UTcur=null;   // UTruin: la variante «ruina» (theme.tex==='ruina'): más mugre, óxido, musgo y grietas; UTcur: el juego de texturas del mapa actual
+function buildUT(ruina){
+  const RUIN=!!ruina;
   let sd=9157;const R=()=>{sd=(sd*16807)%2147483647;return (sd-1)/2147483646;};
   // ruido de valores periódico (se repite sin costuras) en varias octavas
   const grids=[4,8,16,32,64].map(n=>{const a=new Float32Array(n*n);for(let i=0;i<a.length;i++)a[i]=R();return {n,a};});
@@ -12,14 +13,21 @@ function buildUT(){
   const fbm=(x,y,o)=>{o=o||5;let t=0,a=.5,tot=0;for(let k=0;k<o;k++){t+=a*vn(grids[k],x,y);tot+=a;a*=.5;}return t/tot;};
   const hs=(i,j)=>{const v=Math.sin(i*127.1+j*311.7)*43758.5453;return v-Math.floor(v);};
   const mx=(a,b,t)=>a+(b-a)*t,cl=v=>v<0?0:v>255?255:v,pos=v=>v>0?v:0;
-  const mk=(w,h,fn,post)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d'),d=g.createImageData(w,h),p=d.data;
+  const mk=(w,h,fn,post,noRuin)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d'),d=g.createImageData(w,h),p=d.data;
     let sc=null,sg=null,sdt=null;
-    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const o=fn(x,y,x/w,y/h),i=(y*w+x)*4;p[i]=cl(o[0]);p[i+1]=cl(o[1]);p[i+2]=cl(o[2]);p[i+3]=o[3]==null?255:o[3];
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){let o=fn(x,y,x/w,y/h);if(RUIN&&!noRuin)o=ruin(o,x/w,y/h);const i=(y*w+x)*4;p[i]=cl(o[0]);p[i+1]=cl(o[1]);p[i+2]=cl(o[2]);p[i+3]=o[3]==null?255:o[3];
       if(o[4]!=null){if(!sc){sc=document.createElement('canvas');sc.width=w;sc.height=h;sg=sc.getContext('2d');sdt=sg.createImageData(w,h);}const v=cl(o[4]);sdt.data[i]=sdt.data[i+1]=sdt.data[i+2]=v;sdt.data[i+3]=255;}}
-    g.putImageData(d,0,0);if(post)post(g,w,h);
+    g.putImageData(d,0,0);if(post)post(g,w,h);if(RUIN&&!noRuin&&w>=128)crack(g,w,h,7,.78);
     const mkT=cc=>{const t=new THREE.CanvasTexture(cc);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.magFilter=THREE.LinearFilter;t.minFilter=THREE.LinearMipmapLinearFilter;t.anisotropy=8;return t;};
     const t=mkT(c);if(sc){sg.putImageData(sdt,0,0);t.utSpec=mkT(sc);}return t;};   // t.utSpec: qué zonas son húmedas/brillantes
   const crack=(g,w,h,n,a)=>{g.lineCap='round';for(let k=0;k<n;k++){let x=R()*w,y=R()*h,an=R()*6.28;g.strokeStyle='rgba(8,6,6,'+(a||.7)+')';g.lineWidth=.8+R()*1.2;g.beginPath();g.moveTo(x,y);const L=14+R()*16;for(let s=0;s<L;s++){an+=(R()-.5)*1.1;x+=Math.cos(an)*(3+R()*5);y+=Math.sin(an)*(3+R()*5);g.lineTo(x,y);}g.stroke();}};
+  // variante «ruina»: hollín, manchas, churretes de óxido y musgo encima de cualquier textura (oscurece y desatura)
+  const ruin=(o,u,v)=>{
+    if(o[3]===0)return o;let r=o[0],g=o[1],b=o[2];
+    const soot=pos(fbm(u*3+11,v*3+5)-.42)*1.5,st=pos(fbm(u*9+3,v*9+8)-.55)*2.2,rs=pos(fbm(u*16+5,v*1.6+3)-.58)*2.8*(1-v*.5),ms=pos(fbm(u*5+8,v*5+2)-.6)*2.6;
+    const k=.6*(1-soot*.35)*(1-st*.3);r*=k;g*=k;b*=k;
+    r=mx(r,96,rs*.45);g=mx(g,46,rs*.45);b=mx(b,20,rs*.45);r=mx(r,26,ms*.5);g=mx(g,46,ms*.5);b=mx(b,24,ms*.5);
+    const l=(r+g+b)/3;return [mx(r,l,.25),mx(g,l,.2),mx(b,l,.2),o[3],o[4]];};
   // runa circular apenas insinuada (guiño a los mitos)
   const glyph=(g,x,y,r,col)=>{g.strokeStyle=col;g.lineWidth=1.2;g.beginPath();g.arc(x,y,r,0,7);g.stroke();g.beginPath();g.arc(x,y,r*.35,0,7);g.stroke();for(let k=0;k<5;k++){const an=k*1.2566+.3;g.beginPath();g.moveTo(x+Math.cos(an)*r*.3,y+Math.sin(an)*r*.3);g.lineTo(x+Math.cos(an+2.5)*r*.9,y+Math.sin(an+2.5)*r*.9);g.stroke();}};
 
@@ -105,7 +113,7 @@ function buildUT(){
   // el río: negro verdoso, quieto, con ondas y sinuosidades apenas visibles
   const water=mk(128,128,(x,y,u,v)=>{
     const n=fbm(u*4,v*4),n2=fbm(u*14+n*2,v*14),rip=Math.sin((n2*14+u*20)*1.5)*.5+.5,b=.5*n+.5*rip;return [12+b*20,28+b*34,30+b*34];
-  },(g,w,h)=>{g.strokeStyle='rgba(60,110,100,.22)';g.lineWidth=1.4;for(let k=0;k<7;k++){const x=R()*w,y=R()*h;g.beginPath();g.moveTo(x,y);g.bezierCurveTo(x+20,y-14,x+40,y+14,x+60,y);g.stroke();}});
+  },(g,w,h)=>{g.strokeStyle='rgba(60,110,100,.22)';g.lineWidth=1.4;for(let k=0;k<7;k++){const x=R()*w,y=R()*h;g.beginPath();g.moveTo(x,y);g.bezierCurveTo(x+20,y-14,x+40,y+14,x+60,y);g.stroke();}},true);
 
   const o=Object.assign({},MATS);
   o.brick={t:brick,sc:2,shin:14,spec:brick.utSpec};o.concrete={t:concrete,sc:4,shin:30,spec:concrete.utSpec};o.tiles={t:tiles,sc:2.4,shin:34,spec:tiles.utSpec};o.wood={t:wood,sc:1,shin:12};o.crate={t:crate,sc:1.5,shin:6};

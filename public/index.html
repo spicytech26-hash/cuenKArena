@@ -712,8 +712,9 @@ function skyNight(){return cv(1024,512,(g,w,h)=>{
    Más detalle y más realismo que las texturas de siempre: ladrillo mugriento con musgo viscoso, hormigón húmedo con grietas,
    metal oxidado con pátina verdosa, madera podrida, yeso con manchas de humedad y runas apenas visibles. Se generan una sola
    vez (al cargar el primer mapa que las pide) y el resto de los mapas sigue con sus texturas. */
-let UTset=null;
-function buildUT(){
+let UTset=null,UTruin=null,UTcur=null;   // UTruin: la variante «ruina» (theme.tex==='ruina'): más mugre, óxido, musgo y grietas; UTcur: el juego de texturas del mapa actual
+function buildUT(ruina){
+  const RUIN=!!ruina;
   let sd=9157;const R=()=>{sd=(sd*16807)%2147483647;return (sd-1)/2147483646;};
   // ruido de valores periódico (se repite sin costuras) en varias octavas
   const grids=[4,8,16,32,64].map(n=>{const a=new Float32Array(n*n);for(let i=0;i<a.length;i++)a[i]=R();return {n,a};});
@@ -722,14 +723,21 @@ function buildUT(){
   const fbm=(x,y,o)=>{o=o||5;let t=0,a=.5,tot=0;for(let k=0;k<o;k++){t+=a*vn(grids[k],x,y);tot+=a;a*=.5;}return t/tot;};
   const hs=(i,j)=>{const v=Math.sin(i*127.1+j*311.7)*43758.5453;return v-Math.floor(v);};
   const mx=(a,b,t)=>a+(b-a)*t,cl=v=>v<0?0:v>255?255:v,pos=v=>v>0?v:0;
-  const mk=(w,h,fn,post)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d'),d=g.createImageData(w,h),p=d.data;
+  const mk=(w,h,fn,post,noRuin)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d'),d=g.createImageData(w,h),p=d.data;
     let sc=null,sg=null,sdt=null;
-    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const o=fn(x,y,x/w,y/h),i=(y*w+x)*4;p[i]=cl(o[0]);p[i+1]=cl(o[1]);p[i+2]=cl(o[2]);p[i+3]=o[3]==null?255:o[3];
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){let o=fn(x,y,x/w,y/h);if(RUIN&&!noRuin)o=ruin(o,x/w,y/h);const i=(y*w+x)*4;p[i]=cl(o[0]);p[i+1]=cl(o[1]);p[i+2]=cl(o[2]);p[i+3]=o[3]==null?255:o[3];
       if(o[4]!=null){if(!sc){sc=document.createElement('canvas');sc.width=w;sc.height=h;sg=sc.getContext('2d');sdt=sg.createImageData(w,h);}const v=cl(o[4]);sdt.data[i]=sdt.data[i+1]=sdt.data[i+2]=v;sdt.data[i+3]=255;}}
-    g.putImageData(d,0,0);if(post)post(g,w,h);
+    g.putImageData(d,0,0);if(post)post(g,w,h);if(RUIN&&!noRuin&&w>=128)crack(g,w,h,7,.78);
     const mkT=cc=>{const t=new THREE.CanvasTexture(cc);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.magFilter=THREE.LinearFilter;t.minFilter=THREE.LinearMipmapLinearFilter;t.anisotropy=8;return t;};
     const t=mkT(c);if(sc){sg.putImageData(sdt,0,0);t.utSpec=mkT(sc);}return t;};   // t.utSpec: qué zonas son húmedas/brillantes
   const crack=(g,w,h,n,a)=>{g.lineCap='round';for(let k=0;k<n;k++){let x=R()*w,y=R()*h,an=R()*6.28;g.strokeStyle='rgba(8,6,6,'+(a||.7)+')';g.lineWidth=.8+R()*1.2;g.beginPath();g.moveTo(x,y);const L=14+R()*16;for(let s=0;s<L;s++){an+=(R()-.5)*1.1;x+=Math.cos(an)*(3+R()*5);y+=Math.sin(an)*(3+R()*5);g.lineTo(x,y);}g.stroke();}};
+  // variante «ruina»: hollín, manchas, churretes de óxido y musgo encima de cualquier textura (oscurece y desatura)
+  const ruin=(o,u,v)=>{
+    if(o[3]===0)return o;let r=o[0],g=o[1],b=o[2];
+    const soot=pos(fbm(u*3+11,v*3+5)-.42)*1.5,st=pos(fbm(u*9+3,v*9+8)-.55)*2.2,rs=pos(fbm(u*16+5,v*1.6+3)-.58)*2.8*(1-v*.5),ms=pos(fbm(u*5+8,v*5+2)-.6)*2.6;
+    const k=.6*(1-soot*.35)*(1-st*.3);r*=k;g*=k;b*=k;
+    r=mx(r,96,rs*.45);g=mx(g,46,rs*.45);b=mx(b,20,rs*.45);r=mx(r,26,ms*.5);g=mx(g,46,ms*.5);b=mx(b,24,ms*.5);
+    const l=(r+g+b)/3;return [mx(r,l,.25),mx(g,l,.2),mx(b,l,.2),o[3],o[4]];};
   // runa circular apenas insinuada (guiño a los mitos)
   const glyph=(g,x,y,r,col)=>{g.strokeStyle=col;g.lineWidth=1.2;g.beginPath();g.arc(x,y,r,0,7);g.stroke();g.beginPath();g.arc(x,y,r*.35,0,7);g.stroke();for(let k=0;k<5;k++){const an=k*1.2566+.3;g.beginPath();g.moveTo(x+Math.cos(an)*r*.3,y+Math.sin(an)*r*.3);g.lineTo(x+Math.cos(an+2.5)*r*.9,y+Math.sin(an+2.5)*r*.9);g.stroke();}};
 
@@ -815,7 +823,7 @@ function buildUT(){
   // el río: negro verdoso, quieto, con ondas y sinuosidades apenas visibles
   const water=mk(128,128,(x,y,u,v)=>{
     const n=fbm(u*4,v*4),n2=fbm(u*14+n*2,v*14),rip=Math.sin((n2*14+u*20)*1.5)*.5+.5,b=.5*n+.5*rip;return [12+b*20,28+b*34,30+b*34];
-  },(g,w,h)=>{g.strokeStyle='rgba(60,110,100,.22)';g.lineWidth=1.4;for(let k=0;k<7;k++){const x=R()*w,y=R()*h;g.beginPath();g.moveTo(x,y);g.bezierCurveTo(x+20,y-14,x+40,y+14,x+60,y);g.stroke();}});
+  },(g,w,h)=>{g.strokeStyle='rgba(60,110,100,.22)';g.lineWidth=1.4;for(let k=0;k<7;k++){const x=R()*w,y=R()*h;g.beginPath();g.moveTo(x,y);g.bezierCurveTo(x+20,y-14,x+40,y+14,x+60,y);g.stroke();}},true);
 
   const o=Object.assign({},MATS);
   o.brick={t:brick,sc:2,shin:14,spec:brick.utSpec};o.concrete={t:concrete,sc:4,shin:30,spec:concrete.utSpec};o.tiles={t:tiles,sc:2.4,shin:34,spec:tiles.utSpec};o.wood={t:wood,sc:1,shin:12};o.crate={t:crate,sc:1.5,shin:6};
@@ -904,7 +912,7 @@ function loadMap(id){
   const group=new THREE.Group();scene.add(group);
   const L={group,items:[],pads:[],teles:[],lavaTexs:[],waterTexs:[],movers:[],club:null,maplights:[],flags:[]};
   const th=M.theme;
-  {const ut=th.tex==='ut';if(ut&&!UTset)UTset=buildUT();const nm=ut?UTset.mats:MATS;if(nm!==MATSX){MATSX=nm;for(const k in matCache)delete matCache[k];}}
+  {const ut=th.tex==='ut'||th.tex==='ruina';UTcur=!ut?null:th.tex==='ruina'?(UTruin||(UTruin=buildUT(true))):(UTset||(UTset=buildUT()));const nm=ut?UTcur.mats:MATS;if(nm!==MATSX){MATSX=nm;for(const k in matCache)delete matCache[k];}}
   scene.fog.color.setHex(th.fog);scene.fog.density=th.fogD;scene.background.setHex(th.fog);
   sky.material.map=skyTex[th.sky]||skyTex.dusk;sky.material.color.setScalar(th.skyDim||1);sky.material.needsUpdate=true;   // skyDim: oscurece el cielo (noche cerrada)
   const groups={};
@@ -926,7 +934,7 @@ function loadMap(id){
   }
   for(const l of M.lava){
     const w=l.max[0]-l.min[0],d=l.max[2]-l.min[2];
-    const t=(l.water?(UTset&&MATSX===UTset.mats?UTset.water:waterTex):lavaTex).clone();t.needsUpdate=true;t.repeat.set(w/(l.water?8:4),d/(l.water?8:4));(l.water?L.waterTexs:L.lavaTexs).push(t);
+    const t=(l.water?(UTcur&&MATSX===UTcur.mats?UTcur.water:waterTex):lavaTex).clone();t.needsUpdate=true;t.repeat.set(w/(l.water?8:4),d/(l.water?8:4));(l.water?L.waterTexs:L.lavaTexs).push(t);
     const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),l.water?new THREE.MeshPhongMaterial({map:t,shininess:120,specular:0xffd0a0,transparent:true,opacity:.92}):new THREE.MeshBasicMaterial({map:t,fog:false}));
     m.rotation.x=-Math.PI/2;m.position.set((l.min[0]+l.max[0])/2,l.max[1],(l.min[2]+l.max[2])/2);group.add(m);
   }
@@ -1077,6 +1085,42 @@ function gfPiece(g,x0,y0,cw,ch,i){
   }
   g.restore();
 }
+/* ---------- decals de abandono (deco 'decal'): 32 piezas en un atlas de 8x4 (256 px cada una) ----------
+   0-5 grietas · 6-9 manchas de aceite y hollín · 10-13 churretes de óxido · 14-17 musgo · 18-21 yuyos (matas) · 22-25 basura · 26-29 sangre seca · 30-31 charcos */
+function dcPiece(g,x0,y0,S,i){
+  const R=gfRng(i*31+7);g.save();g.translate(x0,y0);g.beginPath();g.rect(0,0,S,S);g.clip();g.lineCap='round';g.lineJoin='round';
+  const blob=(x,y,r,col,n)=>{for(let k=0;k<(n||7);k++){const a=R()*6.28,d=R()*r*.55,rr=r*(.35+R()*.5),gr=g.createRadialGradient(x+Math.cos(a)*d,y+Math.sin(a)*d,0,x+Math.cos(a)*d,y+Math.sin(a)*d,rr);gr.addColorStop(0,col[0]);gr.addColorStop(1,col[1]);g.fillStyle=gr;g.beginPath();g.arc(x+Math.cos(a)*d,y+Math.sin(a)*d,rr,0,7);g.fill();}};
+  if(i<6){          // grieta ramificada
+    const branch=(x,y,an,len,w)=>{g.beginPath();g.moveTo(x,y);for(let s=0;s<len;s++){an+=(R()-.5)*.9;x+=Math.cos(an)*(4+R()*6);y+=Math.sin(an)*(4+R()*6);g.lineTo(x,y);if(R()<.07&&w>1.2)branch(x,y,an+(R()<.5?-1:1)*(.5+R()*.7),len-s-6,w*.6);}
+      g.strokeStyle='rgba(6,6,6,.88)';g.lineWidth=w;g.stroke();g.strokeStyle='rgba(170,170,160,.16)';g.lineWidth=w*.4;g.stroke();};
+    branch(S*.5,S*.5,R()*6.28,34,6.5);branch(S*.5,S*.5,R()*6.28,26,5);if(i%2)branch(S*.5,S*.5,R()*6.28,18,4);
+  }else if(i<10){   // mancha de aceite / hollín
+    blob(S/2,S/2,S*.42,i<8?['rgba(4,4,4,.75)','rgba(4,4,4,0)']:['rgba(14,18,10,.7)','rgba(14,18,10,0)'],8);
+    if(i>=8)blob(S/2,S/2,S*.3,['rgba(60,40,90,.25)','rgba(60,40,90,0)'],3);
+  }else if(i<14){   // churretes de óxido que bajan por la pared
+    for(let k=0;k<9;k++){const x=S*(.1+R()*.8),w=5+R()*18,len=S*(.35+R()*.6),gr=g.createLinearGradient(0,0,0,len);gr.addColorStop(0,'rgba(140,66,26,.85)');gr.addColorStop(1,'rgba(90,40,16,0)');g.fillStyle=gr;g.fillRect(x-w/2,S*.02,w,len);
+      g.fillStyle='rgba(60,26,12,.5)';g.fillRect(x-1.5,S*.02,3,len*.7);}
+  }else if(i<18){   // musgo y moho
+    blob(S/2,S/2,S*.46,['rgba(44,84,34,.8)','rgba(44,84,34,0)'],10);blob(S/2,S/2,S*.3,['rgba(86,120,50,.6)','rgba(86,120,50,0)'],6);blob(S*.5,S*.5,S*.45,['rgba(10,18,8,.45)','rgba(10,18,8,0)'],4);
+  }else if(i<22){   // mata de yuyos (cuelga de la base)
+    for(let k=0;k<46;k++){const x=S*(.12+R()*.76),h=S*(.35+R()*.6),lean=(R()-.5)*S*.5,gr=R();g.strokeStyle=gr<.2?'rgb(150,140,70)':gr<.55?'rgb(46,84,34)':'rgb(30,60,26)';g.lineWidth=2+R()*3;g.beginPath();g.moveTo(x,S);g.quadraticCurveTo(x+lean*.3,S-h*.6,x+lean,S-h);g.stroke();}
+  }else if(i<26){   // basura: latas, papeles, botellas
+    for(let k=0;k<7;k++){const x=S*(.12+R()*.76),y=S*(.15+R()*.7),a=R()*6.28,t=(k+i)%4;g.save();g.translate(x,y);g.rotate(a);
+      if(t===0){g.fillStyle='#8f9299';g.fillRect(-10,-6,22,12);g.fillStyle='#b8322a';g.fillRect(-10,-2,22,4);g.fillStyle='#1a1a1a';g.fillRect(12,-5,2,10);}
+      else if(t===1){g.fillStyle='rgba(215,210,196,.9)';g.beginPath();g.moveTo(-12,-8);g.lineTo(11,-5);g.lineTo(8,9);g.lineTo(-9,6);g.closePath();g.fill();}
+      else if(t===2){g.fillStyle='rgba(44,100,52,.9)';g.fillRect(-14,-4,24,8);g.fillRect(10,-2,7,4);}
+      else{g.fillStyle='#d8d0bc';g.fillRect(-5,-1.5,10,3);g.fillStyle='#c2701e';g.fillRect(3,-1.5,3,3);}
+      g.restore();}
+  }else if(i<30){   // sangre seca
+    blob(S/2,S/2,S*.36,['rgba(96,8,8,.9)','rgba(70,4,4,0)'],7);
+    for(let k=0;k<22;k++){const a=R()*6.28,d=S*(.2+R()*.28);g.fillStyle='rgba(88,6,6,.85)';g.beginPath();g.arc(S/2+Math.cos(a)*d,S/2+Math.sin(a)*d,1.5+R()*7,0,7);g.fill();}
+    g.strokeStyle='rgba(84,6,6,.8)';g.lineWidth=5+R()*5;g.beginPath();g.moveTo(S*.5,S*.5);g.quadraticCurveTo(S*(.3+R()*.4),S*.8,S*(.2+R()*.6),S*.97);g.stroke();
+    if(i>=28){g.lineWidth=10;g.beginPath();g.moveTo(S*.2,S*.7);g.quadraticCurveTo(S*.5,S*.55,S*.85,S*.62);g.stroke();}
+  }else{            // charco
+    blob(S/2,S/2,S*.44,['rgba(6,10,14,.82)','rgba(6,10,14,0)'],9);g.strokeStyle='rgba(140,170,200,.3)';g.lineWidth=5;g.beginPath();g.arc(S*.46,S*.46,S*.2,3.4,5.2);g.stroke();
+  }
+  g.restore();
+}
 function buildDeco(group,list){
   const M_=(k,f)=>decoMat[k]||(decoMat[k]=f());
   const trunk=M_('trunk',()=>new THREE.MeshPhongMaterial({map:new THREE.CanvasTexture(cv(16,64,(g)=>{for(let y=0;y<64;y+=4){g.fillStyle=y%8?'#7d6a52':'#5e4f3c';g.fillRect(0,y,16,4);}})),flatShading:true}));
@@ -1090,7 +1134,7 @@ function buildDeco(group,list){
   const bake=(g,x,y,z,ry,rx)=>{const o=new THREE.Object3D();o.position.set(x,y,z);o.rotation.set(0,ry||0,0);if(rx)o.rotateX(rx);o.updateMatrix();g.applyMatrix4(o.matrix);return g;};
   const vTr=[],vLf=[],vBu=[],vCo=[],vAv=[];
   portalAnim.length=0;animTex.length=0;
-  const vGl=[],vHz=[],vVn=[],vGf=[];   // brillos de farolas, haces de luz y enredaderas: una sola malla por tipo
+  const vGl=[],vHz=[],vVn=[],vGf=[],vDc=[];   // brillos de farolas, haces de luz y enredaderas: una sola malla por tipo
   for(const d of list){
     if(d.t==='palm'){
       const tg=new THREE.CylinderGeometry(.2,.32,d.h,8);tg.rotateZ(.05);tg.translate(d.x,d.y+d.h/2,d.z);vTr.push(tg);
@@ -1171,6 +1215,8 @@ function buildDeco(group,list){
       for(const [list,m] of [[negro,mat('tr_negro',{color:0x1a1c20,shininess:50})],[acero,mat('tr_acero',{color:0x3a4148,shininess:90})],[laton,mat('tr_laton',{color:0xb58a3c,shininess:110,emissive:0x2a1c08})],[rojo,mat('tr_rojo',{color:0x9a1f18,shininess:30})]]){
         const me=new THREE.Mesh(unir(list),m);me.castShadow=true;me.receiveShadow=true;group.add(me);}
       group.add(new THREE.Mesh(unir(luz),M_('tr_luz',()=>new THREE.MeshBasicMaterial({color:0xfff0c8}))));
+    }else if(d.t==='decal'){
+      vDc.push(d);   // decal de abandono (grieta, mancha, óxido, musgo, yuyo, basura, sangre, charco)
     }else if(d.t==='graf'){
       vGf.push(d);   // graffiti (tag de aerosol): todos juntos en un atlas, ver abajo
     }else if(d.t==='cartel'){
@@ -1240,14 +1286,12 @@ function buildDeco(group,list){
   }
   const volcar=(arr,mat)=>{if(!arr.length)return;const m=new THREE.Mesh(unir(arr),mat);group.add(m);};
   volcar(vTr,trunk);volcar(vLf,leaf);volcar(vBu,bushM);
-  if(vGf.length){
-    // graffitis: un atlas de 64 piezas pintadas una sola vez; cada cuadro del mapa elige una (d.k) y se dibujan todos en una sola malla
-    const cols=8,rows=8,cw=256,chh=128;
-    const atlas=cv(cols*cw,rows*chh,(g)=>{for(let i=0;i<64;i++)gfPiece(g,(i%cols)*cw,Math.floor(i/cols)*chh,cw,chh,i);});
+  // malla de cuadros tomados de un atlas (una sola malla y un solo dibujo): graffitis (8x8) y decals de abandono (8x4)
+  const atlasMesh=(lista,cols,rows,atlas,emis,orden)=>{
     const tex=new THREE.CanvasTexture(atlas);tex.anisotropy=4;
     const P=[],N=[],U=[],X=[],q=new THREE.Quaternion(),e=new THREE.Euler(0,0,0,'YXZ'),v=new THREE.Vector3();
-    vGf.forEach((d)=>{
-      const k=(d.k|0)%64;e.set(d.rx||0,d.ry||0,d.rz||0);q.setFromEuler(e);
+    lista.forEach((d)=>{
+      const k=(d.k|0)%(cols*rows);e.set(d.rx||0,d.ry||0,d.rz||0);q.setFromEuler(e);
       let ua=(k%cols)/cols,ub=ua+1/cols;if(d.fl){const t=ua;ua=ub;ub=t;}const vt=1-Math.floor(k/cols)/rows,vb=vt-1/rows,base=P.length/3;
       for(const [lx,ly] of [[-1,-1],[1,-1],[1,1],[-1,1]]){
         v.set(lx*d.w/2,ly*d.h/2,0).applyQuaternion(q);P.push(d.x+v.x,d.y+v.y,d.z+v.z);
@@ -1256,9 +1300,11 @@ function buildDeco(group,list){
       X.push(base,base+1,base+2,base,base+2,base+3);
     });
     const gg=new THREE.BufferGeometry();gg.setAttribute('position',new THREE.Float32BufferAttribute(P,3));gg.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));gg.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));gg.setIndex(X);
-    const gm=new THREE.Mesh(gg,new THREE.MeshPhongMaterial({map:tex,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3,shininess:0,emissive:0x2c2c2c,emissiveMap:tex}));
-    gm.renderOrder=1;gm.frustumCulled=false;group.add(gm);
-  }
+    const gm=new THREE.Mesh(gg,new THREE.MeshPhongMaterial({map:tex,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3,shininess:0,emissive:emis,emissiveMap:tex}));
+    gm.renderOrder=orden;gm.frustumCulled=false;group.add(gm);
+  };
+  if(vGf.length)atlasMesh(vGf,8,8,cv(2048,1024,(g)=>{for(let i=0;i<64;i++)gfPiece(g,(i%8)*256,Math.floor(i/8)*128,256,128,i);}),0x101010,1);
+  if(vDc.length)atlasMesh(vDc,8,4,cv(2048,1024,(g)=>{for(let i=0;i<32;i++)dcPiece(g,(i%8)*256,Math.floor(i/8)*256,256,i);}),0x000000,0);
   if(vVn.length)volcar(vVn,M_('vid',()=>new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(cv(32,128,(g,w,h)=>{g.clearRect(0,0,w,h);g.strokeStyle='#1d3a22';g.lineWidth=2;g.beginPath();g.moveTo(16,0);for(let y=0;y<h;y+=8)g.lineTo(16+Math.sin(y*.13)*5,y);g.stroke();
     for(let y=6;y<h;y+=7){const x=16+Math.sin(y*.13)*5,s=y%14?1:-1;g.fillStyle=(y%3)?'#2c5a30':'#1f4426';g.beginPath();g.ellipse(x+s*5,y,5,2.6,s*.5,0,7);g.fill();}})),transparent:true,alphaTest:.4,side:THREE.DoubleSide})));
   if(vGl.length){const pos=[],col=[];for(const q of vGl){const c=new THREE.Color(q.c||0xffd08a);pos.push(q.x,q.y,q.z);col.push(c.r,c.g,c.b);}
@@ -3522,9 +3568,9 @@ function nightRemote(p,m,dt){
   m.beam.position.y=m.glow.position.y=p.crouch?.95:1.38;m.beam.rotation.x=-p.pitch;
   const dx=p.x-camera.position.x,dy=p.y+1.2-camera.position.y,dz=p.z-camera.position.z,d=Math.hypot(dx,dy,dz)||1;
   nLook(camera.rotation.y,camera.rotation.x,nDir);
-  const lit=d<5||(d<46&&(dx*nDir.x+dy*nDir.y+dz*nDir.z)/d>.93);   // cerca, o dentro del cono de mi linterna
+  const lit=d<3||(d<46&&(dx*nDir.x+dy*nDir.y+dz*nDir.z)/d>.93);   // cerca, o dentro del cono de mi linterna
   p.lit=(p.lit||0)+((lit?1:0)-(p.lit||0))*Math.min(1,dt*(lit?14:2.5));   // se prende rápido y se apaga despacio
-  const k=.08+.92*p.lit;
+  const k=.02+.98*p.lit;
   for(let i=0;i<m.bas.length;i++)m.bas[i].color.copy(m.basC[i]).multiplyScalar(k);
   if(m.tag)m.tag.visible=p.lit>.5&&d<34;
   // el lente brilla fuerte si me apunta (cos entre su mirada y la dirección hacia mí)
@@ -3534,8 +3580,29 @@ function nightRemote(p,m,dt){
 }
 function nightHide(m){if(m.beam)m.beam.visible=m.glow.visible=false;}
 // focos reales: el mío y los de los 2 rivales más cercanos
+// ambiente sonoro de noche: viento bajo que sube y baja, y de tanto en tanto un crujido de metal, un golpe lejano o un susurro
+let nAmb=null,nAmbT=4;
+function nightAmbient(dt){
+  if(!AC||!noiseBuf)return;
+  if(!NIGHT){if(nAmb)nAmb.g.gain.value=0;return;}
+  if(!nAmb){const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=380;const g=AC.createGain();g.gain.value=0;s.connect(f);f.connect(g);g.connect(master);s.start();nAmb={g,f};}
+  const t=AC.currentTime;nAmb.g.gain.setTargetAtTime(.05+.035*Math.sin(t*.35)+.02*Math.sin(t*1.1),t,.4);nAmb.f.frequency.setTargetAtTime(300+160*Math.sin(t*.23),t,.5);
+  nAmbT-=dt;
+  if(nAmbT<=0){nAmbT=6+Math.random()*12;const k=Math.random();
+    if(k<.4){tn({type:'sawtooth',f0:230,f1:150,dur:1.2,vol:.025});nz({dur:1.2,f0:520,f1:300,type:'bandpass',q:7,vol:.05});}
+    else if(k<.75)tn({type:'sine',f0:72,f1:36,dur:.55,vol:.2});
+    else nz({dur:1,f0:2000,f1:900,type:'bandpass',q:5,vol:.035});}
+}
+// la linterna titila: cada tanto se apaga casi del todo un instante, y siempre tiembla un poquito
+let nFl={t:5,d:0};
+function nightFlicker(dt){
+  if(nFl.d>0){nFl.d-=dt;return .12+Math.random()*.4;}
+  nFl.t-=dt;if(nFl.t<=0){nFl.t=5+Math.random()*10;nFl.d=.12+Math.random()*.28;}
+  return .96+Math.random()*.06;
+}
 function updNight(dt){
   if(!level)return;
+  nightAmbient(dt);
   if(!NIGHT){for(const v of vms)if(v.userData.lin)v.userData.lin.visible=false;return;}
   const sp=level.spots;if(!sp)return;
   vms.forEach((v,i)=>{if(!v.userData.lin){v.userData.lin=makeLin(i);v.add(v.userData.lin);}v.userData.lin.visible=true;});   // todas las armas llevan linterna
@@ -3543,7 +3610,7 @@ function updNight(dt){
   const mine=sp[0],on=me.alive||spWatching();
   mine.position.copy(camera.position).addScaledVector(nRight,.16).addScaledVector(nUp,-.1).addScaledVector(nDir,.2);
   mine.target.position.copy(camera.position).addScaledVector(nDir,14);mine.target.updateMatrixWorld();
-  mine.intensity=mine.userData.i0*(on?1:.2);
+  mine.intensity=mine.userData.i0*(on?1:.2)*nightFlicker(dt);
   // rivales más cercanos con linterna (solo con la calidad de luces encendida)
   const near=[];
   if(S.q)for(const p of players.values()){

@@ -70,6 +70,42 @@ function gfPiece(g,x0,y0,cw,ch,i){
   }
   g.restore();
 }
+/* ---------- decals de abandono (deco 'decal'): 32 piezas en un atlas de 8x4 (256 px cada una) ----------
+   0-5 grietas · 6-9 manchas de aceite y hollín · 10-13 churretes de óxido · 14-17 musgo · 18-21 yuyos (matas) · 22-25 basura · 26-29 sangre seca · 30-31 charcos */
+function dcPiece(g,x0,y0,S,i){
+  const R=gfRng(i*31+7);g.save();g.translate(x0,y0);g.beginPath();g.rect(0,0,S,S);g.clip();g.lineCap='round';g.lineJoin='round';
+  const blob=(x,y,r,col,n)=>{for(let k=0;k<(n||7);k++){const a=R()*6.28,d=R()*r*.55,rr=r*(.35+R()*.5),gr=g.createRadialGradient(x+Math.cos(a)*d,y+Math.sin(a)*d,0,x+Math.cos(a)*d,y+Math.sin(a)*d,rr);gr.addColorStop(0,col[0]);gr.addColorStop(1,col[1]);g.fillStyle=gr;g.beginPath();g.arc(x+Math.cos(a)*d,y+Math.sin(a)*d,rr,0,7);g.fill();}};
+  if(i<6){          // grieta ramificada
+    const branch=(x,y,an,len,w)=>{g.beginPath();g.moveTo(x,y);for(let s=0;s<len;s++){an+=(R()-.5)*.9;x+=Math.cos(an)*(4+R()*6);y+=Math.sin(an)*(4+R()*6);g.lineTo(x,y);if(R()<.07&&w>1.2)branch(x,y,an+(R()<.5?-1:1)*(.5+R()*.7),len-s-6,w*.6);}
+      g.strokeStyle='rgba(6,6,6,.88)';g.lineWidth=w;g.stroke();g.strokeStyle='rgba(170,170,160,.16)';g.lineWidth=w*.4;g.stroke();};
+    branch(S*.5,S*.5,R()*6.28,34,6.5);branch(S*.5,S*.5,R()*6.28,26,5);if(i%2)branch(S*.5,S*.5,R()*6.28,18,4);
+  }else if(i<10){   // mancha de aceite / hollín
+    blob(S/2,S/2,S*.42,i<8?['rgba(4,4,4,.75)','rgba(4,4,4,0)']:['rgba(14,18,10,.7)','rgba(14,18,10,0)'],8);
+    if(i>=8)blob(S/2,S/2,S*.3,['rgba(60,40,90,.25)','rgba(60,40,90,0)'],3);
+  }else if(i<14){   // churretes de óxido que bajan por la pared
+    for(let k=0;k<9;k++){const x=S*(.1+R()*.8),w=5+R()*18,len=S*(.35+R()*.6),gr=g.createLinearGradient(0,0,0,len);gr.addColorStop(0,'rgba(140,66,26,.85)');gr.addColorStop(1,'rgba(90,40,16,0)');g.fillStyle=gr;g.fillRect(x-w/2,S*.02,w,len);
+      g.fillStyle='rgba(60,26,12,.5)';g.fillRect(x-1.5,S*.02,3,len*.7);}
+  }else if(i<18){   // musgo y moho
+    blob(S/2,S/2,S*.46,['rgba(44,84,34,.8)','rgba(44,84,34,0)'],10);blob(S/2,S/2,S*.3,['rgba(86,120,50,.6)','rgba(86,120,50,0)'],6);blob(S*.5,S*.5,S*.45,['rgba(10,18,8,.45)','rgba(10,18,8,0)'],4);
+  }else if(i<22){   // mata de yuyos (cuelga de la base)
+    for(let k=0;k<46;k++){const x=S*(.12+R()*.76),h=S*(.35+R()*.6),lean=(R()-.5)*S*.5,gr=R();g.strokeStyle=gr<.2?'rgb(150,140,70)':gr<.55?'rgb(46,84,34)':'rgb(30,60,26)';g.lineWidth=2+R()*3;g.beginPath();g.moveTo(x,S);g.quadraticCurveTo(x+lean*.3,S-h*.6,x+lean,S-h);g.stroke();}
+  }else if(i<26){   // basura: latas, papeles, botellas
+    for(let k=0;k<7;k++){const x=S*(.12+R()*.76),y=S*(.15+R()*.7),a=R()*6.28,t=(k+i)%4;g.save();g.translate(x,y);g.rotate(a);
+      if(t===0){g.fillStyle='#8f9299';g.fillRect(-10,-6,22,12);g.fillStyle='#b8322a';g.fillRect(-10,-2,22,4);g.fillStyle='#1a1a1a';g.fillRect(12,-5,2,10);}
+      else if(t===1){g.fillStyle='rgba(215,210,196,.9)';g.beginPath();g.moveTo(-12,-8);g.lineTo(11,-5);g.lineTo(8,9);g.lineTo(-9,6);g.closePath();g.fill();}
+      else if(t===2){g.fillStyle='rgba(44,100,52,.9)';g.fillRect(-14,-4,24,8);g.fillRect(10,-2,7,4);}
+      else{g.fillStyle='#d8d0bc';g.fillRect(-5,-1.5,10,3);g.fillStyle='#c2701e';g.fillRect(3,-1.5,3,3);}
+      g.restore();}
+  }else if(i<30){   // sangre seca
+    blob(S/2,S/2,S*.36,['rgba(96,8,8,.9)','rgba(70,4,4,0)'],7);
+    for(let k=0;k<22;k++){const a=R()*6.28,d=S*(.2+R()*.28);g.fillStyle='rgba(88,6,6,.85)';g.beginPath();g.arc(S/2+Math.cos(a)*d,S/2+Math.sin(a)*d,1.5+R()*7,0,7);g.fill();}
+    g.strokeStyle='rgba(84,6,6,.8)';g.lineWidth=5+R()*5;g.beginPath();g.moveTo(S*.5,S*.5);g.quadraticCurveTo(S*(.3+R()*.4),S*.8,S*(.2+R()*.6),S*.97);g.stroke();
+    if(i>=28){g.lineWidth=10;g.beginPath();g.moveTo(S*.2,S*.7);g.quadraticCurveTo(S*.5,S*.55,S*.85,S*.62);g.stroke();}
+  }else{            // charco
+    blob(S/2,S/2,S*.44,['rgba(6,10,14,.82)','rgba(6,10,14,0)'],9);g.strokeStyle='rgba(140,170,200,.3)';g.lineWidth=5;g.beginPath();g.arc(S*.46,S*.46,S*.2,3.4,5.2);g.stroke();
+  }
+  g.restore();
+}
 function buildDeco(group,list){
   const M_=(k,f)=>decoMat[k]||(decoMat[k]=f());
   const trunk=M_('trunk',()=>new THREE.MeshPhongMaterial({map:new THREE.CanvasTexture(cv(16,64,(g)=>{for(let y=0;y<64;y+=4){g.fillStyle=y%8?'#7d6a52':'#5e4f3c';g.fillRect(0,y,16,4);}})),flatShading:true}));
@@ -83,7 +119,7 @@ function buildDeco(group,list){
   const bake=(g,x,y,z,ry,rx)=>{const o=new THREE.Object3D();o.position.set(x,y,z);o.rotation.set(0,ry||0,0);if(rx)o.rotateX(rx);o.updateMatrix();g.applyMatrix4(o.matrix);return g;};
   const vTr=[],vLf=[],vBu=[],vCo=[],vAv=[];
   portalAnim.length=0;animTex.length=0;
-  const vGl=[],vHz=[],vVn=[],vGf=[];   // brillos de farolas, haces de luz y enredaderas: una sola malla por tipo
+  const vGl=[],vHz=[],vVn=[],vGf=[],vDc=[];   // brillos de farolas, haces de luz y enredaderas: una sola malla por tipo
   for(const d of list){
     if(d.t==='palm'){
       const tg=new THREE.CylinderGeometry(.2,.32,d.h,8);tg.rotateZ(.05);tg.translate(d.x,d.y+d.h/2,d.z);vTr.push(tg);
@@ -164,6 +200,8 @@ function buildDeco(group,list){
       for(const [list,m] of [[negro,mat('tr_negro',{color:0x1a1c20,shininess:50})],[acero,mat('tr_acero',{color:0x3a4148,shininess:90})],[laton,mat('tr_laton',{color:0xb58a3c,shininess:110,emissive:0x2a1c08})],[rojo,mat('tr_rojo',{color:0x9a1f18,shininess:30})]]){
         const me=new THREE.Mesh(unir(list),m);me.castShadow=true;me.receiveShadow=true;group.add(me);}
       group.add(new THREE.Mesh(unir(luz),M_('tr_luz',()=>new THREE.MeshBasicMaterial({color:0xfff0c8}))));
+    }else if(d.t==='decal'){
+      vDc.push(d);   // decal de abandono (grieta, mancha, óxido, musgo, yuyo, basura, sangre, charco)
     }else if(d.t==='graf'){
       vGf.push(d);   // graffiti (tag de aerosol): todos juntos en un atlas, ver abajo
     }else if(d.t==='cartel'){
@@ -233,14 +271,12 @@ function buildDeco(group,list){
   }
   const volcar=(arr,mat)=>{if(!arr.length)return;const m=new THREE.Mesh(unir(arr),mat);group.add(m);};
   volcar(vTr,trunk);volcar(vLf,leaf);volcar(vBu,bushM);
-  if(vGf.length){
-    // graffitis: un atlas de 64 piezas pintadas una sola vez; cada cuadro del mapa elige una (d.k) y se dibujan todos en una sola malla
-    const cols=8,rows=8,cw=256,chh=128;
-    const atlas=cv(cols*cw,rows*chh,(g)=>{for(let i=0;i<64;i++)gfPiece(g,(i%cols)*cw,Math.floor(i/cols)*chh,cw,chh,i);});
+  // malla de cuadros tomados de un atlas (una sola malla y un solo dibujo): graffitis (8x8) y decals de abandono (8x4)
+  const atlasMesh=(lista,cols,rows,atlas,emis,orden)=>{
     const tex=new THREE.CanvasTexture(atlas);tex.anisotropy=4;
     const P=[],N=[],U=[],X=[],q=new THREE.Quaternion(),e=new THREE.Euler(0,0,0,'YXZ'),v=new THREE.Vector3();
-    vGf.forEach((d)=>{
-      const k=(d.k|0)%64;e.set(d.rx||0,d.ry||0,d.rz||0);q.setFromEuler(e);
+    lista.forEach((d)=>{
+      const k=(d.k|0)%(cols*rows);e.set(d.rx||0,d.ry||0,d.rz||0);q.setFromEuler(e);
       let ua=(k%cols)/cols,ub=ua+1/cols;if(d.fl){const t=ua;ua=ub;ub=t;}const vt=1-Math.floor(k/cols)/rows,vb=vt-1/rows,base=P.length/3;
       for(const [lx,ly] of [[-1,-1],[1,-1],[1,1],[-1,1]]){
         v.set(lx*d.w/2,ly*d.h/2,0).applyQuaternion(q);P.push(d.x+v.x,d.y+v.y,d.z+v.z);
@@ -249,9 +285,11 @@ function buildDeco(group,list){
       X.push(base,base+1,base+2,base,base+2,base+3);
     });
     const gg=new THREE.BufferGeometry();gg.setAttribute('position',new THREE.Float32BufferAttribute(P,3));gg.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));gg.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));gg.setIndex(X);
-    const gm=new THREE.Mesh(gg,new THREE.MeshPhongMaterial({map:tex,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3,shininess:0,emissive:0x2c2c2c,emissiveMap:tex}));
-    gm.renderOrder=1;gm.frustumCulled=false;group.add(gm);
-  }
+    const gm=new THREE.Mesh(gg,new THREE.MeshPhongMaterial({map:tex,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3,shininess:0,emissive:emis,emissiveMap:tex}));
+    gm.renderOrder=orden;gm.frustumCulled=false;group.add(gm);
+  };
+  if(vGf.length)atlasMesh(vGf,8,8,cv(2048,1024,(g)=>{for(let i=0;i<64;i++)gfPiece(g,(i%8)*256,Math.floor(i/8)*128,256,128,i);}),0x101010,1);
+  if(vDc.length)atlasMesh(vDc,8,4,cv(2048,1024,(g)=>{for(let i=0;i<32;i++)dcPiece(g,(i%8)*256,Math.floor(i/8)*256,256,i);}),0x000000,0);
   if(vVn.length)volcar(vVn,M_('vid',()=>new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(cv(32,128,(g,w,h)=>{g.clearRect(0,0,w,h);g.strokeStyle='#1d3a22';g.lineWidth=2;g.beginPath();g.moveTo(16,0);for(let y=0;y<h;y+=8)g.lineTo(16+Math.sin(y*.13)*5,y);g.stroke();
     for(let y=6;y<h;y+=7){const x=16+Math.sin(y*.13)*5,s=y%14?1:-1;g.fillStyle=(y%3)?'#2c5a30':'#1f4426';g.beginPath();g.ellipse(x+s*5,y,5,2.6,s*.5,0,7);g.fill();}})),transparent:true,alphaTest:.4,side:THREE.DoubleSide})));
   if(vGl.length){const pos=[],col=[];for(const q of vGl){const c=new THREE.Color(q.c||0xffd08a);pos.push(q.x,q.y,q.z);col.push(c.r,c.g,c.b);}

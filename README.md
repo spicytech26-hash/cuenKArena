@@ -7,7 +7,7 @@ Deathmatch online estilo Quake que corre en el navegador. Al terminar cada parti
 Al tocar **Jugar online** (o **Práctica con bots**) elegís el modo. Cada modo es una sala aparte del servidor.
 
 - **Francotiradores** (mapa *snp1 · Fuertes del Cañón*): rojo contra azul, cada equipo en su establo a un lado del cañón. Solo francotirador (mata de un tiro, munición infinita) y cuchillo (con el cuchillo en la mano corrés un 30 % más rápido). Una racha de 6 bajas sin morir desbloquea la escopeta doble (tecla 2) hasta que te maten. Sin tienda y sin mira: la retícula aparece solo al apuntar con el clic derecho. Gana el primer equipo a 30 bajas o el que tenga más a los 6 minutos.
-- **Arena**: todos contra todos en La Represa, Humita, La Cuenca y El Cuarto Tramo, con créditos y tienda. Cada partida dura **5 minutos** (online y en práctica).
+- **Arena**: todos contra todos en La Represa, Humita, La Cuenca, El Cuarto Tramo y Skatenight, con créditos y tienda. Cada partida dura **5 minutos** (online y en práctica).
 - **Gungame**: todos arrancan con la ametralladora y cada baja te da la siguiente arma de una lista de 20 niveles (armas fuertes primero, pistola, riel y francotirador al final, cuchillo en el último). Munición infinita, sin tienda y sin nada tirado en el mapa (ni armas, ni vida, ni blindaje). Además de la del nivel tenés siempre el cuchillo: si te matás solo, o te matan con cuchillo, bajás un nivel. Gana el primero en hacer la baja número 20.
 - **Team Deathmatch**: rojo contra azul, cada baja suma para el equipo hasta llegar al límite. Online la sala espera a tener **4 jugadores** (mientras tanto hay calentamiento y las bajas no cuentan) y arranca con una cuenta regresiva. El límite de bajas lo elige el primero en entrar desde la pantalla de modos, y se puede cambiar desde el menú (Esc) mientras esperan.
 - **Captura la bandera**: rojo (Posadas) contra azul (Encarnación) en **ctf1 · El Puente**. Robá la bandera rival del fortín enemigo y llevala hasta el pedestal de tu base (cuenta aunque tu bandera esté robada). Si matan al que la lleva, la bandera queda tirada 20 segundos: si la toca su equipo vuelve a la base. Gana el primer equipo en capturarla 3 veces (se cambia con `/caplimit N`). No hay fuego amigo y los equipos se equilibran solos con los bots.
@@ -221,7 +221,7 @@ La práctica con bots del menú corre la misma clase `Game` dentro del navegador
 
 **Con el editor (sin programar):** abrí `editor.html` (hay un link abajo en el menú del juego). Dibujás bloques desde arriba, ponés ítems, apariciones y saltadores, lo probás en práctica con un botón y lo exportás como archivo `.js` que va en `src/nucleo/02-mapas/`.
 
-**A mano:** cada mapa es un archivo en `src/nucleo/02-mapas/` (`1-represa.js`, `2-humita.js`, `3-lacuenca.js`, `4-puente.js`, `5-fuertes.js`, `6-cuartotramo.js`). Todo son cajas, como los *brushes* de Quake:
+**A mano:** cada mapa es un archivo en `src/nucleo/02-mapas/` (`1-represa.js`, `2-humita.js`, `3-lacuenca.js`, `4-puente.js`, `5-fuertes.js`, `6-cuartotramo.js`, `7-skatenight.js`). Todo son cajas, como los *brushes* de Quake:
 
 - `add(x0, y0, z0, x1, y1, z1, 'material')` agrega un bloque sólido.
 - `stairs(...)`, `ramp(...)` y `wall(... , [puertas])` arman escaleras, rampas y paredes con aberturas.
@@ -286,6 +286,18 @@ Inspirado en el cuarto tramo de la Costanera de Posadas, **al atardecer** (cielo
 - **Del otro lado de la valla del oeste** la costanera sigue de verdad (suelo, vías, galpones de la estación, farolas, palmeras y árboles) hasta perderse en la niebla.
 - **Texturas «Unreal Tournament lovecraftiano»** solo en este mapa (con zonas húmedas que reflejan la luz, baranda transparente, brillos en las farolas, enredaderas bajo el alero y brillos sobre el río): ladrillo mugriento con musgo, hormigón húmedo con grietas, metal oxidado con pátina verdosa, madera gastada, yeso con manchas de humedad y runas apenas visibles, y un río negro verdoso. Los demás mapas conservan sus texturas.
 - Los botones del menú y la votación lo toman solos; la foto de la votación es opcional (`public/maps/cuartotramo.jpg`).
+
+## Skatenight (mapa nuevo, de noche)
+
+Inspirado en el **skatepark de la Costanera de Posadas**, pero de noche: casi todos los reflectores están apagados, hay luna, niebla baja en los bowls y la ciudad (con el puente a Encarnación) de fondo. Se juega en **Arena** y **Gungame**. Es un mapa grande (unos 112 × 80 m) hecho para moverse, con varios niveles.
+- **Linterna en cada arma (solo en este mapa):** tu arma lleva una linterna con un foco real: alumbrás lo que apuntás y el resto queda en penumbra. A los rivales los ves por **su haz de luz y el brillo del lente**, que pega fuerte cuando te apuntan a vos; el visor y el pecho de los jugadores se apagan (solo se ven si están a menos de 5 m o los alumbrás) y el nombre aparece solo si los alumbrás. Los dos rivales más cercanos alumbran de verdad el escenario. Los bots ven hasta 30 m. (Con las luces en calidad baja solo anda tu linterna.)
+- **Plaza de concreto** con **dos bowls hundidos** al oeste (-3 y -2 m, con coronamiento y bruma), tres **pirámides** (1,5 y 2,4 m), una caja de *bank to ledge* con el cartel «PROHIBIDO NIÑOS ZOMBIES», un **bank con terraza** contra la valla del este y la **plataforma sur** (2 m) con escalera y rampa.
+- **Tribuna** de 10 gradas al norte (sube hasta 5 m), con pasillo y baranda sobre el río. Cartel grande de **MISIONES** que se pasa por abajo, poste de luz con transformador, murales, palmeras y autos en la calle.
+- **Tres torres de andamio** (pisos a 2,5 y 5 m) unidas por **pasarelas a 5 m**: una L desde la torre noroeste hasta la tribuna y otra de la tribuna a la torre este.
+- **Cuatro saltadores** (bowl grande → torre noroeste, bowl chico → torre sudoeste, plaza → tribuna, plaza → torre este) y **dos portales** lejísimos entre sí: amarillo en el rincón sudoeste, azul arriba de la tribuna.
+- **Daño triple** en la pasarela este, **megasalud** en lo alto de la torre sudoeste y tres armaduras pesadas (pasillo de la tribuna, bowl chico y debajo del cartel).
+- Todo es sólido (barandas, carteles, troncos, escaleras), techo y bordes inalcanzables (ni con rocket jump). Texturas «Unreal Tournament lovecraftiano» como El Cuarto Tramo. Foto de la votación en `public/maps/skatenight.jpg`.
+- Para hacer otro mapa de noche basta con `noche: true` en su `theme` (ver `src/cliente/js/18-noche.js`).
 
 ## Novedades de La Cuenca y Humita
 

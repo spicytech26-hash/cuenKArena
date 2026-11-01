@@ -118,10 +118,10 @@ function updRemote(dt){
       p.fire=(p.fire||0)-dt;p.pain=(p.pain||0)-dt;
       const em=p.pain>0?0x803020:p.quad?0x5020a0:0;m.mats.forEach(mm=>mm.emissive.setHex(em));
       if(m.gun.userData.w!==p.w){m.gun.clear();m.gun.add(tpGun(p.w));m.gun.userData.w=p.w;}
-      if(m.tag)m.tag.visible=true;
+      if(NIGHT)nightRemote(p,m,dt);else{if(m.tag)m.tag.visible=true;if(m.beam)nightHide(m);}
       if(placeBlob(nb,p.x,p.y,p.z,1))nb++;
     }else{
-      p.deadT+=dt;if(m.tag)m.tag.visible=false;
+      p.deadT+=dt;if(m.tag)m.tag.visible=false;nightHide(m);
       if(p.gib)m.g.visible=false;
       else{m.b.rotation.x=Math.max(-Math.PI/2,-p.deadT*5);m.b.position.y=p.deadT>2?Math.max(-.3,-(p.deadT-2)*.3):0;m.g.visible=p.deadT<5;
         if(m.g.visible&&placeBlob(nb,p.x,p.y,p.z,Math.max(0,1-p.deadT/5)))nb++;}

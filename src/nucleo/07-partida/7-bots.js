@@ -7,7 +7,7 @@
       if (t === p || !t.alive || !t.joined || (this.mode.teams && t.team === p.team)) continue;
       const d = Math.hypot(t.s.x - ex, t.s.y + 1 - ey, t.s.z - ez);
       const hurt = p.ai.hurtT > 0 && p.ai.hurtBy === t.id;
-      if (d > sk.range && !hurt) continue;
+      if (d > (this.W.theme.noche ? Math.min(sk.range, 30) : sk.range) && !hurt) continue;   // de noche los bots tampoco ven de lejos
       // campo de visión según la dificultad, salvo que lo hayan atacado o estés encima
       const f = dirFromAngles(p.yaw, 0), dot = ((t.s.x - ex) * f[0] + (t.s.z - ez) * f[2]) / (Math.hypot(t.s.x - ex, t.s.z - ez) || 1);
       if (dot < sk.fov && !hurt && d > 4 && t.id !== p.ai.tgt) continue;

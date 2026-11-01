@@ -1,5 +1,6 @@
 /* =================== GEOMETRÍA DEL MAPA =================== */
 let level=null;
+let NIGHT=false;   // mapa de noche (theme.noche): linternas, ver 18-noche.js
 let MATSX=MATS;   // juego de materiales del mapa actual (las texturas «ut» solo las usan los mapas con theme.tex==='ut')
 const sky=new THREE.Mesh(new THREE.SphereGeometry(400,32,16),new THREE.MeshBasicMaterial({fog:false,side:THREE.BackSide,depthWrite:false}));sky.renderOrder=-1;scene.add(sky);
 function skyDay(){return cv(1024,512,(g,w,h)=>{
@@ -117,6 +118,10 @@ function loadMap(id){
     sun.castShadow=S.sh!==0;sun.shadow.mapSize.set(th.shadowRes||2048,th.shadowRes||2048);
     Object.assign(sun.shadow.camera,{left:-R,right:R,top:R,bottom:-R,near:5,far:160});sun.shadow.camera.updateProjectionMatrix();
     sun.shadow.bias=th.shBias!=null?th.shBias:-.0006;sun.shadow.normalBias=th.shNormal!=null?th.shNormal:.04;L.sun=sun;group.add(sun);}
+  // modo noche: 3 focos reales (el mío y los de los 2 rivales más cercanos); se mueven en updNight
+  NIGHT=!!th.noche;
+  if(NIGHT)L.spots=[[2.8,58,.46],[2.3,44,.42],[2.3,44,.42]].map(([i,d,a])=>{const sp=new THREE.SpotLight(0xfff0cc,i,d,a,.6,1.15);sp.castShadow=false;sp.userData.i0=i;sp.userData.pid=null;group.add(sp,sp.target);return sp;});
+  try{for(const v of vms)if(v.userData.lin)v.userData.lin.visible=NIGHT;}catch(e){}
   // todo el mapa recibe sombra y la proyecta (menos lo transparente y los neones)
   group.traverse(o=>{if(!o.isMesh)return;const mt=o.material;if(mt&&(mt.transparent||mt.isMeshBasicMaterial))return;o.castShadow=true;o.receiveShadow=true;});
   // las sombras del mapa se calculan una sola vez (el mapa no se mueve): las plataformas móviles reciben sombra pero no la proyectan

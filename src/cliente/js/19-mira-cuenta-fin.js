@@ -43,7 +43,7 @@ try{ACCTOK=localStorage.getItem('cuenk_tok');}catch(e){}
 var medalN=0;
 /* ---------- pantalla de fin de partida: podio, tabla con daño y tarjeta de experiencia animada ---------- */
 // tarjetas para votar el próximo mapa (cada una con los colores de su mapa)
-const MAP_LOOK={represa:['#ff8a3a','#3a1810','industrial · lava'],panymanteca:['#ff3fd2','#1a0a2a','boliche · pista LED'],lacuenca:['#5fb0ff','#0e1a2a','la universidad'],cuartotramo:['#ff8a5a','#2a1424','atardecer · la estación'],puente:['#7fe0a0','#0e2a1e','sobre el río']};
+const MAP_LOOK={represa:['#ff8a3a','#3a1810','industrial · lava'],panymanteca:['#ff3fd2','#1a0a2a','boliche · pista LED'],lacuenca:['#5fb0ff','#0e1a2a','la universidad'],cuartotramo:['#ff8a5a','#2a1424','atardecer · la estación'],puente:['#7fe0a0','#0e2a1e','sobre el río'],skatenight:['#5fe0d0','#070d18','skatepark · de noche con linternas']};
 function renderMapVote(v){
   const box=$('mapVote');if(!v||!v.o){box.hidden=true;return;}box.hidden=false;
   const tot=Object.values(v.c).reduce((a,b)=>a+b,0),best=Math.max(0,...Object.values(v.c));

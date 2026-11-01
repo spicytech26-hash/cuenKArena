@@ -20,7 +20,8 @@ function buildPlayer(skin,name,noTag){
   b.add(bx(.5,.18,.3,mL,0,.9,0),bx(.6,.62,.38,mA,0,1.26,0),bx(.24,.17,.42,mA,-.4,1.53,0),bx(.24,.17,.42,mA,.4,1.53,0));
   if(!hasImg)b.add(bx(.42,.28,.06,mL,0,1.3,.2),bx(.08,.08,.02,mV,.18,1.42,.23));
   // imagen del pecho: un cuadrado sobre la placa oscura del frente
-  if(hasImg){const pl=new THREE.Mesh(chestGeo,new THREE.MeshBasicMaterial({map:chestTex(skin.img)}));pl.position.set(0,1.27,.1925);b.add(pl);}
+  const bas=[mV];   // materiales que brillan solos (de noche se apagan, ver 18-noche.js)
+  if(hasImg){const pl=new THREE.Mesh(chestGeo,new THREE.MeshBasicMaterial({map:chestTex(skin.img)}));pl.position.set(0,1.27,.1925);b.add(pl);bas.push(pl.material);}
   const head=new THREE.Group();head.position.y=1.74;head.add(bx(.3,.3,.3,mH,0,0,0),bx(.27,.07,.04,mV,0,.03,.16));b.add(head);
   const a=skin.a|0;
   if(a===1)head.add(bx(.06,.14,.34,mV,0,.2,-.01));
@@ -33,7 +34,7 @@ function buildPlayer(skin,name,noTag){
   const gun=new THREE.Group();gun.position.set(0,-.13,.36);gun.rotation.y=Math.PI;gun.scale.setScalar(1.25);armR.add(gun);
   if(noTag){gun.add(tpGun(1));gun.userData.w=1;}
   let tag=null;if(!noTag){tag=nameSprite(name,skin.c);g.add(tag);}
-  return {g,b,legs,armL,armR,head,gun,tag,mats:[mA,mH]};
+  return {g,b,legs,armL,armR,head,gun,tag,mats:[mA,mH],bas};
 }
 
 /* ---------- ítems ---------- */

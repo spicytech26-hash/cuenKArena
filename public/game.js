@@ -1494,7 +1494,7 @@ function buildSkatenight() {
   add(-30.6, .3, .6, -30.1, .36, 5.2, 'wood'); add(-30.6, .9, .6, -30.1, .96, 5.2, 'wood');               // estantes
   add(-31.2, 2.7, -1.2, -21.8, 3, 6.2, 'roof'); stairs(-31, -6, -29, -1, 0, .5, 6, 'z', 1, 'concrete');
   bar(-29, -1.2, -21.8, -1.2, 3); bar(-31.2, -1.2, -31.2, 6.2, 3); bar(-31.2, 6.2, -21.8, 6.2, 3); bar(-21.8, -1.2, -21.8, 6.2, 3);
-  deco.push({ t: 'cartel', x: -26.5, y: 2.5, z: -1.03, w: 3.2, h: .5, txt: 'KIOSCO 24 HS', bg: '#2a1c14', fg: '#a8844a', ry: Math.PI });
+  deco.push({ t: 'cartel', x: -26.5, y: 2.4, z: -1.03, w: 3.2, h: .3, txt: 'KIOSCO 24 HS', bg: '#2a1c14', fg: '#a8844a', ry: Math.PI });
   /* ---- graffitis: todo el mapa está pintado, como en el render (paredes de los pozos, rampas, muros, tribuna y algo de piso) ---- */
   const P = Math.PI, al = (d, w) => Math.atan2(d, w);
   // pozo en L del oeste (3 m): pared oeste (44 m de largo), norte, este del bowl grande, sur, este del canal y sur del bowl chico
@@ -1587,7 +1587,7 @@ function buildSkatenight() {
   // yuyos: matas cruzadas (4 cuadros) que se cuelan por las grietas, pegadas a las vallas y a los bordes; no estorban (son bajitos)
   const tuft = (x, z) => {
     const h = .5 + rnd() * .85, w = h * (1.2 + rnd() * .5), k = 18 + Math.floor(rnd() * 4), ry = rnd() * 3.14, t = flatTop(x, z, w * .55); if (t == null) return;
-    for (const a of [0, Math.PI / 2]) for (const f of [0, Math.PI]) deco.push({ t: 'decal', x, y: t + h / 2 - .02, z, w, h, k, rx: 0, ry: ry + a + f, rz: 0 });
+    for (const a of [0, Math.PI / 2]) for (const f of [0, Math.PI]) deco.push({ t: 'decal', x, y: t + h / 2 - .02, z, w, h, k, rx: 0, ry: ry + a + f, rz: 0, lib: 1 });
   };
   for (let x = -54; x <= 54; x += 3.4) { tuft(x + rnd() * 2, 50.4 - rnd() * .9); tuft(x + rnd() * 2, -35.2 + rnd() * .9); }
   for (let z = -34; z <= 50; z += 3.4) { tuft(-54.4 + rnd() * .8, z + rnd() * 2); tuft(54.6 - rnd() * .8, z + rnd() * 2); }
@@ -1607,6 +1607,20 @@ function buildSkatenight() {
     S.forEach((b, i) => { for (let ax = 0; ax < 3; ax++) { if (g[i][ax][0]) b.min[ax] -= .006; if (g[i][ax][1]) b.max[ax] += .006; } });
   }
   for (const b of B) if (b.nc && b.mat !== 'clip') for (let k = 0; k < 3; k++) { b.min[k] -= .012; b.max[k] += .012; }   // evita caras coplanares (z-fighting)
+  // revisión de grafitis, manchas y carteles: cada pieza tiene que apoyar entera sobre algo sólido y no quedar tapada ni colgando en el aire (si no, se saca)
+  const sobre = (x, y, z) => { for (const b of B) { if (b.mat === 'clip' || x < b.min[0] || x > b.max[0] || z < b.min[2] || z > b.max[2] || y < b.min[1]) continue; if (y <= topAt(b, x - .001, z - .001, x + .001, z + .001) + .002) return true; } return false; };
+  for (let i = deco.length - 1; i >= 0; i--) {
+    const d = deco[i]; if ((d.t !== 'graf' && d.t !== 'decal') || d.lib) continue;   // lib: pilas de escombro, que se paran solas sobre el piso
+    const rx = d.rx || 0, ry = d.ry || 0, cx = Math.cos(rx), sx = Math.sin(rx), cy = Math.cos(ry), sy = Math.sin(ry);
+    const n = [sy * cx, -sx, cy * cx], u = [cy, 0, -sy], v = [sx * sy, cx, sx * cy];
+    let atras = 0, libre = 0;
+    for (const [a, c] of [[0, 0], [.4, .4], [-.4, .4], [.4, -.4], [-.4, -.4]]) {
+      const x = d.x + u[0] * a * d.w + v[0] * c * d.h, y = d.y + u[1] * a * d.w + v[1] * c * d.h, z = d.z + u[2] * a * d.w + v[2] * c * d.h;
+      if (sobre(x - n[0] * .06, y - n[1] * .06, z - n[2] * .06)) atras++;
+      if (!sobre(x + n[0] * .03, y + n[1] * .03, z + n[2] * .03)) libre++;
+    }
+    if (atras < 4 || libre < (d.t === 'graf' ? 4 : 2)) deco.splice(i, 1);
+  }
   return finish({ id: 'skatenight', name: 'Skatenight', bounds: { x0: -56, x1: 56, z0: -40, z1: 54 }, deco, modos: ['arena', 'gungame'],
     theme: { sky: 'night', tex: 'ruina', noche: true, skyDim: .035, fog: 0x020409, fogD: .06, amb: 0x1a2440, ambI: .004, hemi: [0x20345c, 0x01020a, .004], sun: true, sunC: 0x5a78c0, sunI: .01, sunPos: [34, 60, -46], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
 }

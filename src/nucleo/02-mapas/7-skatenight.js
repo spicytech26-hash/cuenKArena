@@ -37,14 +37,15 @@ function buildSkatenight() {
     const rx = alpha - Math.PI / 2, nx = Math.sin(ry) * Math.sin(alpha), ny = Math.cos(alpha), nz = Math.cos(ry) * Math.sin(alpha);
     if (alpha > .05) for (let n = Math.round(W * H / 16), i = 0; i < n; i++) {   // grietas, manchas, óxido, musgo y sangre sobre pared o rampa
       const k = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 26, 27, 28, 29][Math.floor(rnd() * 22)];
-      dpiece(cx + nx * .035, cy + ny * .035, cz + nz * .035, rx, ry, (rnd() - .5) * W, (rnd() - .5) * H, 1.8 + rnd() * 2.6, k);
+      const sz = Math.min(1.8 + rnd() * 2.6, W * .9, H * .95);   // nunca más grande que la superficie ni fuera de ella
+      dpiece(cx + nx * .035, cy + ny * .035, cz + nz * .035, rx, ry, (rnd() - .5) * (W - sz), (rnd() - .5) * (H - sz), sz, k);
     }
     cx += nx * .05; cy += ny * .05; cz += nz * .05;
     const cols = Math.max(1, Math.round(W / 4.8)), rows = Math.max(1, Math.round(H / 2.7));
     for (let a = 0; a < cols; a++) for (let b = 0; b < rows; b++) {
       if (rnd() > (dens || 1) * GD) continue;
-      const w = 4.4 + rnd() * 2, h = Math.min(w * .52, H * 1.06);
-      piece(cx, cy, cz, rx, ry, (a + .5 + (rnd() - .5) * .5) * W / cols - W / 2, (b + .5 + (rnd() - .5) * .4) * H / rows - H / 2, w, h, Math.floor(rnd() * 64));
+      const w = Math.min(4.4 + rnd() * 2, W), h = Math.min(w * .52, H * 1.06), clp = (v, m) => m <= 0 ? 0 : Math.max(-m / 2, Math.min(m / 2, v));   // la pieza queda dentro de la superficie
+      piece(cx, cy, cz, rx, ry, clp((a + .5 + (rnd() - .5) * .5) * W / cols - W / 2, W - w), clp((b + .5 + (rnd() - .5) * .4) * H / rows - H / 2, H - h), w, h, Math.floor(rnd() * 64));
     }
   };
   // las dos caras de un muro fino (ry: hacia dónde mira cada cara)
@@ -233,7 +234,7 @@ function buildSkatenight() {
    [-40, -3, -20], [-34, -3, -24], [-43, -3, 3], [6, 5, -34], [20, 5, -34], [34, 5, -34], [26, 3, -26.6], [-17, 5, -21], [-25.5, 5, 21], [44.5, 5, 13], [45, 5, -10], [14, 2.4, 2], [-12, 1.5, 2], [42, 2.5, 13], [-20, 2.5, -21], [20, 0, -28], [44, 0, -28], [8, 0, -27], [-26, 0, 3], [-26, 3, 4]]
     .forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
   /* ---- luces: unos pocos pozos de luz en la oscuridad (la linterna hace el resto) ---- */
-  lights.push({ x: -53, y: 7, z: 28, c: 0xffa860, i: .3, d: 22 }, { x: 53.6, y: 7, z: 6, c: 0xffa860, i: .3, d: 22 }, { x: 2, y: 7, z: 49.6, c: 0xffa860, i: .3, d: 22 }, { x: 28, y: 12, z: -34.6, c: 0xffa860, i: .3, d: 22 },
+  lights.push({ x: -53, y: 7, z: 28, c: 0xffa860, i: .2, d: 20 }, { x: 53.6, y: 7, z: 6, c: 0xffa860, i: .2, d: 20 }, { x: 2, y: 7, z: 49.6, c: 0xffa860, i: .2, d: 20 }, { x: 28, y: 12, z: -34.6, c: 0xffa860, i: .2, d: 20 },
     { x: -16.5, y: 6.3, z: -23.5, c: 0x6aa0ff, i: .4, d: 14 }, { x: -24.5, y: 6.3, z: 18.5, c: 0x6aa0ff, i: .4, d: 14 }, { x: 45.5, y: 6.3, z: 10.5, c: 0x6aa0ff, i: .4, d: 14 },
     { x: -46, y: 3, z: 34, c: 0xffc840, i: .9, d: 13 }, { x: 51, y: 8, z: -33.8, c: 0x4aa0ff, i: .9, d: 13 },
     { x: -24, y: 3, z: 46, c: 0x4a8a6a, i: .35, d: 14 }, { x: 36, y: 6, z: 48, c: 0xffa860, i: .5, d: 18 }, { x: -39, y: -1, z: -21, c: 0x4a8a6a, i: .35, d: 14 }, { x: -43, y: 0, z: 4, c: 0x8a4a8a, i: .35, d: 12 });
@@ -252,7 +253,7 @@ function buildSkatenight() {
   };
   const scatter = (ks, count, smin, smax) => {
     for (let n = 0, tries = 0; n < count && tries < count * 12; tries++) {
-      const x = -54 + rnd() * 108, z = -34 + rnd() * 84, w = smin + rnd() * (smax - smin), t = flatTop(x, z, w * .35);
+      const x = -54 + rnd() * 108, z = -34 + rnd() * 84, w = smin + rnd() * (smax - smin), t = flatTop(x, z, w * .5);
       if (t == null) continue;
       deco.push({ t: 'decal', x, y: t + .025, z, w, h: w, k: ks[Math.floor(rnd() * ks.length)], rx: -Math.PI / 2, ry: rnd() * 6.28, rz: 0 }); n++;
     }
@@ -261,8 +262,7 @@ function buildSkatenight() {
   scatter([26, 27, 28, 29], 16, 2.2, 4); scatter([30, 31], 12, 2, 3.4);
   // yuyos: matas cruzadas (4 cuadros) que se cuelan por las grietas, pegadas a las vallas y a los bordes; no estorban (son bajitos)
   const tuft = (x, z) => {
-    const t = flatTop(x, z, .5); if (t == null) return;
-    const h = .5 + rnd() * .85, w = h * (1.2 + rnd() * .5), k = 18 + Math.floor(rnd() * 4), ry = rnd() * 3.14;
+    const h = .5 + rnd() * .85, w = h * (1.2 + rnd() * .5), k = 18 + Math.floor(rnd() * 4), ry = rnd() * 3.14, t = flatTop(x, z, w * .55); if (t == null) return;
     for (const a of [0, Math.PI / 2]) for (const f of [0, Math.PI]) deco.push({ t: 'decal', x, y: t + h / 2 - .02, z, w, h, k, rx: 0, ry: ry + a + f, rz: 0 });
   };
   for (let x = -54; x <= 54; x += 3.4) { tuft(x + rnd() * 2, 50.4 - rnd() * .9); tuft(x + rnd() * 2, -35.2 + rnd() * .9); }
@@ -284,6 +284,6 @@ function buildSkatenight() {
   }
   for (const b of B) if (b.nc && b.mat !== 'clip') for (let k = 0; k < 3; k++) { b.min[k] -= .012; b.max[k] += .012; }   // evita caras coplanares (z-fighting)
   return finish({ id: 'skatenight', name: 'Skatenight', bounds: { x0: -56, x1: 56, z0: -40, z1: 54 }, deco, modos: ['arena', 'gungame'],
-    theme: { sky: 'night', tex: 'ruina', noche: true, skyDim: .07, fog: 0x03060c, fogD: .05, amb: 0x1a2440, ambI: .012, hemi: [0x20345c, 0x02030a, .01], sun: true, sunC: 0x5a78c0, sunI: .028, sunPos: [34, 60, -46], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
+    theme: { sky: 'night', tex: 'ruina', noche: true, skyDim: .035, fog: 0x020409, fogD: .06, amb: 0x1a2440, ambI: .004, hemi: [0x20345c, 0x01020a, .004], sun: true, sunC: 0x5a78c0, sunI: .01, sunPos: [34, 60, -46], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
 }
 MAPDEFS.skatenight = buildSkatenight;

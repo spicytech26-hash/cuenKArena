@@ -83,8 +83,8 @@ function dcPiece(g,x0,y0,S,i){
     blob(S/2,S/2,S*.42,i<8?['rgba(4,4,4,.75)','rgba(4,4,4,0)']:['rgba(14,18,10,.7)','rgba(14,18,10,0)'],8);
     if(i>=8)blob(S/2,S/2,S*.3,['rgba(60,40,90,.25)','rgba(60,40,90,0)'],3);
   }else if(i<14){   // churretes de óxido que bajan por la pared
-    for(let k=0;k<9;k++){const x=S*(.1+R()*.8),w=5+R()*18,len=S*(.35+R()*.6),gr=g.createLinearGradient(0,0,0,len);gr.addColorStop(0,'rgba(140,66,26,.85)');gr.addColorStop(1,'rgba(90,40,16,0)');g.fillStyle=gr;g.fillRect(x-w/2,S*.02,w,len);
-      g.fillStyle='rgba(60,26,12,.5)';g.fillRect(x-1.5,S*.02,3,len*.7);}
+    for(let k=0;k<9;k++){const x=S*(.1+R()*.8),w=5+R()*18,len=S*(.35+R()*.6),gr=g.createLinearGradient(0,0,0,len);gr.addColorStop(0,'rgba(92,46,22,.5)');gr.addColorStop(1,'rgba(62,30,14,0)');g.fillStyle=gr;g.fillRect(x-w/2,S*.02,w,len);
+      g.fillStyle='rgba(40,20,10,.35)';g.fillRect(x-1.5,S*.02,3,len*.7);}
   }else if(i<18){   // musgo y moho
     blob(S/2,S/2,S*.46,['rgba(44,84,34,.8)','rgba(44,84,34,0)'],10);blob(S/2,S/2,S*.3,['rgba(86,120,50,.6)','rgba(86,120,50,0)'],6);blob(S*.5,S*.5,S*.45,['rgba(10,18,8,.45)','rgba(10,18,8,0)'],4);
   }else if(i<22){   // mata de yuyos (cuelga de la base)
@@ -288,7 +288,7 @@ function buildDeco(group,list){
     const gm=new THREE.Mesh(gg,new THREE.MeshPhongMaterial({map:tex,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3,shininess:0,emissive:emis,emissiveMap:tex}));
     gm.renderOrder=orden;gm.frustumCulled=false;group.add(gm);
   };
-  if(vGf.length)atlasMesh(vGf,8,8,cv(2048,1024,(g)=>{for(let i=0;i<64;i++)gfPiece(g,(i%8)*256,Math.floor(i/8)*128,256,128,i);}),0x101010,1);
+  if(vGf.length)atlasMesh(vGf,8,8,cv(2048,1024,(g)=>{for(let i=0;i<64;i++)gfPiece(g,(i%8)*256,Math.floor(i/8)*128,256,128,i);}),0x060606,1);
   if(vDc.length)atlasMesh(vDc,8,4,cv(2048,1024,(g)=>{for(let i=0;i<32;i++)dcPiece(g,(i%8)*256,Math.floor(i/8)*256,256,i);}),0x000000,0);
   if(vVn.length)volcar(vVn,M_('vid',()=>new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(cv(32,128,(g,w,h)=>{g.clearRect(0,0,w,h);g.strokeStyle='#1d3a22';g.lineWidth=2;g.beginPath();g.moveTo(16,0);for(let y=0;y<h;y+=8)g.lineTo(16+Math.sin(y*.13)*5,y);g.stroke();
     for(let y=6;y<h;y+=7){const x=16+Math.sin(y*.13)*5,s=y%14?1:-1;g.fillStyle=(y%3)?'#2c5a30':'#1f4426';g.beginPath();g.ellipse(x+s*5,y,5,2.6,s*.5,0,7);g.fill();}})),transparent:true,alphaTest:.4,side:THREE.DoubleSide})));

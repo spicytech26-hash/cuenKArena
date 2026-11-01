@@ -4,8 +4,8 @@
      translúcido y un brillo en el lente que pega fuerte cuando te apuntan a vos.
    · Los rivales se ven apenas: la luz ambiente es mínima, y las partes que brillan solas (visor, pecho) se apagan
      salvo que estén cerca (menos de 5 m) o los estés alumbrando; el nombre aparece solo si los alumbrás. */
-const nBeamGeo=(()=>{const g=new THREE.ConeGeometry(5.4,26,18,1,true);g.translate(0,-13,0);g.rotateX(-Math.PI/2);return g;})();   // la punta en el origen, apunta a +z
-const nBeamMat=new THREE.MeshBasicMaterial({color:0xfff0c8,transparent:true,opacity:.055,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+const nBeamGeo=(()=>{const g=new THREE.ConeGeometry(3.4,15,18,1,true);g.translate(0,-7.5,0);g.rotateX(-Math.PI/2);return g;})();   // la punta en el origen, apunta a +z
+const nBeamMat=new THREE.MeshBasicMaterial({color:0xfff0c8,transparent:true,opacity:.04,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
 const nLinBody=new THREE.MeshPhongMaterial({color:0x4a4e56,shininess:70,emissive:0x121418}),nLinLens=new THREE.MeshBasicMaterial({color:0xfff4cc});
 const nDir=new THREE.Vector3(),nRight=new THREE.Vector3(),nUp=new THREE.Vector3(0,1,0);
 // linterna táctica montada a cada arma: va pegada al costado del caño y un soporte (riel) la une al cuerpo del arma, así no queda flotando.
@@ -34,34 +34,57 @@ const nLook=(yaw,pitch,o)=>o.set(-Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),
 // un rival vivo, cada cuadro: haz, brillo del lente, visor apagado y nombre
 function nightRemote(p,m,dt){
   if(!m.beam)buildBeam(m);
-  m.beam.visible=m.glow.visible=true;
   m.beam.position.y=m.glow.position.y=p.crouch?.95:1.38;m.beam.rotation.x=-p.pitch;
   const dx=p.x-camera.position.x,dy=p.y+1.2-camera.position.y,dz=p.z-camera.position.z,d=Math.hypot(dx,dy,dz)||1;
   nLook(camera.rotation.y,camera.rotation.x,nDir);
-  const lit=d<3||(d<46&&(dx*nDir.x+dy*nDir.y+dz*nDir.z)/d>.93);   // cerca, o dentro del cono de mi linterna
+  const lit=d<3||(d<24&&(dx*nDir.x+dy*nDir.y+dz*nDir.z)/d>.93);   // cerca, o dentro del cono de mi linterna (24 m)
+  m.beam.visible=m.glow.visible=d<26;   // el haz y el lente solo se ven hasta 26 m
   p.lit=(p.lit||0)+((lit?1:0)-(p.lit||0))*Math.min(1,dt*(lit?14:2.5));   // se prende rápido y se apaga despacio
   const k=.02+.98*p.lit;
   for(let i=0;i<m.bas.length;i++)m.bas[i].color.copy(m.basC[i]).multiplyScalar(k);
-  if(m.tag)m.tag.visible=p.lit>.5&&d<34;
+  if(m.tag)m.tag.visible=p.lit>.5&&d<26;
+  const oculto=!(d<4.5||p.lit>.15);m.b.visible=!oculto;   // fuera del alcance y sin alumbrarlo, el cuerpo no se ve (el haz y el lente sí)
   // el lente brilla fuerte si me apunta (cos entre su mirada y la dirección hacia mí)
   nLook(p.yaw,p.pitch,nRight);
   const f=Math.max(0,-(nRight.x*dx+nRight.y*dy+nRight.z*dz)/d);
-  m.glow.material.opacity=.1+.9*f*f*f;m.glow.scale.setScalar(.25+1.3*f*f);
+  m.glow.material.opacity=(.1+.9*f*f*f)*Math.max(0,1-d/26);m.glow.scale.setScalar((.25+1.3*f*f)*Math.max(.3,1-d/40));
+  // pasos: se oyen hasta 24 m (más fuerte cuanto más cerca); agachado no suena
+  const sp=Math.hypot(p.vxs||0,p.vzs||0);
+  if(p.onG&&!p.crouch&&sp>2.5&&d<24){p.stepD=(p.stepD||0)+sp*dt;if(p.stepD>2.3){p.stepD=0;const vv=Math.pow(Math.max(0,1-d/24),1.6);if(vv>.02)nz({dur:.06+Math.random()*.03,f0:520+Math.random()*180,f1:160,type:'lowpass',vol:.24*vv});}}
+  return oculto;
 }
-function nightHide(m){if(m.beam)m.beam.visible=m.glow.visible=false;}
+function nightHide(m){if(m.beam)m.beam.visible=m.glow.visible=false;m.b.visible=true;}
 // focos reales: el mío y los de los 2 rivales más cercanos
 // ambiente sonoro de noche: viento bajo que sube y baja, y de tanto en tanto un crujido de metal, un golpe lejano o un susurro
-let nAmb=null,nAmbT=4;
+let nAmb=null,nAmbT=4,nGustT=8,nTrainT=40,nStepT=22;
 function nightAmbient(dt){
   if(!AC||!noiseBuf)return;
   if(!NIGHT){if(nAmb)nAmb.g.gain.value=0;return;}
-  if(!nAmb){const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=380;const g=AC.createGain();g.gain.value=0;s.connect(f);f.connect(g);g.connect(master);s.start();nAmb={g,f};}
-  const t=AC.currentTime;nAmb.g.gain.setTargetAtTime(.05+.035*Math.sin(t*.35)+.02*Math.sin(t*1.1),t,.4);nAmb.f.frequency.setTargetAtTime(300+160*Math.sin(t*.23),t,.5);
+  if(!nAmb){
+    const mkL=(type,fr,q)=>{const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;const f=AC.createBiquadFilter();f.type=type;f.frequency.value=fr;if(q)f.Q.value=q;const g=AC.createGain();g.gain.value=0;s.connect(f);f.connect(g);g.connect(master);s.start();return {g,f};};
+    const a=mkL('lowpass',380),b=mkL('bandpass',1000,.4);nAmb={g:a.g,f:a.f,g2:b.g,gust:0};   // viento bajo + capa de niebla (aire)
+  }
+  const t=AC.currentTime;
+  nGustT-=dt;if(nGustT<=0){nGustT=8+Math.random()*14;nAmb.gust=1;}   // ráfaga: sube rápido y se va despacio
+  nAmb.gust=Math.max(0,nAmb.gust-dt*.3);const gu=nAmb.gust*nAmb.gust;
+  nAmb.g.gain.setTargetAtTime(.06+.04*Math.sin(t*.35)+.02*Math.sin(t*1.1)+.14*gu,t,.35);nAmb.f.frequency.setTargetAtTime(300+160*Math.sin(t*.23)+520*gu,t,.5);
+  nAmb.g2.gain.setTargetAtTime(.016+.012*Math.sin(t*.17)+.035*gu,t,.8);
+  nTrainT-=dt;if(nTrainT<=0){nTrainT=70+Math.random()*80;nightTrain();}
+  nStepT-=dt;if(nStepT<=0){nStepT=16+Math.random()*28;const n=2+Math.floor(Math.random()*4);for(let k=0;k<n;k++)nz({dur:.06,f0:520,f1:170,type:'lowpass',vol:.08,delay:k*.52+Math.random()*.08});}   // pasos lejanos de alguien que no ves
   nAmbT-=dt;
   if(nAmbT<=0){nAmbT=6+Math.random()*12;const k=Math.random();
     if(k<.4){tn({type:'sawtooth',f0:230,f1:150,dur:1.2,vol:.025});nz({dur:1.2,f0:520,f1:300,type:'bandpass',q:7,vol:.05});}
     else if(k<.75)tn({type:'sine',f0:72,f1:36,dur:.55,vol:.2});
     else nz({dur:1,f0:2000,f1:900,type:'bandpass',q:5,vol:.035});}
+}
+// tren que pasa a lo lejos: retumbo grave que sube y baja yendo de un lado al otro, bocina de dos notas y traqueteo de ruedas
+function nightTrain(){
+  const t0=AC.currentTime+.2,dur=16,pan=AC.createStereoPanner?AC.createStereoPanner():null;
+  const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=150;
+  const g=AC.createGain();g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(.32,t0+6);g.gain.linearRampToValueAtTime(.2,t0+10);g.gain.linearRampToValueAtTime(0,t0+dur);
+  s.connect(f);f.connect(g);let out=g;if(pan){pan.pan.setValueAtTime(-.9,t0);pan.pan.linearRampToValueAtTime(.9,t0+dur);g.connect(pan);out=pan;}out.connect(master);s.start(t0);s.stop(t0+dur+.3);
+  tn({type:'triangle',f0:233,f1:233,dur:1.8,vol:.03,at:t0+.6});tn({type:'triangle',f0:294,f1:294,dur:1.8,vol:.025,at:t0+.6});tn({type:'triangle',f0:233,f1:233,dur:1,vol:.025,at:t0+3.4});
+  for(let i=0,t=t0+2;t<t0+dur-1;i++){const env=Math.sin(Math.PI*Math.min(1,(t-t0)/dur));nz({dur:.04,f0:800,f1:250,type:'bandpass',q:3,vol:.13*env,at:t});t+=.36-Math.min(.12,i*.004);}
 }
 // la linterna titila: cada tanto se apaga casi del todo un instante, y siempre tiembla un poquito
 let nFl={t:5,d:0};

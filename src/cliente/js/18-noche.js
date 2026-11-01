@@ -93,7 +93,7 @@ function nightFlicker(dt){
   nFl.t-=dt;if(nFl.t<=0){nFl.t=5+Math.random()*10;nFl.d=.12+Math.random()*.28;}
   return .96+Math.random()*.06;
 }
-// E: prende y apaga mi linterna (los demás la ven siempre encendida)
+// T: prende y apaga mi linterna (los demás la ven siempre encendida)
 let nLinOn=true;
 function nightToggle(){
   if(!NIGHT||!me.alive)return;

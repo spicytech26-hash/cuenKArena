@@ -120,7 +120,7 @@ function loadMap(id){
     Object.assign(sun.shadow.camera,{left:-R,right:R,top:R,bottom:-R,near:5,far:160});sun.shadow.camera.updateProjectionMatrix();
     sun.shadow.bias=th.shBias!=null?th.shBias:-.0006;sun.shadow.normalBias=th.shNormal!=null?th.shNormal:.04;L.sun=sun;group.add(sun);}
   // modo noche: 3 focos reales (el mío y los de los 2 rivales más cercanos); se mueven en updNight
-  NIGHT=!!th.noche;document.body.classList.toggle('noche',NIGHT);   // viñeta y grano de película en los mapas de noche
+  NIGHT=!!th.noche;$('shopHint').innerHTML=NIGHT?'B · TIENDA<br>T · LINTERNA':'B · TIENDA';document.body.classList.toggle('noche',NIGHT);   // viñeta y grano de película en los mapas de noche
   if(NIGHT)L.spots=[[3.2,28,.4],[2.4,20,.38],[2.4,20,.38]].map(([i,d,a])=>{const sp=new THREE.SpotLight(0xfff0cc,i,d,a,.6,1.15);sp.castShadow=false;sp.userData.i0=i;sp.userData.pid=null;group.add(sp,sp.target);return sp;});
   try{for(const v of vms)if(v.userData.lin)v.userData.lin.visible=NIGHT;}catch(e){}
   // todo el mapa recibe sombra y la proyecta (menos lo transparente y los neones)

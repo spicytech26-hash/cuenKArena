@@ -45,19 +45,19 @@ const vRubber=VMAT(0x151515,{shininess:6,specular:0x111111});
     for(let i=0;i<300;i++){const v=190+rnd()*65|0;g.fillStyle='rgba('+v+','+v+','+v+','+(.1+rnd()*.12)+')';g.fillRect(rnd()*w,rnd()*h,6+rnd()*40,1);}   // cepillado
     for(let i=0;i<12;i++){g.strokeStyle='rgba(250,250,250,'+(.15+rnd()*.2)+')';g.lineWidth=1;g.beginPath();const x=rnd()*w,y=rnd()*h;g.moveTo(x,y);g.lineTo(x+(rnd()-.5)*50,y+(rnd()-.5)*14);g.stroke();}   // rayones
     for(let i=0;i<40;i++){g.fillStyle='rgba(60,50,40,'+(.08+rnd()*.12)+')';g.fillRect(rnd()*w,rnd()*h,1+rnd()*2,1+rnd()*2);}   // picaduras y óxido
-    for(let i=0;i<4;i++){g.fillStyle='rgba(120,70,30,'+(.05+rnd()*.07)+')';g.beginPath();g.arc(rnd()*w,rnd()*h,3+rnd()*9,0,7);g.fill();}}),
+  }),
   paint=mkT(128,128,(g,w,h)=>{g.fillStyle='#e8e8e8';g.fillRect(0,0,w,h);
     for(let i=0;i<500;i++){const v=200+rnd()*55|0;g.fillStyle='rgba('+v+','+v+','+v+',.2)';g.fillRect(rnd()*w,rnd()*h,1+rnd()*2,1+rnd()*2);}   // grano
     for(let i=0;i<16;i++){g.fillStyle='rgba(80,74,68,'+(.2+rnd()*.2)+')';g.fillRect(rnd()*w,rnd()*h,1+rnd()*4,1+rnd()*3);}   // descascarado: asoma el metal
-    for(let i=0;i<12;i++){g.fillStyle='rgba(90,50,25,'+(.1+rnd()*.15)+')';g.beginPath();g.arc(rnd()*w,rnd()*h,2+rnd()*8,0,7);g.fill();}}),
+  }),
   wood=mkT(64,128,(g,w,h)=>{g.fillStyle='#e2e2e2';g.fillRect(0,0,w,h);
     for(let x=0;x<w;x+=1){const v=170+rnd()*85|0;g.fillStyle='rgba('+v+','+v+','+v+','+(.1+rnd()*.15)+')';g.fillRect(x,0,1,h);}   // veta a lo largo
     for(let i=0;i<14;i++){g.fillStyle='rgba(50,40,30,'+(.2+rnd()*.25)+')';g.fillRect(rnd()*w,rnd()*h,1,8+rnd()*40);}
     for(let i=0;i<30;i++){g.fillStyle='rgba(40,34,28,.35)';g.fillRect(rnd()*w,rnd()*h,1+rnd()*2,1+rnd()*2);}});   // golpes
-  const tx=(m,t,b)=>{m.map=t;if(S.q){m.bumpMap=t;m.bumpScale=b;}m.needsUpdate=true;};
-  [vSteel,vSteelL,vBrass].forEach(m=>tx(m,metal,.08));
-  [vBlack,vPoly,vOD,vODd,vRL,vRLd,vRed,vSci,vSciD,vRubber].forEach(m=>tx(m,paint,.12));
-  tx(vWoodD,wood,.15);}
+  const tx=(m,t)=>{m.map=t;m.needsUpdate=true;};   // solo un grano leve, sin relieve (con relieve se veían derretidas)
+  [vSteel,vSteelL,vBrass].forEach(m=>tx(m,metal));
+  [vBlack,vPoly,vOD,vODd,vRL,vRLd,vRed,vSci,vSciD,vRubber].forEach(m=>tx(m,paint));
+  tx(vWoodD,wood);}
 // coordenadas de textura por la cara dominante, escaladas a la pieza (así la veta de la madera corre a lo largo del arma)
 function vUV(geo){const p=geo.attributes.position,n=geo.attributes.normal;geo.computeBoundingBox();const b=geo.boundingBox,s=new THREE.Vector3();b.getSize(s);const uv=new Float32Array(p.count*2);
   for(let k=0;k<p.count;k++){const ax=Math.abs(n.getX(k)),ay=Math.abs(n.getY(k)),az=Math.abs(n.getZ(k));let u,v;

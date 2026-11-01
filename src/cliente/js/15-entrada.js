@@ -111,12 +111,7 @@ addEventListener('keydown',e=>{
   // 1 arma principal · 2 pistola · 3 cuchillo · 4 molotov (en Gungame: 1 el arma del nivel, 3 el cuchillo)
   const ggW=MODE==='gungame'?me.ow.findIndex((v,i)=>v&&i!==7):-1;
   const n=MODE==='snipers'?{Digit1:8,Digit2:2,Digit3:7,Numpad1:8,Numpad2:2,Numpad3:7}[e.code]:MODE==='gungame'?{Digit1:ggW,Digit3:7,Numpad1:ggW,Numpad3:7}[e.code]:{Digit1:C.primaryOf(me.ow),Digit2:0,Digit3:7,Digit4:10,Numpad1:C.primaryOf(me.ow),Numpad2:0,Numpad3:7,Numpad4:10}[e.code];
-  if(e.code==='KeyE'&&!e.repeat){
-    // en los mapas de noche la E prende y apaga la linterna; si hay un arma para agarrar a mano, la E agarra
-    const hayArma=!$('grabHint').hidden;
-    if(NIGHT&&!hayArma)nightToggle();
-    else if(net&&me.alive&&MODE!=='gungame')net.send({t:'grab'});
-  }
+  if(e.code==='KeyE'&&!e.repeat&&net&&me.alive&&MODE!=='gungame')net.send({t:'grab'});
   if(e.code==='KeyR')startReload(me.w);
   if(e.code==='KeyV')selectWeapon(7);if(n!==undefined&&n>=0)selectWeapon(n);
   if(e.code==='KeyG')selectWeapon(10);
@@ -126,7 +121,8 @@ addEventListener('keydown',e=>{
   if(e.code==='KeyQ')quickSwitch();
   if(e.code==='KeyF'&&!e.repeat)inspect();
   if(e.code==='KeyB'&&!e.repeat){e.preventDefault();openShop();}
-  if(e.code==='KeyT'||e.code==='Enter'){e.preventDefault();openChat();}
+  if(e.code==='KeyT'&&NIGHT){e.preventDefault();if(!e.repeat)nightToggle();}   // en los mapas de noche la T es la linterna (el chat queda en Enter)
+  else if(e.code==='KeyT'||e.code==='Enter'){e.preventDefault();openChat();}
   if(e.code==='Tab'){$('board').hidden=false;renderBoard();}
   if(!online&&!e.repeat&&(e.code==='Equal'||e.code==='NumpadAdd'||e.key==='+'))changeBots(1);
   if(!online&&!e.repeat&&(e.code==='Minus'||e.code==='NumpadSubtract'||e.key==='-'))changeBots(-1);

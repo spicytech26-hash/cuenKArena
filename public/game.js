@@ -1282,7 +1282,7 @@ MAPDEFS.cuartotramo = buildCuartoTramo;
    Norte = -z (el río y la tribuna), sur = +z (la calle). Mapa de noche: en el cliente (theme.noche) cada arma lleva linterna
    y los rivales casi no se ven hasta que los alumbrás o te alumbran.
    · Plaza de concreto a nivel 0 con un pozo en L al oeste (-3 m), un pozo en L grande al sureste (-3,2 m), pirámides/hips, un spine, una caja
-     de «bank to ledge» con el cartel PROHIBIDO NIÑOS ZOMBIES, bancos con terraza contra las vallas y una escalera con terraza.
+     de «bank to ledge», bancos con terraza contra las vallas y una escalera con terraza.
    · Tribuna de 10 gradas al norte (sube hasta 5 m, con pasillo y baranda sobre el río).
    · Tres torres de andamio (oeste-norte, sur-oeste y este) con piso a 2,5 y a 5 m, unidas por pasarelas a 5 m con la tribuna.
    · Cuatro saltadores y dos portales (uno en el rincón sur-oeste y otro arriba de la tribuna: lejísimos entre sí).
@@ -1458,7 +1458,6 @@ function buildSkatenight() {
   hip(-12, 2, 3, 2.5, 1.5, 4); hip(14, 2, 4, 3, 2.4, 5);
   ramp(-6, 24, 0, 30, 0, 0, 1, 'x', 1, 'concrete'); add(0, 0, 24, 8, 1, 30, 'smooth'); ramp(8, 24, 14, 30, 0, 0, 1, 'x', -1, 'concrete');   // bank to ledge
   add(0, 1, 24, 8, 1.08, 24.2, 'rail', { nc: 1 });
-  graf(4, .5, 30.02, 7.6, .8, 'PROHIBIDO NIÑOS ZOMBIES', '#2a2a28', '#6e6c66');
   ramp(46, 20, 52, 31, 0, 0, 2.6, 'x', 1, 'concrete'); add(52, 0, 20, 55.8, 2.6, 31, 'smooth'); bar(46, 20, 55.8, 20, 2.6); bar(46, 31, 55.8, 31, 2.6);
   // poste de luz con transformador, como el de la foto
   add(-46.3, 0, 29.7, -45.7, 11, 30.3, 'concrete'); add(-48.2, 9.6, 29.85, -43.8, 9.8, 30.15, 'metal', { nc: 1 }); add(-47.4, 7.6, 29.5, -46.6, 8.8, 30.5, 'metal', { nc: 1 }); add(-45.4, 7.6, 29.5, -44.6, 8.8, 30.5, 'metal', { nc: 1 });

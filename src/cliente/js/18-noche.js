@@ -59,7 +59,7 @@ function nightHide(m){if(m.beam)m.beam.visible=m.glow.visible=false;m.b.visible=
 let nAmb=null,nAmbT=4,nGustT=8,nTrainT=40,nStepT=22;
 function nightAmbient(dt){
   if(!AC||!noiseBuf)return;
-  if(!NIGHT){if(nAmb)nAmb.g.gain.value=0;return;}
+  if(!NIGHT){if(nAmb){const t=AC.currentTime;for(const g of [nAmb.g.gain,nAmb.g2.gain]){g.cancelScheduledValues(t);g.setTargetAtTime(0,t,.05);}}return;}   // fuera de Skatenight no suena nada
   if(!nAmb){
     const mkL=(type,fr,q)=>{const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;const f=AC.createBiquadFilter();f.type=type;f.frequency.value=fr;if(q)f.Q.value=q;const g=AC.createGain();g.gain.value=0;s.connect(f);f.connect(g);g.connect(master);s.start();return {g,f};};
     const a=mkL('lowpass',380),b=mkL('bandpass',1000,.4);nAmb={g:a.g,f:a.f,g2:b.g,gust:0};   // viento bajo + capa de niebla (aire)
@@ -93,17 +93,26 @@ function nightFlicker(dt){
   nFl.t-=dt;if(nFl.t<=0){nFl.t=5+Math.random()*10;nFl.d=.12+Math.random()*.28;}
   return .96+Math.random()*.06;
 }
+// E: prende y apaga mi linterna (los demás la ven siempre encendida)
+let nLinOn=true;
+function nightToggle(){
+  if(!NIGHT||!me.alive)return;
+  nLinOn=!nLinOn;nz({dur:.025,f0:3200,f1:1800,type:'bandpass',q:4,vol:.14});tn({type:'square',f0:nLinOn?900:600,f1:nLinOn?1100:420,dur:.04,vol:.03});
+}
 function updNight(dt){
   if(!level)return;
   nightAmbient(dt);
-  if(!NIGHT){for(const v of vms)if(v.userData.lin)v.userData.lin.visible=false;return;}
+  if(!NIGHT){nLinOn=true;for(const v of vms)if(v.userData.lin)v.userData.lin.visible=false;return;}
   const sp=level.spots;if(!sp)return;
-  vms.forEach((v,i)=>{if(!v.userData.lin){v.userData.lin=makeLin(i);v.add(v.userData.lin);}v.userData.lin.visible=true;});   // todas las armas llevan linterna
+  vms.forEach((v,i)=>{if(!v.userData.lin){
+    const l=v.userData.lin=makeLin(i),P=v.userData.parts,br=i===2&&P&&P.brl;   // en la escopeta doble la linterna va en los caños, que se quiebran al recargar
+    if(br){l.position.sub(br.position);br.add(l);}else v.add(l);}
+    v.userData.lin.visible=true;v.userData.lin.children[1].visible=v.userData.lin.children[2].visible=nLinOn;});   // apagada: el lente no brilla   // todas las armas llevan linterna
   nLook(camera.rotation.y,camera.rotation.x,nDir);nRight.crossVectors(nDir,nUp).normalize();
   const mine=sp[0],on=me.alive||spWatching();
   mine.position.copy(camera.position).addScaledVector(nRight,.16).addScaledVector(nUp,-.1).addScaledVector(nDir,.2);
   mine.target.position.copy(camera.position).addScaledVector(nDir,14);mine.target.updateMatrixWorld();
-  mine.intensity=mine.userData.i0*(on?1:.2)*nightFlicker(dt);
+  mine.intensity=nLinOn?mine.userData.i0*(on?1:.2)*nightFlicker(dt):0;
   // rivales más cercanos con linterna (solo con la calidad de luces encendida)
   const near=[];
   if(S.q)for(const p of players.values()){

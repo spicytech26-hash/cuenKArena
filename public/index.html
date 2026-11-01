@@ -1611,6 +1611,26 @@ const vPoly=VMAT(0x26282c,{shininess:14,specular:0x222222}),vBrass=VMAT(0xb08a3e
 const vOD=VMAT(0x5b6339,{shininess:18,specular:0x2a2a1a}),vODd=VMAT(0x3a4026,{shininess:14}),vRL=VMAT(0x6c705c,{shininess:26,specular:0x3a3a2e}),vRLd=VMAT(0x3f4237,{shininess:20});
 const vRed=VMAT(0xa8291c,{shininess:34}),vWoodD=VMAT(0x3b2516,{shininess:10}),vSci=VMAT(0x5d636b,{shininess:70,specular:0x9aa6b4}),vSciD=VMAT(0x2c3036,{shininess:50,specular:0x55606c});
 const vRubber=VMAT(0x151515,{shininess:6,specular:0x111111});
+// acabado de las armas: acero cepillado con rayones, pintura descascarada y veta de madera (una textura de ruido por tipo, compartida, más relieve leve)
+{const mkT=(w,h,fn)=>{const t=new THREE.CanvasTexture(cv(w,h,fn));t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=4;return t;};
+  const rnd=Math.random,
+  metal=mkT(128,128,(g,w,h)=>{g.fillStyle='#e4e4e4';g.fillRect(0,0,w,h);
+    for(let i=0;i<300;i++){const v=190+rnd()*65|0;g.fillStyle='rgba('+v+','+v+','+v+','+(.1+rnd()*.12)+')';g.fillRect(rnd()*w,rnd()*h,6+rnd()*40,1);}   // cepillado
+    for(let i=0;i<12;i++){g.strokeStyle='rgba(250,250,250,'+(.15+rnd()*.2)+')';g.lineWidth=1;g.beginPath();const x=rnd()*w,y=rnd()*h;g.moveTo(x,y);g.lineTo(x+(rnd()-.5)*50,y+(rnd()-.5)*14);g.stroke();}   // rayones
+    for(let i=0;i<40;i++){g.fillStyle='rgba(60,50,40,'+(.08+rnd()*.12)+')';g.fillRect(rnd()*w,rnd()*h,1+rnd()*2,1+rnd()*2);}   // picaduras y óxido
+    for(let i=0;i<4;i++){g.fillStyle='rgba(120,70,30,'+(.05+rnd()*.07)+')';g.beginPath();g.arc(rnd()*w,rnd()*h,3+rnd()*9,0,7);g.fill();}}),
+  paint=mkT(128,128,(g,w,h)=>{g.fillStyle='#e8e8e8';g.fillRect(0,0,w,h);
+    for(let i=0;i<500;i++){const v=200+rnd()*55|0;g.fillStyle='rgba('+v+','+v+','+v+',.2)';g.fillRect(rnd()*w,rnd()*h,1+rnd()*2,1+rnd()*2);}   // grano
+    for(let i=0;i<16;i++){g.fillStyle='rgba(80,74,68,'+(.2+rnd()*.2)+')';g.fillRect(rnd()*w,rnd()*h,1+rnd()*4,1+rnd()*3);}   // descascarado: asoma el metal
+    for(let i=0;i<12;i++){g.fillStyle='rgba(90,50,25,'+(.1+rnd()*.15)+')';g.beginPath();g.arc(rnd()*w,rnd()*h,2+rnd()*8,0,7);g.fill();}}),
+  wood=mkT(64,128,(g,w,h)=>{g.fillStyle='#e2e2e2';g.fillRect(0,0,w,h);
+    for(let x=0;x<w;x+=1){const v=170+rnd()*85|0;g.fillStyle='rgba('+v+','+v+','+v+','+(.1+rnd()*.15)+')';g.fillRect(x,0,1,h);}   // veta a lo largo
+    for(let i=0;i<14;i++){g.fillStyle='rgba(50,40,30,'+(.2+rnd()*.25)+')';g.fillRect(rnd()*w,rnd()*h,1,8+rnd()*40);}
+    for(let i=0;i<30;i++){g.fillStyle='rgba(40,34,28,.35)';g.fillRect(rnd()*w,rnd()*h,1+rnd()*2,1+rnd()*2);}});   // golpes
+  const tx=(m,t,b)=>{m.map=t;if(S.q){m.bumpMap=t;m.bumpScale=b;}m.needsUpdate=true;};
+  [vSteel,vSteelL,vBrass].forEach(m=>tx(m,metal,.08));
+  [vBlack,vPoly,vOD,vODd,vRL,vRLd,vRed,vSci,vSciD,vRubber].forEach(m=>tx(m,paint,.12));
+  tx(vWoodD,wood,.15);}
 // coordenadas de textura por la cara dominante, escaladas a la pieza (así la veta de la madera corre a lo largo del arma)
 function vUV(geo){const p=geo.attributes.position,n=geo.attributes.normal;geo.computeBoundingBox();const b=geo.boundingBox,s=new THREE.Vector3();b.getSize(s);const uv=new Float32Array(p.count*2);
   for(let k=0;k<p.count;k++){const ax=Math.abs(n.getX(k)),ay=Math.abs(n.getY(k)),az=Math.abs(n.getZ(k));let u,v;
@@ -3023,7 +3043,12 @@ addEventListener('keydown',e=>{
   // 1 arma principal · 2 pistola · 3 cuchillo · 4 molotov (en Gungame: 1 el arma del nivel, 3 el cuchillo)
   const ggW=MODE==='gungame'?me.ow.findIndex((v,i)=>v&&i!==7):-1;
   const n=MODE==='snipers'?{Digit1:8,Digit2:2,Digit3:7,Numpad1:8,Numpad2:2,Numpad3:7}[e.code]:MODE==='gungame'?{Digit1:ggW,Digit3:7,Numpad1:ggW,Numpad3:7}[e.code]:{Digit1:C.primaryOf(me.ow),Digit2:0,Digit3:7,Digit4:10,Numpad1:C.primaryOf(me.ow),Numpad2:0,Numpad3:7,Numpad4:10}[e.code];
-  if(e.code==='KeyE'&&!e.repeat&&net&&me.alive&&MODE!=='gungame')net.send({t:'grab'});
+  if(e.code==='KeyE'&&!e.repeat){
+    // en los mapas de noche la E prende y apaga la linterna; si hay un arma para agarrar a mano, la E agarra
+    const hayArma=!$('grabHint').hidden;
+    if(NIGHT&&!hayArma)nightToggle();
+    else if(net&&me.alive&&MODE!=='gungame')net.send({t:'grab'});
+  }
   if(e.code==='KeyR')startReload(me.w);
   if(e.code==='KeyV')selectWeapon(7);if(n!==undefined&&n>=0)selectWeapon(n);
   if(e.code==='KeyG')selectWeapon(10);
@@ -3602,7 +3627,7 @@ function nightHide(m){if(m.beam)m.beam.visible=m.glow.visible=false;m.b.visible=
 let nAmb=null,nAmbT=4,nGustT=8,nTrainT=40,nStepT=22;
 function nightAmbient(dt){
   if(!AC||!noiseBuf)return;
-  if(!NIGHT){if(nAmb)nAmb.g.gain.value=0;return;}
+  if(!NIGHT){if(nAmb){const t=AC.currentTime;for(const g of [nAmb.g.gain,nAmb.g2.gain]){g.cancelScheduledValues(t);g.setTargetAtTime(0,t,.05);}}return;}   // fuera de Skatenight no suena nada
   if(!nAmb){
     const mkL=(type,fr,q)=>{const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;const f=AC.createBiquadFilter();f.type=type;f.frequency.value=fr;if(q)f.Q.value=q;const g=AC.createGain();g.gain.value=0;s.connect(f);f.connect(g);g.connect(master);s.start();return {g,f};};
     const a=mkL('lowpass',380),b=mkL('bandpass',1000,.4);nAmb={g:a.g,f:a.f,g2:b.g,gust:0};   // viento bajo + capa de niebla (aire)
@@ -3636,17 +3661,26 @@ function nightFlicker(dt){
   nFl.t-=dt;if(nFl.t<=0){nFl.t=5+Math.random()*10;nFl.d=.12+Math.random()*.28;}
   return .96+Math.random()*.06;
 }
+// E: prende y apaga mi linterna (los demás la ven siempre encendida)
+let nLinOn=true;
+function nightToggle(){
+  if(!NIGHT||!me.alive)return;
+  nLinOn=!nLinOn;nz({dur:.025,f0:3200,f1:1800,type:'bandpass',q:4,vol:.14});tn({type:'square',f0:nLinOn?900:600,f1:nLinOn?1100:420,dur:.04,vol:.03});
+}
 function updNight(dt){
   if(!level)return;
   nightAmbient(dt);
-  if(!NIGHT){for(const v of vms)if(v.userData.lin)v.userData.lin.visible=false;return;}
+  if(!NIGHT){nLinOn=true;for(const v of vms)if(v.userData.lin)v.userData.lin.visible=false;return;}
   const sp=level.spots;if(!sp)return;
-  vms.forEach((v,i)=>{if(!v.userData.lin){v.userData.lin=makeLin(i);v.add(v.userData.lin);}v.userData.lin.visible=true;});   // todas las armas llevan linterna
+  vms.forEach((v,i)=>{if(!v.userData.lin){
+    const l=v.userData.lin=makeLin(i),P=v.userData.parts,br=i===2&&P&&P.brl;   // en la escopeta doble la linterna va en los caños, que se quiebran al recargar
+    if(br){l.position.sub(br.position);br.add(l);}else v.add(l);}
+    v.userData.lin.visible=true;v.userData.lin.children[1].visible=v.userData.lin.children[2].visible=nLinOn;});   // apagada: el lente no brilla   // todas las armas llevan linterna
   nLook(camera.rotation.y,camera.rotation.x,nDir);nRight.crossVectors(nDir,nUp).normalize();
   const mine=sp[0],on=me.alive||spWatching();
   mine.position.copy(camera.position).addScaledVector(nRight,.16).addScaledVector(nUp,-.1).addScaledVector(nDir,.2);
   mine.target.position.copy(camera.position).addScaledVector(nDir,14);mine.target.updateMatrixWorld();
-  mine.intensity=mine.userData.i0*(on?1:.2)*nightFlicker(dt);
+  mine.intensity=nLinOn?mine.userData.i0*(on?1:.2)*nightFlicker(dt):0;
   // rivales más cercanos con linterna (solo con la calidad de luces encendida)
   const near=[];
   if(S.q)for(const p of players.values()){

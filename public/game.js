@@ -1293,11 +1293,18 @@ function buildSkatenight() {
   // baranda física de 1 m (se puede saltar, no se atraviesa); si es un tramo corto en x o en z se le da grosor solo
   const bar = (x0, z0, x1, z1, y) => add(Math.min(x0, x1), y, Math.min(z0, z1), Math.max(x0, x1) + (x0 === x1 ? .1 : 0), y + 1, Math.max(z0, z1) + (z0 === z1 ? .1 : 0), 'rail');
   const graf = (x, y, z, w, h, txt, fg, bg, ry) => deco.push({ t: 'cartel', x, y, z, w, h, txt, fg, bg: bg || '#1d1d22', ry: ry || 0 });
-  // reflector apagado (poste con cabezal negro) o encendido (cabezal con luz + brillo)
-  const poste = (x, z, on) => {
-    add(x - .12, 0, z - .12, x + .12, 7, z + .12, 'metal'); add(x - .5, 7, z - .25, x + .5, 7.5, z + .25, 'black', { nc: 1 });
-    if (on) { add(x - .4, 6.85, z - .2, x + .4, 7, z + .2, 'light', { nc: 1 }); deco.push({ t: 'glow', x, y: 6.8, z, c: 0xffc070 }); }
+  // reflector de estadio (4 cabezales): apagado casi siempre; y0 = altura del piso donde apoya
+  const poste = (x, z, on, y0) => {
+    y0 = y0 || 0; add(x - .12, y0, z - .12, x + .12, y0 + 6.8, z + .12, 'metal'); add(x - .95, y0 + 6.8, z - .1, x + .95, y0 + 6.95, z + .1, 'black', { nc: 1 });
+    for (const dx of [-.66, -.22, .22, .66]) { add(x + dx - .17, y0 + 6.95, z - .22, x + dx + .17, y0 + 7.4, z + .22, 'black', { nc: 1 }); if (on) add(x + dx - .13, y0 + 6.9, z - .16, x + dx + .13, y0 + 6.95, z + .16, 'light', { nc: 1 }); }
+    if (on) deco.push({ t: 'glow', x, y: y0 + 6.7, z, c: 0xffc070 });
   };
+  // graffitis (deco 'graf'): sobre rampas, piso y muros; en colores de aerosol, se ven bien solo con la linterna
+  const NEON = ['#ff3fd2', '#2be6ff', '#ffe03a', '#5dff7a', '#ff7a2a', '#b46cff', '#ff4a5a', '#4aa0ff']; let tn = 0;
+  const tag = (x, y, z, w, h, txt, rx, ry) => deco.push({ t: 'graf', x, y, z, w, h, txt, fg: NEON[(tn++) % NEON.length], rx, ry });
+  const flat = (x, z, y, w, h, txt, ry) => tag(x, y + .03, z, w, h, txt, -Math.PI / 2, ry || 0);                 // en el piso
+  const wallTag = (x, y, z, w, h, txt, ry) => tag(x, y, z, w, h, txt, 0, ry);                                    // en un muro vertical (ry: hacia dónde mira)
+  const slope = (cx, cy, cz, ry, alpha, w, h, txt) => { const hx = Math.sin(ry), hz = Math.cos(ry), sa = Math.sin(alpha), ca = Math.cos(alpha); tag(cx + hx * sa * .04, cy + ca * .04, cz + hz * sa * .04, w, h, txt, alpha - Math.PI / 2, ry); };   // sobre una rampa que mira hacia ry
   // palmera con tronco sólido (el tronco es invisible, la copa la dibuja la decoración)
   const palma = (x, z, h) => { deco.push({ t: 'palm', x, y: 0, z, h }); add(x - .25, 0, z - .25, x + .25, 4, z + .25, 'clip'); };
   // coronamiento (borde liso) de la boca de un bowl
@@ -1340,15 +1347,15 @@ function buildSkatenight() {
   ramp(-52, -4, -48, 12, -2, -2, 0, 'x', -1, 'concrete'); ramp(-38, -4, -34, 12, -2, -2, 0, 'x', 1, 'concrete');
   ramp(-52, -4, -34, 0, -2, -2, 0, 'z', -1, 'concrete'); ramp(-52, 8, -34, 12, -2, -2, 0, 'z', 1, 'concrete');
   coping(-52, -4, -34, 12);
-  deco.push({ t: 'bruma', x0: -56, x1: 56, z0: -36, z1: 52, y: .8, o: .16, dir: 1 }, { t: 'bruma', x0: -56, x1: 56, z0: -36, z1: 52, y: 3.4, o: .1, dir: -1 });
-  deco.push({ t: 'bruma', x0: -52, x1: -26, z0: -32, z1: -10, y: -2.3, o: .28, dir: 1 }, { t: 'bruma', x0: -52, x1: -34, z0: -4, z1: 12, y: -1.3, o: .26, dir: -1 });
+  deco.push({ t: 'bruma', x0: -56, x1: 56, z0: -36, z1: 52, y: .35, o: .3, dir: 1 });   // una sola capa baja (a la altura de las rodillas): más capas se ven como franjas
+  deco.push({ t: 'bruma', x0: -52, x1: -26, z0: -32, z1: -10, y: -2.3, o: .5, dir: 1 }, { t: 'bruma', x0: -52, x1: -34, z0: -4, z1: 12, y: -1.3, o: .46, dir: -1 });
 
   /* ---- límites: valla al oeste y al este, mural al sur y al norte-oeste, río al norte; todo cerrado por arriba y por los costados ---- */
   add(-56, 0, -36, -55.8, 4.2, 52, 'fence'); add(55.8, 0, -32, 56, 4.2, 52, 'fence');
   for (let z = -36; z <= 52; z += 6) { add(-56.1, 0, z, -55.8, 4.4, z + .3, 'metal'); if (z >= -32) add(55.8, 0, z, 56.1, 4.4, z + .3, 'metal'); }
   add(-56.1, 4.2, -36, -55.8, 4.4, 52, 'metal'); add(55.8, 4.2, -32, 56.1, 4.4, 52, 'metal');
-  add(-55.8, 0, 51, 55.8, 4, 52, 'concrete');                                    // mural sur
-  add(-55.8, 0, -36.5, -2, 2.6, -36, 'concrete');                                  // mural norte (del lado del río)
+  add(-55.8, 0, 51.7, 55.8, 4.2, 51.9, 'fence'); add(-55.8, 4.2, 51.6, 55.8, 4.4, 52, 'metal'); add(-55.8, 0, -36.2, -2, 4.2, -36, 'fence'); add(-55.8, 4.2, -36.3, -2, 4.4, -35.9, 'metal');   // vallas de alambre: al norte se ve el río, al sur la calle
+  for (let x = -55.8; x <= 55; x += 6) add(x, 0, 51.5, x + .3, 4.4, 52.1, 'metal'); for (let x = -55.8; x <= -2; x += 6) add(x, 0, -36.4, x + .3, 4.4, -35.8, 'metal');
   add(-60, -8, -44, -55.8, 60, 58, 'clip'); add(55.8, -8, -44, 60, 60, 58, 'clip'); add(-60, -8, -44, 60, 60, -36.2, 'clip');
   add(-60, -8, 52, 60, 60, 58, 'clip'); add(-60, 24, -44, 60, 60, 58, 'clip');     // techo del mapa: inalcanzable ni con rocket jump
   lava.push({ min: [-420, -4, -260], max: [420, 0, -36.6], water: true, dps: 0 });   // el Paraná, al otro lado del muro: solo se ve
@@ -1412,13 +1419,26 @@ function buildSkatenight() {
   add(-31.2, 2.7, -1.2, -21.8, 3, 6.2, 'roof'); stairs(-31, -6, -29, -1, 0, .5, 6, 'z', 1, 'concrete');
   bar(-29, -1.2, -21.8, -1.2, 3); bar(-31.2, -1.2, -31.2, 6.2, 3); bar(-31.2, 6.2, -21.8, 6.2, 3); bar(-21.8, -1.2, -21.8, 6.2, 3);
   deco.push({ t: 'cartel', x: -26.5, y: 2.5, z: -1.03, w: 3.2, h: .5, txt: 'KIOSCO 24 HS', bg: '#2a1c14', fg: '#a8844a', ry: Math.PI });
-  // murales (pintura sobre el muro, carteles apagados)
-  graf(-40, 1.2, 50.98, 6, 1.6, 'OXIDE', '#7a4a9a', '#1d1d22', Math.PI); graf(-14, 1.2, 50.98, 5, 1.6, 'SKATE', '#3a8a6a', '#1d1d22', Math.PI);
-  graf(12, 1.2, 50.98, 6, 1.6, 'LOST', '#9a7a3a', '#1d1d22', Math.PI); graf(42, 1.2, 50.98, 5, 1.6, 'CRAZE', '#9a3a5a', '#1d1d22', Math.PI);
-  graf(-46, 1.3, -35.98, 6, 1.6, 'FREE SKATE', '#4a7aa0', '#1d1d22', 0); graf(-24, 1.3, -35.98, 5, 1.6, 'OXIDE', '#a0502a', '#1d1d22', 0);
-  graf(-8, 1.3, -35.98, 3.4, 1.6, '720', '#8a8a3a', '#1d1d22', 0);
+  /* ---- graffitis: bowls, pirámides, muros y piso ---- */
+  const A1 = Math.atan2(3, 5), A2 = Math.atan2(2, 4), P = Math.PI;
+  for (const [x, txt] of [[-44, 'OXIDE'], [-34, 'LOST']]) slope(x, -1.5, -29.5, 0, A1, 4.6, 2.4, txt);
+  for (const [x, txt] of [[-42, 'FREE SKATE'], [-32, 'RISE']]) slope(x, -1.5, -12.5, P, A1, 4.6, 2.4, txt);
+  for (const [z, txt] of [[-24, '720'], [-18, 'CRAZE']]) slope(-49.5, -1.5, z, P / 2, A1, 4.6, 2.4, txt);
+  for (const [z, txt] of [[-24, 'DEAD'], [-18, 'SKATE']]) slope(-28.5, -1.5, z, -P / 2, A1, 4.6, 2.4, txt);
+  flat(-39, -21, -3, 7, 3.2, 'CKATE HOME', .3); flat(-45, -28, -3, 4, 2, 'XX', -.4);
+  slope(-43, -1, -2, 0, A2, 4.4, 2.2, 'LOST'); slope(-43, -1, 10, P, A2, 4.4, 2.2, 'OXIDE'); slope(-50, -1, 4, P / 2, A2, 4.4, 2.2, 'NOCHE'); slope(-36, -1, 4, -P / 2, A2, 3.6, 2, 'ZZ');
+  flat(-43, 3.5, -2, 5.5, 2.6, 'SKATE DIE', -.5);
+  slope(-12, .75, -2.5, P, Math.atan2(1.5, 4), 3.6, 1.6, 'RIDE'); slope(14, 1.2, -3.5, P, Math.atan2(2.4, 5), 5, 2.4, 'OXIDE'); slope(14, 1.2, 7.5, 0, Math.atan2(2.4, 5), 5, 2.4, 'LOST');
+  flat(-14, -26, 0, 6, 3, 'OXIDE', .2); flat(20, -14, 0, 5, 2.5, 'LOST', -.3); flat(38, 22, 0, 5, 2.5, 'RISE', .6); flat(-10, 40, 0, 6, 3, 'SKATE', 0); flat(-40, 30, 0, 5, 2.5, '720', .9); flat(46, 46, 0, 5, 2.5, 'CRAZE', -.5); flat(0, 6, 0, 5, 2, 'NO DIE', 1.2);
+  wallTag(-11.58, 1.5, -14, 5, 2, 'FREE SKATE', P / 2); wallTag(26, 1.5, -8.58, 5, 2, 'RISE', 0); wallTag(40.98, 1.5, 1, 5, 2, 'LOST', -P / 2); wallTag(-22, 1.5, 27.98, 5, 2, 'CRAZE', P);
+  wallTag(14, 1.5, 18.42, 5, 2, 'DEAD', 0); wallTag(-8.02, 1.5, 12.5, 5, 2, '720', -P / 2); wallTag(-1.58, 1.5, 2, 5, 2, 'OXIDE', P / 2);
+  // basura y escombros afuera de las vallas (solo se ven): palets y rocas
+  for (const [x, z] of [[-60, -20], [-61, 6], [-59, 30], [-26, 56], [14, 57], [44, 56], [60, 20], [61, -4]]) { add(x, 0, z, x + 1.4, .14, z + 1.1, 'wood', { nc: 1 }); add(x + .1, .14, z + .1, x + 1.3, .28, z + 1, 'wood', { nc: 1 }); add(x + 1.9, 0, z + .4, x + 2.6, .5, z + 1.1, 'rock', { nc: 1 }); }
+  // orilla del río al norte: banco de pasto con juncos
+  add(-58, -1, -44, -2, .3, -37.2, 'grass', { nc: 1 }); for (let x = -56; x <= -4; x += 5) deco.push({ t: 'bush', x, y: .3, z: -39.5 + (x % 3), r: .8 });
   // reflectores: casi todos apagados
-  for (const [x, z, on] of [[-54, -22, 0], [-50, 22, 1], [-10, -34, 1], [30, -18, 0], [52, -10, 0], [52, 34, 1], [-20, 34, 0], [20, 12, 1], [0, -8, 0], [36, 18, 0], [-31, -2, 0]]) poste(x, z, on);
+  for (const [x, z, on] of [[-54.2, -26, 0], [-54.2, -6, 0], [-54.2, 14, 0], [-54.2, 28, 1], [-54.2, 46, 0], [-40, 50.6, 0], [-20, 50.6, 0], [2, 50.6, 1], [24, 50.6, 0], [46, 50.6, 0], [54.6, -14, 0], [54.6, 6, 1], [54.6, 34, 0], [54.6, 46, 0], [0, -8, 0], [36, 18, 0], [-20, 34, 0], [30, -18, 0]]) poste(x, z, on);
+  for (const [x, on] of [[8, 0], [28, 1], [48, 0]]) poste(x, -35.5, on, 5);   // sobre el pasillo de la tribuna
 
   /* ---- portales: uno en el rincón sur-oeste y otro arriba de la tribuna ---- */
   teles.push({ x: -46, y: 0, z: 34, r: 1, to: [46.5, 5, -33.7], yaw: face(46.5, -33.7, 0, 0), color: 'yellow' });
@@ -1452,7 +1472,7 @@ function buildSkatenight() {
    [-40, -3, -20], [-34, -3, -24], [-43, -2, 3], [6, 5, -34], [20, 5, -34], [34, 5, -34], [26, 3, -26.6], [-17, 5, -21], [-25.5, 5, 21], [44.5, 5, 13], [45, 5, -10], [26, 2, 31], [14, 2.4, 2], [-12, 1.5, 2], [42, 2.5, 13], [-20, 2.5, -21], [20, 0, -28], [44, 0, -28], [8, 0, -27], [-26, 0, 3], [-26, 3, 4]]
     .forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
   /* ---- luces: unos pocos pozos de luz en la oscuridad (la linterna hace el resto) ---- */
-  lights.push({ x: -50, y: 6, z: 22, c: 0xffa860, i: .55, d: 20 }, { x: -10, y: 6, z: -34, c: 0xffa860, i: .55, d: 20 }, { x: 52, y: 6, z: 34, c: 0xffa860, i: .55, d: 20 }, { x: 20, y: 6, z: 12, c: 0xffa860, i: .55, d: 20 },
+  lights.push({ x: -53, y: 7, z: 28, c: 0xffa860, i: .6, d: 24 }, { x: 53.6, y: 7, z: 6, c: 0xffa860, i: .6, d: 24 }, { x: 2, y: 7, z: 49.6, c: 0xffa860, i: .6, d: 24 }, { x: 28, y: 12, z: -34.6, c: 0xffa860, i: .6, d: 24 },
     { x: -16.5, y: 6.3, z: -23.5, c: 0x6aa0ff, i: .4, d: 14 }, { x: -24.5, y: 6.3, z: 18.5, c: 0x6aa0ff, i: .4, d: 14 }, { x: 45.5, y: 6.3, z: 10.5, c: 0x6aa0ff, i: .4, d: 14 },
     { x: -46, y: 3, z: 34, c: 0xffc840, i: .9, d: 13 }, { x: 51, y: 8, z: -33.8, c: 0x4aa0ff, i: .9, d: 13 },
     { x: -24, y: 3, z: 46, c: 0x4a8a6a, i: .35, d: 14 }, { x: 36, y: 6, z: 48, c: 0xffa860, i: .5, d: 18 }, { x: -39, y: -1, z: -21, c: 0x4a8a6a, i: .35, d: 14 }, { x: -43, y: 0, z: 4, c: 0x8a4a8a, i: .35, d: 12 });
@@ -1470,7 +1490,7 @@ function buildSkatenight() {
   }
   for (const b of B) if (b.nc && b.mat !== 'clip') for (let k = 0; k < 3; k++) { b.min[k] -= .012; b.max[k] += .012; }   // evita caras coplanares (z-fighting)
   return finish({ id: 'skatenight', name: 'Skatenight', bounds: { x0: -56, x1: 56, z0: -40, z1: 54 }, deco, modos: ['arena', 'gungame'],
-    theme: { sky: 'night', tex: 'ut', noche: true, skyDim: .3, fog: 0x010204, fogD: .031, amb: 0x1a2440, ambI: .09, hemi: [0x20345c, 0x04060a, .08], sun: true, sunC: 0x5a78c0, sunI: .1, sunPos: [34, 60, -46], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
+    theme: { sky: 'night', tex: 'ut', noche: true, skyDim: .3, fog: 0x0b1424, fogD: .042, amb: 0x1a2440, ambI: .09, hemi: [0x20345c, 0x04060a, .08], sun: true, sunC: 0x5a78c0, sunI: .14, sunPos: [34, 60, -46], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
 }
 MAPDEFS.skatenight = buildSkatenight;
 const MAPS = {};

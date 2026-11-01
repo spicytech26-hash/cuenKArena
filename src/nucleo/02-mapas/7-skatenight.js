@@ -1,8 +1,8 @@
 /* ---------- Skatenight — el skatepark de la Costanera de Posadas, de noche ----------
    Norte = -z (el río y la tribuna), sur = +z (la calle). Mapa de noche: en el cliente (theme.noche) cada arma lleva linterna
    y los rivales casi no se ven hasta que los alumbrás o te alumbran.
-   · Plaza de concreto a nivel 0 con dos bowls hundidos al oeste (-3 y -2 m), tres pirámides/hips (1,5 · 2,4 m), una caja de
-     «bank to ledge» con el cartel PROHIBIDO NIÑOS ZOMBIES, un bank con terraza contra la valla este y la plataforma sur con escalera.
+   · Plaza de concreto a nivel 0 con un pozo en L al oeste (-3 m), un pozo en L grande al sureste (-3,2 m), pirámides/hips, un spine, una caja
+     de «bank to ledge» con el cartel PROHIBIDO NIÑOS ZOMBIES, bancos con terraza contra las vallas y una escalera con terraza.
    · Tribuna de 10 gradas al norte (sube hasta 5 m, con pasillo y baranda sobre el río).
    · Tres torres de andamio (oeste-norte, sur-oeste y este) con piso a 2,5 y a 5 m, unidas por pasarelas a 5 m con la tribuna.
    · Cuatro saltadores y dos portales (uno en el rincón sur-oeste y otro arriba de la tribuna: lejísimos entre sí).
@@ -55,20 +55,20 @@ function buildSkatenight() {
   /* ---- suelo: subsuelo de roca, plaza con dos huecos (bowls) y borde ---- */
   add(-70, -8, -60, 70, -3.5, 60, 'rock');
   const slab = (x0, z0, x1, z1) => add(x0, -3.5, z0, x1, 0, z1, 'concrete');
-  slab(-26, -32, 55.8, -10); slab(-55.8, -10, 55.8, -4); slab(-34, -4, 55.8, 12); slab(-55.8, 12, 55.8, 52);
+  slab(-26, -32, 55.8, -10); slab(-34, -10, 55.8, -4); slab(-55.8, -10, -52, -4); slab(-34, -4, 55.8, 12); slab(-55.8, 12, 55.8, 22);
+  slab(-55.8, 22, 20, 52); slab(46, 22, 55.8, 52); slab(20, 38, 28, 52); slab(28, 50, 46, 52);   // al sureste queda el hueco del pozo en L grande
   slab(-55.8, -36, 55.8, -32); slab(-55.8, -32, -52, -10); slab(-55.8, -4, -52, 12);
-  // bowl 1 (grande, oeste-norte): piso a -3
-  add(-52, -3.5, -32, -26, -3, -10, 'concrete');
-  ramp(-52, -32, -47, -10, -3, -3, 0, 'x', -1, 'concrete'); ramp(-31, -32, -26, -10, -3, -3, 0, 'x', 1, 'concrete');
-  ramp(-52, -32, -26, -27, -3, -3, 0, 'z', -1, 'concrete'); ramp(-52, -15, -26, -10, -3, -3, 0, 'z', 1, 'concrete');
-  coping(-52, -32, -26, -10);
-  // bowl 2 (más chico, oeste-sur): piso a -2
-  add(-52, -3.5, -4, -34, -2, 12, 'concrete');
-  ramp(-52, -4, -48, 12, -2, -2, 0, 'x', -1, 'concrete'); ramp(-38, -4, -34, 12, -2, -2, 0, 'x', 1, 'concrete');
-  ramp(-52, -4, -34, 0, -2, -2, 0, 'z', -1, 'concrete'); ramp(-52, 8, -34, 12, -2, -2, 0, 'z', 1, 'concrete');
-  coping(-52, -4, -34, 12);
-  deco.push({ t: 'bruma', x0: -56, x1: 56, z0: -36, z1: 52, y: .35, o: .3, dir: 1 });   // una sola capa baja (a la altura de las rodillas): más capas se ven como franjas
-  deco.push({ t: 'bruma', x0: -52, x1: -26, z0: -32, z1: -10, y: -2.3, o: .5, dir: 1 }, { t: 'bruma', x0: -52, x1: -34, z0: -4, z1: 12, y: -1.3, o: .46, dir: -1 });
+  // pozo en L del oeste (como el del render): el bowl grande, un canal y el bowl chico forman un solo pozo con piso a -3
+  add(-52, -3.5, -32, -26, -3, -10, 'concrete'); add(-52, -3.5, -10, -34, -3, 12, 'concrete');
+  ramp(-52, -32, -47.5, 12, -3, -3, 0, 'x', -1, 'concrete'); ramp(-31, -32, -26, -10, -3, -3, 0, 'x', 1, 'concrete');
+  ramp(-52, -32, -26, -27, -3, -3, 0, 'z', -1, 'concrete'); ramp(-34, -15, -26, -10, -3, -3, 0, 'z', 1, 'concrete');
+  ramp(-38.5, -10, -34, 12, -3, -3, 0, 'x', 1, 'concrete'); ramp(-52, 8, -34, 12, -3, -3, 0, 'z', 1, 'concrete');
+  // pozo en L grande del sureste (3,2 m de profundidad): un bloque adentro para saltar y una vuelta al fondo
+  add(20, -3.5, 22, 46, -3.2, 38, 'concrete'); add(28, -3.5, 38, 46, -3.2, 50, 'concrete'); add(29, -3.2, 28, 35, -1.6, 32, 'smooth');
+  ramp(20, 22, 25, 38, -3.2, -3.2, 0, 'x', -1, 'concrete'); ramp(20, 22, 46, 27, -3.2, -3.2, 0, 'z', -1, 'concrete'); ramp(41, 22, 46, 50, -3.2, -3.2, 0, 'x', 1, 'concrete');
+  ramp(20, 33, 28, 38, -3.2, -3.2, 0, 'z', 1, 'concrete'); ramp(28, 38, 33, 50, -3.2, -3.2, 0, 'x', -1, 'concrete'); ramp(28, 45, 46, 50, -3.2, -3.2, 0, 'z', 1, 'concrete');
+  deco.push({ t: 'bruma', x0: -56, x1: 56, z0: -36, z1: 52, y: .35, o: .2, dir: 1 });   // una sola capa baja (a la altura de las rodillas): más capas se ven como franjas
+  deco.push({ t: 'bruma', x0: -52, x1: -26, z0: -32, z1: -10, y: -2.3, o: .36, dir: 1 }, { t: 'bruma', x0: -52, x1: -34, z0: -10, z1: 12, y: -2.3, o: .34, dir: -1 }, { t: 'bruma', x0: 20, x1: 46, z0: 22, z1: 50, y: -2.5, o: .36, dir: 1 });
 
   /* ---- límites: valla al oeste y al este, mural al sur y al norte-oeste, río al norte; todo cerrado por arriba y por los costados ---- */
   add(-56, 0, -36, -55.8, 4.2, 52, 'fence'); add(55.8, 0, -32, 56, 4.2, 52, 'fence');
@@ -108,8 +108,6 @@ function buildSkatenight() {
   add(44, 4.7, -30.8, 46, 5, 10, 'grate');
   bar(44, -30.8, 44, 10, 5); bar(46, -30.8, 46, 10, 5);
   for (const z of [-14, -4, 6]) { add(43.9, 0, z, 44.1, 4.7, z + .2, 'metal'); add(45.9, 0, z, 46.1, 4.7, z + .2, 'metal'); }
-  // plataforma sur (2 m) con escalera al norte y rampa al este
-  add(18, 0, 26, 34, 2, 37, 'concrete'); stairs(18, 22, 34, 26, 0, .5, 4, 'z', 1, 'concrete'); ramp(34, 26, 40, 37, 0, 0, 2, 'x', -1, 'concrete'); bar(18, 36.9, 34, 36.9, 2);
   /* ---- pirámides, bank con cartel, billboard y terraza contra la valla ---- */
   hip(-12, 2, 3, 2.5, 1.5, 4); hip(14, 2, 4, 3, 2.4, 5);
   ramp(-6, 24, 0, 30, 0, 0, 1, 'x', 1, 'concrete'); add(0, 0, 24, 8, 1, 30, 'smooth'); ramp(8, 24, 14, 30, 0, 0, 1, 'x', -1, 'concrete');   // bank to ledge
@@ -119,20 +117,27 @@ function buildSkatenight() {
   // poste de luz con transformador, como el de la foto
   add(-46.3, 0, 29.7, -45.7, 11, 30.3, 'concrete'); add(-48.2, 9.6, 29.85, -43.8, 9.8, 30.15, 'metal', { nc: 1 }); add(-47.4, 7.6, 29.5, -46.6, 8.8, 30.5, 'metal', { nc: 1 }); add(-45.4, 7.6, 29.5, -44.6, 8.8, 30.5, 'metal', { nc: 1 });
   // cajones, muretes y cobertura baja
-  for (const [x, z, s] of [[-6, -16, 1.5], [30, -6, 1.2], [-20, 14, 1.2], [4, 20, 1.2], [38, 2, 1.5], [-42, 20, 1.2], [22, -14, 1.2], [8, -12, 1.2]]) add(x, 0, z, x + s * 1.4, s, z + s, 'crate');
-  add(-28, 0, 8, -22, .9, 8.6, 'smooth'); add(34, 0, -14, 40, .9, -13.4, 'smooth');
+  for (const [x, z, s] of [[-6, -16, 1.5], [30, -6, 1.2], [-20, 14, 1.2], [4, 20, 1.2], [-42, 20, 1.2], [22, -14, 1.2], [8, -12, 1.2]]) add(x, 0, z, x + s * 1.4, s, z + s, 'crate');
+  add(-28, 0, 8, -22, .9, 8.6, 'smooth'); 
   // zona sur nueva (z 38..51): media caña (mini ramp) al oeste, escalera con terraza al medio, muros de cobertura y salida con saltador
   ramp(-34, 42, -29, 50, 0, 0, 1.8, 'x', -1, 'concrete'); add(-38, 0, 42, -34, 1.8, 50, 'smooth'); ramp(-21, 42, -16, 50, 0, 0, 1.8, 'x', 1, 'concrete'); add(-16, 0, 42, -12, 1.8, 50, 'smooth');
-  stairs(8, 40, 20, 46, 0, .5, 4, 'x', 1, 'concrete'); add(20, 0, 40, 30, 2, 46, 'smooth'); ramp(30, 40, 36, 46, 0, 0, 2, 'x', -1, 'concrete'); bar(20, 40, 30, 40, 2); bar(20, 46, 30, 46, 2);
-  for (const [x0, z0, x1, z1] of [[-8, 40, -7.6, 48], [40, 46, 48, 46.4], [0, 38.6, 6, 39], [-45, 42, -44.6, 49], [46, 40, 46.4, 44]]) add(x0, 0, z0, x1, 3, z1, 'concrete');
-  add(38, 0, 49, 42, 1.2, 50.6, 'crate'); add(-4, 0, 47, -1, 1.2, 48.6, 'crate'); add(-48, 0, 41, -46.4, 1.2, 44, 'crate');
+  stairs(8, 40, 20, 46, 0, .5, 4, 'x', 1, 'concrete'); add(20, 0, 40, 28, 2, 46, 'smooth'); bar(20, 40, 28, 40, 2); bar(20, 46, 28, 46, 2);
+  for (const [x0, z0, x1, z1] of [[-8, 40, -7.6, 48], [0, 38.6, 6, 39], [-45, 42, -44.6, 49], [8, 48, 16, 48.4]]) add(x0, 0, z0, x1, 3, z1, 'concrete');
+  add(-4, 0, 47, -1, 1.2, 48.6, 'crate'); add(-48, 0, 41, -46.4, 1.2, 44, 'crate');
   pads.push({ x: -24, y: 0, z: 46, r: 1.1, t: [-25.5, 5, 21], apex: 3 });          // media caña -> piso alto de la torre sur-oeste
-  I('health', -36, 1.8, 46); I('armor', -14, 1.8, 46); I('shells', 25, 2, 43); I('rockets', 0, 0, 44); I('bullets', 44, 0, 44); I('health', 14, 0, 49); I('slugs', -42, 0, 46); I('grenades', 48, 0, 48); I('armor', 6, 0, 42);
-  [[-24, 0, 48], [0, 0, 44], [14, 0, 48], [44, 0, 44], [25, 2, 43], [-42, 0, 46]].forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
+  I('health', -36, 1.8, 46); I('armor', -14, 1.8, 46); I('shells', 25, 2, 43); I('rockets', 0, 0, 44); I('bullets', 50, 0, 44); I('health', 14, 0, 49); I('slugs', -42, 0, 46); I('grenades', 48, 0, 48); I('armor', 6, 0, 42);
+  [[-24, 0, 48], [0, 0, 44], [14, 0, 49.8], [50, 0, 44], [25, 2, 43], [-42, 0, 46], [38, -3.2, 29], [38, -3.2, 40], [-54, 1.8, 19], [54, 1.8, -11]].forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
+  // más estructura (como en el render): spine en el centro, hip este, dos bancos con terraza contra las vallas y una escalera con terraza
+  ramp(-4.5, -2, -.5, 6, 0, 0, 1.4, 'x', 1, 'concrete'); add(-.5, 0, -2, .5, 1.4, 6, 'smooth'); ramp(.5, -2, 4.5, 6, 0, 0, 1.4, 'x', -1, 'concrete');
+  hip(32, 7, 4, 1.2, 1.8, 4);
+  ramp(-52, 14, -46, 24, 0, 0, 1.8, 'x', -1, 'concrete'); add(-55.8, 0, 14, -52, 1.8, 24, 'smooth'); bar(-55.8, 14, -46, 14, 1.8); bar(-55.8, 24, -46, 24, 1.8);
+  ramp(46, -16, 52, -6, 0, 0, 1.8, 'x', 1, 'concrete'); add(52, 0, -16, 55.8, 1.8, -6, 'smooth'); bar(46, -16, 55.8, -16, 1.8); bar(46, -6, 55.8, -6, 1.8);
+  stairs(26, -18, 34, -12, 0, .5, 3, 'x', 1, 'concrete'); add(34, 0, -18, 40, 1.5, -12, 'smooth'); bar(34, -18, 40, -18, 1.5);
+  pads.push({ x: 27, y: -3.2, z: 30, r: 1.1, t: [44.5, 5, 13], apex: 3 });          // pozo grande -> piso alto de la torre este
   // ascensor rápido: sube del piso de la plaza a la pasarela de la tribuna (5 m) cada 10 s; el costado cyan se enciende solo
   mover(-7.6, -.36, -30, -4, .04, -26.6, 'metal', 1, 5, 10, -Math.PI / 2);
   // muros de cobertura (3 m): cortan la línea de tiro de la plaza y dejan esquinas para esperar a oscuras
-  for (const [x0, z0, x1, z1] of [[-12, -18, -11.6, -10], [22, -9, 30, -8.6], [41, -4, 41.4, 6], [-26, 28, -18, 28.4], [-2, -2, -1.6, 6], [10, 18, 18, 18.4], [44, 34, 52, 34.4], [-8, 9, -7.6, 16]]) add(x0, 0, z0, x1, 3, z1, 'concrete');
+  for (const [x0, z0, x1, z1] of [[-12, -18, -11.6, -10], [22, -9, 30, -8.6], [41, -4, 41.4, 6], [-26, 28, -18, 28.4], [10, 18, 18, 18.4], [-8, 9, -7.6, 16]]) add(x0, 0, z0, x1, 3, z1, 'concrete');
   // kiosko con techo: dos puertas al norte y al sur, una al este; se sube al techo (3 m) por una escalera de afuera
   wall(-31, -1, -22, -.6, 0, 2.8, [D(-28, -25, 0, 2.2)], 'brick'); wall(-31, 5.6, -22, 6, 0, 2.8, [D(-30, -27, 0, 2.2)], 'brick');
   wall(-31, -.6, -30.6, 5.6, 0, 2.8, [], 'brick'); wall(-22.4, -.6, -22, 5.6, 0, 2.8, [D(1, 3.4, 0, 2.2)], 'brick');
@@ -142,22 +147,22 @@ function buildSkatenight() {
   /* ---- graffitis: bowls, pirámides, muros y piso ---- */
   const A1 = Math.atan2(3, 5), A2 = Math.atan2(2, 4), P = Math.PI;
   for (const [x, txt] of [[-44, 'OXIDE'], [-34, 'LOST']]) slope(x, -1.5, -29.5, 0, A1, 4.6, 2.4, txt);
-  for (const [x, txt] of [[-42, 'FREE SKATE'], [-32, 'RISE']]) slope(x, -1.5, -12.5, P, A1, 4.6, 2.4, txt);
+  slope(-30, -1.5, -12.5, P, A1, 4.6, 2.4, 'RISE');
   for (const [z, txt] of [[-24, '720'], [-18, 'CRAZE']]) slope(-49.5, -1.5, z, P / 2, A1, 4.6, 2.4, txt);
   for (const [z, txt] of [[-24, 'DEAD'], [-18, 'SKATE']]) slope(-28.5, -1.5, z, -P / 2, A1, 4.6, 2.4, txt);
   flat(-39, -21, -3, 7, 3.2, 'CKATE HOME', .3); flat(-45, -28, -3, 4, 2, 'XX', -.4);
-  slope(-43, -1, -2, 0, A2, 4.4, 2.2, 'LOST'); slope(-43, -1, 10, P, A2, 4.4, 2.2, 'OXIDE'); slope(-50, -1, 4, P / 2, A2, 4.4, 2.2, 'NOCHE'); slope(-36, -1, 4, -P / 2, A2, 3.6, 2, 'ZZ');
-  flat(-43, 3.5, -2, 5.5, 2.6, 'SKATE DIE', -.5);
+  slope(-43, -1.5, 10, P, A2, 4.4, 2.2, 'OXIDE'); slope(-49.75, -1.5, 4, P / 2, A2, 4.4, 2.2, 'NOCHE'); slope(-36.25, -1.5, 4, -P / 2, A2, 3.6, 2, 'ZZ'); slope(-36.25, -1.5, -7, -P / 2, A2, 3.6, 2, 'LOST');
+  flat(-43, 3.5, -3, 5.5, 2.6, 'SKATE DIE', -.5); flat(33, 37, -3.2, 7, 3, 'OXIDE', .4); slope(33, -1.6, 24.5, 0, Math.atan2(3.2, 5), 5, 2.4, 'LOST');
   slope(-12, .75, -2.5, P, Math.atan2(1.5, 4), 3.6, 1.6, 'RIDE'); slope(14, 1.2, -3.5, P, Math.atan2(2.4, 5), 5, 2.4, 'OXIDE'); slope(14, 1.2, 7.5, 0, Math.atan2(2.4, 5), 5, 2.4, 'LOST');
-  flat(-14, -26, 0, 6, 3, 'OXIDE', .2); flat(20, -14, 0, 5, 2.5, 'LOST', -.3); flat(38, 22, 0, 5, 2.5, 'RISE', .6); flat(-10, 40, 0, 6, 3, 'SKATE', 0); flat(-40, 30, 0, 5, 2.5, '720', .9); flat(46, 46, 0, 5, 2.5, 'CRAZE', -.5); flat(0, 6, 0, 5, 2, 'NO DIE', 1.2);
+  flat(-14, -26, 0, 6, 3, 'OXIDE', .2); flat(20, -14, 0, 5, 2.5, 'LOST', -.3); flat(38, 18, 0, 5, 2.5, 'RISE', .6); flat(-10, 40, 0, 6, 3, 'SKATE', 0); flat(-40, 30, 0, 5, 2.5, '720', .9); flat(51, 46, 0, 4, 2, 'CRAZE', -.5); flat(0, 6, 0, 5, 2, 'NO DIE', 1.2);
   wallTag(-11.58, 1.5, -14, 5, 2, 'FREE SKATE', P / 2); wallTag(26, 1.5, -8.58, 5, 2, 'RISE', 0); wallTag(40.98, 1.5, 1, 5, 2, 'LOST', -P / 2); wallTag(-22, 1.5, 27.98, 5, 2, 'CRAZE', P);
-  wallTag(14, 1.5, 18.42, 5, 2, 'DEAD', 0); wallTag(-8.02, 1.5, 12.5, 5, 2, '720', -P / 2); wallTag(-1.58, 1.5, 2, 5, 2, 'OXIDE', P / 2);
+  wallTag(14, 1.5, 18.42, 5, 2, 'DEAD', 0); wallTag(-8.02, 1.5, 12.5, 5, 2, '720', -P / 2);
   // basura y escombros afuera de las vallas (solo se ven): palets y rocas
   for (const [x, z] of [[-60, -20], [-61, 6], [-59, 30], [-26, 56], [14, 57], [44, 56], [60, 20], [61, -4]]) { add(x, 0, z, x + 1.4, .14, z + 1.1, 'wood', { nc: 1 }); add(x + .1, .14, z + .1, x + 1.3, .28, z + 1, 'wood', { nc: 1 }); add(x + 1.9, 0, z + .4, x + 2.6, .5, z + 1.1, 'rock', { nc: 1 }); }
   // orilla del río al norte: banco de pasto con juncos
   add(-58, -1, -44, -2, .3, -37.2, 'grass', { nc: 1 }); for (let x = -56; x <= -4; x += 5) deco.push({ t: 'bush', x, y: .3, z: -39.5 + (x % 3), r: .8 });
   // reflectores: casi todos apagados
-  for (const [x, z, on] of [[-54.2, -26, 0], [-54.2, -6, 0], [-54.2, 14, 0], [-54.2, 28, 1], [-54.2, 46, 0], [-40, 50.6, 0], [-20, 50.6, 0], [2, 50.6, 1], [24, 50.6, 0], [46, 50.6, 0], [54.6, -14, 0], [54.6, 6, 1], [54.6, 34, 0], [54.6, 46, 0], [0, -8, 0], [36, 18, 0], [-20, 34, 0], [30, -18, 0]]) poste(x, z, on);
+  for (const [x, z, on] of [[-54.2, -26, 0], [-54.2, -6, 0], [-54.2, 28, 1], [-54.2, 46, 0], [-40, 50.6, 0], [-20, 50.6, 0], [2, 50.6, 1], [24, 50.6, 0], [46, 50.6, 0], [54.6, -19, 0], [54.6, 6, 1], [54.6, 34, 0], [54.6, 46, 0], [0, -8, 0], [36, 18, 0], [-20, 34, 0], [30, -18, 0]]) poste(x, z, on);
   for (const [x, on] of [[8, 0], [28, 1], [48, 0]]) poste(x, -35.5, on, 5);   // sobre el pasillo de la tribuna
 
   /* ---- portales: uno en el rincón sur-oeste y otro arriba de la tribuna ---- */
@@ -166,33 +171,34 @@ function buildSkatenight() {
   deco.push({ t: 'portal', x: -46, y: 0, z: 34, r: 1, color: 'yellow' }, { t: 'portal', x: 51, y: 5, z: -33.8, r: 1, color: 'blue' });
   /* ---- saltadores ---- */
   pads.push({ x: -36, y: -3, z: -21, r: 1.1, t: [-17.2, 5, -21], apex: 3 });       // bowl grande -> piso alto de la torre norte-oeste
-  pads.push({ x: -45, y: -2, z: 6.5, r: 1.1, t: [-25.5, 5, 21], apex: 3 });        // bowl chico -> piso alto de la torre sur-oeste
+  pads.push({ x: -45, y: -3, z: 6.5, r: 1.1, t: [-25.5, 5, 21], apex: 3 });        // bowl chico -> piso alto de la torre sur-oeste
   pads.push({ x: 0, y: 0, z: -12, r: 1.1, t: [10, 5, -34], apex: 2.5 });           // plaza -> pasillo de la tribuna
-  pads.push({ x: 32, y: 0, z: 22, r: 1.1, t: [44.5, 5, 13], apex: 2.5 });          // plaza este -> piso alto de la torre este
+  pads.push({ x: 32, y: 0, z: 19, r: 1.1, t: [44.5, 5, 13], apex: 2.5 });          // plaza este -> piso alto de la torre este
 
   /* ---- ítems (todo lo que ya existe) ---- */
   // armaduras amarillas: pasillo de la tribuna, bowl chico y debajo del cartel
-  I('armorH', 1, 5, -34); I('armorH', -41, -2, 2); I('armorH', 0, 0, 14);
+  I('armorH', 1, 5, -34); I('armorH', -41, -3, 2); I('armorH', 0, 0, 14);
   I('quad', 45, 5, -8); I('mega', -25.5, 5, 21);
   // armas
-  I('w1', -12, 1.5, 2); I('w2', 0, 0, 12.5); I('w3', -39, -3, -24); I('w4', 26, 2, 31); I('w5', 41.5, 2.5, 14.5); I('w6', 24, 4.5, -30.2); I('w8', 45, 5, -27); I('w9', -17.5, 5, -22);
+  I('w1', -12, 1.5, 2); I('w2', 0, 0, 12.5); I('w3', -39, -3, -24); I('w4', 37, -3.2, 42); I('w5', 41.5, 2.5, 14.5); I('w6', 24, 4.5, -30.2); I('w8', 45, 5, -27); I('w9', -17.5, 5, -22);
   // munición
   I('shells', 14, 2.4, 2); I('shells', -30, 0, -34); I('bullets', 52, 2.6, 25); I('bullets', -24, 0, -7); I('rockets', 22, 0, 20); I('rockets', 41, 5, -34); I('grenades', -50, 0, 30); I('grenades', 4, 0, -8);
-  I('slugs', 14, 5, -34); I('slugs', -47, -2, 2); I('caza', 30, 2, 31); I('caza', -21, 2.5, -20);
+  I('slugs', 14, 5, -34); I('slugs', -47, -3, 2); I('caza', 38, -3.2, 30); I('caza', -21, 2.5, -20);
   // chalecos y botiquines
-  I('armor', -14, 1.5, 2); I('armor', 30, 0, -14); I('armor', -34, -3, -17); I('armor', 24, 5, -34); I('armor', 42, 0, 28); I('armor', -6, 0, 33);
-  I('health', -40, -3, -18); I('health', -43, -2, 4); I('health', 14, 2.4, 0); I('health', 6, 5, -34); I('health', 36, 5, -34); I('health', -18, 2.5, -19.5); I('health', -27, 2.5, 21);
-  I('health', 42.5, 2.5, 12.5); I('health', 54, 2.6, 22); I('health', -3, 0, -2); I('health', 30, 0, 8); I('health', -8, 0, 24); I('health', 44, 0, 36); I('health', -50, 0, -34); I('health', 8, 0, -17);
+  I('armor', -14, 1.5, 2); I('armor', 32, 0, -10); I('armor', -34, -3, -17); I('armor', 24, 5, -34); I('armor', 35, 0, 16); I('armor', -6, 0, 33);
+  I('health', -40, -3, -18); I('health', -43, -3, 4); I('health', 14, 2.4, 0); I('health', 6, 5, -34); I('health', 36, 5, -34); I('health', -18, 2.5, -19.5); I('health', -27, 2.5, 21);
+  I('health', 42.5, 2.5, 12.5); I('health', 54, 2.6, 22); I('health', -3, 0, -6); I('health', 32, 1.8, 7); I('health', -8, 0, 24); I('health', 50, 0, 36); I('health', -50, 0, -34); I('health', 8, 0, -17);
 
+  I('armor', -54, 1.8, 19); I('health', 54, 1.8, -11); I('armor', 40, -3.2, 43); I('health', 34, -3.2, 36); I('shells', 30, -3.2, 35);
   // galería bajo la tribuna y kiosko: botín en la oscuridad
   I('armor', 10, 0, -28.2); I('bullets', 44, 0, -28); I('health', 26, 0, -29); I('shells', 34, 0, -27); I('rockets', 2, 0, -27);
   I('armor', -26, 0, 2); I('rockets', -29, 0, 4); I('slugs', -26, 3, 2); I('health', -24, 3, 5);
   /* ---- apariciones: repartidas por todos los niveles ---- */
-  [[-12, 0, -34], [-8, 0, -14], [4, 0, -8], [22, 0, -10], [38, 0, -12], [50, 0, -8], [50, 0, 6], [30, 0, 2], [38, 0, 18], [8, 0, 34], [-20, 0, 32], [-36, 0, 22], [-50, 0, 20], [-48, 0, -34], [-20, 0, -33], [-24, 0, -6],
-   [-40, -3, -20], [-34, -3, -24], [-43, -2, 3], [6, 5, -34], [20, 5, -34], [34, 5, -34], [26, 3, -26.6], [-17, 5, -21], [-25.5, 5, 21], [44.5, 5, 13], [45, 5, -10], [26, 2, 31], [14, 2.4, 2], [-12, 1.5, 2], [42, 2.5, 13], [-20, 2.5, -21], [20, 0, -28], [44, 0, -28], [8, 0, -27], [-26, 0, 3], [-26, 3, 4]]
+  [[-12, 0, -34], [-8, 0, -14], [4, 0, -8], [22, 0, -10], [42, 0, -9], [50, 0, -2], [50, 0, 6], [30, 0, -1], [38, 0, 18], [8, 0, 34], [-20, 0, 32], [-36, 0, 22], [-50, 0, 28], [-48, 0, -34], [-20, 0, -33], [-24, 0, -6],
+   [-40, -3, -20], [-34, -3, -24], [-43, -3, 3], [6, 5, -34], [20, 5, -34], [34, 5, -34], [26, 3, -26.6], [-17, 5, -21], [-25.5, 5, 21], [44.5, 5, 13], [45, 5, -10], [14, 2.4, 2], [-12, 1.5, 2], [42, 2.5, 13], [-20, 2.5, -21], [20, 0, -28], [44, 0, -28], [8, 0, -27], [-26, 0, 3], [-26, 3, 4]]
     .forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
   /* ---- luces: unos pocos pozos de luz en la oscuridad (la linterna hace el resto) ---- */
-  lights.push({ x: -53, y: 7, z: 28, c: 0xffa860, i: .6, d: 24 }, { x: 53.6, y: 7, z: 6, c: 0xffa860, i: .6, d: 24 }, { x: 2, y: 7, z: 49.6, c: 0xffa860, i: .6, d: 24 }, { x: 28, y: 12, z: -34.6, c: 0xffa860, i: .6, d: 24 },
+  lights.push({ x: -53, y: 7, z: 28, c: 0xffa860, i: .45, d: 24 }, { x: 53.6, y: 7, z: 6, c: 0xffa860, i: .45, d: 24 }, { x: 2, y: 7, z: 49.6, c: 0xffa860, i: .45, d: 24 }, { x: 28, y: 12, z: -34.6, c: 0xffa860, i: .45, d: 24 },
     { x: -16.5, y: 6.3, z: -23.5, c: 0x6aa0ff, i: .4, d: 14 }, { x: -24.5, y: 6.3, z: 18.5, c: 0x6aa0ff, i: .4, d: 14 }, { x: 45.5, y: 6.3, z: 10.5, c: 0x6aa0ff, i: .4, d: 14 },
     { x: -46, y: 3, z: 34, c: 0xffc840, i: .9, d: 13 }, { x: 51, y: 8, z: -33.8, c: 0x4aa0ff, i: .9, d: 13 },
     { x: -24, y: 3, z: 46, c: 0x4a8a6a, i: .35, d: 14 }, { x: 36, y: 6, z: 48, c: 0xffa860, i: .5, d: 18 }, { x: -39, y: -1, z: -21, c: 0x4a8a6a, i: .35, d: 14 }, { x: -43, y: 0, z: 4, c: 0x8a4a8a, i: .35, d: 12 });
@@ -210,6 +216,6 @@ function buildSkatenight() {
   }
   for (const b of B) if (b.nc && b.mat !== 'clip') for (let k = 0; k < 3; k++) { b.min[k] -= .012; b.max[k] += .012; }   // evita caras coplanares (z-fighting)
   return finish({ id: 'skatenight', name: 'Skatenight', bounds: { x0: -56, x1: 56, z0: -40, z1: 54 }, deco, modos: ['arena', 'gungame'],
-    theme: { sky: 'night', tex: 'ut', noche: true, skyDim: .3, fog: 0x0b1424, fogD: .042, amb: 0x1a2440, ambI: .09, hemi: [0x20345c, 0x04060a, .08], sun: true, sunC: 0x5a78c0, sunI: .14, sunPos: [34, 60, -46], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
+    theme: { sky: 'night', tex: 'ut', noche: true, skyDim: .16, fog: 0x070d1a, fogD: .042, amb: 0x1a2440, ambI: .04, hemi: [0x20345c, 0x03050a, .035], sun: true, sunC: 0x5a78c0, sunI: .065, sunPos: [34, 60, -46], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
 }
 MAPDEFS.skatenight = buildSkatenight;

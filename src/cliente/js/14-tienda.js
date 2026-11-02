@@ -40,33 +40,30 @@ const VEND={
 };
 let vendLast='';
 function vendSay(k){const a=VEND[k];let t;do{t=a[Math.random()*a.length|0];}while(t===vendLast&&a.length>1);vendLast=t;const e=$('vendSay');e.textContent=t;e.classList.remove('say');void e.offsetWidth;e.classList.add('say');}
-let shopEls=null,shopTab='armas',shopDetId=null;
-// disposición horizontal (como la tienda de Deadlock): una fila por categoría con fichas chicas; el detalle va en el panel de la izquierda
-// filas por pestaña: cada fila junta varias categorías lado a lado (cada categoría con su título arriba de sus fichas)
-const SHOP_ROWS={armas:[['Pistolas','Cuerpo a cuerpo','Escopetas','Ametralladoras'],['Rifles','Bombas','Misiles']],equipo:[['Blindaje','Suministros']]};
-function shopShowTab(t){shopTab=t;[...$('shopTabs').children].forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===t)));$('shopGrid').querySelectorAll('.shrow').forEach(r=>{r.hidden=r.dataset.tab!==t;});}
+let shopEls=null,shopDetId=null;
+// una sola columna vertical: una fila por categoría, todo a la vista (el detalle de cada objeto va en el panel de la izquierda)
+const SHOP_ORDER=['Pistolas','Cuerpo a cuerpo','Escopetas','Ametralladoras','Rifles','Bombas','Misiles','Blindaje','Suministros'];
 function shopDetail(id){
   const it=C.SHOP.find(s=>s.id===id),E=shopEls&&shopEls[id];if(!it||!E)return;
-  shopDetId=id;setTxt('sdN',it.name);setTxt('sdP',E.pr.textContent);setTxt('sdD',it.desc);$('shopDet').classList.toggle('on',true);
+  shopDetId=id;setTxt('sdN',it.name);setTxt('sdP',E.pr.textContent);setTxt('sdD',it.desc);
 }
 function buildShop(){
   if(shopEls)return;shopEls={};
   const ic=shopIcons(),host=$('shopGrid');host.textContent='';
-  for(const tab in SHOP_ROWS)SHOP_ROWS[tab].forEach(cats=>{
-    const row=document.createElement('div');row.className='shrow';row.dataset.tab=tab;host.appendChild(row);
-    cats.forEach(cat=>{
-      const g=document.createElement('div');g.className='shgrp';const cap=document.createElement('div');cap.className='slab';cap.textContent=cat;
-      const cd=document.createElement('div');cd.className='scards';g.append(cap,cd);row.appendChild(g);
-      C.SHOP.filter(it=>it.cat===cat).forEach(it=>{
-        const b=document.createElement('button');b.type='button';b.className='card';b.dataset.id=it.id;
-        const im=document.createElement('img');im.alt='';im.src=ic[it.id]||ic['w'+it.w]||'';
-        const nm=document.createElement('span');nm.className='nm';nm.textContent=it.name;
-        const pr=document.createElement('span');pr.className='pr';
-        b.append(im,nm,pr);cd.appendChild(b);shopEls[it.id]={b,pr};
-      });
+  const cats=[];C.SHOP.forEach(it=>{if(!cats.includes(it.cat))cats.push(it.cat);});
+  cats.sort((a,b)=>{const i=SHOP_ORDER.indexOf(a),j=SHOP_ORDER.indexOf(b);return (i<0?99:i)-(j<0?99:j);});
+  cats.forEach(cat=>{
+    const row=document.createElement('div');row.className='shrow';
+    const lb=document.createElement('div');lb.className='slab';lb.textContent=cat;
+    const cd=document.createElement('div');cd.className='scards';row.append(lb,cd);host.appendChild(row);
+    C.SHOP.filter(it=>it.cat===cat).forEach(it=>{
+      const b=document.createElement('button');b.type='button';b.className='card';b.dataset.id=it.id;
+      const im=document.createElement('img');im.alt='';im.src=ic[it.id]||ic['w'+it.w]||'';
+      const nm=document.createElement('span');nm.className='nm';nm.textContent=it.name;
+      const pr=document.createElement('span');pr.className='pr';
+      b.append(im,nm,pr);cd.appendChild(b);shopEls[it.id]={b,pr};
     });
   });
-  shopShowTab(shopTab);
 }
 function openShop(){
   if(!inGame||!liveState())return;
@@ -102,7 +99,6 @@ function renderShop(){
   const html=inv.map(w=>'<span class="'+(w===prim?'on':'')+'" title="'+esc(WEAPONS[w].name)+'"><img alt="" src="'+(shopIcons()['w'+w]||'')+'"></span>').join('');
   const iv=$('shopInv');if(iv._h!==html){iv._h=html;iv.innerHTML=html;}
 }
-$('shopTabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b){shopShowTab(b.dataset.tab);SFX.ui();}});
 $('shopGrid').addEventListener('mouseover',e=>{const b=e.target.closest('.card');if(b&&b.dataset.id!==shopDetId)shopDetail(b.dataset.id);});
 $('shopGrid').addEventListener('focusin',e=>{const b=e.target.closest('.card');if(b)shopDetail(b.dataset.id);});
 $('shopGrid').addEventListener('click',e=>{const b=e.target.closest('.card');if(!b||b.disabled||!net)return;net.send({t:'buy',id:b.dataset.id});});

@@ -222,7 +222,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 #kickPanel button{cursor:pointer;background:#3a1a12}#kickPanel button:hover{background:#5a2416}
 #kickPanel .kNote{margin-top:4px;font-size:11px;opacity:.8;max-width:420px}
 #chatLog .tdot{display:inline-block;width:8px;height:8px;margin-right:5px;border:1px solid #000;vertical-align:1px}
-#chatLog .sys{color:var(--rail)}
+#chatLog .sys{color:var(--pump2)}
 #chatIn{pointer-events:auto;font-family:var(--mono);font-size:14px;background:rgba(11,9,7,.85);color:var(--ink);border:1px solid var(--amber);padding:6px 8px;outline:none}
 #board{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(620px,calc(100vw - 32px));background:rgba(15,12,10,.92);border:1px solid #000;box-shadow:0 6px 0 #000,inset 0 1px 0 rgba(255,220,170,.08);padding:16px 18px}
 #board h2{margin:0 0 4px;font-family:var(--display);font-weight:400;font-size:28px;color:var(--amber);letter-spacing:.04em}
@@ -740,3 +740,121 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 .shrow .card img{height:42px}
 .shrow .card .nm{font-size:12px}
 .shrow .card .pr{font-size:12px}
+
+/* =====================================================================
+   INTERFAZ v2 · edición Halloween: placas de bordes cortados, acentos de sangre y calabaza, tipografía de bloque.
+   Se aplica a todo el HUD y a los paneles (muerte, victoria, tablero, votaciones, menús de mapa y de echar, tienda).
+   ===================================================================== */
+:root{--b2:#7d0508;--pump:#ff7a1a;--pump2:#ffb347;--bone:#eadfc8;--slime:#8dff3a;--witch:#9b4dff;--haz:#e8b020;--plateD:linear-gradient(rgba(22,9,12,.88),rgba(9,4,6,.9))}
+/* ---- tienda: una sola columna vertical, todo a la vista ---- */
+.shopgrid{display:flex;flex-direction:column;gap:0;border-top:2px solid #7fae8f}
+.shrow{display:grid;grid-template-columns:132px 1fr;gap:12px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(127,174,143,.2)}
+.shrow .slab{padding:0 0 0 8px;border:0;border-left:3px solid rgba(127,174,143,.55);white-space:normal;line-height:1.3}
+.shrow .scards{display:flex;flex-wrap:wrap;gap:6px}
+.shrow .scards .card{display:grid;grid-template-columns:60px 1fr;grid-template-rows:auto auto;column-gap:8px;row-gap:0;align-items:center;text-align:left;width:176px;padding:5px 8px}
+.shrow .card img{grid-row:1/3;width:60px;height:32px}
+.shrow .card .nm{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;align-self:end}
+.shrow .card .pr{font-size:12px;align-self:start;justify-self:start}
+.shrow .card.own .pr,.shrow .card.mine .pr{align-self:start}
+/* ---- HUD de arriba ---- */
+#top{gap:6px}
+.stat{padding:4px 14px 3px 10px;background:var(--plateD);border-left:3px solid var(--blood);clip-path:polygon(0 0,calc(100% - 9px) 0,100% 9px,100% 100%,0 100%)}
+.stat .lbl{font-size:10px;letter-spacing:.3em;color:#b79d86}
+.stat b{font-size:24px;color:var(--bone);text-shadow:0 0 14px rgba(212,18,15,.4)}
+.stat b.cash{color:var(--slime);text-shadow:0 0 14px rgba(141,255,58,.3)}
+#quadChip{background:var(--plateD);padding:4px 12px;border-left:3px solid var(--witch);clip-path:polygon(0 0,100% 0,calc(100% - 8px) 100%,0 100%)}
+/* ---- barra de abajo: munición, salud, blindaje ---- */
+#bar{gap:4px}
+.cell{position:relative;border:0;box-shadow:none;background:var(--plateD);padding:6px 18px 7px;min-width:122px;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)}
+.cell::after{content:"";position:absolute;left:12px;right:12px;bottom:0;height:3px;background:var(--acc,var(--pump))}
+.cell:nth-child(2){--acc:var(--blood)}.cell:nth-child(3){--acc:var(--slime)}
+.cell .lbl{font-size:10px;letter-spacing:.32em;color:#b79d86}
+.cell .num:not(.low):not(.over):not(.ar){color:var(--bone);text-shadow:0 2px 0 #000,0 0 18px color-mix(in srgb,var(--acc,#ff7a1a) 55%,transparent)}
+/* ---- ranuras de armas ---- */
+.slot{border:0;border-left:3px solid #4a1a1a;background:linear-gradient(90deg,rgba(22,9,12,.88),rgba(22,9,12,.35));clip-path:polygon(0 0,100% 0,calc(100% - 8px) 100%,0 100%);padding:4px 16px 4px 8px}
+.slot.on{border-left-color:var(--pump);color:var(--pump2);background:linear-gradient(90deg,rgba(70,26,8,.92),rgba(22,9,12,.4))}
+.slot i{color:var(--pump2);font-weight:700}
+/* ---- carteles de teclas ---- */
+#shopHint,#kickHint,#mapHint{font-size:11px;letter-spacing:.14em;padding:3px 12px 3px 14px;background:var(--plateD);border-right:3px solid currentColor;clip-path:polygon(8px 0,100% 0,100% 100%,0 100%);text-shadow:none}
+#grabHint{background:var(--plateD);border:0;border-left:3px solid var(--pump);clip-path:polygon(0 0,100% 0,calc(100% - 8px) 100%,0 100%);padding:5px 18px 5px 12px}
+#grabHint kbd{border-color:var(--pump2);color:var(--pump2)}
+/* ---- killfeed y avisos ---- */
+#feed{gap:4px}
+#feed div{background:linear-gradient(270deg,rgba(22,9,12,.9),rgba(22,9,12,.35));padding:3px 12px 3px 16px;border-right:3px solid var(--blood);clip-path:polygon(10px 0,100% 0,100% 100%,0 100%)}
+#feed .me{outline:0;border-right-color:var(--pump2);background:linear-gradient(270deg,rgba(80,32,8,.92),rgba(22,9,12,.4))}
+#cMsg{font-size:clamp(26px,4.8vw,54px);text-transform:uppercase;letter-spacing:.05em;color:var(--bone);text-shadow:0 3px 0 var(--b2),0 0 34px rgba(212,18,15,.55)}
+#cMsg::after{content:"";display:block;width:min(360px,56vw);height:3px;margin:8px auto 0;background:linear-gradient(90deg,transparent,var(--blood),transparent)}
+#cSub{font-size:13px;letter-spacing:.36em;color:var(--pump2)}
+#pick{background:var(--plateD);padding:5px 18px;border-left:3px solid var(--pump);color:var(--pump2);clip-path:polygon(0 0,100% 0,calc(100% - 8px) 100%,0 100%)}
+#chatIn{background:rgba(14,6,8,.92);border:0;border-left:3px solid var(--pump)}
+#lobbyBox{background:var(--plateD);border:0;border-top:3px solid var(--pump);box-shadow:none;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%);padding:8px 28px 10px}
+#lobbyBox .lt{color:var(--bone);text-transform:uppercase;letter-spacing:.06em;text-shadow:0 2px 0 var(--b2)}
+#ctfBox .tm{border:0;box-shadow:none;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);padding:4px 20px 6px}
+#ctfBox .mid{background:var(--plateD);color:#b79d86}
+#carry{border:0;box-shadow:none;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);padding:5px 28px;letter-spacing:.05em}
+/* ---- muerte: "JUGADOR te ha eliminado", arma abajo y "Cobrale venganza" en chico ---- */
+#deathBox{top:36%;padding:20px 0 18px;background:linear-gradient(90deg,transparent,rgba(70,0,4,.78) 18%,rgba(70,0,4,.78) 82%,transparent)}
+#deathBox::before,#deathBox::after{content:"";position:absolute;left:12%;right:12%;height:2px;background:linear-gradient(90deg,transparent,var(--blood),transparent)}
+#deathBox::before{top:0}#deathBox::after{bottom:0}
+#deathBox .big{font-size:clamp(26px,5.4vw,66px);line-height:1.05;color:var(--bone);text-transform:uppercase;letter-spacing:.04em;text-shadow:0 4px 0 var(--b2),0 0 36px rgba(212,18,15,.6)}
+#deathBox .big b{font-weight:400;text-shadow:0 4px 0 #000,0 0 30px currentColor}
+#deathBox .weap{font-size:14px;letter-spacing:.3em;text-transform:uppercase;color:var(--pump2);margin-top:8px;text-shadow:0 1px 0 #000;min-height:1em}
+#deathBox .rev{font-size:12px;letter-spacing:.42em;text-transform:uppercase;color:#ff8f7a;margin-top:12px;text-shadow:0 1px 0 #000}
+#deathBox .rev:not(:empty)::before{content:"//  "}#deathBox .rev:not(:empty)::after{content:"  //"}
+#deathBox .small{color:var(--bone);opacity:.8;margin-top:8px;font-size:13px;letter-spacing:.08em}
+#deathBox.in{animation:deathIn .45s cubic-bezier(.2,1.3,.4,1)}
+@keyframes deathIn{from{opacity:0;transform:scale(1.18) translateY(-14px);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+#deathBox.spec{padding:10px 0;background:linear-gradient(90deg,transparent,rgba(30,4,6,.7) 20%,rgba(30,4,6,.7) 80%,transparent)}
+#deathBox.spec .big{font-size:clamp(16px,2.2vw,26px);text-shadow:0 2px 0 var(--b2)}
+#deathBox.spec .rev,#deathBox.spec .weap{display:none}
+/* ---- tablero (Tab) ---- */
+#board{background:linear-gradient(rgba(18,8,11,.95),rgba(8,4,6,.96));border:0;border-top:3px solid var(--blood);box-shadow:0 26px 70px rgba(0,0,0,.65);clip-path:polygon(0 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%);padding:18px 22px 20px}
+#board h2{color:var(--bone);text-transform:uppercase;letter-spacing:.08em;text-shadow:0 2px 0 var(--b2)}
+#board .meta{color:var(--pump2);letter-spacing:.28em}
+#board th{color:#b79d86;border-bottom:1px solid rgba(212,18,15,.45)}
+#board td{border-bottom:1px solid rgba(255,255,255,.05)}
+#board tr.me td{color:var(--pump2);background:rgba(255,122,26,.08)}
+/* ---- victoria / fin de partida: "JUGADOR ha ganado" en grande ---- */
+#inter{background:radial-gradient(ellipse at 50% 18%,rgba(110,8,10,.55),rgba(14,4,6,.93) 62%,rgba(3,1,2,.97))}
+#inter::before{content:"";position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(115deg,transparent 0 46px,rgba(212,18,15,.045) 46px 48px);animation:interSlide 14s linear infinite}
+@keyframes interSlide{to{background-position:240px 0}}
+#interK{font-size:12px;letter-spacing:.6em;text-transform:uppercase;color:var(--pump);text-align:center;display:flex;align-items:center;gap:16px;width:min(560px,90%);margin-bottom:6px}
+#interK::before,#interK::after{content:"";flex:1;height:2px;background:linear-gradient(90deg,transparent,var(--blood))}
+#interK::after{transform:scaleX(-1)}
+#interT{color:var(--bone);text-transform:uppercase;line-height:1;margin-bottom:14px;text-shadow:none}
+#interT .wn{display:block;font-size:clamp(40px,9.5vw,118px);letter-spacing:.03em;color:inherit;text-shadow:0 5px 0 var(--b2),0 0 50px rgba(212,18,15,.6);overflow-wrap:anywhere}
+#interT .wv{display:block;margin-top:6px;font-size:clamp(22px,4.2vw,50px);letter-spacing:.34em;color:var(--pump2);text-shadow:0 3px 0 #2a1205,0 0 24px rgba(255,122,26,.45)}
+#interT.in{animation:winSlam .8s cubic-bezier(.2,1.25,.4,1) both}
+@keyframes winSlam{0%{opacity:0;transform:translateY(-90px) scale(1.5);filter:blur(12px)}55%{opacity:1;transform:translateY(0) scale(.96);filter:none}70%{transform:translate(-6px,3px)}85%{transform:translate(4px,-2px)}100%{transform:none}}
+#interTabW{background:var(--plateD);border:0;border-top:2px solid var(--blood)}
+#interTab th{background:#12060a;color:#b79d86}
+#interTab tr.me td{background:rgba(255,122,26,.13);color:var(--pump2)}
+.pod .pb{clip-path:polygon(0 0,100% 0,100% 100%,0 100%)}
+.pod .pn{text-transform:uppercase;letter-spacing:.05em}
+#interC b{color:var(--pump2)}
+/* ---- votaciones y menús de mapa / echar: del azul viejo al estilo nuevo ---- */
+#voteBox{background:var(--plateD);border:0;border-left:4px solid var(--pump);box-shadow:none;clip-path:polygon(0 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%);color:var(--bone)}
+#voteBox.me{border-left-color:var(--blood)}
+#voteBox .vt{color:var(--pump2)}#voteBox .vby{color:#b79d86}
+#voteBox .vtime{background:#2a1214}#voteBox .vtime i{background:var(--pump)}
+#voteBox .vbar{background:#2a1214}
+#voteBox .vrow.on{border-color:var(--pump2)}
+#voteBox b{color:var(--pump2)}#voteBox .k{border-color:var(--pump2);color:var(--pump2)}
+#voteBox .vfoot{color:#b79d86}
+#kickMenu,#mapMenu{background:rgba(6,2,4,.84);backdrop-filter:none}
+.kmBox{background:linear-gradient(#16080b,#090406);border:0;border-top:4px solid var(--blood);box-shadow:0 24px 70px rgba(0,0,0,.7);clip-path:polygon(0 0,100% 0,100% calc(100% - 18px),calc(100% - 18px) 100%,0 100%)}
+.kmHead h2{color:var(--bone);text-transform:uppercase;letter-spacing:.08em;text-shadow:0 2px 0 var(--b2)}
+.kmHead small{color:#b79d86}.kmIcon{color:var(--pump);text-shadow:0 0 14px rgba(255,122,26,.6)}.kmKey{color:#8f7a6a}
+.kmP{background:#14080b;border-color:#3a1418}
+.kmP:hover,.kmP.sel{border-color:var(--pump);background:#2a1208}
+.kmP .s{color:#b79d86}.kmP kbd{border-color:var(--pump2);color:var(--pump2)}
+.kmQ{color:var(--bone)}.kmQ b{color:var(--pump2)}.kmRules,.kmEmpty{color:#8f7a6a;border-color:#3a1418}
+.mmC{background:#14080b;border-color:#3a1418}.mmC:hover,.mmC:focus-visible{border-color:var(--pump)}
+.mmC .ph{background:linear-gradient(135deg,#2a1014,#0a0406)}.mmC kbd{border-color:var(--pump2);color:var(--pump2)}
+#mmMsg{color:#b79d86}
+@media (prefers-reduced-motion:reduce){#deathBox.in,#interT.in,#inter::before{animation:none}}
+/* botones del fin de partida y tienda un poco más anchos para que no se corten los nombres */
+.shrow .scards .card{width:206px}
+#inter .btn{font-family:var(--display);font-size:20px;letter-spacing:.08em;text-transform:uppercase;padding:10px 28px;background:#1a0b10;color:var(--bone);border:0;box-shadow:none;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);transition:filter .12s,transform .12s}
+#inter .btn.primary{background:linear-gradient(var(--blood),#8a0a0a);color:#fff}
+#inter .btn:hover{filter:brightness(1.3);transform:translateY(-2px)}

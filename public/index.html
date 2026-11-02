@@ -230,7 +230,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 #kickPanel button{cursor:pointer;background:#3a1a12}#kickPanel button:hover{background:#5a2416}
 #kickPanel .kNote{margin-top:4px;font-size:11px;opacity:.8;max-width:420px}
 #chatLog .tdot{display:inline-block;width:8px;height:8px;margin-right:5px;border:1px solid #000;vertical-align:1px}
-#chatLog .sys{color:var(--rail)}
+#chatLog .sys{color:var(--pump2)}
 #chatIn{pointer-events:auto;font-family:var(--mono);font-size:14px;background:rgba(11,9,7,.85);color:var(--ink);border:1px solid var(--amber);padding:6px 8px;outline:none}
 #board{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(620px,calc(100vw - 32px));background:rgba(15,12,10,.92);border:1px solid #000;box-shadow:0 6px 0 #000,inset 0 1px 0 rgba(255,220,170,.08);padding:16px 18px}
 #board h2{margin:0 0 4px;font-family:var(--display);font-weight:400;font-size:28px;color:var(--amber);letter-spacing:.04em}
@@ -748,6 +748,124 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 .shrow .card img{height:42px}
 .shrow .card .nm{font-size:12px}
 .shrow .card .pr{font-size:12px}
+
+/* =====================================================================
+   INTERFAZ v2 · edición Halloween: placas de bordes cortados, acentos de sangre y calabaza, tipografía de bloque.
+   Se aplica a todo el HUD y a los paneles (muerte, victoria, tablero, votaciones, menús de mapa y de echar, tienda).
+   ===================================================================== */
+:root{--b2:#7d0508;--pump:#ff7a1a;--pump2:#ffb347;--bone:#eadfc8;--slime:#8dff3a;--witch:#9b4dff;--haz:#e8b020;--plateD:linear-gradient(rgba(22,9,12,.88),rgba(9,4,6,.9))}
+/* ---- tienda: una sola columna vertical, todo a la vista ---- */
+.shopgrid{display:flex;flex-direction:column;gap:0;border-top:2px solid #7fae8f}
+.shrow{display:grid;grid-template-columns:132px 1fr;gap:12px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(127,174,143,.2)}
+.shrow .slab{padding:0 0 0 8px;border:0;border-left:3px solid rgba(127,174,143,.55);white-space:normal;line-height:1.3}
+.shrow .scards{display:flex;flex-wrap:wrap;gap:6px}
+.shrow .scards .card{display:grid;grid-template-columns:60px 1fr;grid-template-rows:auto auto;column-gap:8px;row-gap:0;align-items:center;text-align:left;width:176px;padding:5px 8px}
+.shrow .card img{grid-row:1/3;width:60px;height:32px}
+.shrow .card .nm{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;align-self:end}
+.shrow .card .pr{font-size:12px;align-self:start;justify-self:start}
+.shrow .card.own .pr,.shrow .card.mine .pr{align-self:start}
+/* ---- HUD de arriba ---- */
+#top{gap:6px}
+.stat{padding:4px 14px 3px 10px;background:var(--plateD);border-left:3px solid var(--blood);clip-path:polygon(0 0,calc(100% - 9px) 0,100% 9px,100% 100%,0 100%)}
+.stat .lbl{font-size:10px;letter-spacing:.3em;color:#b79d86}
+.stat b{font-size:24px;color:var(--bone);text-shadow:0 0 14px rgba(212,18,15,.4)}
+.stat b.cash{color:var(--slime);text-shadow:0 0 14px rgba(141,255,58,.3)}
+#quadChip{background:var(--plateD);padding:4px 12px;border-left:3px solid var(--witch);clip-path:polygon(0 0,100% 0,calc(100% - 8px) 100%,0 100%)}
+/* ---- barra de abajo: munición, salud, blindaje ---- */
+#bar{gap:4px}
+.cell{position:relative;border:0;box-shadow:none;background:var(--plateD);padding:6px 18px 7px;min-width:122px;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)}
+.cell::after{content:"";position:absolute;left:12px;right:12px;bottom:0;height:3px;background:var(--acc,var(--pump))}
+.cell:nth-child(2){--acc:var(--blood)}.cell:nth-child(3){--acc:var(--slime)}
+.cell .lbl{font-size:10px;letter-spacing:.32em;color:#b79d86}
+.cell .num:not(.low):not(.over):not(.ar){color:var(--bone);text-shadow:0 2px 0 #000,0 0 18px color-mix(in srgb,var(--acc,#ff7a1a) 55%,transparent)}
+/* ---- ranuras de armas ---- */
+.slot{border:0;border-left:3px solid #4a1a1a;background:linear-gradient(90deg,rgba(22,9,12,.88),rgba(22,9,12,.35));clip-path:polygon(0 0,100% 0,calc(100% - 8px) 100%,0 100%);padding:4px 16px 4px 8px}
+.slot.on{border-left-color:var(--pump);color:var(--pump2);background:linear-gradient(90deg,rgba(70,26,8,.92),rgba(22,9,12,.4))}
+.slot i{color:var(--pump2);font-weight:700}
+/* ---- carteles de teclas ---- */
+#shopHint,#kickHint,#mapHint{font-size:11px;letter-spacing:.14em;padding:3px 12px 3px 14px;background:var(--plateD);border-right:3px solid currentColor;clip-path:polygon(8px 0,100% 0,100% 100%,0 100%);text-shadow:none}
+#grabHint{background:var(--plateD);border:0;border-left:3px solid var(--pump);clip-path:polygon(0 0,100% 0,calc(100% - 8px) 100%,0 100%);padding:5px 18px 5px 12px}
+#grabHint kbd{border-color:var(--pump2);color:var(--pump2)}
+/* ---- killfeed y avisos ---- */
+#feed{gap:4px}
+#feed div{background:linear-gradient(270deg,rgba(22,9,12,.9),rgba(22,9,12,.35));padding:3px 12px 3px 16px;border-right:3px solid var(--blood);clip-path:polygon(10px 0,100% 0,100% 100%,0 100%)}
+#feed .me{outline:0;border-right-color:var(--pump2);background:linear-gradient(270deg,rgba(80,32,8,.92),rgba(22,9,12,.4))}
+#cMsg{font-size:clamp(26px,4.8vw,54px);text-transform:uppercase;letter-spacing:.05em;color:var(--bone);text-shadow:0 3px 0 var(--b2),0 0 34px rgba(212,18,15,.55)}
+#cMsg::after{content:"";display:block;width:min(360px,56vw);height:3px;margin:8px auto 0;background:linear-gradient(90deg,transparent,var(--blood),transparent)}
+#cSub{font-size:13px;letter-spacing:.36em;color:var(--pump2)}
+#pick{background:var(--plateD);padding:5px 18px;border-left:3px solid var(--pump);color:var(--pump2);clip-path:polygon(0 0,100% 0,calc(100% - 8px) 100%,0 100%)}
+#chatIn{background:rgba(14,6,8,.92);border:0;border-left:3px solid var(--pump)}
+#lobbyBox{background:var(--plateD);border:0;border-top:3px solid var(--pump);box-shadow:none;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%);padding:8px 28px 10px}
+#lobbyBox .lt{color:var(--bone);text-transform:uppercase;letter-spacing:.06em;text-shadow:0 2px 0 var(--b2)}
+#ctfBox .tm{border:0;box-shadow:none;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);padding:4px 20px 6px}
+#ctfBox .mid{background:var(--plateD);color:#b79d86}
+#carry{border:0;box-shadow:none;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);padding:5px 28px;letter-spacing:.05em}
+/* ---- muerte: "JUGADOR te ha eliminado", arma abajo y "Cobrale venganza" en chico ---- */
+#deathBox{top:36%;padding:20px 0 18px;background:linear-gradient(90deg,transparent,rgba(70,0,4,.78) 18%,rgba(70,0,4,.78) 82%,transparent)}
+#deathBox::before,#deathBox::after{content:"";position:absolute;left:12%;right:12%;height:2px;background:linear-gradient(90deg,transparent,var(--blood),transparent)}
+#deathBox::before{top:0}#deathBox::after{bottom:0}
+#deathBox .big{font-size:clamp(26px,5.4vw,66px);line-height:1.05;color:var(--bone);text-transform:uppercase;letter-spacing:.04em;text-shadow:0 4px 0 var(--b2),0 0 36px rgba(212,18,15,.6)}
+#deathBox .big b{font-weight:400;text-shadow:0 4px 0 #000,0 0 30px currentColor}
+#deathBox .weap{font-size:14px;letter-spacing:.3em;text-transform:uppercase;color:var(--pump2);margin-top:8px;text-shadow:0 1px 0 #000;min-height:1em}
+#deathBox .rev{font-size:12px;letter-spacing:.42em;text-transform:uppercase;color:#ff8f7a;margin-top:12px;text-shadow:0 1px 0 #000}
+#deathBox .rev:not(:empty)::before{content:"//  "}#deathBox .rev:not(:empty)::after{content:"  //"}
+#deathBox .small{color:var(--bone);opacity:.8;margin-top:8px;font-size:13px;letter-spacing:.08em}
+#deathBox.in{animation:deathIn .45s cubic-bezier(.2,1.3,.4,1)}
+@keyframes deathIn{from{opacity:0;transform:scale(1.18) translateY(-14px);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+#deathBox.spec{padding:10px 0;background:linear-gradient(90deg,transparent,rgba(30,4,6,.7) 20%,rgba(30,4,6,.7) 80%,transparent)}
+#deathBox.spec .big{font-size:clamp(16px,2.2vw,26px);text-shadow:0 2px 0 var(--b2)}
+#deathBox.spec .rev,#deathBox.spec .weap{display:none}
+/* ---- tablero (Tab) ---- */
+#board{background:linear-gradient(rgba(18,8,11,.95),rgba(8,4,6,.96));border:0;border-top:3px solid var(--blood);box-shadow:0 26px 70px rgba(0,0,0,.65);clip-path:polygon(0 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%);padding:18px 22px 20px}
+#board h2{color:var(--bone);text-transform:uppercase;letter-spacing:.08em;text-shadow:0 2px 0 var(--b2)}
+#board .meta{color:var(--pump2);letter-spacing:.28em}
+#board th{color:#b79d86;border-bottom:1px solid rgba(212,18,15,.45)}
+#board td{border-bottom:1px solid rgba(255,255,255,.05)}
+#board tr.me td{color:var(--pump2);background:rgba(255,122,26,.08)}
+/* ---- victoria / fin de partida: "JUGADOR ha ganado" en grande ---- */
+#inter{background:radial-gradient(ellipse at 50% 18%,rgba(110,8,10,.55),rgba(14,4,6,.93) 62%,rgba(3,1,2,.97))}
+#inter::before{content:"";position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(115deg,transparent 0 46px,rgba(212,18,15,.045) 46px 48px);animation:interSlide 14s linear infinite}
+@keyframes interSlide{to{background-position:240px 0}}
+#interK{font-size:12px;letter-spacing:.6em;text-transform:uppercase;color:var(--pump);text-align:center;display:flex;align-items:center;gap:16px;width:min(560px,90%);margin-bottom:6px}
+#interK::before,#interK::after{content:"";flex:1;height:2px;background:linear-gradient(90deg,transparent,var(--blood))}
+#interK::after{transform:scaleX(-1)}
+#interT{color:var(--bone);text-transform:uppercase;line-height:1;margin-bottom:14px;text-shadow:none}
+#interT .wn{display:block;font-size:clamp(40px,9.5vw,118px);letter-spacing:.03em;color:inherit;text-shadow:0 5px 0 var(--b2),0 0 50px rgba(212,18,15,.6);overflow-wrap:anywhere}
+#interT .wv{display:block;margin-top:6px;font-size:clamp(22px,4.2vw,50px);letter-spacing:.34em;color:var(--pump2);text-shadow:0 3px 0 #2a1205,0 0 24px rgba(255,122,26,.45)}
+#interT.in{animation:winSlam .8s cubic-bezier(.2,1.25,.4,1) both}
+@keyframes winSlam{0%{opacity:0;transform:translateY(-90px) scale(1.5);filter:blur(12px)}55%{opacity:1;transform:translateY(0) scale(.96);filter:none}70%{transform:translate(-6px,3px)}85%{transform:translate(4px,-2px)}100%{transform:none}}
+#interTabW{background:var(--plateD);border:0;border-top:2px solid var(--blood)}
+#interTab th{background:#12060a;color:#b79d86}
+#interTab tr.me td{background:rgba(255,122,26,.13);color:var(--pump2)}
+.pod .pb{clip-path:polygon(0 0,100% 0,100% 100%,0 100%)}
+.pod .pn{text-transform:uppercase;letter-spacing:.05em}
+#interC b{color:var(--pump2)}
+/* ---- votaciones y menús de mapa / echar: del azul viejo al estilo nuevo ---- */
+#voteBox{background:var(--plateD);border:0;border-left:4px solid var(--pump);box-shadow:none;clip-path:polygon(0 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%);color:var(--bone)}
+#voteBox.me{border-left-color:var(--blood)}
+#voteBox .vt{color:var(--pump2)}#voteBox .vby{color:#b79d86}
+#voteBox .vtime{background:#2a1214}#voteBox .vtime i{background:var(--pump)}
+#voteBox .vbar{background:#2a1214}
+#voteBox .vrow.on{border-color:var(--pump2)}
+#voteBox b{color:var(--pump2)}#voteBox .k{border-color:var(--pump2);color:var(--pump2)}
+#voteBox .vfoot{color:#b79d86}
+#kickMenu,#mapMenu{background:rgba(6,2,4,.84);backdrop-filter:none}
+.kmBox{background:linear-gradient(#16080b,#090406);border:0;border-top:4px solid var(--blood);box-shadow:0 24px 70px rgba(0,0,0,.7);clip-path:polygon(0 0,100% 0,100% calc(100% - 18px),calc(100% - 18px) 100%,0 100%)}
+.kmHead h2{color:var(--bone);text-transform:uppercase;letter-spacing:.08em;text-shadow:0 2px 0 var(--b2)}
+.kmHead small{color:#b79d86}.kmIcon{color:var(--pump);text-shadow:0 0 14px rgba(255,122,26,.6)}.kmKey{color:#8f7a6a}
+.kmP{background:#14080b;border-color:#3a1418}
+.kmP:hover,.kmP.sel{border-color:var(--pump);background:#2a1208}
+.kmP .s{color:#b79d86}.kmP kbd{border-color:var(--pump2);color:var(--pump2)}
+.kmQ{color:var(--bone)}.kmQ b{color:var(--pump2)}.kmRules,.kmEmpty{color:#8f7a6a;border-color:#3a1418}
+.mmC{background:#14080b;border-color:#3a1418}.mmC:hover,.mmC:focus-visible{border-color:var(--pump)}
+.mmC .ph{background:linear-gradient(135deg,#2a1014,#0a0406)}.mmC kbd{border-color:var(--pump2);color:var(--pump2)}
+#mmMsg{color:#b79d86}
+@media (prefers-reduced-motion:reduce){#deathBox.in,#interT.in,#inter::before{animation:none}}
+/* botones del fin de partida y tienda un poco más anchos para que no se corten los nombres */
+.shrow .scards .card{width:206px}
+#inter .btn{font-family:var(--display);font-size:20px;letter-spacing:.08em;text-transform:uppercase;padding:10px 28px;background:#1a0b10;color:var(--bone);border:0;box-shadow:none;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);transition:filter .12s,transform .12s}
+#inter .btn.primary{background:linear-gradient(var(--blood),#8a0a0a);color:#fff}
+#inter .btn:hover{filter:brightness(1.3);transform:translateY(-2px)}
 </style>
 
 <canvas id="c"></canvas>
@@ -791,7 +909,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
   <div id="feed"></div>
   <div id="center"><div id="cMsg"></div><div id="cSub"></div></div>
   <div id="pick"></div>
-  <div id="deathBox" hidden><div class="big">ELIMINADO</div><div class="small" id="deathBy"></div><div class="small" id="deathHint"></div></div>
+  <div id="deathBox" hidden><div class="big" id="deathBig">ELIMINADO</div><div class="weap" id="deathBy"></div><div class="rev" id="deathRev"></div><div class="small" id="deathHint"></div></div>
   <div id="bar">
     <div class="cell"><div class="lbl" id="hWName">Escopeta</div><div class="num" id="hAmmo">10</div></div>
     <div class="cell"><div class="lbl">Salud</div><div class="num" id="hHp">100</div></div>
@@ -811,7 +929,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
   <div class="meta" id="bMeta"></div>
   <table><thead><tr><th>#</th><th>Jugador</th><th>Frags</th><th>Muertes</th><th id="thX">Créditos</th><th>Ping</th></tr></thead><tbody id="bBody"></tbody></table>
 </div>
-<div id="inter" hidden><div class="interbox"><div id="interT"></div><div class="note" id="interS" style="text-align:center"></div>
+<div id="inter" hidden><div class="interbox"><div id="interK">FIN DE LA PARTIDA</div><div id="interT"></div><div class="note" id="interS" style="text-align:center"></div>
   <div id="mapVote" hidden><div class="mvT">VOTÁ EL PRÓXIMO MAPA <small>· click o 1 · 2 · 3 · si nadie vota, sale uno al azar</small></div><div class="mvRow" id="mvRow"></div></div>
   <div id="interC">Próxima partida en <b id="interN">25</b> segundos</div>
   <div id="interReady" aria-live="polite"></div>
@@ -873,7 +991,6 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
     </aside>
     <section class="stall">
       <header class="shophead"><div class="ttl"><small>Bazar de lo innombrable</small><h2>La Tienda</h2></div><div class="wallet"><small>Tus créditos</small><span id="shopCr">¤ 0</span></div></header>
-      <div id="shopTabs" role="tablist"><button type="button" role="tab" data-tab="armas" aria-selected="true">Armas</button><button type="button" role="tab" data-tab="equipo" aria-selected="false">Equipo</button></div>
       <div id="shopMsg"></div>
       <div class="shopgrid" id="shopGrid"></div>
       <div class="shopinvbox"><small>Tu inventario · mantené <kbd>E</kbd> para elegir principal</small><div id="shopInv"></div><small class="fixd">Pistola y cuchillo siempre en las manos</small></div>
@@ -3586,7 +3703,10 @@ function onMsg(m){
     case 'end':
       matchState='inter';scores=m.l;closeShop(true);
       spEnd();
-      $('interT').textContent=m.w?m.w+' GANA LA PARTIDA':teamsMode()?'EMPATE':'FIN DE LA PARTIDA';
+      {const t=$('interT');t.textContent='';const wn=document.createElement('span');wn.className='wn';
+        if(m.w){wn.textContent=m.w;const wv=document.createElement('span');wv.className='wv';wv.textContent='ha ganado';t.append(wn,wv);}   // "JUGADOR" en grande y "ha ganado" abajo
+        else{wn.textContent=teamsMode()?'EMPATE':'FIN DE LA PARTIDA';t.appendChild(wn);}
+        t.classList.remove('in');void t.offsetWidth;t.classList.add('in');}
       $('interT').style.color=teamsMode()&&m.wt>=0?TEAMS[m.wt].c:'';
       $('interS').textContent=m.mv?'':'Próximo mapa: '+(m.nextName||'');G.myMapVote=null;renderMapVote(m.mv);
       renderEnd(m);
@@ -3723,8 +3843,11 @@ function onKill(m){
   feedLine(line,m.k===myId||m.v===myId);
   if(m.v===myId){
     me.alive=false;me.deadT=0;me.killer=m.k;me.respawnAsk=false;me.deathPos=[me.s.x,me.s.y,me.s.z];
-    $('deathBy').textContent=m.how==='water'?'Te llevó el río':m.how==='lava'?'Te derretiste en la lava':m.how==='void'?'Caíste al vacío':(!m.k||m.k===myId)?'Te volaste a vos mismo':'Te eliminó '+nameOf(m.k)+(m.ns?' SIN USAR MIRA':W_?' con '+W_.name:'');
-    $('deathBox').hidden=false;$('deathHint').textContent='';
+    // "JUGADOR te ha eliminado" en grande, el arma abajo y "Cobrale venganza" en chico; si no fue un jugador, el motivo en grande
+    const env=m.how==='water'?'Te llevó el río':m.how==='lava'?'Te derretiste en la lava':m.how==='void'?'Caíste al vacío':(!m.k||m.k===myId)?'Te volaste a vos mismo':'';
+    if(env){$('deathBig').textContent=env;$('deathBy').textContent='';$('deathRev').textContent='Volvé más fuerte';}
+    else{$('deathBig').innerHTML='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> te ha eliminado';$('deathBy').textContent=m.ns?'sin usar mira':W_?'con '+W_.name:'';$('deathRev').textContent='Cobrale venganza';}
+    $('deathBox').hidden=false;$('deathBox').classList.remove('in');void $('deathBox').offsetWidth;$('deathBox').classList.add('in');$('deathHint').textContent='';
     if(m.gib)fxGib(me.s.x,me.s.y,me.s.z);else fxBlood(me.s.x,me.s.y+1,me.s.z,20);
     SFX.die(1);
   }else{
@@ -4030,33 +4153,30 @@ const VEND={
 };
 let vendLast='';
 function vendSay(k){const a=VEND[k];let t;do{t=a[Math.random()*a.length|0];}while(t===vendLast&&a.length>1);vendLast=t;const e=$('vendSay');e.textContent=t;e.classList.remove('say');void e.offsetWidth;e.classList.add('say');}
-let shopEls=null,shopTab='armas',shopDetId=null;
-// disposición horizontal (como la tienda de Deadlock): una fila por categoría con fichas chicas; el detalle va en el panel de la izquierda
-// filas por pestaña: cada fila junta varias categorías lado a lado (cada categoría con su título arriba de sus fichas)
-const SHOP_ROWS={armas:[['Pistolas','Cuerpo a cuerpo','Escopetas','Ametralladoras'],['Rifles','Bombas','Misiles']],equipo:[['Blindaje','Suministros']]};
-function shopShowTab(t){shopTab=t;[...$('shopTabs').children].forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===t)));$('shopGrid').querySelectorAll('.shrow').forEach(r=>{r.hidden=r.dataset.tab!==t;});}
+let shopEls=null,shopDetId=null;
+// una sola columna vertical: una fila por categoría, todo a la vista (el detalle de cada objeto va en el panel de la izquierda)
+const SHOP_ORDER=['Pistolas','Cuerpo a cuerpo','Escopetas','Ametralladoras','Rifles','Bombas','Misiles','Blindaje','Suministros'];
 function shopDetail(id){
   const it=C.SHOP.find(s=>s.id===id),E=shopEls&&shopEls[id];if(!it||!E)return;
-  shopDetId=id;setTxt('sdN',it.name);setTxt('sdP',E.pr.textContent);setTxt('sdD',it.desc);$('shopDet').classList.toggle('on',true);
+  shopDetId=id;setTxt('sdN',it.name);setTxt('sdP',E.pr.textContent);setTxt('sdD',it.desc);
 }
 function buildShop(){
   if(shopEls)return;shopEls={};
   const ic=shopIcons(),host=$('shopGrid');host.textContent='';
-  for(const tab in SHOP_ROWS)SHOP_ROWS[tab].forEach(cats=>{
-    const row=document.createElement('div');row.className='shrow';row.dataset.tab=tab;host.appendChild(row);
-    cats.forEach(cat=>{
-      const g=document.createElement('div');g.className='shgrp';const cap=document.createElement('div');cap.className='slab';cap.textContent=cat;
-      const cd=document.createElement('div');cd.className='scards';g.append(cap,cd);row.appendChild(g);
-      C.SHOP.filter(it=>it.cat===cat).forEach(it=>{
-        const b=document.createElement('button');b.type='button';b.className='card';b.dataset.id=it.id;
-        const im=document.createElement('img');im.alt='';im.src=ic[it.id]||ic['w'+it.w]||'';
-        const nm=document.createElement('span');nm.className='nm';nm.textContent=it.name;
-        const pr=document.createElement('span');pr.className='pr';
-        b.append(im,nm,pr);cd.appendChild(b);shopEls[it.id]={b,pr};
-      });
+  const cats=[];C.SHOP.forEach(it=>{if(!cats.includes(it.cat))cats.push(it.cat);});
+  cats.sort((a,b)=>{const i=SHOP_ORDER.indexOf(a),j=SHOP_ORDER.indexOf(b);return (i<0?99:i)-(j<0?99:j);});
+  cats.forEach(cat=>{
+    const row=document.createElement('div');row.className='shrow';
+    const lb=document.createElement('div');lb.className='slab';lb.textContent=cat;
+    const cd=document.createElement('div');cd.className='scards';row.append(lb,cd);host.appendChild(row);
+    C.SHOP.filter(it=>it.cat===cat).forEach(it=>{
+      const b=document.createElement('button');b.type='button';b.className='card';b.dataset.id=it.id;
+      const im=document.createElement('img');im.alt='';im.src=ic[it.id]||ic['w'+it.w]||'';
+      const nm=document.createElement('span');nm.className='nm';nm.textContent=it.name;
+      const pr=document.createElement('span');pr.className='pr';
+      b.append(im,nm,pr);cd.appendChild(b);shopEls[it.id]={b,pr};
     });
   });
-  shopShowTab(shopTab);
 }
 function openShop(){
   if(!inGame||!liveState())return;
@@ -4092,7 +4212,6 @@ function renderShop(){
   const html=inv.map(w=>'<span class="'+(w===prim?'on':'')+'" title="'+esc(WEAPONS[w].name)+'"><img alt="" src="'+(shopIcons()['w'+w]||'')+'"></span>').join('');
   const iv=$('shopInv');if(iv._h!==html){iv._h=html;iv.innerHTML=html;}
 }
-$('shopTabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b){shopShowTab(b.dataset.tab);SFX.ui();}});
 $('shopGrid').addEventListener('mouseover',e=>{const b=e.target.closest('.card');if(b&&b.dataset.id!==shopDetId)shopDetail(b.dataset.id);});
 $('shopGrid').addEventListener('focusin',e=>{const b=e.target.closest('.card');if(b)shopDetail(b.dataset.id);});
 $('shopGrid').addEventListener('click',e=>{const b=e.target.closest('.card');if(!b||b.disabled||!net)return;net.send({t:'buy',id:b.dataset.id});});

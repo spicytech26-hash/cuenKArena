@@ -50,7 +50,7 @@
   <div id="feed"></div>
   <div id="center"><div id="cMsg"></div><div id="cSub"></div></div>
   <div id="pick"></div>
-  <div id="deathBox" hidden><div class="big">ELIMINADO</div><div class="small" id="deathBy"></div><div class="small" id="deathHint"></div></div>
+  <div id="deathBox" hidden><div class="big" id="deathBig">ELIMINADO</div><div class="weap" id="deathBy"></div><div class="rev" id="deathRev"></div><div class="small" id="deathHint"></div></div>
   <div id="bar">
     <div class="cell"><div class="lbl" id="hWName">Escopeta</div><div class="num" id="hAmmo">10</div></div>
     <div class="cell"><div class="lbl">Salud</div><div class="num" id="hHp">100</div></div>
@@ -70,7 +70,7 @@
   <div class="meta" id="bMeta"></div>
   <table><thead><tr><th>#</th><th>Jugador</th><th>Frags</th><th>Muertes</th><th id="thX">Créditos</th><th>Ping</th></tr></thead><tbody id="bBody"></tbody></table>
 </div>
-<div id="inter" hidden><div class="interbox"><div id="interT"></div><div class="note" id="interS" style="text-align:center"></div>
+<div id="inter" hidden><div class="interbox"><div id="interK">FIN DE LA PARTIDA</div><div id="interT"></div><div class="note" id="interS" style="text-align:center"></div>
   <div id="mapVote" hidden><div class="mvT">VOTÁ EL PRÓXIMO MAPA <small>· click o 1 · 2 · 3 · si nadie vota, sale uno al azar</small></div><div class="mvRow" id="mvRow"></div></div>
   <div id="interC">Próxima partida en <b id="interN">25</b> segundos</div>
   <div id="interReady" aria-live="polite"></div>
@@ -132,7 +132,6 @@
     </aside>
     <section class="stall">
       <header class="shophead"><div class="ttl"><small>Bazar de lo innombrable</small><h2>La Tienda</h2></div><div class="wallet"><small>Tus créditos</small><span id="shopCr">¤ 0</span></div></header>
-      <div id="shopTabs" role="tablist"><button type="button" role="tab" data-tab="armas" aria-selected="true">Armas</button><button type="button" role="tab" data-tab="equipo" aria-selected="false">Equipo</button></div>
       <div id="shopMsg"></div>
       <div class="shopgrid" id="shopGrid"></div>
       <div class="shopinvbox"><small>Tu inventario · mantené <kbd>E</kbd> para elegir principal</small><div id="shopInv"></div><small class="fixd">Pistola y cuchillo siempre en las manos</small></div>

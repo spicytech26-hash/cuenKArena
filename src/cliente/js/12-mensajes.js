@@ -63,7 +63,10 @@ function onMsg(m){
     case 'end':
       matchState='inter';scores=m.l;closeShop(true);
       spEnd();
-      $('interT').textContent=m.w?m.w+' GANA LA PARTIDA':teamsMode()?'EMPATE':'FIN DE LA PARTIDA';
+      {const t=$('interT');t.textContent='';const wn=document.createElement('span');wn.className='wn';
+        if(m.w){wn.textContent=m.w;const wv=document.createElement('span');wv.className='wv';wv.textContent='ha ganado';t.append(wn,wv);}   // "JUGADOR" en grande y "ha ganado" abajo
+        else{wn.textContent=teamsMode()?'EMPATE':'FIN DE LA PARTIDA';t.appendChild(wn);}
+        t.classList.remove('in');void t.offsetWidth;t.classList.add('in');}
       $('interT').style.color=teamsMode()&&m.wt>=0?TEAMS[m.wt].c:'';
       $('interS').textContent=m.mv?'':'Próximo mapa: '+(m.nextName||'');G.myMapVote=null;renderMapVote(m.mv);
       renderEnd(m);
@@ -200,8 +203,11 @@ function onKill(m){
   feedLine(line,m.k===myId||m.v===myId);
   if(m.v===myId){
     me.alive=false;me.deadT=0;me.killer=m.k;me.respawnAsk=false;me.deathPos=[me.s.x,me.s.y,me.s.z];
-    $('deathBy').textContent=m.how==='water'?'Te llevó el río':m.how==='lava'?'Te derretiste en la lava':m.how==='void'?'Caíste al vacío':(!m.k||m.k===myId)?'Te volaste a vos mismo':'Te eliminó '+nameOf(m.k)+(m.ns?' SIN USAR MIRA':W_?' con '+W_.name:'');
-    $('deathBox').hidden=false;$('deathHint').textContent='';
+    // "JUGADOR te ha eliminado" en grande, el arma abajo y "Cobrale venganza" en chico; si no fue un jugador, el motivo en grande
+    const env=m.how==='water'?'Te llevó el río':m.how==='lava'?'Te derretiste en la lava':m.how==='void'?'Caíste al vacío':(!m.k||m.k===myId)?'Te volaste a vos mismo':'';
+    if(env){$('deathBig').textContent=env;$('deathBy').textContent='';$('deathRev').textContent='Volvé más fuerte';}
+    else{$('deathBig').innerHTML='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> te ha eliminado';$('deathBy').textContent=m.ns?'sin usar mira':W_?'con '+W_.name:'';$('deathRev').textContent='Cobrale venganza';}
+    $('deathBox').hidden=false;$('deathBox').classList.remove('in');void $('deathBox').offsetWidth;$('deathBox').classList.add('in');$('deathHint').textContent='';
     if(m.gib)fxGib(me.s.x,me.s.y,me.s.z);else fxBlood(me.s.x,me.s.y+1,me.s.z,20);
     SFX.die(1);
   }else{

@@ -368,6 +368,7 @@ function rbPose(m,w,aimX,swing,pose,ex){
 // lo justo para que el pie más bajo toque el suelo, así el balanceo del cuerpo, el agachado y el aterrizaje salen solos de los ángulos.
 const RB_PM=.465*RB_KYP,RB_PC=.41*RB_KYP,RB_HF=.055*RB_KYP,RB_HIP=.93*RB_KYP;   // muslo, canilla, alto del pie y altura de la cadera
 const rbCl=(v,a,b)=>v<a?a:v>b?b:v,rbLe=(a,b,t)=>a+(b-a)*t,rbSm=t=>t*t*(3-2*t);
+const RB_TPDZ={0:.6,1:.1,2:.12,3:.14,4:.14,5:.1,6:.1,7:.2,8:0,9:0,10:.1};   // cuánto se adelanta cada arma en la vista propia en tercera persona (las largas casi nada: la mano no llega)
 const RB_RETRO={0:.05,1:.17,2:.22,3:.035,4:.13,5:.22,6:.045,7:0,8:.2,9:.13,10:0};   // cuánto patea cada arma al disparar
 const rbE=new THREE.Euler(),rbV=new THREE.Vector3();
 // gira un grupo alrededor de un punto (px,py,pz) y lo deja en (bx,by,bz) más el desplazamiento que corresponde al pivote
@@ -438,7 +439,8 @@ function rbAnimar(m,p,dt,pose){
   m.head.rotation.set(-(p.pitch||0)*.5-(lean-.22*a.flinch)*.55-.12*a.flinch-(vy>0?-vy*.01:-vy*.008),Math.sin(t*.4)*.14*idle-a.flinch*a.fdir*.1,-roll*.5);
   // ---- arma: retroceso, vaivén de la marcha, respiración y cambio de arma ----
   const rt=RB_RETRO[p.w]||0,sw=a.swap*a.swap;
-  const ex={dx:.012*Math.sin(a.ph)*w,dy:.014*Math.abs(Math.sin(a.ph))*w*(.5+run)*-1+.004*Math.sin(t*1.6)*idle-.3*sw-.05*a.cro,dz:-rt*.45*a.fireK-.03*run*w,yaw:.03*Math.sin(a.ph)*w+.35*sw*.0,roll:.05*Math.sin(a.ph)*w+.4*sw};
+  const tpx=p.tp?-.13:0,tpy=p.tp?(p.w===0?.12:.03):0,tpz=p.tp?(RB_TPDZ[p.w]!=null?RB_TPDZ[p.w]:.1):0;   // tercera persona propia: el arma sale hacia adelante y al costado del cuerpo para que se vea desde atrás
+  const ex={dx:.012*Math.sin(a.ph)*w+tpx,dy:.014*Math.abs(Math.sin(a.ph))*w*(.5+run)*-1+.004*Math.sin(t*1.6)*idle-.3*sw-.05*a.cro+tpy,dz:-rt*.45*a.fireK-.03*run*w+tpz,yaw:.03*Math.sin(a.ph)*w+.35*sw*.0,roll:.05*Math.sin(a.ph)*w+.4*sw};
   const aimX=-(p.pitch||0)*.8-rt*1.3*a.fireK-.12*rise+.1*fall+.5*sw;
   rbPose(m,p.w,aimX,Math.sin(a.ph)*.8*w-.6*a.air,pose,ex);
 }

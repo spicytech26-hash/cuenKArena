@@ -25,6 +25,7 @@ function updMiModelo(dt){
     P.vxs=me.s.vx;P.vzs=me.s.vz;P.vy=me.s.vy;P.yaw=me.yaw;P.pitch=me.pitch;P.onG=me.s.on;P.crouch=!!me.s.crouch;P.fire=TP.fireT;P.pain=TP.painT;P.w=me.w;P.rel=me.rel>0&&me.relW===me.w;
     if(m.gun.userData.w!==me.w){m.gun.clear();m.gun.add(tpGun(me.w));m.gun.userData.w=me.w;}
     m.g.position.set(me.s.x,me.s.y,me.s.z);m.g.rotation.y=me.yaw+Math.PI;
+    m.gun.scale.setScalar(me.w===0?1.9:me.w===7||me.w===10?1.6:1.15);P.tp=true;   // en tercera persona el arma se ve más grande (sobre todo la pistola)
     rbLod(m,false);rbAnimar(m,P,dt);
     const em=TP.painT>0?0x803020:me.q>0?0x5020a0:0;m.mats.forEach(mm=>mm.emissive.setHex(em));
     m.g.visible=TP.blend>.02&&TP.dist>.85;   // si la cámara queda pegada a una pared, no se dibuja el cuerpo
@@ -43,8 +44,8 @@ function tpCamara(dt){
   TP.back+=(Math.min(.28,hs*.022)-TP.back)*Math.min(1,dt*3);                                   // al correr, la cámara se aleja un poco
   const vr=me.s.vx*r.x+me.s.vz*r.z;TP.lag+=(Math.max(-.14,Math.min(.14,-vr*.012))-TP.lag)*Math.min(1,dt*5);   // al esquivar de costado se queda un poco atrás
   piv.set(me.s.x,me.s.y+me.eyeC+.02,me.s.z);
-  const dist=2.05*(S.tpd||1)+TP.back-Math.min(.08,(me.kick||0)*.05);                            // el disparo la empuja un poquito hacia adelante
-  des.copy(piv).addScaledVector(f,-dist).addScaledVector(r,.82*sh+TP.lag).addScaledVector(u,.3);
+  const dist=1.7*(S.tpd||1)+TP.back-Math.min(.08,(me.kick||0)*.05);                            // el disparo la empuja un poquito hacia adelante
+  des.copy(piv).addScaledVector(f,-dist).addScaledVector(r,.85*sh+TP.lag).addScaledVector(u,.27);
   // choque con las paredes: tres rayos desde la cabeza; la cámara se acerca hasta antes de la pared y vuelve despacio
   let k=1;const L=des.distanceTo(piv);
   for(const o of [[0,0,0],[r.x*.3*sh,r.y*.3*sh,r.z*.3*sh],[u.x*.25,u.y*.25,u.z*.25]]){

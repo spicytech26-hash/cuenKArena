@@ -629,14 +629,14 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 .vsay p{margin:0;min-height:44px;font-size:15px;font-style:italic;line-height:1.35;color:var(--bone)}
 .vsay p.say{animation:vSay .5s ease-out}
 @keyframes vSay{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-.vEyes{transform-box:fill-box;transform-origin:center;animation:vBlink 6s infinite;filter:drop-shadow(0 0 5px #8dff3a)}
-.vEyes.dark{filter:none}
+.vEyes{transform-box:fill-box;transform-origin:center;animation:vBlink 6s infinite;stroke:#8dff3a;stroke-opacity:.35;stroke-width:4}
+.vEyes.dark{stroke:none}
 @keyframes vBlink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
 .vTent{transform-box:fill-box;animation:vSway 6.5s ease-in-out infinite alternate}
 .vTent.l{transform-origin:100% 0}.vTent.r{transform-origin:0 0;animation-delay:-3s}
 @keyframes vSway{from{transform:rotate(-2.6deg)}to{transform:rotate(2.6deg)}}
 .vBeard{transform-box:fill-box;transform-origin:50% 0;animation:vSway 4.5s ease-in-out infinite alternate}
-.vBody{transform-box:fill-box;transform-origin:50% 100%;animation:vBreathe 5s ease-in-out infinite}
+.vBody{transform-box:fill-box;transform-origin:50% 100%}
 @keyframes vBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.012,1.008)}}
 .vLamp .glow{animation:vFlick 2.6s steps(1) infinite}
 @keyframes vFlick{0%{opacity:1}12%{opacity:.78}20%{opacity:.95}41%{opacity:.7}55%{opacity:1}78%{opacity:.85}100%{opacity:1}}
@@ -811,7 +811,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 #deathBox .rev:not(:empty)::before{content:"//  "}#deathBox .rev:not(:empty)::after{content:"  //"}
 #deathBox .small{color:var(--bone);opacity:.8;margin-top:8px;font-size:13px;letter-spacing:.08em}
 #deathBox.in{animation:deathIn .45s cubic-bezier(.2,1.3,.4,1)}
-@keyframes deathIn{from{opacity:0;transform:scale(1.18) translateY(-14px);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+@keyframes deathIn{from{opacity:0;transform:scale(1.18) translateY(-14px)}to{opacity:1;transform:none}}
 #deathBox.spec{padding:10px 0;background:linear-gradient(90deg,transparent,rgba(30,4,6,.7) 20%,rgba(30,4,6,.7) 80%,transparent)}
 #deathBox.spec .big{font-size:clamp(16px,2.2vw,26px);text-shadow:0 2px 0 var(--b2)}
 #deathBox.spec .rev,#deathBox.spec .weap{display:none}
@@ -824,7 +824,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 #board tr.me td{color:var(--pump2);background:rgba(255,122,26,.08)}
 /* ---- victoria / fin de partida: "JUGADOR ha ganado" en grande ---- */
 #inter{background:radial-gradient(ellipse at 50% 18%,rgba(110,8,10,.55),rgba(14,4,6,.93) 62%,rgba(3,1,2,.97))}
-#inter::before{content:"";position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(115deg,transparent 0 46px,rgba(212,18,15,.045) 46px 48px);animation:interSlide 14s linear infinite}
+#inter::before{content:"";position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(115deg,transparent 0 46px,rgba(212,18,15,.045) 46px 48px)}
 @keyframes interSlide{to{background-position:240px 0}}
 #interK{font-size:12px;letter-spacing:.6em;text-transform:uppercase;color:var(--pump);text-align:center;display:flex;align-items:center;gap:16px;width:min(560px,90%);margin-bottom:6px}
 #interK::before,#interK::after{content:"";flex:1;height:2px;background:linear-gradient(90deg,transparent,var(--blood))}
@@ -833,7 +833,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 #interT .wn{display:block;font-size:clamp(40px,9.5vw,118px);letter-spacing:.03em;color:inherit;text-shadow:0 5px 0 var(--b2),0 0 50px rgba(212,18,15,.6);overflow-wrap:anywhere}
 #interT .wv{display:block;margin-top:6px;font-size:clamp(22px,4.2vw,50px);letter-spacing:.34em;color:var(--pump2);text-shadow:0 3px 0 #2a1205,0 0 24px rgba(255,122,26,.45)}
 #interT.in{animation:winSlam .8s cubic-bezier(.2,1.25,.4,1) both}
-@keyframes winSlam{0%{opacity:0;transform:translateY(-90px) scale(1.5);filter:blur(12px)}55%{opacity:1;transform:translateY(0) scale(.96);filter:none}70%{transform:translate(-6px,3px)}85%{transform:translate(4px,-2px)}100%{transform:none}}
+@keyframes winSlam{0%{opacity:0;transform:translateY(-90px) scale(1.5)}55%{opacity:1;transform:translateY(0) scale(.96)}70%{transform:translate(-6px,3px)}85%{transform:translate(4px,-2px)}100%{transform:none}}
 #interTabW{background:var(--plateD);border:0;border-top:2px solid var(--blood)}
 #interTab th{background:#12060a;color:#b79d86}
 #interTab tr.me td{background:rgba(255,122,26,.13);color:var(--pump2)}
@@ -860,12 +860,23 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 .mmC{background:#14080b;border-color:#3a1418}.mmC:hover,.mmC:focus-visible{border-color:var(--pump)}
 .mmC .ph{background:linear-gradient(135deg,#2a1014,#0a0406)}.mmC kbd{border-color:var(--pump2);color:var(--pump2)}
 #mmMsg{color:#b79d86}
-@media (prefers-reduced-motion:reduce){#deathBox.in,#interT.in,#inter::before{animation:none}}
+@media (prefers-reduced-motion:reduce){#deathBox.in,#interT.in{animation:none}}
 /* botones del fin de partida y tienda un poco más anchos para que no se corten los nombres */
 .shrow .scards .card{width:206px}
 #inter .btn{font-family:var(--display);font-size:20px;letter-spacing:.08em;text-transform:uppercase;padding:10px 28px;background:#1a0b10;color:var(--bone);border:0;box-shadow:none;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);transition:filter .12s,transform .12s}
 #inter .btn.primary{background:linear-gradient(var(--blood),#8a0a0a);color:#fff}
 #inter .btn:hover{filter:brightness(1.3);transform:translateY(-2px)}
+
+/* ---- rendimiento: el HUD fijo no usa clip-path (cada uno sería una capa con máscara sobre el WebGL); las esquinas cortadas son degradados ---- */
+.stat{clip-path:none;background:linear-gradient(225deg,transparent 9px,rgba(16,7,10,.88) 9.5px)}
+.cell{clip-path:none;background:linear-gradient(135deg,transparent 11px,rgba(16,7,10,.9) 11.5px) left/50% 100% no-repeat,linear-gradient(315deg,transparent 11px,rgba(16,7,10,.9) 11.5px) right/50% 100% no-repeat}
+.cell::after{left:0;right:11px}
+.slot{clip-path:none;background:linear-gradient(315deg,transparent 8px,rgba(22,9,12,.8) 8.5px)}
+.slot.on{background:linear-gradient(315deg,transparent 8px,rgba(70,26,8,.9) 8.5px)}
+#feed div{clip-path:none;background:linear-gradient(135deg,transparent 10px,rgba(22,9,12,.85) 10.5px)}
+#feed .me{background:linear-gradient(135deg,transparent 10px,rgba(80,32,8,.9) 10.5px)}
+#shopHint,#kickHint,#mapHint{clip-path:none;background:linear-gradient(135deg,transparent 8px,rgba(22,9,12,.8) 8.5px)}
+#pick,#grabHint{clip-path:none;background:linear-gradient(315deg,transparent 8px,rgba(22,9,12,.85) 8.5px)}
 </style>
 
 <canvas id="c"></canvas>
@@ -4142,8 +4153,10 @@ function iconStep(){
   iconI++;return true;
 }
 function shopIcons(){while(iconStep());return iconCache;}
-// se llama en el primer spawn: genera los íconos de a uno, en ratos libres, para que B no tenga que hacerlo
-function warmIcons(){if(!iconStep())return;setTimeout(warmIcons,70);}
+// se llama un rato después de cargar la página (en el menú) y, si falta, en el primer spawn: genera los íconos de a uno y arma la tienda, para que B no tenga que hacerlo
+let warmBusy=false;
+function warmStep(){if(!iconStep()){warmBusy=false;try{buildShop();}catch(e){}return;}setTimeout(warmStep,70);}
+function warmIcons(){if(warmBusy)return;warmBusy=true;warmStep();}
 const VEND={
   open:['¿Qué buscás, forastero?','Las monedas hablan. Los muertos escuchan.','Elegí rápido: algo te está mirando.','Pasá, pasá. No muerdo… casi nunca.'],
   buy:['Una elección sabia… para quien todavía respira.','El precio ya está pagado. La deuda, no.','Que te sirva antes de que te alcance.','Hmm. Tus manos tiemblan. Tu puntería también.'],
@@ -5859,7 +5872,10 @@ function attract(dt){attractT+=dt*.06;const club=level&&level.club;const R0=club
 function frame(now){
   requestAnimationFrame(frame);
   const raw=(now-last)/1000,dt=Math.min(.05,raw);last=now;G.time+=dt;
-  if(inGame&&!paused&&raw<.5&&!G.shopOn){DR.acc+=raw;DR.n++;
+  // la resolución dinámica solo mira cuadros "normales": un tirón suelto (morir, abrir la tienda, cambiar de mapa) no la baja,
+  // y al cambiar de estado (vivo/muerto, tienda, pausa, fin de partida) se vuelve a empezar la cuenta
+  const drSt=(me.alive?1:0)|(G.shopOn?2:0)|(paused?4:0)|(matchState==='inter'?8:0);if(drSt!==DR.st){DR.st=drSt;DR.acc=DR.n=0;}
+  if(inGame&&!paused&&raw<.1&&!G.shopOn){DR.acc+=raw;DR.n++;
     if(DR.acc>=1.5){const avg=DR.acc/DR.n,t=performance.now();DR.fps=Math.round(1/avg);DR.acc=DR.n=0;
       if(avg>1/50&&DR.s>.75){if(t-DR.upT<9000)DR.block=t+45000;DR.s=Math.max(.75,DR.s-.08);DR.good=0;resize();}
       else if(avg<1/57&&DR.s<1&&t>DR.block){if(++DR.good>=3){DR.good=0;DR.s=Math.min(1,DR.s+.05);DR.upT=t;resize();}}
@@ -5875,11 +5891,13 @@ function frame(now){
   updClub(dt,beatNow());musicTick();updFlags();
   updEffects(dt);renderLocker(dt);
   updLightSlots(dt);
+  if(inGame&&paused&&(G.pf=((G.pf||0)+1)%3))return;   // en pausa la escena está quieta: se redibuja a 1/3 de los cuadros
   if(G.shopOn)return;   // con la tienda abierta la escena 3D está tapada: no se dibuja (así abrir B no pesa)
   renderer.clear();renderer.render(scene,camera);
   if(inGame&&!me.alive&&G.pov)povGun(paused?0:dt);   // arma del que te mató (o del que mirás) en primera persona
   if(inGame&&(me.alive||G.pov)&&TP.blend<.5){renderer.clearDepth();renderer.render(wScene,wCam);}   // en tercera persona no hay arma ni manos en pantalla
 }
 requestAnimationFrame(frame);
+setTimeout(warmIcons,2500);   // los íconos de la tienda se arman mientras estás en el menú
 })();
 </script>

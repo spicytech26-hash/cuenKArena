@@ -29,8 +29,10 @@ function iconStep(){
   iconI++;return true;
 }
 function shopIcons(){while(iconStep());return iconCache;}
-// se llama en el primer spawn: genera los íconos de a uno, en ratos libres, para que B no tenga que hacerlo
-function warmIcons(){if(!iconStep())return;setTimeout(warmIcons,70);}
+// se llama un rato después de cargar la página (en el menú) y, si falta, en el primer spawn: genera los íconos de a uno y arma la tienda, para que B no tenga que hacerlo
+let warmBusy=false;
+function warmStep(){if(!iconStep()){warmBusy=false;try{buildShop();}catch(e){}return;}setTimeout(warmStep,70);}
+function warmIcons(){if(warmBusy)return;warmBusy=true;warmStep();}
 const VEND={
   open:['¿Qué buscás, forastero?','Las monedas hablan. Los muertos escuchan.','Elegí rápido: algo te está mirando.','Pasá, pasá. No muerdo… casi nunca.'],
   buy:['Una elección sabia… para quien todavía respira.','El precio ya está pagado. La deuda, no.','Que te sirva antes de que te alcance.','Hmm. Tus manos tiemblan. Tu puntería también.'],

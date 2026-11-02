@@ -621,14 +621,14 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 .vsay p{margin:0;min-height:44px;font-size:15px;font-style:italic;line-height:1.35;color:var(--bone)}
 .vsay p.say{animation:vSay .5s ease-out}
 @keyframes vSay{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-.vEyes{transform-box:fill-box;transform-origin:center;animation:vBlink 6s infinite;filter:drop-shadow(0 0 5px #8dff3a)}
-.vEyes.dark{filter:none}
+.vEyes{transform-box:fill-box;transform-origin:center;animation:vBlink 6s infinite;stroke:#8dff3a;stroke-opacity:.35;stroke-width:4}
+.vEyes.dark{stroke:none}
 @keyframes vBlink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
 .vTent{transform-box:fill-box;animation:vSway 6.5s ease-in-out infinite alternate}
 .vTent.l{transform-origin:100% 0}.vTent.r{transform-origin:0 0;animation-delay:-3s}
 @keyframes vSway{from{transform:rotate(-2.6deg)}to{transform:rotate(2.6deg)}}
 .vBeard{transform-box:fill-box;transform-origin:50% 0;animation:vSway 4.5s ease-in-out infinite alternate}
-.vBody{transform-box:fill-box;transform-origin:50% 100%;animation:vBreathe 5s ease-in-out infinite}
+.vBody{transform-box:fill-box;transform-origin:50% 100%}
 @keyframes vBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.012,1.008)}}
 .vLamp .glow{animation:vFlick 2.6s steps(1) infinite}
 @keyframes vFlick{0%{opacity:1}12%{opacity:.78}20%{opacity:.95}41%{opacity:.7}55%{opacity:1}78%{opacity:.85}100%{opacity:1}}
@@ -803,7 +803,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 #deathBox .rev:not(:empty)::before{content:"//  "}#deathBox .rev:not(:empty)::after{content:"  //"}
 #deathBox .small{color:var(--bone);opacity:.8;margin-top:8px;font-size:13px;letter-spacing:.08em}
 #deathBox.in{animation:deathIn .45s cubic-bezier(.2,1.3,.4,1)}
-@keyframes deathIn{from{opacity:0;transform:scale(1.18) translateY(-14px);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+@keyframes deathIn{from{opacity:0;transform:scale(1.18) translateY(-14px)}to{opacity:1;transform:none}}
 #deathBox.spec{padding:10px 0;background:linear-gradient(90deg,transparent,rgba(30,4,6,.7) 20%,rgba(30,4,6,.7) 80%,transparent)}
 #deathBox.spec .big{font-size:clamp(16px,2.2vw,26px);text-shadow:0 2px 0 var(--b2)}
 #deathBox.spec .rev,#deathBox.spec .weap{display:none}
@@ -816,7 +816,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 #board tr.me td{color:var(--pump2);background:rgba(255,122,26,.08)}
 /* ---- victoria / fin de partida: "JUGADOR ha ganado" en grande ---- */
 #inter{background:radial-gradient(ellipse at 50% 18%,rgba(110,8,10,.55),rgba(14,4,6,.93) 62%,rgba(3,1,2,.97))}
-#inter::before{content:"";position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(115deg,transparent 0 46px,rgba(212,18,15,.045) 46px 48px);animation:interSlide 14s linear infinite}
+#inter::before{content:"";position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(115deg,transparent 0 46px,rgba(212,18,15,.045) 46px 48px)}
 @keyframes interSlide{to{background-position:240px 0}}
 #interK{font-size:12px;letter-spacing:.6em;text-transform:uppercase;color:var(--pump);text-align:center;display:flex;align-items:center;gap:16px;width:min(560px,90%);margin-bottom:6px}
 #interK::before,#interK::after{content:"";flex:1;height:2px;background:linear-gradient(90deg,transparent,var(--blood))}
@@ -825,7 +825,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 #interT .wn{display:block;font-size:clamp(40px,9.5vw,118px);letter-spacing:.03em;color:inherit;text-shadow:0 5px 0 var(--b2),0 0 50px rgba(212,18,15,.6);overflow-wrap:anywhere}
 #interT .wv{display:block;margin-top:6px;font-size:clamp(22px,4.2vw,50px);letter-spacing:.34em;color:var(--pump2);text-shadow:0 3px 0 #2a1205,0 0 24px rgba(255,122,26,.45)}
 #interT.in{animation:winSlam .8s cubic-bezier(.2,1.25,.4,1) both}
-@keyframes winSlam{0%{opacity:0;transform:translateY(-90px) scale(1.5);filter:blur(12px)}55%{opacity:1;transform:translateY(0) scale(.96);filter:none}70%{transform:translate(-6px,3px)}85%{transform:translate(4px,-2px)}100%{transform:none}}
+@keyframes winSlam{0%{opacity:0;transform:translateY(-90px) scale(1.5)}55%{opacity:1;transform:translateY(0) scale(.96)}70%{transform:translate(-6px,3px)}85%{transform:translate(4px,-2px)}100%{transform:none}}
 #interTabW{background:var(--plateD);border:0;border-top:2px solid var(--blood)}
 #interTab th{background:#12060a;color:#b79d86}
 #interTab tr.me td{background:rgba(255,122,26,.13);color:var(--pump2)}
@@ -852,9 +852,20 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 .mmC{background:#14080b;border-color:#3a1418}.mmC:hover,.mmC:focus-visible{border-color:var(--pump)}
 .mmC .ph{background:linear-gradient(135deg,#2a1014,#0a0406)}.mmC kbd{border-color:var(--pump2);color:var(--pump2)}
 #mmMsg{color:#b79d86}
-@media (prefers-reduced-motion:reduce){#deathBox.in,#interT.in,#inter::before{animation:none}}
+@media (prefers-reduced-motion:reduce){#deathBox.in,#interT.in{animation:none}}
 /* botones del fin de partida y tienda un poco más anchos para que no se corten los nombres */
 .shrow .scards .card{width:206px}
 #inter .btn{font-family:var(--display);font-size:20px;letter-spacing:.08em;text-transform:uppercase;padding:10px 28px;background:#1a0b10;color:var(--bone);border:0;box-shadow:none;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);transition:filter .12s,transform .12s}
 #inter .btn.primary{background:linear-gradient(var(--blood),#8a0a0a);color:#fff}
 #inter .btn:hover{filter:brightness(1.3);transform:translateY(-2px)}
+
+/* ---- rendimiento: el HUD fijo no usa clip-path (cada uno sería una capa con máscara sobre el WebGL); las esquinas cortadas son degradados ---- */
+.stat{clip-path:none;background:linear-gradient(225deg,transparent 9px,rgba(16,7,10,.88) 9.5px)}
+.cell{clip-path:none;background:linear-gradient(135deg,transparent 11px,rgba(16,7,10,.9) 11.5px) left/50% 100% no-repeat,linear-gradient(315deg,transparent 11px,rgba(16,7,10,.9) 11.5px) right/50% 100% no-repeat}
+.cell::after{left:0;right:11px}
+.slot{clip-path:none;background:linear-gradient(315deg,transparent 8px,rgba(22,9,12,.8) 8.5px)}
+.slot.on{background:linear-gradient(315deg,transparent 8px,rgba(70,26,8,.9) 8.5px)}
+#feed div{clip-path:none;background:linear-gradient(135deg,transparent 10px,rgba(22,9,12,.85) 10.5px)}
+#feed .me{background:linear-gradient(135deg,transparent 10px,rgba(80,32,8,.9) 10.5px)}
+#shopHint,#kickHint,#mapHint{clip-path:none;background:linear-gradient(135deg,transparent 8px,rgba(22,9,12,.8) 8.5px)}
+#pick,#grabHint{clip-path:none;background:linear-gradient(315deg,transparent 8px,rgba(22,9,12,.85) 8.5px)}

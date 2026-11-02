@@ -58,7 +58,7 @@ Cada frag da ¤ 200 (¤ 100 extra si cortás una racha de 3 y ¤ 100 extra con p
 
 ## Taquilla
 
-Desde el menú: color de armadura (o uno a elección), color de visor, accesorio e **imagen en el pecho** (una foto PNG o JPG de tu dispositivo, que se recorta cuadrada al centro y se achica a 128×128 para que pese poco; cubre todo el frente del torso). En Ajustes se pueden ocultar las imágenes de los demás. El personaje de la vista previa se gira arrastrándolo (o con las flechas). Se guarda en el navegador (y en tu cuenta si iniciaste sesión) y los demás lo ven al instante.
+El personaje es un robot humanoide (casco con cuerno y visor, torso redondeado con ancla, cinturón con bolsitas, articulaciones metálicas y botas). Desde el menú elegís el color de la **armadura**, de las **partes secundarias y articulaciones** y de los **detalles y luces** (cada una con "Auto", que lo deriva del color de armadura), el color del visor, el accesorio e **imagen en el pecho** (una foto PNG o JPG de tu dispositivo, que se recorta cuadrada al centro y se achica a 128×128 para que pese poco; va en la zona plana del pecho). En Ajustes se pueden ocultar las imágenes de los demás. El personaje de la vista previa se gira arrastrándolo (o con las flechas). Se guarda en el navegador (y en tu cuenta si iniciaste sesión) y los demás lo ven al instante.
 
 ## Mira
 

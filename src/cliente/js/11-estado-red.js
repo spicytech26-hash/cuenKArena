@@ -38,8 +38,9 @@ function chatColor(id,name){const k=name||id;if(!chatCols.has(k))chatCols.set(k,
 const colorOf=id=>id===myId?(teamsMode()&&myTeam>=0?TEAMS[myTeam].c:S.skin.c):(players.get(id)||{}).color||'#eadcc4';
 
 /* =================== RED =================== */
+let pickedMap='';   // mapa elegido en el asistente de inicio (práctica); se usa una sola vez
 class LocalNet{
-  constructor(mode){const md=C.MODES[mode];this.game=new C.Game({online:false,mode,bots:S.bots,botSkill:S.skill,fraglimit:mode==='tdm'?S.tdmLimit:S.fl,timelimit:1200,map:md.maps.includes(S.map)?S.map:md.maps[0]});this.acc=0;this.id=this.game.addClient(m=>onMsg(m));}
+  constructor(mode){const md=C.MODES[mode],pm=pickedMap;pickedMap='';this.game=new C.Game({online:false,mode,bots:S.bots,botSkill:S.skill,fraglimit:mode==='tdm'?S.tdmLimit:S.fl,timelimit:1200,map:md.maps.includes(pm)?pm:md.maps.includes(S.map)?S.map:md.maps[0]});this.acc=0;this.id=this.game.addClient(m=>onMsg(m));}
   send(m){this.game.onMessage(this.id,m);}
   update(dt){if(paused)return;this.acc+=dt;let n=0;while(this.acc>=1/40&&n<3){this.game.tick(1/40);this.acc-=1/40;n++;}if(this.acc>1/40)this.acc=0;} // si un cuadro se atrasa, no se encadenan pasos extra
   close(){}
@@ -77,7 +78,9 @@ function startGame(isOnline,mode,auto){
   online=isOnline;myId=0;CLK.off=null;CLK.jit=.02;MODE=mode;myTeam=-1;FL=[];TS=[0,0];me.lvl=0;
   players.forEach((p,id)=>removePlayer(id));projs.forEach(p=>scene.remove(p.m));projs.length=0;
   scores=[];$('feed').innerHTML='';$('chatLog').innerHTML='';
-  const join=()=>{net.send({t:'join',cid:CID,name:S.name,skin:S.skin,skill:S.skill,fl:S.tdmLimit,tok:isOnline&&ACC?ACCTOK:undefined});};
+  const join=()=>{net.send({t:'join',cid:CID,name:S.name,skin:S.skin,skill:S.skill,fl:S.tdmLimit,tok:isOnline&&ACC?ACCTOK:undefined});
+    // sala vacía: el mapa elegido en el asistente se pide una sola vez con el comando /map
+    if(isOnline&&G.pendMap){net.send({t:'chat',m:'/map '+G.pendMap});G.pendMap='';}};
   if(isOnline){
     const tries=G.reTry||0;G.reTry=0;
     net=new WSNet(wsURL+'?mode='+mode,()=>{G.reTry=0;join();},(wasOk)=>{

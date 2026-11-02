@@ -97,48 +97,59 @@
     <div class="shopfoot">Ganás ¤ 200 por frag, ¤ 100 extra si cortás una racha de 3 y ¤ 100 extra con pistola. Como en Counter-Strike llevás una sola <b>arma principal</b> (tecla 1): la que comprás reemplaza a la anterior y aparecés con ella hasta que termina la partida. Pistola en el 2, cuchillo en el 3 y molotov en el 4. Con <b>E</b> cambiás tu principal por un arma tirada en el piso. <b>B</b> o <b>Esc</b> para cerrar.</div>
   </div>
 </div>
-<div id="menu">
+<div id="menu" class="go">
   <canvas id="mFx" aria-hidden="true"></canvas>
   <div class="mmoon" aria-hidden="true"></div>
   <div class="mfog" aria-hidden="true"></div>
+  <div class="mflash" aria-hidden="true"></div>
   <div class="mbox">
     <header class="mhead">
-      <svg class="memb" viewBox="0 0 120 120" aria-hidden="true">
-        <defs>
-          <radialGradient id="embG" cx="50%" cy="55%" r="55%"><stop offset="0" stop-color="#ff8a1f" stop-opacity=".55"/><stop offset="1" stop-color="#ff5a00" stop-opacity="0"/></radialGradient>
-          <linearGradient id="embP" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb347"/><stop offset=".55" stop-color="#ff7a1a"/><stop offset="1" stop-color="#b83a08"/></linearGradient>
-          <linearGradient id="embS" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6b727c"/><stop offset=".5" stop-color="#d8dde3"/><stop offset="1" stop-color="#6b727c"/></linearGradient>
-        </defs>
-        <circle cx="60" cy="62" r="58" fill="url(#embG)"/>
-        <g stroke="#0a0508" stroke-width="2.5" stroke-linejoin="round">
-          <g transform="rotate(45 60 62)"><rect x="55.5" y="2" width="9" height="112" fill="url(#embS)"/><rect x="46" y="86" width="28" height="6" fill="#3b1d12"/></g>
-          <g transform="rotate(-45 60 62)"><rect x="55.5" y="2" width="9" height="112" fill="url(#embS)"/><rect x="46" y="86" width="28" height="6" fill="#3b1d12"/></g>
-          <ellipse cx="38" cy="68" rx="21" ry="28" fill="url(#embP)"/>
-          <ellipse cx="82" cy="68" rx="21" ry="28" fill="url(#embP)"/>
-          <ellipse cx="60" cy="66" rx="25" ry="31" fill="url(#embP)"/>
-          <path d="M56 36 C56 28 60 24 66 20 L70 24 C66 27 64 31 64 36 Z" fill="#4b7a1d"/>
-        </g>
-        <g class="embface" fill="#ffe36a">
-          <polygon points="42,60 56,60 49,46"/><polygon points="64,60 78,60 71,46"/>
-          <polygon points="60,66 55,75 65,75"/>
-          <path d="M37 80 L46 75 L52 84 L60 76 L68 84 L74 75 L83 80 L78 93 L70 88 L64 97 L58 89 L52 97 L46 88 L42 93 Z"/>
-        </g>
-      </svg>
+      <div class="mglow" aria-hidden="true"></div>
       <div class="mlogo">
         <div class="kicker" id="mKick">Arena · Gungame · Team Deathmatch · Captura la bandera</div>
-        <h1 id="mTitle" aria-label="CuenkArena"><span class="mword" aria-hidden="true"><span class="lg lg1" data-t="CUENK">CUENK</span><span class="lg lg2" data-t="ARENA">ARENA</span>
-          <svg class="drips" viewBox="0 0 1000 80" preserveAspectRatio="none"><g fill="#b3120b">
-            <path class="dr" style="--d:0s;--t:5.2s" d="M70 0h14v46a7 7 0 0 1-14 0z"/><path class="dr" style="--d:1.3s;--t:6.4s" d="M205 0h10v30a5 5 0 0 1-10 0z"/>
-            <path class="dr" style="--d:.6s;--t:4.8s" d="M330 0h16v58a8 8 0 0 1-16 0z"/><path class="dr" style="--d:2.1s;--t:6s" d="M470 0h10v26a5 5 0 0 1-10 0z"/>
-            <path class="dr" style="--d:.2s;--t:5.6s" d="M590 0h14v40a7 7 0 0 1-14 0z"/><path class="dr" style="--d:1.7s;--t:4.6s" d="M720 0h10v34a5 5 0 0 1-10 0z"/>
-            <path class="dr" style="--d:.9s;--t:6.2s" d="M850 0h16v54a8 8 0 0 1-16 0z"/><path class="dr" style="--d:2.6s;--t:5s" d="M940 0h10v24a5 5 0 0 1-10 0z"/>
-          </g></svg></span><small>HALLOWEEN UPDATE <i>·</i> NOCHE DE BRUJAS</small></h1>
+        <h1 id="mTitle" aria-label="CuenkArena">
+          <div class="lgWrap">
+          <svg class="lgBase" viewBox="0 0 1000 230" aria-hidden="true">
+            <defs>
+              <text id="lgT" x="500" y="172" text-anchor="middle" font-family="'Black Ops One','Impact','Arial Black',sans-serif" font-size="196" textLength="964" lengthAdjust="spacingAndGlyphs">CUENKARENA</text>
+              <clipPath id="lgClip"><use href="#lgT"/></clipPath>
+              <linearGradient id="gMetal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4eadb"/><stop offset=".3" stop-color="#bdb09a"/><stop offset=".5" stop-color="#6f6556"/><stop offset=".62" stop-color="#cdbfa6"/><stop offset="1" stop-color="#4a4034"/></linearGradient>
+              <linearGradient id="gBlood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff4330"/><stop offset=".45" stop-color="#d4120f"/><stop offset="1" stop-color="#6e0407"/></linearGradient>
+              <filter id="lgF" x="-3%" y="-8%" width="106%" height="124%" color-interpolation-filters="sRGB">
+                <feTurbulence type="fractalNoise" baseFrequency=".04" numOctaves="2" seed="9" result="n"/>
+                <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G" result="d"/>
+                <feGaussianBlur in="d" stdDeviation="2.4" result="b"/>
+                <feSpecularLighting in="b" surfaceScale="7" specularConstant=".95" specularExponent="18" lighting-color="#ffe6c8" result="s"><feDistantLight azimuth="235" elevation="46"/></feSpecularLighting>
+                <feComposite in="s" in2="d" operator="in" result="s2"/>
+                <feComposite in="d" in2="s2" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+              </filter>
+            </defs>
+            <g filter="url(#lgF)">
+              <use href="#lgT" fill="#0d0203" stroke="#0d0203" stroke-width="18" stroke-linejoin="round" transform="translate(0,11)"/>
+              <use href="#lgT" fill="#4d0709" stroke="#4d0709" stroke-width="9" stroke-linejoin="round" transform="translate(0,6)"/>
+              <use href="#lgT" fill="url(#gMetal)" stroke="#080102" stroke-width="3" stroke-linejoin="round"/>
+              <g clip-path="url(#lgClip)">
+                <path d="M106 63 l-4 21 l-12 20 l15 25 l-15 19 l-3 18 M251 42 l6 32 l-3 20 l-6 25 l14 23 l5 24 M370 68 l7 19 l-6 22 l-13 30 l-12 16 l5 17 M503 64 l13 32 l9 20 l-14 14 l8 24 l13 19 M635 76 l-17 32 l-16 32 l2 28 l-10 25 l7 28 M775 41 l-13 28 l13 31 l9 22 l13 22 l13 25 M904 65 l8 22 l17 34 l14 18 l-0 25 l-1 18" fill="none" stroke="#000" stroke-width="2.2" stroke-linejoin="bevel" opacity=".55"/>
+                <path d="M0 0H1000V70 Q973 76 946 75 L940 72 V110 a10 10 0 0 1 -20 0 V72 L914 70 Q893 79 872 70 L866 72 V140 a8 8 0 0 1 -16 0 V72 L844 70 Q823 83 802 72 L796 72 V118 a6 6 0 0 1 -12 0 V72 L778 70 Q755 79 732 74 L726 72 V166 a10 10 0 0 1 -20 0 V72 L700 70 Q676 84 652 72 L646 72 V100 a6 6 0 0 1 -12 0 V72 L628 70 Q606 83 584 73 L578 72 V150 a8 8 0 0 1 -16 0 V72 L556 70 Q533 84 510 70 L504 72 V122 a6 6 0 0 1 -12 0 V72 L486 70 Q462 80 437 74 L431 72 V174 a11 11 0 0 1 -22 0 V72 L403 70 Q378 83 352 68 L346 72 V96 a8 8 0 0 1 -16 0 V72 L324 70 Q299 83 274 72 L268 72 V114 a6 6 0 0 1 -12 0 V72 L250 70 Q231 85 212 74 L206 72 V158 a10 10 0 0 1 -20 0 V72 L180 70 Q155 77 130 72 L124 72 V102 a6 6 0 0 1 -12 0 V72 L106 70 Q80 85 54 74 L48 72 V132 a8 8 0 0 1 -16 0 V72 L26 70 Q13 78 0 68Z" fill="url(#gBlood)"/>
+                <circle cx="150" cy="104" r="5" fill="#b3100c"/><circle cx="388" cy="118" r="4" fill="#b3100c"/><circle cx="612" cy="98" r="6" fill="#b3100c"/><circle cx="806" cy="122" r="4" fill="#b3100c"/>
+              </g>
+            </g>
+          </svg>
+          <svg class="lgDrips" viewBox="0 0 1000 230" preserveAspectRatio="none" aria-hidden="true"><g fill="#c4120f">
+            <path class="dr" style="--d:0s;--t:5.2s" d="M190 168h12v46a6 6 0 0 1-12 0z"/><path class="dr" style="--d:1.3s;--t:6.4s" d="M414 168h14v62a7 7 0 0 1-14 0z"/>
+            <path class="dr" style="--d:.6s;--t:4.8s" d="M494 168h10v30a5 5 0 0 1-10 0z"/><path class="dr" style="--d:2.1s;--t:6s" d="M566 168h12v52a6 6 0 0 1-12 0z"/>
+            <path class="dr" style="--d:.2s;--t:5.6s" d="M712 168h14v58a7 7 0 0 1-14 0z"/><path class="dr" style="--d:1.7s;--t:4.6s" d="M854 168h12v36a6 6 0 0 1-12 0z"/>
+            <path class="dr" style="--d:.9s;--t:6.2s" d="M928 168h12v48a6 6 0 0 1-12 0z"/><path class="dr" style="--d:2.6s;--t:5s" d="M116 168h10v28a5 5 0 0 1-10 0z"/>
+          </g></svg>
+          </div>
+          <small>HALLOWEEN UPDATE <i>//</i> NOCHE DE BRUJAS</small>
+        </h1>
       </div>
     </header>
     <div class="mmain">
       <nav class="mnav" aria-label="Menú principal">
         <div id="acctBox" hidden></div>
-        <div class="idrow"><label for="pName">Tu nombre</label><input id="pName" maxlength="16" autocomplete="off" spellcheck="false"></div>
+        <div class="idrow"><label for="pName">Jugador</label><input id="pName" maxlength="16" autocomplete="off" spellcheck="false"></div>
         <div class="mrow">
           <button id="bOnline" class="btn primary" type="button" disabled>Jugar online</button>
           <button id="bOffline" class="btn" type="button">Práctica con bots</button>
@@ -157,10 +168,31 @@
       <section class="mpane">
         <div id="modePanel" class="panel" hidden>
           <div class="ptitle" id="modeTitle">Elegí el modo</div>
-          <div class="srow" id="modeLimitRow"><span>Bajas para ganar (Team Deathmatch)</span><div class="seg" id="mLimit" role="group" aria-label="Bajas para ganar"><button type="button" data-v="25">25</button><button type="button" data-v="50">50</button><button type="button" data-v="75">75</button><button type="button" data-v="100">100</button><input type="number" id="mLimitN" class="numin" min="5" max="500" step="1" aria-label="Otra cantidad"></div></div>
-          <div class="srow" id="modeSkillRow"><span>Dificultad de los bots</span><div class="seg" id="mSkill" role="group" aria-label="Dificultad de los bots"><button type="button" data-v="0">Fácil</button><button type="button" data-v="1">Normal</button><button type="button" data-v="2">Difícil</button><button type="button" data-v="3">Pesadilla</button></div></div>
-          <div class="modes" id="modeGrid"></div>
-          <p class="note" id="modeNote"></p>
+          <ol class="crumbs" id="wizCrumbs" aria-label="Pasos"></ol>
+          <div class="wstep" id="wsBots" hidden>
+            <p class="note">¿Contra cuántos bots querés jugar? Después los podés sumar o sacar en plena partida desde Ajustes.</p>
+            <div class="botpick">
+              <button type="button" class="bpb" id="wbMinus" aria-label="Menos bots">−</button>
+              <output id="wbN" aria-live="polite">5</output>
+              <button type="button" class="bpb" id="wbPlus" aria-label="Más bots">+</button>
+            </div>
+            <input type="range" id="wbR" min="0" max="15" step="1" aria-label="Cantidad de bots">
+            <div class="seg chips" id="wbChips" role="group" aria-label="Cantidades rápidas"><button type="button" data-v="0">Solo yo</button><button type="button" data-v="3">3</button><button type="button" data-v="5">5</button><button type="button" data-v="8">8</button><button type="button" data-v="12">12</button><button type="button" data-v="15">15</button></div>
+            <div class="srow"><span>Dificultad de los bots</span><div class="seg" id="wbSkill" role="group" aria-label="Dificultad de los bots"><button type="button" data-v="0">Fácil</button><button type="button" data-v="1">Normal</button><button type="button" data-v="2">Difícil</button><button type="button" data-v="3">Pesadilla</button></div></div>
+            <div class="wnav"><button type="button" class="btn go" id="wbOk">Siguiente · elegir modo</button></div>
+          </div>
+          <div class="wstep" id="wsMode" hidden>
+            <div class="srow" id="modeLimitRow"><span>Bajas para ganar (Team Deathmatch)</span><div class="seg" id="mLimit" role="group" aria-label="Bajas para ganar"><button type="button" data-v="25">25</button><button type="button" data-v="50">50</button><button type="button" data-v="75">75</button><button type="button" data-v="100">100</button><input type="number" id="mLimitN" class="numin" min="5" max="500" step="1" aria-label="Otra cantidad"></div></div>
+            <div class="srow" id="modeSkillRow"><span>Dificultad de los bots</span><div class="seg" id="mSkill" role="group" aria-label="Dificultad de los bots"><button type="button" data-v="0">Fácil</button><button type="button" data-v="1">Normal</button><button type="button" data-v="2">Difícil</button><button type="button" data-v="3">Pesadilla</button></div></div>
+            <div class="modes" id="modeGrid"></div>
+            <p class="note" id="modeNote"></p>
+            <div class="wnav" id="wmBack" hidden><button type="button" class="btn" id="wmBackBtn">‹ Cambiar cantidad de bots</button></div>
+          </div>
+          <div class="wstep" id="wsMap" hidden>
+            <div class="maps" id="mapGrid"></div>
+            <p class="note" id="mapNote"></p>
+            <div class="wnav"><button type="button" class="btn" id="wpBack">‹ Cambiar modo</button></div>
+          </div>
         </div>
         <div id="limitPanel" class="panel" hidden>
           <div class="ptitle">Team Deathmatch · bajas para ganar</div>
@@ -170,13 +202,17 @@
         <div id="lockerPanel" class="panel" hidden>
           <div class="ptitle">Taquilla</div>
           <div class="locker">
-            <canvas id="lockPrev" width="440" height="520"></canvas>
+            <div class="lockdoor">
+              <div class="vents" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+              <canvas id="lockPrev" width="440" height="520"></canvas>
+              <div class="lockplate" aria-hidden="true">Taquilla Nº <b>07</b></div>
+            </div>
             <div class="lockopts">
               <div class="lab">Armadura</div><div class="sw-row" id="swBody"></div>
               <div class="lab">Visor</div><div class="sw-row" id="swVisor"></div>
               <div class="lab">Accesorio</div><div class="seg" id="segAcc" role="group" aria-label="Accesorio" style="grid-column:auto"></div>
               <div class="lab">Imagen en el pecho</div>
-              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <div class="chestrow">
                 <img id="chestPrev" alt="Imagen del pecho" width="56" height="56" style="width:56px;height:56px;border:1px solid #000;background:#2e2a26;object-fit:cover" hidden>
                 <label class="btn" for="chestFile" style="cursor:pointer">Elegir foto…</label>
                 <input type="file" id="chestFile" accept="image/png,image/jpeg,image/webp" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
@@ -189,53 +225,56 @@
         </div>
         <div id="settings" class="panel" hidden>
           <div class="ptitle">Ajustes</div>
-          <div class="stabs" id="sTabs" role="tablist" aria-label="Secciones de los ajustes">
-            <button type="button" role="tab" data-tab="ctl" aria-selected="true">Controles</button>
-            <button type="button" role="tab" data-tab="vid" aria-selected="false">Video</button>
-            <button type="button" role="tab" data-tab="aud" aria-selected="false">Audio</button>
-            <button type="button" role="tab" data-tab="mir" aria-selected="false">Mira</button>
-            <button type="button" role="tab" data-tab="jue" aria-selected="false">Juego</button>
-          </div>
-          <div class="sec" data-sec="ctl">
-            <div class="sensbox">
-              <div class="sensh">Sensibilidad del mouse</div>
-              <div class="sensrow"><label for="sSens">Normal</label><input type="range" id="sSens" min="0.1" max="4" step="0.05"><input type="number" id="sSensN" class="numin" min="0.05" max="10" step="0.01" aria-label="Sensibilidad normal, valor exacto"></div>
-              <div class="sensrow"><label for="sSensZ">Con zoom <small>francotirador</small></label><input type="range" id="sSensZ" min="0.2" max="3" step="0.05"><input type="number" id="sSensZN" class="numin" min="0.1" max="5" step="0.01" aria-label="Sensibilidad con zoom, valor exacto"></div>
-              <p class="note" id="sensInfo"></p>
-              <div id="sensPad" aria-label="Zona de prueba de sensibilidad">
-                <div class="padTop"><span id="padMode">Normal</span><b id="padDeg">0°</b></div>
-                <div class="padHint">Mové el mouse acá · mantené click derecho para probar con zoom</div>
+          <div class="sbody">
+            <div class="stabs" id="sTabs" role="tablist" aria-label="Secciones de los ajustes">
+              <button type="button" role="tab" data-tab="ctl" aria-selected="true">Controles</button>
+              <button type="button" role="tab" data-tab="vid" aria-selected="false">Video</button>
+              <button type="button" role="tab" data-tab="aud" aria-selected="false">Audio</button>
+              <button type="button" role="tab" data-tab="mir" aria-selected="false">Mira</button>
+              <button type="button" role="tab" data-tab="jue" aria-selected="false">Juego</button>
+            </div>
+            <div class="secs">
+              <div class="sec" data-sec="ctl">
+                <div class="sensbox">
+                  <div class="sensh">Sensibilidad del mouse</div>
+                  <div class="sensrow"><label for="sSens">Normal<small>mirando libre</small></label><input type="range" id="sSens" min="0.1" max="4" step="0.05"><input type="number" id="sSensN" class="numin" min="0.05" max="10" step="0.01" aria-label="Sensibilidad normal, valor exacto"></div>
+                  <div class="sensrow"><label for="sSensZ">Al apuntar<small>click derecho · francotirador</small></label><input type="range" id="sSensZ" min="0.2" max="3" step="0.05"><input type="number" id="sSensZN" class="numin" min="0.1" max="5" step="0.01" aria-label="Sensibilidad al apuntar, valor exacto"></div>
+                  <p class="note" id="sensInfo"></p>
+                  <div id="sensPad" aria-label="Zona de prueba de sensibilidad">
+                    <div class="padTop"><span id="padMode">Normal</span><b id="padDeg">0°</b></div>
+                    <div class="padHint">Mové el mouse acá · mantené click derecho para probar al apuntar · doble click: reiniciar</div>
+                  </div>
+                </div>
+                <div class="srow"><label for="sInv">Invertir eje vertical<small>Mouse hacia arriba = mirar hacia abajo</small></label><input type="checkbox" id="sInv"></div>
+                <div class="srow"><label for="sHop">Salto automático (bunny hop)<small>Mantené Espacio para seguir saltando</small></label><input type="checkbox" id="sHop"></div>
+              </div>
+              <div class="sec" data-sec="vid" hidden>
+                <div class="srow"><label for="sFov">Campo de visión</label><input type="range" id="sFov" min="70" max="120" step="1"><output id="oFov"></output></div>
+                <div class="srow"><span>Calidad gráfica</span><div class="seg" id="sQ" role="group" aria-label="Calidad"><button type="button" data-v="1">Alta</button><button type="button" data-v="0">Liviana</button></div></div>
+                <div class="srow"><span>Sombras</span><div class="seg" id="sSh" role="group" aria-label="Sombras"><button type="button" data-v="1">Sí</button><button type="button" data-v="0">No</button></div></div>
+                <div class="srow"><label for="sFps">Mostrar FPS<small>Cuadros por segundo, arriba en pantalla</small></label><input type="checkbox" id="sFps"></div>
+                <div class="srow"><label for="sFs">Pantalla completa al jugar<small>Permite agacharse con Ctrl sin que el navegador cierre la pestaña</small></label><input type="checkbox" id="sFs"></div>
+              </div>
+              <div class="sec" data-sec="aud" hidden>
+                <div class="srow"><label for="sVol">Volumen general</label><input type="range" id="sVol" min="0" max="1" step="0.05"><output id="oVol"></output></div>
+                <div class="srow"><label for="sMus">Música del boliche</label><input type="range" id="sMus" min="0" max="1" step="0.05"><output id="oMus"></output></div>
+              </div>
+              <div class="sec" data-sec="mir" hidden>
+                <div class="srow"><span>Forma</span><div class="xhgrid" id="xhGrid" role="group" aria-label="Forma de la mira"></div></div>
+                <div class="srow"><span>Color</span><div class="sw-row" id="xhCols" style="grid-column:2 / 4"></div></div>
+                <div class="srow"><label for="sXz">Tamaño</label><input type="range" id="sXz" min="0.5" max="2.5" step="0.05"><output id="oXz"></output></div>
+                <div class="srow"><span>Vista previa</span><div id="xhPrev"><div id="xhPrevIn"></div></div></div>
+              </div>
+              <div class="sec" data-sec="jue" hidden>
+                <div class="srow"><label for="sImg">Imágenes del pecho<small>Ver las que los demás tienen puestas</small></label><input type="checkbox" id="sImg"></div>
+                <div class="ptitle small">En plena partida de práctica</div>
+                <div class="srow"><span>Mapa</span><div class="seg mapseg" id="sMap" role="group" aria-label="Mapa"><button type="button" data-v="represa">La Represa</button><button type="button" data-v="panymanteca">Humita</button><button type="button" data-v="lacuenca">La Cuenca</button></div></div>
+                <div class="srow"><span>Bots en la arena</span><div class="stepper"><button type="button" id="bMinus" aria-label="Sacar un bot">−</button><output id="oBots"></output><button type="button" id="bPlus" aria-label="Agregar un bot">+</button></div></div>
+                <div class="srow"><span>Dificultad</span><div class="seg" id="sSkill" role="group" aria-label="Dificultad"><button type="button" data-v="0">Fácil</button><button type="button" data-v="1">Normal</button><button type="button" data-v="2">Difícil</button><button type="button" data-v="3">Pesadilla</button></div></div>
+                <div class="srow"><span>Límite de frags</span><div class="seg" id="sFl" role="group" aria-label="Límite de frags"><button type="button" data-v="10">10</button><button type="button" data-v="20">20</button><button type="button" data-v="30">30</button><button type="button" data-v="50">50</button></div></div>
+                <p class="note">El mapa vale para Arena, Gungame y Team Deathmatch; Captura la bandera se juega en El Puente. En la práctica, los bots se agregan o sacan al instante con <b>+</b> y <b>−</b>. Online, desde el chat: <b>/bots 6</b>, <b>/skill 2</b>, <b>/fraglimit 30</b>, <b>/caplimit 3</b>, <b>/map pan</b>.</p>
               </div>
             </div>
-            <div class="srow"><label for="sInv">Invertir eje vertical<small>Mouse hacia arriba = mirar hacia abajo</small></label><input type="checkbox" id="sInv"></div>
-            <div class="srow"><label for="sHop">Salto automático (bunny hop)<small>Mantené Espacio para seguir saltando</small></label><input type="checkbox" id="sHop"></div>
-          </div>
-          <div class="sec" data-sec="vid" hidden>
-            <div class="srow"><label for="sFov">Campo de visión</label><input type="range" id="sFov" min="70" max="120" step="1"><output id="oFov"></output></div>
-            <div class="srow"><span>Calidad gráfica</span><div class="seg" id="sQ" role="group" aria-label="Calidad"><button type="button" data-v="1">Alta</button><button type="button" data-v="0">Liviana</button></div></div>
-            <div class="srow"><span>Sombras</span><div class="seg" id="sSh" role="group" aria-label="Sombras"><button type="button" data-v="1">Sí</button><button type="button" data-v="0">No</button></div></div>
-            <div class="srow"><label for="sFps">Mostrar FPS<small>Cuadros por segundo, arriba en pantalla</small></label><input type="checkbox" id="sFps"></div>
-            <div class="srow"><label for="sFs">Pantalla completa al jugar<small>Permite agacharse con Ctrl sin que el navegador cierre la pestaña</small></label><input type="checkbox" id="sFs"></div>
-          </div>
-          <div class="sec" data-sec="aud" hidden>
-            <div class="srow"><label for="sVol">Volumen general</label><input type="range" id="sVol" min="0" max="1" step="0.05"><output id="oVol"></output></div>
-            <div class="srow"><label for="sMus">Música del boliche</label><input type="range" id="sMus" min="0" max="1" step="0.05"><output id="oMus"></output></div>
-          </div>
-          <div class="sec" data-sec="mir" hidden>
-            <div class="srow"><span>Forma</span><div class="xhgrid" id="xhGrid" role="group" aria-label="Forma de la mira"></div></div>
-            <div class="srow"><span>Color</span><div class="sw-row" id="xhCols" style="grid-column:2 / 4"></div></div>
-            <div class="srow"><label for="sXz">Tamaño</label><input type="range" id="sXz" min="0.5" max="2.5" step="0.05"><output id="oXz"></output></div>
-            <div class="srow"><span>Vista previa</span><div id="xhPrev"><div id="xhPrevIn"></div></div></div>
-          </div>
-          <div class="sec" data-sec="jue" hidden>
-            <div class="srow"><label for="sImg">Imágenes del pecho<small>Ver las que los demás tienen puestas</small></label><input type="checkbox" id="sImg"></div>
-            <div class="sep"></div>
-            <div class="ptitle">Práctica con bots</div>
-            <div class="srow"><span>Mapa</span><div class="seg mapseg" id="sMap" role="group" aria-label="Mapa"><button type="button" data-v="represa">La Represa</button><button type="button" data-v="panymanteca">Humita</button><button type="button" data-v="lacuenca">La Cuenca</button></div></div>
-            <div class="srow"><span>Bots en la arena</span><div class="stepper"><button type="button" id="bMinus" aria-label="Sacar un bot">−</button><output id="oBots"></output><button type="button" id="bPlus" aria-label="Agregar un bot">+</button></div></div>
-            <div class="srow"><span>Dificultad</span><div class="seg" id="sSkill" role="group" aria-label="Dificultad"><button type="button" data-v="0">Fácil</button><button type="button" data-v="1">Normal</button><button type="button" data-v="2">Difícil</button><button type="button" data-v="3">Pesadilla</button></div></div>
-            <div class="srow"><span>Límite de frags</span><div class="seg" id="sFl" role="group" aria-label="Límite de frags"><button type="button" data-v="10">10</button><button type="button" data-v="20">20</button><button type="button" data-v="30">30</button><button type="button" data-v="50">50</button></div></div>
-            <p class="note">El mapa vale para Arena, Gungame y Team Deathmatch; Captura la bandera se juega en El Puente. En la práctica, los bots se agregan o sacan al instante con <b>+</b> y <b>−</b>. Online, desde el chat: <b>/bots 6</b>, <b>/skill 2</b>, <b>/fraglimit 30</b>, <b>/caplimit 3</b>, <b>/map pan</b>.</p>
           </div>
         </div>
         <div class="keys" id="mKeys">

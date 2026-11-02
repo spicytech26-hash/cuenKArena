@@ -97,42 +97,81 @@ function rbParte(){
     cono:(zona,r,h,x,y,zz,rx,ry,rz)=>poner(zona,new THREE.ConeGeometry(r,h,6),x,y,zz,rx,ry,rz),
     loft:(zona,secs,seg,sub,x,y,zz,rx,ry,rz)=>poner(zona,rbLoft(secs,seg,sub),x,y,zz,rx,ry,rz),
     // anillo finito que marca una junta entre placas (rx, rz = radios de la pieza en esa altura)
-    banda:(zona,y,rx,rz,h,oz,n)=>poner(zona,rbLoft([[y-h/2,rx-.006,rz-.006,0,oz||0,n||2.4],[y-h/2+.003,rx+.003,rz+.003,0,oz||0,n||2.4],[y+h/2-.003,rx+.003,rz+.003,0,oz||0,n||2.4],[y+h/2,rx-.006,rz-.006,0,oz||0,n||2.4]],12,1),0,0,0),
+    banda:(zona,y,rx,rz,h,oz,n,ox)=>poner(zona,rbLoft([[y-h/2,rx-.006,rz-.006,ox||0,oz||0,n||2.4],[y-h/2+.003,rx+.003,rz+.003,ox||0,oz||0,n||2.4],[y+h/2-.003,rx+.003,rz+.003,ox||0,oz||0,n||2.4],[y+h/2,rx-.006,rz-.006,ox||0,oz||0,n||2.4]],10,1),0,0,0),
     crudo:(zona,g)=>z[zona].push(g),
     fin:(rotX)=>{const o={};RB_ZONAS.forEach(k=>{if(z[k].length){o[k]=rbJuntar(z[k]);if(rotX)o[k].rotateX(rotX);}});return o;}
   };
 }
-// brazo: s = lado hacia afuera (-1 izquierdo, +1 derecho); el origen es el hombro y cuelga hacia -y
+// brazo: s = lado hacia afuera (-1 izquierdo, +1 derecho); el origen es el hombro y cuelga hacia -y.
+// Tiene codo de verdad (el antebrazo se dobla alrededor del codo); el derecho sale hacia adelante con el codo flexionado para sostener el arma.
+const RB_CODO=-.315;
 function rbBrazo(s,adelante){
-  const t=rbParte(),X=s*.03;
-  t.esf('A',.088,s*.012,.005,0,1,.95,1.05,10,7);                                            // hombrera grande y redonda
-  t.loft('A',[[-.03,.074,.076,X],[-.12,.074,.074,X],[-.22,.062,.064,X],[-.29,.052,.054,X]],10,1);   // manga del brazo
-  t.banda('B',-.1,.076,.076,.012,0);                                                        // junta de la hombrera
-  t.esf('B',.05,X,-.315,0);                                                                // codo oscuro
-  t.loft('A',[[-.335,.054,.054,X],[-.39,.062,.062,X,.004],[-.47,.047,.047,X],[-.545,.036,.036,X]],10,1);   // antebrazo
-  t.cil('B',.04,.04,.034,8,X,-.56,0);                                                     // muñeca oscura
-  t.caja('A',.064,.068,.022,.01,1,X,-.605,0);                                               // palma
-  for(let i=0;i<4;i++)t.caja('A',.013,.055,.014,.005,1,X+(i-1.5)*.0145,-.662,.002);        // dedos juntos
-  t.caja('A',.014,.042,.016,.006,1,X,-.62,.022,.5,0,0);                                     // pulgar
-  return t.fin(adelante?-1.3:0);                                                            // el derecho apunta adelante (-1.3 rad) para sostener el arma
+  const X=s*.03,t=rbParte(),u=rbParte();
+  // parte de arriba: hombrera, brazo y codo
+  t.esf('A',.09,s*.012,.005,0,1,.95,1.05,10,7);                                              // hombrera grande y redonda
+  t.banda('B',-.06,.088,.092,.012,.004,2.4,s*.012);                                          // borde inferior de la hombrera
+  t.loft('A',[[-.03,.074,.076,X,.004],[-.12,.074,.075,X,.006],[-.22,.062,.064,X],[-.29,.052,.054,X]],8,1);   // manga con bíceps
+  [-.12,-.22].forEach(y=>t.caja('K',.012,.012,.012,.003,1,X+s*.07,y,0));       // remaches del costado
+  t.banda('B',-.265,.057,.059,.012,0,2.4,X);                                                 // junta sobre el codo
+  t.cil('B',.04,.04,.1,10,X,RB_CODO,0,0,0,Math.PI/2);                                        // bisagra del codo
+  t.esf('B',.046,X,RB_CODO,0,1,1,1,8,6);
+  // parte de abajo: antebrazo, muñequera y mano (gira alrededor del codo)
+  u.loft('A',[[-.335,.054,.054,X],[-.39,.062,.062,X,.004],[-.47,.047,.047,X],[-.545,.036,.036,X]],8,1);   // antebrazo
+  u.banda('C',-.47,.05,.05,.05,0,2.4,X);                                                     // muñequera de color
+  u.cil('B',.04,.04,.034,8,X,-.56,0);                                                        // muñeca
+  u.caja('A',.066,.07,.024,.01,1,X,-.607,0);                                                 // palma
+  for(let i=0;i<4;i++){const fx=X+(i-1.5)*.0155;u.caja('B',.013,.012,.016,.004,1,fx,-.645,.002);u.caja('A',.0135,.045,.016,.005,1,fx,-.675,.002);}   // dedos con nudillos
+  u.caja('A',.015,.04,.017,.006,1,X,-.62,.024,.5,0,0);                                       // pulgar
+  const U=t.fin(),L=u.fin(),bend=adelante?-.85:-.3,out={};
+  RB_ZONAS.forEach(k=>{
+    const l=[];if(U[k])l.push(U[k]);
+    if(L[k]){L[k].translate(0,-RB_CODO,0);L[k].rotateX(bend);L[k].translate(0,RB_CODO,0);l.push(L[k]);}
+    if(l.length){out[k]=l.length>1?rbJuntar(l):l[0];out[k].rotateX(adelante?-.9:-.05);}
+  });
+  return out;
 }
 // pierna: muslo grueso, rodilla oscura, bota alta y grande; cadena de remaches del lado de afuera (por eso hay izquierda y derecha)
 function rbPierna(s){
   const t=rbParte();
   t.esf('B',.06,0,-.005,0);                                                                 // cadera
-  t.loft('A',[[0,.1,.105],[-.08,.112,.116],[-.2,.104,.11,0,.004],[-.34,.08,.088,0,.004],[-.44,.06,.068,0,.004]],12,1);   // muslo grueso
-  [[-.05,.11],[-.12,.112],[-.2,.103],[-.28,.093],[-.36,.078],[-.43,.062]].forEach(q=>t.caja('K',.014,.03,.016,.005,1,s*q[1],q[0],0));   // cadena de remaches
+  t.loft('A',[[0,.1,.105],[-.08,.112,.116,0,.004],[-.2,.104,.11,0,.008],[-.34,.08,.088,0,.006],[-.44,.06,.068,0,.004]],10,1);   // muslo con cuádriceps
+  t.banda('B',-.1,.113,.118,.012,.004);                                                     // junta del muslo
+  [[-.06,.111],[-.16,.108],[-.26,.097],[-.36,.078],[-.43,.062]].forEach(q=>t.caja('K',.014,.03,.016,.005,1,s*q[1],q[0],0));   // cadena de remaches
+  t.cil('B',.05,.05,.12,10,0,-.465,0,0,0,Math.PI/2);                                        // bisagra de la rodilla
   t.esf('B',.062,0,-.465,0);                                                                // rodilla
-  t.caja('A',.09,.075,.042,.02,1,0,-.46,.06);                                               // rodillera
-  t.loft('A',[[-.5,.064,.07],[-.56,.076,.084,0,-.012,2.8],[-.68,.074,.08,0,-.008,3],[-.8,.066,.076,0,0,3],[-.865,.064,.074,0,0,3]],12,1);   // bota grande
-  t.banda('A',-.525,.08,.088,.05);                                                          // puño de la bota
-  [-.6,-.66,-.72,-.78].forEach(y=>t.caja('K',.012,.024,.014,.005,1,s*.077,y,0));            // remaches de la bota
-  t.caja('B',.008,.22,.012,.004,1,0,-.69,.08);                                              // costura del frente
+  t.caja('C',.1,.085,.05,.022,2,0,-.465,.06);                                               // rodillera de color
+  t.loft('A',[[-.5,.064,.07],[-.56,.076,.084,0,-.012,2.8],[-.68,.074,.08,0,-.008,3],[-.8,.066,.076,0,0,3],[-.865,.064,.074,0,0,3]],10,1);   // bota grande con pantorrilla
+  t.caja('A',.15,.06,.15,.02,2,0,-.535,0);                                                  // puño cuadrado de la bota
+  t.caja('A',.09,.22,.026,.012,1,0,-.69,.088);                                          // placa del frente de la bota
+  [-.64,-.72,-.8].forEach(y=>t.caja('B',.07,.006,.01,.003,1,0,y,.1));                  // costuras
+  [-.62,-.7,-.78].forEach(y=>t.caja('K',.012,.024,.014,.005,1,s*.077,y,0));            // remaches de la bota
   t.esf('B',.052,0,-.875,0);                                                                // tobillo
-  t.caja('A',.13,.066,.26,.032,2,0,-.884,.055);                                              // pie
-  t.caja('K',.1,.04,.08,.014,1,0,-.908,-.068);                                             // taco
-  t.caja('K',.136,.016,.29,.007,1,0,-.912,.05);                                            // suela
+  t.caja('A',.13,.066,.26,.032,2,0,-.884,.055);                                             // pie
+  t.caja('C',.11,.05,.07,.024,1,0,-.89,.175);                                               // puntera de color
+  t.caja('K',.1,.04,.08,.014,1,0,-.908,-.068);                                              // taco
+  t.caja('K',.136,.016,.29,.007,1,0,-.912,.05);                                             // suela
   return t.fin();
+}
+// accesorios hechos a medida del casco (coordenadas ya a escala 0,78, origen = centro del casco)
+function rbAccesorios(){
+  const domo=z=>.02+.109*Math.sqrt(Math.max(0,1-(z/.11)*(z/.11)));   // altura de la tapa del casco a lo largo de z
+  let t=rbParte();   // cresta: aleta que sigue la curva del casco, de adelante hacia atrás
+  const sec=[-.09,-.06,-.02,.02,.06,.088].map(z=>{const hh=.016+.02*Math.max(0,1-Math.abs(z+.005)/.1);return [z,.009,hh,0,-(domo(z)+hh*.3)];});
+  t.loft('C',sec,8,1,0,0,0,Math.PI/2);
+  const A={cresta:t.fin().C};
+  t=rbParte();       // cuernos curvos hacia afuera, apoyados sobre el domo
+  for(const sx of [-1,1])t.loft('C',[[0,.017,.017,0,0],[.03,.013,.013,sx*.012],[.06,.007,.007,sx*.03],[.085,.001,.001,sx*.052]],8,1,sx*.05,.085,.0,.15,0,-sx*.45);
+  A.cuernos=t.fin().C;
+  t=rbParte();       // antena: base, varilla y bolita; sale de la orejera derecha
+  t.cil('B',.017,.017,.012,8,.092,.07,-.015,0,0,Math.PI/2);
+  t.cil('K',.005,.005,.1,6,.098,.118,-.015,0,0,-.18);
+  A.antena=t.fin();
+  t=rbParte();t.esf('C',.017,.106,.172,-.015,1,1,1,8,6);A.antenaPunta=t.fin().C;
+  t=rbParte();       // gorra: tapa que abraza el casco por encima del visor y visera adelante
+  t.loft('A',[[.045,.1,.114],[.07,.104,.114],[.105,.075,.085],[.123,.032,.04],[.132,.005,.006]].map(q=>q.slice()),14,1);
+  t.caja('A',.17,.012,.085,.005,1,0,.05,.118,.12);
+  A.gorra=t.fin().A;
+  return A;
 }
 function rbGeos(){
   if(rbGeos.c)return rbGeos.c;
@@ -142,36 +181,33 @@ function rbGeos(){
   t.loft('A',[[.84,.06,.06,0,0,2.2],[.89,.125,.085,0,0,2.4],[.95,.158,.105,0,0,2.6],[1.01,.16,.108,0,0,2.6],[1.07,.14,.098,0,0,2.4]],12,1);   // pelvis
   t.loft('A',[[.85,.03,.02,0,.085],[.9,.06,.03,0,.098],[.97,.075,.035,0,.108],[1.02,.08,.035,0,.108]],10,1);                                  // calzón en U
   t.banda('K',1.055,.172,.122,.06,0,2.6);                                                                                                       // cinturón de 4 cm
-  [[.075,.13,.1],[-.075,.13,-.1],[.15,.08,.9],[-.15,.08,-.9],[.085,-.12,3.0],[-.085,-.12,-3.0]].forEach(p=>t.caja('K',.058,.062,.04,.013,1,p[0],1.04,p[1],0,p[2],0));   // bolsitas
-  t.caja('K',.045,.03,.03,.01,1,0,1.05,.136);t.caja('C',.036,.026,.012,.006,1,0,1.05,.153);                                                     // bolsita del medio y hebilla
+  t.banda('B',1.0,.166,.113,.012,0,2.6);                                                                                                        // borde de la cadera
+  [[.075,.13,.1],[-.075,.13,-.1],[.15,.08,.9],[-.15,.08,-.9],[.085,-.12,3.0],[-.085,-.12,-3.0]].forEach(p=>{t.caja('C',.058,.062,.04,.013,1,p[0],1.04,p[1],0,p[2],0);t.caja('B',.05,.008,.034,.003,1,p[0],1.063,p[1],0,p[2],0);});   // bolsitas con tapa
+  t.caja('C',.045,.03,.03,.01,1,0,1.05,.136);t.caja('K',.036,.026,.012,.006,1,0,1.05,.153);                                                     // bolsita del medio y hebilla
   t.loft('A',[[1.06,.142,.098,0,0],[1.12,.14,.09,0,.004],[1.2,.134,.086,0,.006],[1.27,.142,.092,0,.004],[1.32,.158,.102,0,0]],12,1);          // abdomen
   t.banda('B',1.165,.139,.09,.012,.005);t.banda('B',1.235,.138,.089,.012,.005);                                                                 // juntas de las placas
-  t.loft('A',[[1.29,.15,.1,0,0,2.4],[1.35,.19,.112,0,.004,2.6],[1.43,.218,.126,0,.008,2.8],[1.51,.218,.122,0,.004,2.8],[1.555,.19,.1,0,-.004,2.6],[1.585,.095,.062,0,-.01,2.2],[1.605,.045,.04,0,-.01,2]],14,2);   // pecho de 44 cm
+  t.caja('B',.007,.2,.01,.003,1,0,1.18,.099);                                                                                                   // surco del medio
+  t.loft('A',[[1.29,.15,.1,0,0,2.4],[1.35,.19,.112,0,.004,2.6],[1.43,.218,.126,0,.008,2.8],[1.51,.218,.122,0,.004,2.8],[1.555,.19,.1,0,-.004,2.6],[1.58,.085,.058,0,-.01,2.2],[1.595,.045,.04,0,-.01,2]],12,2);   // pecho de 44 cm
   t.banda('B',1.345,.192,.114,.01,.004,2.6);                                                                                                    // borde de la placa del pecho
-  t.loft('B',[[1.55,.034],[1.57,.041],[1.59,.034],[1.61,.041],[1.63,.034],[1.66,.04]],10,1);                                                    // cuello con ranuras
+  for(const sx of [-1,1]){
+    t.caja('A',.07,.022,.15,.008,1,sx*.088,1.588,0,0,0,-sx*.32);                                                                                // tira del arnés sobre el hombro
+    t.caja('B',.01,.12,.014,.004,1,sx*.075,1.5,.118,0,0,-sx*.1);                                                                                // costura del arnés
+  }
+  t.caja('A',.30,.04,.03,.016,1,0,1.385,.112);t.caja('B',.008,.09,.01,.003,1,0,1.365,.133);                                                                                                 // surco del esternón
+  t.loft('B',[[1.54,.034],[1.56,.042],[1.58,.034],[1.6,.042],[1.62,.034],[1.66,.04]],10,1);                                                     // cuello con ranuras
   t.loft('A',[[1.34,.13,.03,0,-.105,3],[1.45,.16,.042,0,-.122,3],[1.55,.12,.03,0,-.108,3]],12,1);                                              // placa de la espalda
   for(let i=0;i<4;i++)t.caja('B',.05,.03,.03,.01,1,0,1.33+i*.06,-.166);                                                                         // vértebras
   R.torso=t.fin();
-  // cabeza (origen en el centro del casco): domo ovalado, cara lisa que se afina, visor cian y cuernito; se achica a 0,78
+  // cabeza (origen en el centro del casco): domo ovalado, cara lisa que se afina, visor cian; se achica a 0,78
   t=rbParte();
-  t.loft('A',[[-.165,.03,.034,0,.02,2],[-.145,.048,.054,0,.02,2.3],[-.115,.07,.08,0,.016,2.5],[-.075,.095,.108,0,.008,2.6],[-.03,.115,.128,0,0,2.4],[.03,.124,.138,0,-.004,2.2],[.09,.118,.13,0,-.008,2.1],[.135,.085,.098,0,-.008,2],[.158,.035,.045,0,-.008,2],[.165,.005,.006,0,-.008,2]],16,1);
+  t.loft('A',[[-.165,.03,.034,0,.02,2],[-.145,.048,.054,0,.02,2.3],[-.115,.07,.08,0,.016,2.5],[-.075,.095,.108,0,.008,2.6],[-.03,.115,.128,0,0,2.4],[.03,.124,.138,0,-.004,2.2],[.09,.118,.13,0,-.008,2.1],[.135,.085,.098,0,-.008,2],[.158,.035,.045,0,-.008,2],[.165,.005,.006,0,-.008,2]],14,1);
   t.cil('B',.035,.035,.03,8,.124,-.01,0,0,0,Math.PI/2);t.cil('B',.035,.035,.03,8,-.124,-.01,0,0,0,Math.PI/2);                                   // orejeras
-  t.cono('C',.015,.06,0,.175,-.03,-.4,0,0);                                                                                                     // cuerno
   const visor=(h,y,ex)=>new THREE.CylinderGeometry(1,1,h,20,1,true,-1.4,2.8).scale(.14+ex,1,.152+ex).translate(0,y,0);
   t.crudo('V',visor(.04,.03,0));t.crudo('B',visor(.008,.056,.003));t.crudo('B',visor(.008,.004,.003));                                          // visor y su marco
   R.head=t.fin();Object.keys(R.head).forEach(k=>R.head[k].scale(.78,.78,.78));
   R.legL=rbPierna(-1);R.legR=rbPierna(1);
   R.armL=rbBrazo(-1,false);R.armR=rbBrazo(1,true);
-  // accesorios (origen = centro del casco)
-  R.acc={
-    cresta:rbCaja(.03,.09,.2,.012,1).translate(0,.12,-.045),
-    antena:new THREE.CylinderGeometry(.008,.008,.2,6).translate(.075,.2,-.02),
-    antenaPunta:new THREE.SphereGeometry(.03,8,6).translate(.075,.31,-.02),
-    cuerno:new THREE.ConeGeometry(.035,.17,6),
-    gorra:new THREE.CylinderGeometry(.12,.124,.04,12).translate(0,.1,0),
-    visera:rbCaja(.2,.016,.1,.006,1).translate(0,.088,.15),
-    decal:new THREE.PlaneGeometry(.11,.11)
-  };
+  R.acc=rbAccesorios();R.acc.decal=new THREE.PlaneGeometry(.11,.11);
   return rbGeos.c=R;
 }
 // ancla blanca sobre fondo transparente (se tiñe con el color de detalles)
@@ -205,16 +241,16 @@ function buildPlayer(skin,name,noTag){
                  :new THREE.MeshBasicMaterial({map:rbAnclaTex(),color:P.c3,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
   const dec=new THREE.Mesh(G.acc.decal,dm);dec.position.set(0,1.47,.139);b.add(dec);
   const legs=[-1,1].map(side=>{const l=parte(side<0?G.legL:G.legR,new THREE.Group());l.position.set(side*.108,.93,0);b.add(l);return l;});
-  const head=parte(G.head,new THREE.Group());head.position.y=1.735;b.add(head);
+  const head=parte(G.head,new THREE.Group());head.position.y=1.76;b.add(head);
   const a=skin.a|0,A=G.acc;
   if(a===1)head.add(new THREE.Mesh(A.cresta,mC));
-  if(a===2)head.add(new THREE.Mesh(A.antena,mK),new THREE.Mesh(A.antenaPunta,mC));
-  if(a===3)for(const sx of [-1,1]){const h=new THREE.Mesh(A.cuerno,mC);h.position.set(sx*.1,.14,0);h.rotation.z=-sx*.5;head.add(h);}
-  if(a===4)head.add(new THREE.Mesh(A.gorra,mA),new THREE.Mesh(A.visera,mA));
+  if(a===2)head.add(new THREE.Mesh(A.antena.B,mB),new THREE.Mesh(A.antena.K,mK),new THREE.Mesh(A.antenaPunta,mC));
+  if(a===3)head.add(new THREE.Mesh(A.cuernos,mC));
+  if(a===4)head.add(new THREE.Mesh(A.gorra,mA));
   const armL=parte(G.armL,new THREE.Group());armL.position.set(-.2,1.5,0);b.add(armL);
   const armR=parte(G.armR,new THREE.Group());armR.position.set(.2,1.5,0);b.add(armR);
   // el arma que tiene en la mano (se cambia sola cuando cambia de arma)
-  const gun=new THREE.Group();gun.position.set(0,-.15,.56);gun.rotation.y=Math.PI;gun.scale.setScalar(.72);armR.add(gun);
+  const gun=new THREE.Group();gun.position.set(.03,-.14,.53);gun.rotation.y=Math.PI;gun.scale.setScalar(.72);armR.add(gun);
   if(noTag){gun.add(tpGun(1));gun.userData.w=1;}
   let tag=null;if(!noTag){tag=nameSprite(name,P.c);g.add(tag);}
   const bas=[mV];if(hasImg)bas.push(dm);   // materiales que brillan solos (de noche se apagan, ver 18-noche.js)

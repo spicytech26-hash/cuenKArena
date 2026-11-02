@@ -53,21 +53,35 @@ function lockerInit(){
     const sc=new THREE.Scene();sc.add(new THREE.AmbientLight(0xffffff,.55));const dl=new THREE.DirectionalLight(0xffe2c0,.9);dl.position.set(1.5,3,2);sc.add(dl);
     const rim=new THREE.DirectionalLight(0xff3fd2,.6);rim.position.set(-2,1.5,-2);sc.add(rim);
     const cam=new THREE.PerspectiveCamera(32,440/520,.1,20);cam.position.set(0,1.35,4.4);cam.lookAt(0,1.05,0);
-    lock={r,sc,cam,model:null,rot:.6};
+    lock={r,sc,cam,model:null,rot:.6,z:1,zt:1};
   }catch(e){lock={r:null};}
   rebuildLockModel();
 }
+// zoom de la vista previa: z=1 cuerpo entero, z=.36 primer plano de la cabeza y el pecho; la cámara sube hacia la cara al acercarse
+const LZ_MIN=.36,LZ_MAX=1.15;
+function lockZoom(v){if(lock)lock.zt=Math.max(LZ_MIN,Math.min(LZ_MAX,v));}
+function lockCam(){const z=lock.z,ty=Math.max(.95,Math.min(1.62,1.05+(1-z)*.9));lock.cam.position.set(0,ty+.3*z,4.4*z);lock.cam.lookAt(0,ty,0);}
 function rebuildLockModel(){if(!lock||!lock.r)return;if(lock.model)lock.sc.remove(lock.model.g);lock.model=buildPlayer(S.skin,S.name,true);lock.sc.add(lock.model.g);}
 // girar al personaje arrastrando (mouse o dedo) o con las flechas; la vuelta sola se pausa un rato
 (function(){
   const c=$('lockPrev');let drag=false,lx=0;
-  c.style.touchAction='none';c.style.cursor='grab';c.tabIndex=0;c.setAttribute('aria-label','Vista de tu personaje: arrastrá o usá las flechas para girarlo');
+  c.style.touchAction='none';c.style.cursor='grab';c.tabIndex=0;c.setAttribute('aria-label','Vista de tu personaje: arrastrá o usá las flechas para girarlo; rueda, pellizco o + y - para acercar');
   c.addEventListener('pointerdown',e=>{if(!lock)return;drag=true;lx=e.clientX;c.setPointerCapture(e.pointerId);c.style.cursor='grabbing';lock.hold=3;});
   c.addEventListener('pointermove',e=>{if(!drag||!lock)return;lock.rot+=(e.clientX-lx)*.014;lx=e.clientX;lock.hold=3;});
   const up=()=>{drag=false;c.style.cursor='grab';};c.addEventListener('pointerup',up);c.addEventListener('pointercancel',up);
+  // zoom: rueda del mouse, pellizco con dos dedos, doble clic, botones y teclas + / - / 0
+  const pts=new Map();let d0=0,z0=1;
+  c.addEventListener('wheel',e=>{if(!lock)return;e.preventDefault();lockZoom(lock.zt*Math.exp(e.deltaY*.0012));lock.hold=3;},{passive:false});
+  c.addEventListener('pointerdown',e=>{pts.set(e.pointerId,[e.clientX,e.clientY]);if(pts.size===2&&lock){const [a,b]=[...pts.values()];d0=Math.hypot(a[0]-b[0],a[1]-b[1])||1;z0=lock.zt;drag=false;}});
+  c.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;pts.set(e.pointerId,[e.clientX,e.clientY]);if(pts.size===2&&lock){const [a,b]=[...pts.values()];lockZoom(z0*d0/(Math.hypot(a[0]-b[0],a[1]-b[1])||1));lock.hold=3;}});
+  const soltar=e=>pts.delete(e.pointerId);c.addEventListener('pointerup',soltar);c.addEventListener('pointercancel',soltar);
+  c.addEventListener('dblclick',()=>{if(lock)lockZoom(lock.zt>.8?LZ_MIN+.1:1);});
+  const zb=(id,fn)=>{const b=$(id);if(b)b.addEventListener('click',fn);};
+  zb('lzIn',()=>lockZoom((lock?lock.zt:1)*.78));zb('lzOut',()=>lockZoom((lock?lock.zt:1)/.78));zb('lzReset',()=>lockZoom(1));
+  c.addEventListener('keydown',e=>{if(!lock)return;if(e.key==='+'||e.key==='='){e.preventDefault();lockZoom(lock.zt*.82);}else if(e.key==='-'||e.key==='_'){e.preventDefault();lockZoom(lock.zt/.82);}else if(e.key==='0'){e.preventDefault();lockZoom(1);}});
   c.addEventListener('keydown',e=>{if(!lock)return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();lock.rot+=(e.key==='ArrowLeft'?-1:1)*.35;lock.hold=3;}});
 })();
-function renderLocker(dt){if(!lock||!lock.r||$('lockerPanel').hidden||$('menu').hidden)return;lock.hold=(lock.hold||0)-dt;if(lock.hold<=0)lock.rot+=dt*.8;lock.model.g.rotation.y=lock.rot;lock.model.armR.rotation.x=-.2;lock.r.render(lock.sc,lock.cam);}
+function renderLocker(dt){if(!lock||!lock.r||$('lockerPanel').hidden||$('menu').hidden)return;lock.hold=(lock.hold||0)-dt;if(lock.hold<=0)lock.rot+=dt*.8;lock.model.g.rotation.y=lock.rot;lock.model.armR.rotation.x=-.2;lock.z+=(lock.zt-lock.z)*Math.min(1,dt*10);lockCam();lock.r.render(lock.sc,lock.cam);}
 function syncLocker(){
   [...$('swBody').querySelectorAll('button')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===S.skin.c)));
   [...$('swVisor').querySelectorAll('button')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===S.skin.v)));

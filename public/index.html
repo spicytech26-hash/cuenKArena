@@ -2785,22 +2785,22 @@ function rbPierna(s){
 }
 // accesorios hechos a medida del casco (coordenadas ya a escala 0,78, origen = centro del casco)
 function rbAccesorios(){
-  const domo=z=>.03+.115*Math.sqrt(Math.max(0,1-(z/.097)*(z/.097)));   // altura de la tapa del casco a lo largo de z
+  const domo=z=>.022+.098*Math.sqrt(Math.max(0,1-(z/.095)*(z/.095)));   // altura de la tapa del casco a lo largo de z
   let t=rbParte();   // cresta: aleta que sigue la curva del casco, de adelante hacia atrás
   const sec=[-.085,-.055,-.02,.02,.055,.08].map(z=>{const hh=.016+.02*Math.max(0,1-Math.abs(z+.005)/.1);return [z,.009,hh,0,-(domo(z)+hh*.3)];});
   t.loft('C',sec,8,1,0,0,0,Math.PI/2);
   const A={cresta:t.fin().C};
   t=rbParte();       // cuernos curvos hacia afuera, apoyados sobre el domo
-  for(const sx of [-1,1])t.loft('C',[[0,.017,.017,0,0],[.03,.013,.013,sx*.012],[.06,.007,.007,sx*.03],[.085,.001,.001,sx*.052]],8,1,sx*.05,.1,.0,.15,0,-sx*.45);
+  for(const sx of [-1,1])t.loft('C',[[0,.017,.017,0,0],[.03,.013,.013,sx*.012],[.06,.007,.007,sx*.03],[.085,.001,.001,sx*.052]],8,1,sx*.05,.088,.0,.15,0,-sx*.45);
   A.cuernos=t.fin().C;
   t=rbParte();       // antena: base, varilla y bolita; sale del costado derecho
-  t.cil('B',.017,.017,.012,8,.09,.07,-.03,0,0,Math.PI/2);
-  t.cil('K',.005,.005,.1,6,.096,.12,-.03,0,0,-.18);
+  t.cil('B',.017,.017,.012,8,.09,.05,-.03,0,0,Math.PI/2);
+  t.cil('K',.005,.005,.09,6,.096,.095,-.03,0,0,-.18);
   A.antena=t.fin();
-  t=rbParte();t.esf('C',.017,.104,.174,-.03,1,1,1,8,6);A.antenaPunta=t.fin().C;
+  t=rbParte();t.esf('C',.015,.102,.142,-.03,1,1,1,8,6);A.antenaPunta=t.fin().C;
   t=rbParte();       // gorra: tapa que abraza el casco por encima del visor y visera adelante
-  t.loft('A',[[.035,.1,.102],[.07,.092,.096],[.105,.072,.078],[.128,.042,.045],[.142,.006,.007]],14,1);
-  t.caja('A',.17,.012,.085,.005,1,0,.038,.105,.12);
+  t.loft('A',[[.035,.1,.102],[.065,.092,.094],[.09,.074,.078],[.106,.048,.052],[.116,.008,.009]],14,1);
+  t.caja('A',.17,.012,.085,.005,1,0,.04,.105,.12);
   A.gorra=t.fin().A;
   return A;
 }
@@ -2827,9 +2827,9 @@ function rbGeos(){
   t.caja('B',.007,.2,.01,.003,1,0,1.18,.099);                                                                                                         // surco del medio del abdomen
   for(const sx of [-1,1])t.caja('A',.05,.016,.1,.006,1,sx*.098,1.57,0,0,0,-sx*.42);                                                                 // lengüetas sobre los hombros (como en la lámina)
   // cuello largo y acanalado de 7 segmentos (como en la lámina de la cabeza), con brida de montaje en la base y dos cables por delante
-  const cu=[];for(let k=0;k<=7;k++){const r=.082-.018*(k/7);cu.push([1.555+k*.0165,r*.8,r*.8,0,.012,2.2]);if(k<7)cu.push([1.555+(k+.5)*.0165,r,r,0,.012,2.2]);}
+  const cu=[];for(let k=0;k<=7;k++){const r=.062-.014*(k/7);cu.push([1.555+k*.0165,r*.8,r*.8,0,.012,2.2]);if(k<7)cu.push([1.555+(k+.5)*.0165,r,r,0,.012,2.2]);}
   t.loft('B',cu,12,1);
-  t.cil('B',.092,.092,.012,12,0,1.553,.012);t.cil('K',.088,.088,.006,12,0,1.56,.012);
+  t.cil('B',.074,.074,.012,12,0,1.553,.012);t.cil('K',.07,.07,.006,12,0,1.56,.012);
   t.loft('A',[[1.34,.13,.03,0,-.105,2.6],[1.45,.16,.042,0,-.122,2.6],[1.55,.12,.03,0,-.108,2.6]],12,1);                                               // placa de la espalda
   for(let i=0;i<4;i++)t.caja('B',.05,.03,.03,.01,1,0,1.33+i*.06,-.166);                                                                               // vértebras
   // mochila de energía (como en las escenas): caja redondeada con luces, rejillas, antena y mangueras a la cintura
@@ -2841,19 +2841,19 @@ function rbGeos(){
   // cabeza de la lámina CUE-87 (origen en el centro, tamaño final): domo liso y alto, visor plano de punta a punta con marco,
   // dos sensores redondos a cada lado, cuernito central y líneas finas de armado; el cuello largo va en el torso
   t=rbParte();
-  const HS=[[-.145,.034,.036,0,.02,2],[-.125,.05,.055,0,.018,2.1],[-.095,.068,.075,0,.014,2.2],[-.06,.084,.092,0,.008,2.2],[-.02,.095,.097,0,0,2.2],[.03,.096,.097,0,-.002,2.1],[.075,.09,.093,0,-.004,2.1],[.112,.08,.084,0,-.006,2],[.132,.06,.064,0,-.006,2],[.144,.03,.032,0,-.006,2],[.15,.004,.005,0,-.006,2]];
-  t.loft('A',HS,20,1);
+  const HS=[[-.108,.022,.026,0,0,2],[-.098,.036,.04,0,0,2],[-.08,.05,.056,0,.004,2.1],[-.055,.068,.073,0,.006,2.2],[-.03,.085,.087,0,.004,2.2],[-.005,.096,.097,0,0,2.2],[.025,.099,.099,0,-.002,2.2],[.055,.094,.095,0,-.004,2.2],[.083,.082,.085,0,-.005,2.1],[.103,.06,.064,0,-.005,2],[.114,.03,.032,0,-.005,2],[.12,.006,.007,0,-.005,2]];
+  t.loft('A',HS,20,2);
   const sup=(y,th,m)=>{const q=rbPerfil(HS,y),e=2/2.1,c=Math.cos(th),sn=Math.sin(th);return new THREE.Vector3(q[3]+(q[1]+m)*rbPot(c,e),y,q[4]+(q[2]+m)*rbPot(sn,e));};
   const hilo=(pts,sx)=>t.crudo('B',new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(q=>{const v=sup(q[0],q[1]*Math.PI/180,.0016);v.x*=sx;return v;})),10,.0026,4));
   for(const sx of [-1,1]){
-    hilo([[.14,84],[.1,66],[.062,44],[.024,30]],sx);                                              // arco de la frente hacia el extremo del visor
-    hilo([[-.03,34],[-.07,46],[-.115,66],[-.14,82]],sx);                                          // línea de la mandíbula hacia el mentón
+    hilo([[.112,84],[.085,66],[.055,45],[.022,30]],sx);                                              // arco de la frente hacia el extremo del visor
+    hilo([[-.03,34],[-.058,46],[-.086,66],[-.102,82]],sx);                                          // línea de la mandíbula hacia el mentón
     t.cil('B',.03,.03,.012,12,sx*.097,-.016,-.034,0,0,Math.PI/2);t.cil('K',.017,.017,.016,10,sx*.1,-.016,-.034,0,0,Math.PI/2);   // sensor grande del costado
     t.cil('B',.0145,.0145,.01,10,sx*.099,-.006,.03,0,0,Math.PI/2);t.cil('K',.008,.008,.014,8,sx*.103,-.006,.03,0,0,Math.PI/2);   // sensor chico en el extremo del visor
   }
-  t.cono('C',.009,.026,0,.163,-.006,-.15,0,0);                                                     // cuerno central chico
+  t.cono('C',.009,.026,0,.132,-.005,-.15,0,0);                                                     // cuerno central chico
   const visor=(h,y,ex)=>new THREE.CylinderGeometry(1,1,h,22,1,true,-1.3,2.6).scale(.099+ex,1,.103+ex).translate(0,y,0);
-  t.crudo('V',visor(.022,-.006,0));t.crudo('B',visor(.007,.0115,.003));t.crudo('B',visor(.007,-.0235,.003));   // franja luminosa fina y su marco
+  t.crudo('V',visor(.019,-.003,0));t.crudo('B',visor(.006,.0125,.003));t.crudo('B',visor(.006,-.0185,.003));   // franja luminosa fina y su marco
   R.head=t.fin();
   R.legL=rbPierna(-1);R.legR=rbPierna(1);
   const bl=rbBrazo(-1),br=rbBrazo(1);R.armLu=bl.U;R.armLf=bl.F;R.armRu=br.U;R.armRf=br.F;
@@ -2972,7 +2972,7 @@ function buildPlayer(skin,name,noTag){
   const dec=new THREE.Mesh(G.acc.decal,dm);dec.position.set(0,1.47,.137*RB_KX);if(hasImg)dec.scale.setScalar(1.6);
   if(hasImg||em!=='ninguno')up.add(dec);   // el emblema es chico; una foto propia va más grande
   const legs=[-1,1].map(side=>{const l=parte(side<0?G.legL:G.legR,new THREE.Group(),mL);l.position.set(side*.108*RB_KX,.93*RB_KYP,0);b.add(l);return l;});
-  const head=parte(G.head,new THREE.Group(),mA);head.position.y=1.795;up.add(head);
+  const head=parte(G.head,new THREE.Group(),mA);head.position.y=1.776;head.scale.setScalar(1.12);up.add(head);
   const a=skin.a|0,A=G.acc;
   if(a===1)head.add(new THREE.Mesh(A.cresta,mC));
   if(a===2)head.add(new THREE.Mesh(A.antena.B,mB),new THREE.Mesh(A.antena.K,mK),new THREE.Mesh(A.antenaPunta,mC));

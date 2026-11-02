@@ -25,7 +25,7 @@ function updMiModelo(dt){
     P.vxs=me.s.vx;P.vzs=me.s.vz;P.vy=me.s.vy;P.yaw=me.yaw;P.pitch=me.pitch;P.onG=me.s.on;P.crouch=!!me.s.crouch;P.fire=TP.fireT;P.pain=TP.painT;P.w=me.w;P.rel=me.rel>0&&me.relW===me.w;
     if(m.gun.userData.w!==me.w){m.gun.clear();m.gun.add(tpGun(me.w));m.gun.userData.w=me.w;}
     m.g.position.set(me.s.x,me.s.y,me.s.z);m.g.rotation.y=me.yaw+Math.PI;
-    m.gun.scale.setScalar(me.w===0?1.9:me.w===7||me.w===10?1.6:1.15);P.tp=true;   // en tercera persona el arma se ve más grande (sobre todo la pistola)
+    m.gun.scale.setScalar(.72*(me.w===0?1.55:me.w===7||me.w===10?1.45:1.3));P.tp=true;   // un poco más grande que en el mundo para que se distinga desde atrás; las manos siguen al arma
     rbLod(m,false);rbAnimar(m,P,dt);
     const em=TP.painT>0?0x803020:me.q>0?0x5020a0:0;m.mats.forEach(mm=>mm.emissive.setHex(em));
     m.g.visible=TP.blend>.02&&TP.dist>.85;   // si la cámara queda pegada a una pared, no se dibuja el cuerpo

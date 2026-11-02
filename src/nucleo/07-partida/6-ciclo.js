@@ -58,7 +58,7 @@
     for (const it of this.items) { it.up = !it.off; it.t = 0; it.type = it.base; }
     this.bcast({ t: 'start', map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), tm: this.time, fs: this.flagState(), ts: this.ts });
     for (const p of this.players.values()) if (p.joined) {
-      p.ready = false; p.frags = 0; p.deaths = 0; p.cr = ECON.START; p.unl = OW0(); p.perk = { ar: 0, am: 0 }; p.streak = 0; p.lvl = 0; p.caps = 0; p.kills = 0; p.dmg = 0; p.bestLife = 0; p.lifeT0 = p.alive ? this.time : null; p.joinT = this.time; p.dirty = true;
+      p.ready = false; p.frags = 0; p.deaths = 0; p.cr = ECON.START; p.unl = OW0(); p.eq = 1; p.perk = { ar: 0, am: 0 }; p.streak = 0; p.lvl = 0; p.caps = 0; p.kills = 0; p.dmg = 0; p.bestLife = 0; p.lifeT0 = p.alive ? this.time : null; p.joinT = this.time; p.dirty = true;
       this.spawn(p);
     }
     this.sendScores();

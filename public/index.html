@@ -136,6 +136,11 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 #speed b{font-weight:400;color:var(--ink)}
 #speed.fast b{color:var(--amber)}
 #speed.vfast b{color:var(--quad)}
+#stam{position:fixed;left:50%;top:calc(50% + 56px);transform:translateX(-50%);width:84px;height:5px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.18);box-shadow:0 1px 0 #000;overflow:hidden}
+#stam i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#2bd6ff,#7af0ff);transform-origin:left;transition:background .15s}
+#stam b{position:absolute;left:50%;top:0;width:1px;height:100%;background:rgba(0,0,0,.7)}   /* marca de la mitad: lo que cuesta el doble salto */
+#stam.low i{background:linear-gradient(90deg,#ff5a3a,#ff9a5a)}
+#stam.full{opacity:.35;transition:opacity .6s}
 #huntOv{position:fixed;inset:0;pointer-events:none}
 #huntOv svg{position:absolute;inset:0;width:100%;height:100%}
 #scopeOv{position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle at center,transparent 0,transparent min(36vh,36vw),#000 calc(min(36vh,36vw) + 2px));}
@@ -617,6 +622,23 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 .emgrid button[aria-pressed="true"]{background:#3a1015;outline:3px solid #fff;outline-offset:2px}
 .lockplate{max-width:calc(100% - 44px);overflow:hidden;text-overflow:ellipsis;font-family:var(--display);font-size:13px;letter-spacing:.14em;padding:3px 12px}
 @media (prefers-reduced-motion:reduce){.lkpulse{animation:none}}
+
+/* ---------- ruleta de armas (mantener E) ---------- */
+#wheel{position:fixed;left:50%;top:50%;width:0;height:0;z-index:30;pointer-events:none}
+#wheel::before{content:"";position:absolute;left:-250px;top:-250px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(6,12,10,.86) 0,rgba(6,12,10,.7) 52%,rgba(6,12,10,0) 70%)}
+#wheel .wring{position:absolute;left:-92px;top:-92px;width:184px;height:184px;border-radius:50%;border:1px solid rgba(127,174,143,.45);box-shadow:0 0 0 6px rgba(127,174,143,.06),inset 0 0 28px rgba(0,0,0,.7)}
+#wheel .wptr{position:absolute;left:-1px;top:-96px;width:2px;height:96px;background:linear-gradient(#8dff3a,rgba(141,255,58,0));transform-origin:50% 100%;transform:scaleY(0);opacity:.8}
+#wheel .wmid{position:absolute;left:-86px;top:-26px;width:172px;text-align:center;font-family:var(--mono);color:var(--bone)}
+#wheel .wmid b{display:block;font-weight:400;font-size:17px;letter-spacing:.06em;text-shadow:0 1px 0 #000}
+#wheel .wmid small{display:block;margin-top:4px;font-size:11px;color:var(--muted);letter-spacing:.04em}
+#wheel .wslot{position:absolute;width:104px;margin:-34px 0 0 -52px;padding:6px 6px 4px;text-align:center;font-family:var(--mono);color:var(--ink);background:linear-gradient(rgba(26,38,32,.94),rgba(12,18,16,.94));border:1px solid rgba(127,174,143,.3);transition:transform .08s,border-color .08s,background .08s}
+#wheel .wslot img{display:block;width:100%;height:36px;object-fit:contain}
+#wheel .wslot span{display:block;font-size:11px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#wheel .wslot i{position:absolute;right:4px;top:2px;font-style:normal;font-size:10px;color:var(--cash)}
+#wheel .wslot.cur{border-color:var(--amber)}
+#wheel .wslot.sel{transform:scale(1.14);border-color:#8dff3a;background:linear-gradient(rgba(40,64,44,.97),rgba(16,30,20,.97));box-shadow:0 0 18px rgba(141,255,58,.3)}
+#wheel .wfix{position:absolute;left:-150px;top:176px;width:300px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted)}
+#wheel .wfix b{font-weight:400;color:var(--bone)}
 </style>
 
 <canvas id="c"></canvas>
@@ -626,6 +648,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
   <div id="fpsBox" hidden></div>
   <div id="xh"></div><div id="hitm"></div><div id="dmgdir"></div>
   <div id="speed">VEL <b id="spdV">0</b> u/s</div>
+  <div id="stam" aria-label="Stamina"><i></i><b></b></div>
   <div id="crPop"></div>
   <div id="scopeOv" hidden></div>
   <div id="huntOv" hidden><svg viewBox="-50 -50 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
@@ -666,7 +689,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
     <div class="cell"><div class="lbl">Blindaje</div><div class="num ar" id="hAr">0</div></div>
   </div>
   <div id="kickHint" hidden>Y · KICKEAR</div>
-  <div id="shopHint">B · TIENDA</div>
+  <div id="shopHint">B · TIENDA · mantené E: armas</div>
   <div id="slots"></div>
   <div id="voteBox" hidden role="status" aria-live="polite"></div>
   <div id="grabHint" hidden></div>
@@ -699,6 +722,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
     <div class="kmRules">Pasa si vota que sí más de la mitad de los demás. La 1ª vez el echado puede volver; la 2ª no entra hasta que termine la partida. Cada uno puede pedir una votación cada 90 s.</div>
   </div>
 </div>
+<div id="wheel" hidden></div>
 <div id="shop" hidden>
   <div class="shopbox">
     <div class="shophead"><h2>TIENDA</h2><div class="wallet"><small>Tus créditos</small><span id="shopCr">¤ 0</span></div></div>
@@ -1880,6 +1904,9 @@ const SFX={
   ui:()=>tn({type:'sine',f0:700,f1:900,dur:.05,vol:.06}),
   die:v=>{nz({dur:.4,f0:900,f1:100,vol:.4*v});tn({type:'sawtooth',f0:260,f1:40,dur:.55,vol:.25*v});},
   jump:()=>tn({type:'sine',f0:220,f1:360,dur:.08,vol:.06}),
+  dj:()=>{tn({type:'sine',f0:300,f1:760,dur:.14,vol:.1});nz({dur:.12,f0:2400,f1:900,type:'bandpass',vol:.07});},
+  wj:()=>{nz({dur:.1,f0:600,f1:200,vol:.16});tn({type:'triangle',f0:180,f1:420,dur:.12,vol:.08});},
+  slide:()=>nz({dur:.45,f0:1400,f1:350,type:'bandpass',vol:.11}),
   land:v=>nz({dur:.08,f0:400,f1:100,vol:.25*v}),
   step:()=>nz({dur:.05,f0:600,f1:200,vol:.06}),
   geyser:v=>{nz({dur:1.1,f0:250,f1:1400,vol:.7*v});tn({type:'sine',f0:60,f1:140,dur:.9,vol:.4*v});},
@@ -1927,6 +1954,8 @@ function updSys(s,dt){for(let i=0;i<s.n;i++){if(s.life[i]<=0)continue;s.life[i]-
 const R=a=>(Math.random()-.5)*a;
 function fxSparks(x,y,z,n,nn){for(let i=0;i<nn;i++)emit(sparks,x,y,z,n[0]*3+R(5),n[1]*3+R(5)+1,n[2]*3+R(5),.25+Math.random()*.3,1,.75,.35,9);for(let i=0;i<3;i++)emit(gore,x,y,z,n[0]+R(.6),n[1]+R(.6)+.4,n[2]+R(.6),.5+Math.random()*.4,.32,.29,.26,-.5);}
 function fxBlood(x,y,z,n){for(let i=0;i<n;i++)emit(gore,x,y,z,R(5),Math.random()*4,R(5),.6+Math.random()*.6,.55+Math.random()*.2,.04,.02,12);}
+// anillo de chispas corto para el doble salto y el salto de pared (r, g, b = color)
+function fxAire(x,y,z,r,g,b){for(let i=0;i<10;i++){const a=Math.random()*6.28;emit(sparks,x,y,z,Math.cos(a)*2.5,.3+Math.random(),Math.sin(a)*2.5,.3,r,g,b,1);}}
 function fxTele(x,y,z,r=.4,g=.85,b=1){for(let i=0;i<60;i++){const a=Math.random()*6.28,rr=.3+Math.random()*.6;emit(sparks,x+Math.cos(a)*rr,y+Math.random()*2,z+Math.sin(a)*rr,0,1+Math.random()*2,0,.6+Math.random()*.5,r,g,b,0);}}
 function fxGib(x,y,z){for(let i=0;i<60;i++)emit(gore,x,y+.5+Math.random()*1.2,z,R(10),Math.random()*9,R(10),1.4,.5,.05,.03,16);for(let i=0;i<12;i++)emit(gore,x,y+1,z,R(7),Math.random()*7,R(7),2,.35,.3,.28,16);}
 
@@ -3505,7 +3534,7 @@ function onEvent(m){
     }
     case 'buy': {
       const it=C.SHOP.find(s=>s.id===m.id);
-      if(m.ok){SFX.buy();shopMsg((it?it.name:'')+' comprado','ok');}
+      if(m.ok){SFX.buy();shopMsg((it?it.name:'')+(m.eq?' equipada':' comprado'),'ok');}
       else{SFX.deny();shopMsg(m.why||'No se pudo comprar','bad');}
       break;
     }
@@ -3759,6 +3788,52 @@ const r3=a=>a.map(v=>Math.round(v*1000)/1000);
 function vmWorldTip(){if(TP.blend>.5)return tpMuzzle();const d=C.dirFromAngles(me.yaw,me.pitch);return [me.s.x+d[0]*.6+rgtV.x*.2-upV.x*.15,me.s.y+K.EYE+d[1]*.6+rgtV.y*.2-upV.y*.15,me.s.z+d[2]*.6+rgtV.z*.2-upV.z*.15];}
 function gunTip(p){const d=C.dirFromAngles(p.yaw,p.pitch),rx=Math.cos(p.yaw),rz=-Math.sin(p.yaw);return [p.x+d[0]*.9+rx*.42,p.y+1.35+d[1]*.9,p.z+d[2]*.9+rz*.42];}
 
+/* =================== RULETA DE ARMAS (mantener E) ===================
+   Inventario al estilo Doom Eternal: todo lo que comprás en la tienda se suma acá. En las manos llevás solo tres
+   cosas: la principal (ranura 1), la pistola (2) y el cuchillo (3, más la molotov en el 4). La ruleta cambia la principal
+   por otra del inventario; la pistola y el cuchillo no se tocan. El que decide el cambio es el servidor (mensaje `equip`).
+   Tocar E sigue agarrando el arma tirada en el piso. Mientras está abierta el mouse mueve la selección en vez de la cámara. */
+const WH={open:false,tm:null,down:false,x:0,y:0,sel:-1,list:[],R:128};
+function wheelList(){
+  const l=[1];C.PRIMARY.forEach(w=>{if(w!==1&&me.unl[w])l.push(w);});
+  const cur=C.primaryOf(me.ow);if(cur>=0&&!l.includes(cur))l.push(cur);   // un arma agarrada del piso también aparece (si la cambiás, se pierde)
+  return l;
+}
+function wheelOk(){return inGame&&me.alive&&C.MODES[MODE].shop&&MODE!=='gungame'&&$('shop').hidden&&!chatOpen&&$('menu').hidden&&!kickOpen();}
+function openWheel(){
+  WH.tm=null;if(!WH.down||!wheelOk())return;
+  const ic=shopIcons(),l=wheelList(),n=l.length,cur=C.primaryOf(me.ow);
+  WH.list=l;WH.open=true;WH.x=WH.y=0;WH.sel=-1;
+  const box=$('wheel');
+  box.innerHTML='<div class="wring"></div><div class="wptr"></div><div class="wmid"><b id="wmN">'+esc(WEAPONS[cur>=0?cur:1].name)+'</b><small id="wmS">Mové el mouse y soltá E</small></div>'+
+    l.map((w,i)=>{const a=-Math.PI/2+i*2*Math.PI/n,x=Math.cos(a)*WH.R,y=Math.sin(a)*WH.R,W_=WEAPONS[w];
+      return '<div class="wslot'+(w===cur?' cur':'')+'" data-i="'+i+'" style="left:calc(50% + '+x.toFixed(1)+'px);top:calc(50% + '+y.toFixed(1)+'px)"><img alt="" src="'+(ic['w'+w]||'')+'"><span>'+esc(W_.name)+'</span><i>'+(W_.ammo?me.am[W_.ammo]:'')+'</i></div>';}).join('')+
+    '<div class="wfix">En las manos siguen: <b>'+esc(WEAPONS[0].name)+'</b> · <b>'+esc(WEAPONS[7].name)+'</b></div>';
+  box.hidden=false;SFX.ui();
+}
+function wheelMove(dx,dy){
+  WH.x+=dx;WH.y+=dy;const m=Math.hypot(WH.x,WH.y),MX=110;if(m>MX){WH.x*=MX/m;WH.y*=MX/m;}
+  const n=WH.list.length;let s=-1;
+  if(Math.hypot(WH.x,WH.y)>38){const a=Math.atan2(WH.y,WH.x)+Math.PI/2;s=Math.round(((a%(Math.PI*2)+Math.PI*2)%(Math.PI*2))/(Math.PI*2)*n)%n;}
+  if(s!==WH.sel){WH.sel=s;[...$('wheel').querySelectorAll('.wslot')].forEach((e,i)=>e.classList.toggle('sel',i===s));
+    const w=s>=0?WH.list[s]:C.primaryOf(me.ow);$('wmN').textContent=WEAPONS[w>=0?w:1].name;$('wmS').textContent=s<0?'Mové el mouse y soltá E':w===C.primaryOf(me.ow)?'Ya la tenés en las manos':'Soltá E para equiparla';SFX.click();}
+  const p=document.querySelector('#wheel .wptr');if(p)p.style.transform='rotate('+(Math.atan2(WH.y,WH.x)*180/Math.PI+90)+'deg) scaleY('+Math.min(1,Math.hypot(WH.x,WH.y)/MX)+')';
+}
+function closeWheel(apply){
+  if(WH.tm){clearTimeout(WH.tm);WH.tm=null;}
+  if(!WH.open)return;WH.open=false;$('wheel').hidden=true;
+  if(apply&&WH.sel>=0&&net){const w=WH.list[WH.sel];if(w!==C.primaryOf(me.ow))net.send({t:'equip',w});}
+}
+// E: si se suelta rápido es "agarrar"; si se mantiene, se abre la ruleta
+function wheelKey(down,rep){
+  if(down){if(rep||WH.down)return;WH.down=true;WH.t0=performance.now();
+    if(MODE==='gungame'||!me.alive||!C.MODES[MODE].shop)return;
+    WH.tm=setTimeout(openWheel,200);}
+  else{const was=WH.down;WH.down=false;
+    if(WH.open){closeWheel(true);return;}
+    if(WH.tm){clearTimeout(WH.tm);WH.tm=null;}
+    if(was&&net&&me.alive&&MODE!=='gungame'&&performance.now()-WH.t0<400)net.send({t:'grab'});}
+}
 /* =================== TIENDA =================== */
 let iconCache=null;
 function shopIcons(){
@@ -3782,7 +3857,7 @@ function openShop(){
   if(!inGame||!liveState())return;
   if(MODE==='gungame'){announce('SIN TIENDA','En Gungame cada baja te da el arma siguiente');SFX.deny();return;}
   if(!C.MODES[MODE].shop){announce('SIN TIENDA','En '+C.MODES[MODE].name+' se juega con lo que hay');SFX.deny();return;}
-  $('shop').hidden=false;mouseDown=false;for(const k in keys)keys[k]=false;
+  closeWheel(false);$('shop').hidden=false;mouseDown=false;for(const k in keys)keys[k]=false;
   selfUnlock();
   shopMsg('');renderShop();SFX.ui();
 }
@@ -4010,6 +4085,7 @@ canvas.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('mousemove',e=>{
   if(!inGame||document.pointerLockElement!==canvas)return;
   if(!me.alive){spLook(e.movementX,e.movementY);return;}
+  if(WH.open){wheelMove(e.movementX,e.movementY);return;}   // con la ruleta abierta el mouse elige arma
   if(mouseSpike(e.movementX,e.movementY))return;
   // con mira, la sensibilidad baja en proporción al zoom: el movimiento en pantalla se siente igual que sin mira
   // S.sensZ (Ajustes → Controles) es un multiplicador extra para la mira; 1 = como siempre
@@ -4078,7 +4154,7 @@ addEventListener('keydown',e=>{
   // 1 arma principal · 2 pistola · 3 cuchillo · 4 molotov (en Gungame: 1 el arma del nivel, 3 el cuchillo)
   const ggW=MODE==='gungame'?me.ow.findIndex((v,i)=>v&&i!==7):-1;
   const n=MODE==='snipers'?{Digit1:8,Digit2:2,Digit3:7,Numpad1:8,Numpad2:2,Numpad3:7}[e.code]:MODE==='gungame'?{Digit1:ggW,Digit3:7,Numpad1:ggW,Numpad3:7}[e.code]:{Digit1:C.primaryOf(me.ow),Digit2:0,Digit3:7,Digit4:10,Numpad1:C.primaryOf(me.ow),Numpad2:0,Numpad3:7,Numpad4:10}[e.code];
-  if(e.code==='KeyE'&&!e.repeat&&net&&me.alive&&MODE!=='gungame')net.send({t:'grab'});
+  if(e.code==='KeyE')wheelKey(true,e.repeat);
   if(e.code==='KeyR')startReload(me.w);
   if(e.code==='KeyV')selectWeapon(7);if(n!==undefined&&n>=0)selectWeapon(n);
   if(e.code==='KeyG')selectWeapon(10);
@@ -4097,8 +4173,8 @@ addEventListener('keydown',e=>{
   if(!online&&!e.repeat&&(e.code==='Minus'||e.code==='NumpadSubtract'||e.key==='-'))changeBots(-1);
 
 });
-addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Tab'&&matchState!=='inter')$('board').hidden=true;});
-addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouseDown=false;});
+addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyE')wheelKey(false);if(e.code==='Tab'&&matchState!=='inter')$('board').hidden=true;});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouseDown=false;WH.down=false;closeWheel(false);});
 function changeBots(d){S.bots=Math.max(0,Math.min(15,S.bots+d));saveS();syncSettings();if(net&&!online){net.send({t:'cfg',bots:S.bots});sysChat('Bots en la arena: '+S.bots);}}
 
 /* =================== SIMULACIÓN LOCAL =================== */
@@ -4113,7 +4189,7 @@ function updMe(dt){
       else if((o.ty==='armor'||o.ty==='armorH')&&me.ar>=100)txt='Blindaje lleno (100) · se agarra cuando te falta';
       if(txt)break;}
     const h=$('grabHint');if(h.dataset.t!==txt){h.dataset.t=txt;h.innerHTML=txt;h.hidden=!txt;}}
-  if(!me.alive){me.deadT+=dt;
+  if(!me.alive){if(WH.open)closeWheel(false);me.deadT+=dt;
     // como en TF2: unos segundos mirando al que te mató y reaparecés solo
     const left=Math.max(0,DEATH_T-me.deadT);
     spTick();
@@ -4129,10 +4205,14 @@ function updMe(dt){
   const jumpKey=free&&!!keys.Space;
   const jump=jumpKey&&(S.hop||!me.jumpHeld);
   const crouch=free&&!!(keys.ControlLeft||keys.ControlRight||keys.KeyC);
-  const r=C.pmove(W,me.s,{wx,wz,jump,up:jumpKey,wy:f*Math.sin(me.pitch),crouch,fast:MODE==='snipers'&&me.w===7?1.3:1},dt);   // up/wy: en gravedad cero Espacio sube, agacharse baja y W mirando arriba o abajo te lleva para ahí
+  const r=C.pmove(W,me.s,{wx,wz,jump,up:jumpKey,wy:f*Math.sin(me.pitch),crouch,mech:true,fast:MODE==='snipers'&&me.w===7?1.3:1},dt);   // up/wy: en gravedad cero Espacio sube, agacharse baja y W mirando arriba o abajo te lleva para ahí
   if(r.zerog&&!me.zg)SFX.zero(1);me.zg=r.zerog;
   me.jumpHeld=jumpKey;
   if(r.jumped)SFX.jump();
+  if(r.dj){SFX.dj();fxAire(me.s.x,me.s.y,me.s.z,.55,.8,1);}   // doble salto: gasta la mitad de la barra
+  if(r.wj){SFX.wj();fxAire(me.s.x,me.s.y+.9,me.s.z,.9,.7,.5);}   // salto de pared: gratis
+  if(r.slide&&!me.sliding)SFX.slide();me.sliding=r.slide;
+  if(r.slide&&Math.random()<dt*40)emit(sparks,me.s.x+R(.3),me.s.y+.05,me.s.z+R(.3),R(1.5),.8+Math.random(),R(1.5),.25,.9,.8,.6,3);
   if(r.landed<-9){me.dip=Math.min(.25,-r.landed*.015);SFX.land(Math.min(1,-r.landed/20));}
   me.padT-=dt;
   const tr=C.triggers(W,me.s);
@@ -4426,7 +4506,7 @@ function updEffects(dt){
   setOp('qtint',me.q>0&&me.alive?.6+Math.sin(G.time*6)*.15:0);
   setOp('hitm',G.hitT>0?1:0);
   setOp('dmgdir',G.dmgT);if(G.dmgT>0)$('dmgdir').style.transform='rotate('+(-(G.dmgAng-me.yaw)).toFixed(3)+'rad)';
-  const sp=Math.round(Math.hypot(me.s.vx,me.s.vz)*32);setTxt('spdV',String(sp));$('speed').className=sp>500?'vfast':sp>360?'fast':'';
+  const sp=Math.round(Math.hypot(me.s.vx,me.s.vz)*32);setTxt('spdV',String(sp));{const st=me.s.stam===undefined?1:me.s.stam,e=$('stam');if(e._v!==st){e._v=st;e.firstChild.style.transform='scaleX('+st.toFixed(3)+')';e.classList.toggle('low',st<.5);e.classList.toggle('full',st>=.999);}}$('speed').className=sp>500?'vfast':sp>360?'fast':'';
   $('xh').hidden=!me.alive;
   if(level){
     for(const o of level.items){if(!o.g.visible)continue;o.ph+=dt;o.g.rotation.y+=dt*1.6;o.g.position.y=o.it.y+.6+Math.sin(o.ph*2.2)*.12;}

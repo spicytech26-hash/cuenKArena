@@ -22,8 +22,11 @@
     }
     const mul = p.perk.am ? 2 : 1;
     p.ow = OW0(); p.am = AMMO0(0); p.am.shells = 10 * mul; p.am.bullets = 60 * mul;
-    for (const it of SHOP) if (it.w != null && it.pack && !it.once && p.unl[it.w]) { if (isPrimary(it.w)) setPrimary(p, it.w); else p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n * mul); }
-    if (primaryOf(p.ow) !== 1) p.ow[1] = 0;
+    // inventario: todo lo comprado vuelve con vos (con su munición), pero en las manos hay una sola principal; el resto se elige con la ruleta (E)
+    let pr = 1;
+    for (const it of SHOP) if (it.w != null && it.pack && !it.once && p.unl[it.w]) { if (isPrimary(it.w)) { if (p.bot) pr = it.w; } else p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n * mul); }
+    if (!p.bot && p.eq != null && p.eq !== 1 && p.unl[p.eq]) pr = p.eq;
+    setPrimary(p, pr);
     p.ar = p.perk.ar; this.fillMags(p);
   }
   fillMags(p) { p.mag = {}; p.relT = {}; WEAPONS.forEach((W_, i) => { if (W_.mag) p.mag[i] = W_.mag; }); }
@@ -48,7 +51,12 @@
     if (!this.live()) return no('La partida terminó');
     if (it.once && !p.alive) return no('Comprala cuando estés vivo: si te matan se pierde');
     if (it.once && p.am[it.pack[0]] >= AMMO_MAX[it.pack[0]]) return no('Ya llevás el máximo');
-    if (it.w != null && isPrimary(it.w) && primaryOf(p.ow) === it.w && (it.free || p.unl[it.w])) return no('Ya la tenés');
+    if (it.w != null && isPrimary(it.w) && (it.free || p.unl[it.w])) {   // ya es tuya: la tienda solo la pone en las manos
+      if (p.alive ? primaryOf(p.ow) === it.w : p.eq === it.w) return no('Ya la tenés en las manos');
+      if (p.alive) this.equip(p, it.w, true); else { p.eq = it.w; p.dirty = true; }
+      if (p.send) p.send({ t: 'ev', e: 'buy', id, ok: 1, eq: 1 });
+      return;
+    }
     if (it.free && !(it.w != null && isPrimary(it.w))) return no('No se puede comprar');
     if (it.w != null && !it.once && !isPrimary(it.w) && p.unl[it.w]) return no('Ya lo tenés');
     if (it.armor && p.perk.ar >= it.armor) return no('Ya tenés ese blindaje');
@@ -57,8 +65,8 @@
     p.cr -= it.price;
     if (it.once) { p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n); }
     else if (it.w != null && isPrimary(it.w)) {
-      // reemplaza a la principal que tenías (y es la que te toca al reaparecer)
-      for (const k of PRIMARY) p.unl[k] = 0; if (!it.free) p.unl[it.w] = 1;
+      // se suma al inventario (ruleta de armas) y queda en las manos; al reaparecer volvés con la que tenías equipada
+      p.unl[it.w] = 1; p.eq = it.w;
       if (p.alive) { setPrimary(p, it.w); if (it.pack) { const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n); } else p.am.shells = Math.max(p.am.shells, 10); }
     }
     else if (it.w != null) {
@@ -73,6 +81,15 @@
     p.dirty = true;
     if (p.send) p.send({ t: 'ev', e: 'buy', id, ok: 1 });
     this.sendScores();
+  }
+  // ruleta de armas (mantener E): cambia la principal por otra del inventario; la pistola y el cuchillo no se tocan
+  equip(p, w, free) {
+    if (!p.joined || !p.alive || !this.mode.shop || !this.live() || !Number.isInteger(w) || !isPrimary(w)) return;
+    if (!(w === 1 || p.unl[w]) || primaryOf(p.ow) === w) return;
+    if (!free && (p.eqT || 0) > this.time) return;   // no se spamea el cambio
+    p.eqT = this.time + .35;
+    setPrimary(p, w); p.eq = w; p.dirty = true;
+    if (p.send) p.send({ t: 'ev', e: 'grab', w });
   }
   botShop(p) {
     for (const id of ['w5', 'w8', 'a1', 'w3', 'w9', 'w2', 'w6', 'a2', 'w4', 'am']) {

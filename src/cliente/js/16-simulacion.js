@@ -10,7 +10,7 @@ function updMe(dt){
       else if((o.ty==='armor'||o.ty==='armorH')&&me.ar>=100)txt='Blindaje lleno (100) · se agarra cuando te falta';
       if(txt)break;}
     const h=$('grabHint');if(h.dataset.t!==txt){h.dataset.t=txt;h.innerHTML=txt;h.hidden=!txt;}}
-  if(!me.alive){me.deadT+=dt;
+  if(!me.alive){if(WH.open)closeWheel(false);me.deadT+=dt;
     // como en TF2: unos segundos mirando al que te mató y reaparecés solo
     const left=Math.max(0,DEATH_T-me.deadT);
     spTick();
@@ -26,10 +26,14 @@ function updMe(dt){
   const jumpKey=free&&!!keys.Space;
   const jump=jumpKey&&(S.hop||!me.jumpHeld);
   const crouch=free&&!!(keys.ControlLeft||keys.ControlRight||keys.KeyC);
-  const r=C.pmove(W,me.s,{wx,wz,jump,up:jumpKey,wy:f*Math.sin(me.pitch),crouch,fast:MODE==='snipers'&&me.w===7?1.3:1},dt);   // up/wy: en gravedad cero Espacio sube, agacharse baja y W mirando arriba o abajo te lleva para ahí
+  const r=C.pmove(W,me.s,{wx,wz,jump,up:jumpKey,wy:f*Math.sin(me.pitch),crouch,mech:true,fast:MODE==='snipers'&&me.w===7?1.3:1},dt);   // up/wy: en gravedad cero Espacio sube, agacharse baja y W mirando arriba o abajo te lleva para ahí
   if(r.zerog&&!me.zg)SFX.zero(1);me.zg=r.zerog;
   me.jumpHeld=jumpKey;
   if(r.jumped)SFX.jump();
+  if(r.dj){SFX.dj();fxAire(me.s.x,me.s.y,me.s.z,.55,.8,1);}   // doble salto: gasta la mitad de la barra
+  if(r.wj){SFX.wj();fxAire(me.s.x,me.s.y+.9,me.s.z,.9,.7,.5);}   // salto de pared: gratis
+  if(r.slide&&!me.sliding)SFX.slide();me.sliding=r.slide;
+  if(r.slide&&Math.random()<dt*40)emit(sparks,me.s.x+R(.3),me.s.y+.05,me.s.z+R(.3),R(1.5),.8+Math.random(),R(1.5),.25,.9,.8,.6,3);
   if(r.landed<-9){me.dip=Math.min(.25,-r.landed*.015);SFX.land(Math.min(1,-r.landed/20));}
   me.padT-=dt;
   const tr=C.triggers(W,me.s);

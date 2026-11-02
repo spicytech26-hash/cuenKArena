@@ -163,7 +163,7 @@ function onEvent(m){
     }
     case 'buy': {
       const it=C.SHOP.find(s=>s.id===m.id);
-      if(m.ok){SFX.buy();shopMsg((it?it.name:'')+' comprado','ok');}
+      if(m.ok){SFX.buy();shopMsg((it?it.name:'')+(m.eq?' equipada':' comprado'),'ok');}
       else{SFX.deny();shopMsg(m.why||'No se pudo comprar','bad');}
       break;
     }

@@ -21,7 +21,7 @@ function openShop(){
   if(!inGame||!liveState())return;
   if(MODE==='gungame'){announce('SIN TIENDA','En Gungame cada baja te da el arma siguiente');SFX.deny();return;}
   if(!C.MODES[MODE].shop){announce('SIN TIENDA','En '+C.MODES[MODE].name+' se juega con lo que hay');SFX.deny();return;}
-  $('shop').hidden=false;mouseDown=false;for(const k in keys)keys[k]=false;
+  closeWheel(false);$('shop').hidden=false;mouseDown=false;for(const k in keys)keys[k]=false;
   selfUnlock();
   shopMsg('');renderShop();SFX.ui();
 }

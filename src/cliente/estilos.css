@@ -128,6 +128,11 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 #speed b{font-weight:400;color:var(--ink)}
 #speed.fast b{color:var(--amber)}
 #speed.vfast b{color:var(--quad)}
+#stam{position:fixed;left:50%;top:calc(50% + 56px);transform:translateX(-50%);width:84px;height:5px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.18);box-shadow:0 1px 0 #000;overflow:hidden}
+#stam i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#2bd6ff,#7af0ff);transform-origin:left;transition:background .15s}
+#stam b{position:absolute;left:50%;top:0;width:1px;height:100%;background:rgba(0,0,0,.7)}   /* marca de la mitad: lo que cuesta el doble salto */
+#stam.low i{background:linear-gradient(90deg,#ff5a3a,#ff9a5a)}
+#stam.full{opacity:.35;transition:opacity .6s}
 #huntOv{position:fixed;inset:0;pointer-events:none}
 #huntOv svg{position:absolute;inset:0;width:100%;height:100%}
 #scopeOv{position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle at center,transparent 0,transparent min(36vh,36vw),#000 calc(min(36vh,36vw) + 2px));}
@@ -609,3 +614,20 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 .emgrid button[aria-pressed="true"]{background:#3a1015;outline:3px solid #fff;outline-offset:2px}
 .lockplate{max-width:calc(100% - 44px);overflow:hidden;text-overflow:ellipsis;font-family:var(--display);font-size:13px;letter-spacing:.14em;padding:3px 12px}
 @media (prefers-reduced-motion:reduce){.lkpulse{animation:none}}
+
+/* ---------- ruleta de armas (mantener E) ---------- */
+#wheel{position:fixed;left:50%;top:50%;width:0;height:0;z-index:30;pointer-events:none}
+#wheel::before{content:"";position:absolute;left:-250px;top:-250px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(6,12,10,.86) 0,rgba(6,12,10,.7) 52%,rgba(6,12,10,0) 70%)}
+#wheel .wring{position:absolute;left:-92px;top:-92px;width:184px;height:184px;border-radius:50%;border:1px solid rgba(127,174,143,.45);box-shadow:0 0 0 6px rgba(127,174,143,.06),inset 0 0 28px rgba(0,0,0,.7)}
+#wheel .wptr{position:absolute;left:-1px;top:-96px;width:2px;height:96px;background:linear-gradient(#8dff3a,rgba(141,255,58,0));transform-origin:50% 100%;transform:scaleY(0);opacity:.8}
+#wheel .wmid{position:absolute;left:-86px;top:-26px;width:172px;text-align:center;font-family:var(--mono);color:var(--bone)}
+#wheel .wmid b{display:block;font-weight:400;font-size:17px;letter-spacing:.06em;text-shadow:0 1px 0 #000}
+#wheel .wmid small{display:block;margin-top:4px;font-size:11px;color:var(--muted);letter-spacing:.04em}
+#wheel .wslot{position:absolute;width:104px;margin:-34px 0 0 -52px;padding:6px 6px 4px;text-align:center;font-family:var(--mono);color:var(--ink);background:linear-gradient(rgba(26,38,32,.94),rgba(12,18,16,.94));border:1px solid rgba(127,174,143,.3);transition:transform .08s,border-color .08s,background .08s}
+#wheel .wslot img{display:block;width:100%;height:36px;object-fit:contain}
+#wheel .wslot span{display:block;font-size:11px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#wheel .wslot i{position:absolute;right:4px;top:2px;font-style:normal;font-size:10px;color:var(--cash)}
+#wheel .wslot.cur{border-color:var(--amber)}
+#wheel .wslot.sel{transform:scale(1.14);border-color:#8dff3a;background:linear-gradient(rgba(40,64,44,.97),rgba(16,30,20,.97));box-shadow:0 0 18px rgba(141,255,58,.3)}
+#wheel .wfix{position:absolute;left:-150px;top:176px;width:300px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted)}
+#wheel .wfix b{font-weight:400;color:var(--bone)}

@@ -44,6 +44,7 @@ canvas.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('mousemove',e=>{
   if(!inGame||document.pointerLockElement!==canvas)return;
   if(!me.alive){spLook(e.movementX,e.movementY);return;}
+  if(WH.open){wheelMove(e.movementX,e.movementY);return;}   // con la ruleta abierta el mouse elige arma
   if(mouseSpike(e.movementX,e.movementY))return;
   // con mira, la sensibilidad baja en proporción al zoom: el movimiento en pantalla se siente igual que sin mira
   // S.sensZ (Ajustes → Controles) es un multiplicador extra para la mira; 1 = como siempre
@@ -112,7 +113,7 @@ addEventListener('keydown',e=>{
   // 1 arma principal · 2 pistola · 3 cuchillo · 4 molotov (en Gungame: 1 el arma del nivel, 3 el cuchillo)
   const ggW=MODE==='gungame'?me.ow.findIndex((v,i)=>v&&i!==7):-1;
   const n=MODE==='snipers'?{Digit1:8,Digit2:2,Digit3:7,Numpad1:8,Numpad2:2,Numpad3:7}[e.code]:MODE==='gungame'?{Digit1:ggW,Digit3:7,Numpad1:ggW,Numpad3:7}[e.code]:{Digit1:C.primaryOf(me.ow),Digit2:0,Digit3:7,Digit4:10,Numpad1:C.primaryOf(me.ow),Numpad2:0,Numpad3:7,Numpad4:10}[e.code];
-  if(e.code==='KeyE'&&!e.repeat&&net&&me.alive&&MODE!=='gungame')net.send({t:'grab'});
+  if(e.code==='KeyE')wheelKey(true,e.repeat);
   if(e.code==='KeyR')startReload(me.w);
   if(e.code==='KeyV')selectWeapon(7);if(n!==undefined&&n>=0)selectWeapon(n);
   if(e.code==='KeyG')selectWeapon(10);
@@ -131,7 +132,7 @@ addEventListener('keydown',e=>{
   if(!online&&!e.repeat&&(e.code==='Minus'||e.code==='NumpadSubtract'||e.key==='-'))changeBots(-1);
 
 });
-addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Tab'&&matchState!=='inter')$('board').hidden=true;});
-addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouseDown=false;});
+addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyE')wheelKey(false);if(e.code==='Tab'&&matchState!=='inter')$('board').hidden=true;});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouseDown=false;WH.down=false;closeWheel(false);});
 function changeBots(d){S.bots=Math.max(0,Math.min(15,S.bots+d));saveS();syncSettings();if(net&&!online){net.send({t:'cfg',bots:S.bots});sysChat('Bots en la arena: '+S.bots);}}
 

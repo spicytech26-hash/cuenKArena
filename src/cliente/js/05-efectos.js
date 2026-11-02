@@ -13,6 +13,8 @@ function updSys(s,dt){for(let i=0;i<s.n;i++){if(s.life[i]<=0)continue;s.life[i]-
 const R=a=>(Math.random()-.5)*a;
 function fxSparks(x,y,z,n,nn){for(let i=0;i<nn;i++)emit(sparks,x,y,z,n[0]*3+R(5),n[1]*3+R(5)+1,n[2]*3+R(5),.25+Math.random()*.3,1,.75,.35,9);for(let i=0;i<3;i++)emit(gore,x,y,z,n[0]+R(.6),n[1]+R(.6)+.4,n[2]+R(.6),.5+Math.random()*.4,.32,.29,.26,-.5);}
 function fxBlood(x,y,z,n){for(let i=0;i<n;i++)emit(gore,x,y,z,R(5),Math.random()*4,R(5),.6+Math.random()*.6,.55+Math.random()*.2,.04,.02,12);}
+// anillo de chispas corto para el doble salto y el salto de pared (r, g, b = color)
+function fxAire(x,y,z,r,g,b){for(let i=0;i<10;i++){const a=Math.random()*6.28;emit(sparks,x,y,z,Math.cos(a)*2.5,.3+Math.random(),Math.sin(a)*2.5,.3,r,g,b,1);}}
 function fxTele(x,y,z,r=.4,g=.85,b=1){for(let i=0;i<60;i++){const a=Math.random()*6.28,rr=.3+Math.random()*.6;emit(sparks,x+Math.cos(a)*rr,y+Math.random()*2,z+Math.sin(a)*rr,0,1+Math.random()*2,0,.6+Math.random()*.5,r,g,b,0);}}
 function fxGib(x,y,z){for(let i=0;i<60;i++)emit(gore,x,y+.5+Math.random()*1.2,z,R(10),Math.random()*9,R(10),1.4,.5,.05,.03,16);for(let i=0;i<12;i++)emit(gore,x,y+1,z,R(7),Math.random()*7,R(7),2,.35,.3,.28,16);}
 

@@ -48,7 +48,7 @@ class Game {
     return { id, name, skin, color: skin.c, bot, send: null, s: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, on: false }, yaw: 0, pitch: 0, w: 1,
       hp: 100, ar: 0, am: AMMO0(0), ow: OW0(), mag: {}, relT: {}, alive: false, deadT: 0,
       frags: 0, deaths: 0, quadT: 0, lavaT: 0, megaT: 0, lastFire: -9, ping: 0, dirty: true, joined: false, ai: null, spawnT: 0, padT: 0,
-      cr: ECON.START, unl: OW0(), perk: { ar: 0, am: 0 }, streak: 0, lvl: 0, team: -1, caps: 0, kills: 0, dmg: 0, acct: null, plvl: 0, joinT: 0, role: id % 3 === 0 ? 'def' : 'att' };
+      cr: ECON.START, unl: OW0(), eq: 1, perk: { ar: 0, am: 0 }, streak: 0, lvl: 0, team: -1, caps: 0, kills: 0, dmg: 0, acct: null, plvl: 0, joinT: 0, role: id % 3 === 0 ? 'def' : 'att' };
   }
   // el servidor avisa qué cuenta tiene cada jugador (para su nivel y para sumarle experiencia)
   setAccount(id, a) { const p = this.players.get(id); if (!p) return; p.acct = a ? a.sub : null; p.plvl = a ? a.level : 0; if (p.joined) this.sendScores(); }
@@ -140,6 +140,7 @@ class Game {
       case 'cfg': if (!this.o.online) this.configure(m); break;
       case 'kick': this.startKick(p, m.id | 0); break;
       case 'grab': this.grab(p); break;
+      case 'equip': this.equip(p, m.w | 0); break;
       case 'ready': if (this.state === 'inter' && p.joined && !p.bot && !p.ready) { p.ready = true; this.checkReady(); } break;
       case 'vote': this.castVote(p, !!m.y); break;
       case 'mapvote': this.castMapVote(p, String(m.m || '')); break;

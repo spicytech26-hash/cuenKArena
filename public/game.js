@@ -1947,6 +1947,24 @@ function crouchUpdate(W, s, want) {
    cayendo despacio hacia abajo y te movés libre: salto/Espacio sube, agacharse baja, y W mirando arriba o abajo te lleva para ahí.
    Parado en el piso solo se activa si apretás para subir. */
 const ZG = { DRIFT: -4.5, VSPEED: 9.5, HSPEED: .7 };
+/* Movimiento avanzado (solo lo usa el cliente humano con cmd.mech; los bots siguen con el movimiento de siempre).
+   Stamina 0..1: deslizar gasta un poco, el doble salto gasta la mitad; el salto de pared es gratis. */
+const MV = {
+  SL_MIN: 6, SL_BOOST: 2.4, SL_MAX: 15, SL_END: 3.4, SL_FRIC: 1.4, SL_STEER: .6,   // deslizamiento: velocidad mínima para arrancar, empujón, tope, velocidad a la que se corta, fricción, control
+  SL_START: .06, SL_DRAIN: .12,                                                      // costo de stamina: al arrancar y por segundo
+  DJ_COST: .5, DJ_JUMP: .95,                                                         // doble salto: mitad de la barra
+  WJ_UP: 1.05, WJ_OUT: 6.5, WJ_CD: .3, WJ_REACH: .14,                                // salto de pared: impulso arriba y hacia afuera, espera entre saltos, distancia a la pared
+  REGEN: .22, REGEN_DELAY: .7, COYOTE: .09
+};
+// ¿hay una pared pegada al cuerpo? devuelve la normal (hacia afuera de la pared) o null
+function wallNormal(W, s) {
+  let nx = 0, nz = 0; const y = s.y + K.STEP + .1, h = (s.crouch ? K.HC : K.H) - K.STEP - .3, d = MV.WJ_REACH;
+  if (solidAt(W, s.x + d, y, s.z, K.R, h)) nx -= 1;
+  if (solidAt(W, s.x - d, y, s.z, K.R, h)) nx += 1;
+  if (solidAt(W, s.x, y, s.z + d, K.R, h)) nz -= 1;
+  if (solidAt(W, s.x, y, s.z - d, K.R, h)) nz += 1;
+  const l = Math.hypot(nx, nz); return l > 0 ? { x: nx / l, z: nz / l } : null;
+}
 function inZeroG(W, s) {
   if (!W.zerog) return false;
   const y = s.y + .9;
@@ -1960,10 +1978,44 @@ function pmove(W, s, cmd, dt) {
   let wx = cmd.wx || 0, wz = cmd.wz || 0;
   const wl = Math.hypot(wx, wz); let wish = 0;
   if (wl > 1e-4) { wish = K.MAXSPD * Math.min(1, wl); wx /= wl; wz /= wl; }
-  if (s.crouch && s.on) wish *= K.CROUCH_SPD;
+  if (s.crouch && s.on && !(cmd.mech && s.slide)) wish *= K.CROUCH_SPD;
   if (cmd.fast > 1) wish *= Math.min(1.5, cmd.fast);
-  const out = { jumped: false, landed: 0, zerog: false };
+  const out = { jumped: false, landed: 0, zerog: false, slide: false, dj: false, wj: false };
   const up = cmd.up !== undefined ? cmd.up : cmd.jump;
+  let mech = false;
+  if (cmd.mech) {
+    mech = true;
+    if (s.stam === undefined) { s.stam = 1; s.stT = 0; s.dj = false; s.slide = false; s.wjT = 0; s.offT = 0; s.didJump = false; s.upPrev = false; s.crPrev = false; }
+    const press = !!cmd.up && !s.upPrev, crPress = !!cmd.crouch && !s.crPrev;
+    s.upPrev = !!cmd.up; s.crPrev = !!cmd.crouch;
+    s.wjT = Math.max(0, s.wjT - dt); s.stT = Math.max(0, s.stT - dt);
+    if (s.on) { s.dj = false; s.didJump = false; s.offT = 0; } else s.offT += dt;
+    const zg = W.zerog && inZeroG(W, s);
+    // deslizamiento: Ctrl en el piso yendo rápido (solo arranca al apretar, no al llegar corriendo con Ctrl ya apretado)
+    if (!cmd.crouch || !s.on || zg) s.slide = false;
+    else if (crPress && !s.slide && s.stam > MV.SL_START && Math.hypot(s.vx, s.vz) >= MV.SL_MIN) {
+      s.slide = true; s.stam = Math.max(0, s.stam - MV.SL_START); s.stT = MV.REGEN_DELAY;
+      const sp = Math.hypot(s.vx, s.vz), k = Math.min(MV.SL_MAX, sp + MV.SL_BOOST) / sp; s.vx *= k; s.vz *= k;
+    }
+    // acciones en el aire con un salto recién apretado
+    if (press && !s.on && !zg) {
+      const hsp = Math.hypot(s.vx, s.vz);
+      const wn = s.wjT <= 0 ? wallNormal(W, s) : null;
+      if (wn) {   // salto de pared: gratis; te empuja hacia afuera y conserva lo que llevabas a lo largo de la pared
+        const along = s.vx * -wn.z + s.vz * wn.x;
+        s.vx = wn.x * MV.WJ_OUT + -wn.z * along; s.vz = wn.z * MV.WJ_OUT + wn.x * along;
+        s.vy = K.JUMP * MV.WJ_UP; s.wjT = MV.WJ_CD; s.didJump = true; out.wj = true;
+      } else if (!s.didJump && s.offT < MV.COYOTE) {   // recién te caíste del borde: cuenta como salto normal
+        s.vy = K.JUMP; s.didJump = true; out.jumped = true;
+      } else if (!s.dj && s.stam >= MV.DJ_COST - 1e-6) {   // doble salto: uno solo por vuelo (hasta tocar el piso), cuesta la mitad de la barra
+        s.dj = true; s.stam -= MV.DJ_COST; s.stT = MV.REGEN_DELAY; s.vy = K.JUMP * MV.DJ_JUMP; out.dj = true;
+        if (wl > 1e-4) { const sp = Math.max(hsp, 5); s.vx = wx * sp; s.vz = wz * sp; }   // el doble salto reencauza hacia donde apuntás
+      }
+    }
+    // stamina: el deslizamiento gasta de a poco; se recupera pasado un ratito sin gastar
+    if (s.slide) { s.stam = Math.max(0, s.stam - MV.SL_DRAIN * dt); s.stT = MV.REGEN_DELAY; if (s.stam <= 0) s.slide = false; }
+    else if (s.stT <= 0) s.stam = Math.min(1, s.stam + MV.REGEN * dt);
+  }
   for (let i = 0; i < steps; i++) {
     const wasOn = s.on;
     if (W.zerog && inZeroG(W, s) && (!s.on || up)) {
@@ -1980,9 +2032,16 @@ function pmove(W, s, cmd, dt) {
     }
     let jumpedNow = false;
     if (s.on) {
-      if (cmd.jump) { s.vy = K.JUMP; s.on = false; jumpedNow = out.jumped = true; }
-      else friction(s, h);
-      accelerate(s, wx, wz, wish, K.ACC, h, false);
+      if (cmd.jump) { s.vy = K.JUMP; s.on = false; jumpedNow = out.jumped = true; if (mech) { s.didJump = true; s.slide = false; } }
+      else if (mech && s.slide) {   // deslizando: casi sin fricción, y se corta cuando perdés la velocidad
+        const sp = Math.hypot(s.vx, s.vz), ctrl = Math.max(sp, K.STOP), ns = Math.max(0, sp - ctrl * MV.SL_FRIC * h) / (sp || 1);
+        s.vx *= ns; s.vz *= ns; out.slide = true;
+        if (Math.hypot(s.vx, s.vz) < MV.SL_END) s.slide = false;
+      } else friction(s, h);
+      if (mech && s.slide) {   // deslizando solo se puede doblar de costado: no se acelera hacia adelante, así el slide se va apagando
+        const sp = Math.hypot(s.vx, s.vz) || 1, ux = s.vx / sp, uz = s.vz / sp, al = wx * ux + wz * uz, sx = wx - al * ux, sz = wz - al * uz;
+        s.vx += sx * wish * MV.SL_STEER * h; s.vz += sz * wish * MV.SL_STEER * h;
+      } else accelerate(s, wx, wz, wish, K.ACC, h, false);
     } else accelerate(s, wx, wz, wish, K.AIRACC, h, true);
     s.vy -= K.GRAV * h;
     const preVy = s.vy;
@@ -2425,7 +2484,7 @@ class Game {
     return { id, name, skin, color: skin.c, bot, send: null, s: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, on: false }, yaw: 0, pitch: 0, w: 1,
       hp: 100, ar: 0, am: AMMO0(0), ow: OW0(), mag: {}, relT: {}, alive: false, deadT: 0,
       frags: 0, deaths: 0, quadT: 0, lavaT: 0, megaT: 0, lastFire: -9, ping: 0, dirty: true, joined: false, ai: null, spawnT: 0, padT: 0,
-      cr: ECON.START, unl: OW0(), perk: { ar: 0, am: 0 }, streak: 0, lvl: 0, team: -1, caps: 0, kills: 0, dmg: 0, acct: null, plvl: 0, joinT: 0, role: id % 3 === 0 ? 'def' : 'att' };
+      cr: ECON.START, unl: OW0(), eq: 1, perk: { ar: 0, am: 0 }, streak: 0, lvl: 0, team: -1, caps: 0, kills: 0, dmg: 0, acct: null, plvl: 0, joinT: 0, role: id % 3 === 0 ? 'def' : 'att' };
   }
   // el servidor avisa qué cuenta tiene cada jugador (para su nivel y para sumarle experiencia)
   setAccount(id, a) { const p = this.players.get(id); if (!p) return; p.acct = a ? a.sub : null; p.plvl = a ? a.level : 0; if (p.joined) this.sendScores(); }
@@ -2517,6 +2576,7 @@ class Game {
       case 'cfg': if (!this.o.online) this.configure(m); break;
       case 'kick': this.startKick(p, m.id | 0); break;
       case 'grab': this.grab(p); break;
+      case 'equip': this.equip(p, m.w | 0); break;
       case 'ready': if (this.state === 'inter' && p.joined && !p.bot && !p.ready) { p.ready = true; this.checkReady(); } break;
       case 'vote': this.castVote(p, !!m.y); break;
       case 'mapvote': this.castMapVote(p, String(m.m || '')); break;
@@ -2666,8 +2726,11 @@ class Game {
     }
     const mul = p.perk.am ? 2 : 1;
     p.ow = OW0(); p.am = AMMO0(0); p.am.shells = 10 * mul; p.am.bullets = 60 * mul;
-    for (const it of SHOP) if (it.w != null && it.pack && !it.once && p.unl[it.w]) { if (isPrimary(it.w)) setPrimary(p, it.w); else p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n * mul); }
-    if (primaryOf(p.ow) !== 1) p.ow[1] = 0;
+    // inventario: todo lo comprado vuelve con vos (con su munición), pero en las manos hay una sola principal; el resto se elige con la ruleta (E)
+    let pr = 1;
+    for (const it of SHOP) if (it.w != null && it.pack && !it.once && p.unl[it.w]) { if (isPrimary(it.w)) { if (p.bot) pr = it.w; } else p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n * mul); }
+    if (!p.bot && p.eq != null && p.eq !== 1 && p.unl[p.eq]) pr = p.eq;
+    setPrimary(p, pr);
     p.ar = p.perk.ar; this.fillMags(p);
   }
   fillMags(p) { p.mag = {}; p.relT = {}; WEAPONS.forEach((W_, i) => { if (W_.mag) p.mag[i] = W_.mag; }); }
@@ -2692,7 +2755,12 @@ class Game {
     if (!this.live()) return no('La partida terminó');
     if (it.once && !p.alive) return no('Comprala cuando estés vivo: si te matan se pierde');
     if (it.once && p.am[it.pack[0]] >= AMMO_MAX[it.pack[0]]) return no('Ya llevás el máximo');
-    if (it.w != null && isPrimary(it.w) && primaryOf(p.ow) === it.w && (it.free || p.unl[it.w])) return no('Ya la tenés');
+    if (it.w != null && isPrimary(it.w) && (it.free || p.unl[it.w])) {   // ya es tuya: la tienda solo la pone en las manos
+      if (p.alive ? primaryOf(p.ow) === it.w : p.eq === it.w) return no('Ya la tenés en las manos');
+      if (p.alive) this.equip(p, it.w, true); else { p.eq = it.w; p.dirty = true; }
+      if (p.send) p.send({ t: 'ev', e: 'buy', id, ok: 1, eq: 1 });
+      return;
+    }
     if (it.free && !(it.w != null && isPrimary(it.w))) return no('No se puede comprar');
     if (it.w != null && !it.once && !isPrimary(it.w) && p.unl[it.w]) return no('Ya lo tenés');
     if (it.armor && p.perk.ar >= it.armor) return no('Ya tenés ese blindaje');
@@ -2701,8 +2769,8 @@ class Game {
     p.cr -= it.price;
     if (it.once) { p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n); }
     else if (it.w != null && isPrimary(it.w)) {
-      // reemplaza a la principal que tenías (y es la que te toca al reaparecer)
-      for (const k of PRIMARY) p.unl[k] = 0; if (!it.free) p.unl[it.w] = 1;
+      // se suma al inventario (ruleta de armas) y queda en las manos; al reaparecer volvés con la que tenías equipada
+      p.unl[it.w] = 1; p.eq = it.w;
       if (p.alive) { setPrimary(p, it.w); if (it.pack) { const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n); } else p.am.shells = Math.max(p.am.shells, 10); }
     }
     else if (it.w != null) {
@@ -2717,6 +2785,15 @@ class Game {
     p.dirty = true;
     if (p.send) p.send({ t: 'ev', e: 'buy', id, ok: 1 });
     this.sendScores();
+  }
+  // ruleta de armas (mantener E): cambia la principal por otra del inventario; la pistola y el cuchillo no se tocan
+  equip(p, w, free) {
+    if (!p.joined || !p.alive || !this.mode.shop || !this.live() || !Number.isInteger(w) || !isPrimary(w)) return;
+    if (!(w === 1 || p.unl[w]) || primaryOf(p.ow) === w) return;
+    if (!free && (p.eqT || 0) > this.time) return;   // no se spamea el cambio
+    p.eqT = this.time + .35;
+    setPrimary(p, w); p.eq = w; p.dirty = true;
+    if (p.send) p.send({ t: 'ev', e: 'grab', w });
   }
   botShop(p) {
     for (const id of ['w5', 'w8', 'a1', 'w3', 'w9', 'w2', 'w6', 'a2', 'w4', 'am']) {
@@ -3177,7 +3254,7 @@ class Game {
     for (const it of this.items) { it.up = !it.off; it.t = 0; it.type = it.base; }
     this.bcast({ t: 'start', map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), tm: this.time, fs: this.flagState(), ts: this.ts });
     for (const p of this.players.values()) if (p.joined) {
-      p.ready = false; p.frags = 0; p.deaths = 0; p.cr = ECON.START; p.unl = OW0(); p.perk = { ar: 0, am: 0 }; p.streak = 0; p.lvl = 0; p.caps = 0; p.kills = 0; p.dmg = 0; p.bestLife = 0; p.lifeT0 = p.alive ? this.time : null; p.joinT = this.time; p.dirty = true;
+      p.ready = false; p.frags = 0; p.deaths = 0; p.cr = ECON.START; p.unl = OW0(); p.eq = 1; p.perk = { ar: 0, am: 0 }; p.streak = 0; p.lvl = 0; p.caps = 0; p.kills = 0; p.dmg = 0; p.bestLife = 0; p.lifeT0 = p.alive ? this.time : null; p.joinT = this.time; p.dirty = true;
       this.spawn(p);
     }
     this.sendScores();

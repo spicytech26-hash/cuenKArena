@@ -718,6 +718,36 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 .mmC .n{padding:0 10px;font-weight:bold}
 .mmC kbd{position:absolute;left:6px;top:6px;font-size:11px;border:1px solid #3d7fd8;background:rgba(0,0,0,.6);padding:0 5px;color:#8fd0ff}
 #mmMsg{font-size:13px;color:#9fb6d8;min-height:16px}
+
+/* tienda horizontal: una fila por categoría, fichas chicas, detalle en el panel izquierdo */
+.vend svg{max-height:44vh}
+#shopDet{padding:10px 12px;border:1px solid rgba(127,174,143,.3);background:rgba(8,14,12,.9);font-family:var(--mono);min-height:96px}
+#shopDet b{display:block;font-weight:400;font-size:15px;color:var(--bone)}
+#shopDet #sdP{display:block;margin:2px 0 6px;font-size:13px;color:var(--cash)}
+#shopDet p{margin:0;font-size:12px;line-height:1.45;color:var(--muted)}
+#shopTabs{display:flex;gap:6px;margin-top:-2px}
+#shopTabs button{font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;padding:8px 20px;background:rgba(20,32,27,.9);color:#7fae8f;border:1px solid rgba(127,174,143,.3);border-bottom:0;cursor:pointer}
+#shopTabs button[aria-selected="true"]{background:#7fae8f;color:#0b0907}
+.shopgrid{display:flex;flex-direction:column;flex-wrap:nowrap;gap:0;align-items:stretch;border-top:2px solid #7fae8f}
+.shrow{display:grid;grid-template-columns:116px 1fr;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(127,174,143,.2)}
+.shrow[hidden]{display:none}
+.slab{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#7fae8f;padding-left:8px;border-left:3px solid rgba(127,174,143,.5)}
+.shrow .scards{display:flex;flex-wrap:wrap;gap:6px}
+.shrow .scards .card{width:104px;padding:6px 6px 5px;gap:2px;align-items:center;text-align:center}
+.shrow .card img{height:34px}
+.shrow .card .nm{font-size:11px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shrow .card .pr{font-size:11px}
+.shrow .card.own .pr,.shrow .card.mine .pr{align-self:center}
+.shrow .card::before,.shrow .card::after{display:none}
+
+/* tienda densa: varias categorías por fila */
+.shrow{display:flex;grid-template-columns:none;flex-wrap:wrap;gap:14px 22px;align-items:flex-start;padding:12px 0}
+.shgrp{display:flex;flex-direction:column;gap:6px;min-width:0}
+.shgrp .slab{padding:0 0 3px;border-left:0;border-bottom:1px solid rgba(127,174,143,.35);white-space:nowrap}
+.shrow .scards .card{width:134px;padding:7px 6px 6px}
+.shrow .card img{height:42px}
+.shrow .card .nm{font-size:12px}
+.shrow .card .pr{font-size:12px}
 </style>
 
 <canvas id="c"></canvas>
@@ -839,9 +869,11 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
         <g><rect x="30" y="334" width="44" height="18" rx="2" fill="#2b1d28" stroke="#6b4a8a"/><path d="M36 343h32" stroke="#9b4dff" stroke-width="1.5" opacity=".7"/></g>
       </svg>
       <div class="vsay"><b>El Mercader del Umbral</b><p id="vendSay" class="say"></p></div>
+      <div id="shopDet"><b id="sdN">Elegí un objeto</b><span id="sdP"></span><p id="sdD">Pasá el mouse por encima de un objeto para ver qué hace.</p></div>
     </aside>
     <section class="stall">
       <header class="shophead"><div class="ttl"><small>Bazar de lo innombrable</small><h2>La Tienda</h2></div><div class="wallet"><small>Tus créditos</small><span id="shopCr">¤ 0</span></div></header>
+      <div id="shopTabs" role="tablist"><button type="button" role="tab" data-tab="armas" aria-selected="true">Armas</button><button type="button" role="tab" data-tab="equipo" aria-selected="false">Equipo</button></div>
       <div id="shopMsg"></div>
       <div class="shopgrid" id="shopGrid"></div>
       <div class="shopinvbox"><small>Tu inventario · mantené <kbd>E</kbd> para elegir principal</small><div id="shopInv"></div><small class="fixd">Pistola y cuchillo siempre en las manos</small></div>
@@ -3998,24 +4030,33 @@ const VEND={
 };
 let vendLast='';
 function vendSay(k){const a=VEND[k];let t;do{t=a[Math.random()*a.length|0];}while(t===vendLast&&a.length>1);vendLast=t;const e=$('vendSay');e.textContent=t;e.classList.remove('say');void e.offsetWidth;e.classList.add('say');}
-let shopEls=null;
+let shopEls=null,shopTab='armas',shopDetId=null;
+// disposición horizontal (como la tienda de Deadlock): una fila por categoría con fichas chicas; el detalle va en el panel de la izquierda
+// filas por pestaña: cada fila junta varias categorías lado a lado (cada categoría con su título arriba de sus fichas)
+const SHOP_ROWS={armas:[['Pistolas','Cuerpo a cuerpo','Escopetas','Ametralladoras'],['Rifles','Bombas','Misiles']],equipo:[['Blindaje','Suministros']]};
+function shopShowTab(t){shopTab=t;[...$('shopTabs').children].forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===t)));$('shopGrid').querySelectorAll('.shrow').forEach(r=>{r.hidden=r.dataset.tab!==t;});}
+function shopDetail(id){
+  const it=C.SHOP.find(s=>s.id===id),E=shopEls&&shopEls[id];if(!it||!E)return;
+  shopDetId=id;setTxt('sdN',it.name);setTxt('sdP',E.pr.textContent);setTxt('sdD',it.desc);$('shopDet').classList.toggle('on',true);
+}
 function buildShop(){
   if(shopEls)return;shopEls={};
-  const ic=shopIcons(),cats=[];C.SHOP.forEach(it=>{if(!cats.includes(it.cat))cats.push(it.cat);});
-  const ORD=['Pistolas','Cuerpo a cuerpo','Escopetas','Ametralladoras','Rifles','Bombas','Misiles','Blindaje','Suministros'];
-  cats.sort((a,b)=>{const i=ORD.indexOf(a),j=ORD.indexOf(b);return (i<0?99:i)-(j<0?99:j);});
-  const host=$('shopGrid');host.textContent='';
-  cats.forEach(cat=>{
-    const sc=document.createElement('div');sc.className='scat';const h3=document.createElement('h3');h3.textContent=cat;const cd=document.createElement('div');cd.className='scards';sc.append(h3,cd);host.appendChild(sc);
-    C.SHOP.filter(it=>it.cat===cat).forEach(it=>{
-      const b=document.createElement('button');b.type='button';b.className='card';b.dataset.id=it.id;
-      const im=document.createElement('img');im.alt='';im.src=ic[it.id]||ic['w'+it.w]||'';
-      const nm=document.createElement('span');nm.className='nm';nm.textContent=it.name;
-      const pr=document.createElement('span');pr.className='pr';
-      const ds=document.createElement('span');ds.className='ds';ds.textContent=it.desc;
-      b.append(im,nm,pr,ds);cd.appendChild(b);shopEls[it.id]={b,pr};
+  const ic=shopIcons(),host=$('shopGrid');host.textContent='';
+  for(const tab in SHOP_ROWS)SHOP_ROWS[tab].forEach(cats=>{
+    const row=document.createElement('div');row.className='shrow';row.dataset.tab=tab;host.appendChild(row);
+    cats.forEach(cat=>{
+      const g=document.createElement('div');g.className='shgrp';const cap=document.createElement('div');cap.className='slab';cap.textContent=cat;
+      const cd=document.createElement('div');cd.className='scards';g.append(cap,cd);row.appendChild(g);
+      C.SHOP.filter(it=>it.cat===cat).forEach(it=>{
+        const b=document.createElement('button');b.type='button';b.className='card';b.dataset.id=it.id;
+        const im=document.createElement('img');im.alt='';im.src=ic[it.id]||ic['w'+it.w]||'';
+        const nm=document.createElement('span');nm.className='nm';nm.textContent=it.name;
+        const pr=document.createElement('span');pr.className='pr';
+        b.append(im,nm,pr);cd.appendChild(b);shopEls[it.id]={b,pr};
+      });
     });
   });
+  shopShowTab(shopTab);
 }
 function openShop(){
   if(!inGame||!liveState())return;
@@ -4045,11 +4086,15 @@ function renderShop(){
     if(E.cls!==cls){E.cls=cls;E.b.className=cls;}
     E.b.disabled=own;
   });
+  if(shopDetId)shopDetail(shopDetId);
   // inventario: lo que hay en la ruleta (E)
   const inv=wheelList();
   const html=inv.map(w=>'<span class="'+(w===prim?'on':'')+'" title="'+esc(WEAPONS[w].name)+'"><img alt="" src="'+(shopIcons()['w'+w]||'')+'"></span>').join('');
   const iv=$('shopInv');if(iv._h!==html){iv._h=html;iv.innerHTML=html;}
 }
+$('shopTabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b){shopShowTab(b.dataset.tab);SFX.ui();}});
+$('shopGrid').addEventListener('mouseover',e=>{const b=e.target.closest('.card');if(b&&b.dataset.id!==shopDetId)shopDetail(b.dataset.id);});
+$('shopGrid').addEventListener('focusin',e=>{const b=e.target.closest('.card');if(b)shopDetail(b.dataset.id);});
 $('shopGrid').addEventListener('click',e=>{const b=e.target.closest('.card');if(!b||b.disabled||!net)return;net.send({t:'buy',id:b.dataset.id});});
 $('shop').addEventListener('click',e=>{if(e.target===$('shop')||e.target.classList.contains('shopbox'))closeShop();});
 

@@ -40,24 +40,33 @@ const VEND={
 };
 let vendLast='';
 function vendSay(k){const a=VEND[k];let t;do{t=a[Math.random()*a.length|0];}while(t===vendLast&&a.length>1);vendLast=t;const e=$('vendSay');e.textContent=t;e.classList.remove('say');void e.offsetWidth;e.classList.add('say');}
-let shopEls=null;
+let shopEls=null,shopTab='armas',shopDetId=null;
+// disposición horizontal (como la tienda de Deadlock): una fila por categoría con fichas chicas; el detalle va en el panel de la izquierda
+// filas por pestaña: cada fila junta varias categorías lado a lado (cada categoría con su título arriba de sus fichas)
+const SHOP_ROWS={armas:[['Pistolas','Cuerpo a cuerpo','Escopetas','Ametralladoras'],['Rifles','Bombas','Misiles']],equipo:[['Blindaje','Suministros']]};
+function shopShowTab(t){shopTab=t;[...$('shopTabs').children].forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===t)));$('shopGrid').querySelectorAll('.shrow').forEach(r=>{r.hidden=r.dataset.tab!==t;});}
+function shopDetail(id){
+  const it=C.SHOP.find(s=>s.id===id),E=shopEls&&shopEls[id];if(!it||!E)return;
+  shopDetId=id;setTxt('sdN',it.name);setTxt('sdP',E.pr.textContent);setTxt('sdD',it.desc);$('shopDet').classList.toggle('on',true);
+}
 function buildShop(){
   if(shopEls)return;shopEls={};
-  const ic=shopIcons(),cats=[];C.SHOP.forEach(it=>{if(!cats.includes(it.cat))cats.push(it.cat);});
-  const ORD=['Pistolas','Cuerpo a cuerpo','Escopetas','Ametralladoras','Rifles','Bombas','Misiles','Blindaje','Suministros'];
-  cats.sort((a,b)=>{const i=ORD.indexOf(a),j=ORD.indexOf(b);return (i<0?99:i)-(j<0?99:j);});
-  const host=$('shopGrid');host.textContent='';
-  cats.forEach(cat=>{
-    const sc=document.createElement('div');sc.className='scat';const h3=document.createElement('h3');h3.textContent=cat;const cd=document.createElement('div');cd.className='scards';sc.append(h3,cd);host.appendChild(sc);
-    C.SHOP.filter(it=>it.cat===cat).forEach(it=>{
-      const b=document.createElement('button');b.type='button';b.className='card';b.dataset.id=it.id;
-      const im=document.createElement('img');im.alt='';im.src=ic[it.id]||ic['w'+it.w]||'';
-      const nm=document.createElement('span');nm.className='nm';nm.textContent=it.name;
-      const pr=document.createElement('span');pr.className='pr';
-      const ds=document.createElement('span');ds.className='ds';ds.textContent=it.desc;
-      b.append(im,nm,pr,ds);cd.appendChild(b);shopEls[it.id]={b,pr};
+  const ic=shopIcons(),host=$('shopGrid');host.textContent='';
+  for(const tab in SHOP_ROWS)SHOP_ROWS[tab].forEach(cats=>{
+    const row=document.createElement('div');row.className='shrow';row.dataset.tab=tab;host.appendChild(row);
+    cats.forEach(cat=>{
+      const g=document.createElement('div');g.className='shgrp';const cap=document.createElement('div');cap.className='slab';cap.textContent=cat;
+      const cd=document.createElement('div');cd.className='scards';g.append(cap,cd);row.appendChild(g);
+      C.SHOP.filter(it=>it.cat===cat).forEach(it=>{
+        const b=document.createElement('button');b.type='button';b.className='card';b.dataset.id=it.id;
+        const im=document.createElement('img');im.alt='';im.src=ic[it.id]||ic['w'+it.w]||'';
+        const nm=document.createElement('span');nm.className='nm';nm.textContent=it.name;
+        const pr=document.createElement('span');pr.className='pr';
+        b.append(im,nm,pr);cd.appendChild(b);shopEls[it.id]={b,pr};
+      });
     });
   });
+  shopShowTab(shopTab);
 }
 function openShop(){
   if(!inGame||!liveState())return;
@@ -87,11 +96,15 @@ function renderShop(){
     if(E.cls!==cls){E.cls=cls;E.b.className=cls;}
     E.b.disabled=own;
   });
+  if(shopDetId)shopDetail(shopDetId);
   // inventario: lo que hay en la ruleta (E)
   const inv=wheelList();
   const html=inv.map(w=>'<span class="'+(w===prim?'on':'')+'" title="'+esc(WEAPONS[w].name)+'"><img alt="" src="'+(shopIcons()['w'+w]||'')+'"></span>').join('');
   const iv=$('shopInv');if(iv._h!==html){iv._h=html;iv.innerHTML=html;}
 }
+$('shopTabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b){shopShowTab(b.dataset.tab);SFX.ui();}});
+$('shopGrid').addEventListener('mouseover',e=>{const b=e.target.closest('.card');if(b&&b.dataset.id!==shopDetId)shopDetail(b.dataset.id);});
+$('shopGrid').addEventListener('focusin',e=>{const b=e.target.closest('.card');if(b)shopDetail(b.dataset.id);});
 $('shopGrid').addEventListener('click',e=>{const b=e.target.closest('.card');if(!b||b.disabled||!net)return;net.send({t:'buy',id:b.dataset.id});});
 $('shop').addEventListener('click',e=>{if(e.target===$('shop')||e.target.classList.contains('shopbox'))closeShop();});
 

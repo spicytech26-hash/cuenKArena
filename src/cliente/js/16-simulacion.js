@@ -1,4 +1,6 @@
 /* =================== SIMULACIÓN LOCAL =================== */
+// impulso por matar deslizándote: velocidad que se suma, tope, multiplicador de la velocidad máxima y duración (s)
+const KB={ADD:4,MAX:18,FAST:1.3,T:2.5};
 function updMe(dt){
   // aviso "E · agarrar" si hay un arma principal tirada al lado y no es la tuya
   G.grabT=(G.grabT||0)-dt;if(G.grabT<=0){G.grabT=.15;let txt='';
@@ -26,7 +28,7 @@ function updMe(dt){
   const jumpKey=free&&!!keys.Space;
   const jump=jumpKey&&(S.hop||!me.jumpHeld);
   const crouch=free&&!!(keys.ControlLeft||keys.ControlRight||keys.KeyC);
-  const r=C.pmove(W,me.s,{wx,wz,jump,up:jumpKey,wy:f*Math.sin(me.pitch),crouch,mech:true,fast:MODE==='snipers'&&me.w===7?1.3:1},dt);   // up/wy: en gravedad cero Espacio sube, agacharse baja y W mirando arriba o abajo te lleva para ahí
+  const r=C.pmove(W,me.s,{wx,wz,jump,up:jumpKey,wy:f*Math.sin(me.pitch),crouch,mech:true,fast:(MODE==='snipers'&&me.w===7?1.3:1)*(me.boostT>0?KB.FAST:1)},dt);me.boostT=Math.max(0,(me.boostT||0)-dt);   // up/wy: en gravedad cero Espacio sube, agacharse baja y W mirando arriba o abajo te lleva para ahí
   if(r.zerog&&!me.zg)SFX.zero(1);me.zg=r.zerog;
   me.jumpHeld=jumpKey;
   if(r.jumped)SFX.jump();

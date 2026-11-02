@@ -112,7 +112,7 @@ class Game {
         if (Array.isArray(v) && v.length === 3 && v.every(Number.isFinite)) { p.s.vx = clamp(v[0], -80, 80); p.s.vy = clamp(v[1], -80, 80); p.s.vz = clamp(v[2], -80, 80); }
         if (Number.isFinite(m.y)) p.yaw = m.y; if (Number.isFinite(m.x)) p.pitch = clamp(m.x, -1.6, 1.6);
         if (Number.isInteger(m.w) && m.w >= 0 && m.w < NW && p.ow[m.w]) p.w = m.w;
-        p.s.on = !!m.o; p.s.crouch = !!m.c; p.s.slide = !!m.sl;
+        p.s.on = !!m.o; p.s.crouch = !!m.c; p.s.slide = !!m.sl; if (m.sl) p.slideT = this.time;
         break;
       }
       case 'fire': this.humanFire(p, m); break;

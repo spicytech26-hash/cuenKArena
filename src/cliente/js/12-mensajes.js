@@ -20,7 +20,7 @@ function onMsg(m){
     case 'spawn':
       me.s={x:m.p[0],y:m.p[1],z:m.p[2],vx:0,vy:0,vz:0,on:true};me.yaw=m.yaw;me.pitch=0;me.alive=true;me.deadT=0;me.raise=1;me.hp=100;
       if(m.ow)me.ow=m.ow.slice();if(m.am)me.am=Object.assign({},m.am);if(m.ar!=null)me.ar=m.ar;
-      me.mag=fullMags();me.rel=0;me.scope=false;me.inspT=9;me.lastW=me.w===0?C.primaryOf(m.ow||me.ow):0;
+      me.boostT=0;me.mag=fullMags();me.rel=0;me.scope=false;me.inspT=9;me.lastW=me.w===0?C.primaryOf(m.ow||me.ow):0;
       if(MODE==='gungame'&&m.w!=null)me.w=m.w;
       else{me.w=[6,5,3,2,4,1].find(i=>me.ow[i]&&hasAmmo(i));if(me.w==null)me.w=0;}
       if(!G.warm){G.warm=1;setTimeout(warmIcons,2500);}
@@ -103,6 +103,10 @@ function onMsg(m){
 function onEvent(m){
   switch(m.e){
     case 'team': ensurePlayer(m.id,null,m.c,undefined,undefined,m.tm);feedLine('<b style="color:'+m.c+'">'+esc(nameOf(m.id))+'</b> <i>pasó al equipo '+TEAMS[m.tm].name.toLowerCase()+'</i>');break;
+    case 'boost':   // mataste deslizándote: empujón hacia donde ibas y velocidad máxima más alta unos segundos
+      if(me.alive){const s=me.s,sp=Math.hypot(s.vx,s.vz);if(sp>1){const k=Math.min(KB.MAX,sp+KB.ADD)/sp;s.vx*=k;s.vz*=k;}
+        me.boostT=KB.T;SFX.boost();fxAire(s.x,s.y+.1,s.z,1,.6,.2);announce('IMPULSO','kill deslizándote');}
+      break;
     case 'flag': FL=m.fs;TS=m.ts;onFlag(m);break;
     case 'fire': fxFire(m);break;
     case 'grab': me.grabW=m.w;break;

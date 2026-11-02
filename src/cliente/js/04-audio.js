@@ -64,6 +64,7 @@ const SFX={
   jump:()=>tn({type:'sine',f0:220,f1:360,dur:.08,vol:.06}),
   dj:()=>{tn({type:'sine',f0:300,f1:760,dur:.14,vol:.1});nz({dur:.12,f0:2400,f1:900,type:'bandpass',vol:.07});},
   wj:()=>{nz({dur:.1,f0:600,f1:200,vol:.16});tn({type:'triangle',f0:180,f1:420,dur:.12,vol:.08});},
+  boost:()=>{tn({type:'sawtooth',f0:200,f1:900,dur:.25,vol:.1});nz({dur:.3,f0:3000,f1:800,type:'bandpass',vol:.12});},
   slide:()=>nz({dur:.45,f0:1400,f1:350,type:'bandpass',vol:.11}),
   land:v=>nz({dur:.08,f0:400,f1:100,vol:.25*v}),
   step:()=>nz({dur:.05,f0:600,f1:200,vol:.06}),

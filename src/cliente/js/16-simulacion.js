@@ -94,7 +94,7 @@ function updRemote(dt){
     const alive=!!(cur.fl&1);
     if(alive&&!p.alive){p.alive=true;p.gib=false;p.deadT=0;}
     if(!alive&&p.alive){p.alive=false;p.deadT=0;}
-    p.w=cur.w;p.quad=!!(cur.fl&2);p.onG=!!(cur.fl&4);p.crouch=!!(cur.fl&8);p.spd=Math.hypot(cur.vx,cur.vz);
+    p.vy=cur.vy||0;p.w=cur.w;p.quad=!!(cur.fl&2);p.onG=!!(cur.fl&4);p.crouch=!!(cur.fl&8);p.spd=Math.hypot(cur.vx,cur.vz);
     // el modelo mira a +z y en el juego yaw 0 mira a -z: hay que girarlo media vuelta
     m.g.position.set(p.x,p.y,p.z);m.g.rotation.y=p.yaw+Math.PI;
     // velocidad real a partir de cuánto se movió en pantalla (no depende de lo que mande el servidor)
@@ -102,20 +102,9 @@ function updRemote(dt){
     const ivx=(p.x-p.px)/Math.max(dt,1e-3),ivz=(p.z-p.pz)/Math.max(dt,1e-3);p.px=p.x;p.pz=p.z;
     const ks=Math.min(1,dt*10);p.vxs=(p.vxs||0)+(ivx-(p.vxs||0))*ks;p.vzs=(p.vzs||0)+(ivz-(p.vzs||0))*ks;
     if(p.alive){
-      m.g.visible=true;m.b.rotation.set(0,0,0);m.b.position.y=0;
-      const sp=Math.hypot(p.vxs,p.vzs),sy=Math.sin(p.yaw),cyw=Math.cos(p.yaw);
-      const fwd=-p.vxs*sy-p.vzs*cyw,side=p.vxs*cyw-p.vzs*sy;           // hacia adelante y hacia la derecha
-      const fr=sp>.3?fwd/sp:0,sr=sp>.3?side/sp:0;
-      p.phase+=dt*Math.min(sp,14)*1.9*(fwd<-.3?-1:1);
-      const amp=Math.min(1,sp/5)*.85,ph=Math.sin(p.phase);
-      if(p.onG){
-        m.legs[0].rotation.set(-ph*amp*Math.max(.35,Math.abs(fr)),0,ph*amp*sr*.5);
-        m.legs[1].rotation.set(ph*amp*Math.max(.35,Math.abs(fr)),0,-ph*amp*sr*.5);
-        m.b.position.y=Math.abs(Math.cos(p.phase))*amp*.07;
-        m.b.rotation.x=Math.max(-.12,Math.min(.18,fwd*.014));m.b.rotation.z=Math.max(-.12,Math.min(.12,-side*.01));
-      }else{m.legs[0].rotation.set(-.7,0,0);m.legs[1].rotation.set(.35,0,0);m.b.rotation.x=.08;}
-      if(p.crouch){m.b.position.y-=.55;m.legs[0].rotation.x-=.9;m.legs[1].rotation.x-=.5;m.b.rotation.x+=.18;}
-      rbPose(m,p.w,-p.pitch*.8-(p.fire>0?.25:0),ph*amp*.8*(p.onG?1:0)-(p.onG?0:.6));m.head.rotation.x=-p.pitch*.5;
+      m.g.visible=true;
+      rbLod(m,Math.hypot(p.x-me.s.x,p.z-me.s.z)>22);
+      rbAnimar(m,p,dt);   // marcha, salto, agachado, retroceso, golpe y cambio de arma (ver 10-personaje-robot.js)
       p.fire=(p.fire||0)-dt;p.pain=(p.pain||0)-dt;
       const em=p.pain>0?0x803020:p.quad?0x5020a0:0;m.mats.forEach(mm=>mm.emissive.setHex(em));
       if(m.gun.userData.w!==p.w){m.gun.clear();m.gun.add(tpGun(p.w));m.gun.userData.w=p.w;}
@@ -124,7 +113,7 @@ function updRemote(dt){
     }else{
       p.deadT+=dt;if(m.tag)m.tag.visible=false;nightHide(m);
       if(p.gib)m.g.visible=false;
-      else{m.b.rotation.x=Math.max(-Math.PI/2,-p.deadT*5);m.b.position.y=p.deadT>2?Math.max(-.3,-(p.deadT-2)*.3):0;m.g.visible=p.deadT<5;
+      else{rbMuerte(m,p);m.g.visible=p.deadT<5;
         if(m.g.visible&&placeBlob(nb,p.x,p.y,p.z,Math.max(0,1-p.deadT/5)))nb++;}
     }
   }

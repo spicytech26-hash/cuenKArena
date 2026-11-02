@@ -2757,31 +2757,35 @@ function rbBrazo(s){
   Object.keys(F).forEach(k=>F[k].translate(0,-RB_CODO,0));                                    // la parte F queda centrada en el codo
   return {U,F};
 }
-// pierna: muslo grueso, rodilla con pistones, bota alta; cadena de remaches y luces del lado de afuera (por eso hay izquierda y derecha)
+// pierna articulada en tres piezas (muslo → rodilla → canilla → tobillo → pie) para poder animarla; la cadena de remaches y las luces
+// van del lado de afuera (por eso hay izquierda y derecha). Se arma con coordenadas de cadera y cada pieza se recentra en su articulación.
 function rbPierna(s){
-  const t=rbParte();
+  const t=rbParte(),u=rbParte(),f=rbParte();
   t.esf('B',.065,0,-.005,0,1,1,1,8,6);                                                        // cadera
   t.loft('A',[[0,.1,.105],[-.08,.112,.116,0,.006],[-.2,.104,.112,0,.01],[-.34,.08,.088,0,.006],[-.44,.06,.068,0,.004]],12,1);   // muslo con cuádriceps
   t.esf('A',.05,s*.03,-.18,.075,1,2.2,.5,6,5);                                                // vasto externo
   t.banda('B',-.1,.122,.128,.014,.006,2.2);                                                   // junta del muslo
-  [[-.06,.111],[-.16,.108],[-.26,.097],[-.36,.078],[-.43,.062]].forEach(q=>t.caja('K',.014,.03,.016,.005,1,s*q[1],q[0],-.012));   // cadena de remaches
+  [[-.06,.111],[-.16,.108],[-.26,.097],[-.36,.078],[-.43,.062]].forEach(q=>t.caja('B',.014,.03,.016,.005,1,s*q[1],q[0],-.012));   // cadena de remaches
   t.caja('V',.012,.25,.012,.005,1,s*.06,-.22,.095);                                           // luz del frente del muslo
   t.cil('B',.05,.05,.12,10,0,-.465,0,0,0,Math.PI/2);                                          // bisagra de la rodilla
   t.esf('B',.062,0,-.465,0,1,1,1,8,6);
-  t.caja('C',.1,.085,.05,.022,2,0,-.465,.06);t.caja('K',.06,.008,.02,.003,1,0,-.44,.082);     // rodillera de color y su filo
-  [-1,1].forEach(q=>t.cil('K',.01,.01,.15,6,q*.032,-.46,-.075));                              // pistones atrás de la rodilla
-  t.loft('A',[[-.5,.064,.07],[-.56,.076,.084,0,-.012,2.4],[-.68,.074,.08,0,-.008,2.5],[-.8,.066,.076,0,0,2.5],[-.865,.064,.074,0,0,2.5]],10,1);   // bota con pantorrilla
-  t.banda('A',-.525,.082,.09,.055,0,2.3);                                                     // puño de la bota
-  t.caja('A',.09,.22,.026,.012,1,0,-.69,.088);                                                // placa del frente de la bota
-  [-.64,-.72,-.8].forEach(y=>t.caja('B',.07,.006,.01,.003,1,0,y,.1));                         // costuras
-  [-.62,-.7,-.78].forEach(y=>t.caja('K',.012,.024,.014,.005,1,s*.077,y,0));                   // remaches de la bota
-  t.caja('V',.011,.15,.012,.005,1,s*.058,-.67,.056);                                          // luz del costado de la bota
-  t.loft('B',[[-.835,.045],[-.845,.053],[-.855,.045],[-.865,.053],[-.875,.045],[-.89,.052]],10,1);   // fuelle del tobillo
-  t.caja('A',.13,.066,.26,.032,2,0,-.884,.055);                                               // pie
-  t.caja('C',.11,.05,.07,.024,1,0,-.89,.175);                                                 // puntera de color
-  t.caja('K',.1,.04,.08,.014,1,0,-.908,-.068);                                                // taco
-  t.caja('K',.136,.016,.29,.007,1,0,-.912,.05);                                               // suela
-  return t.fin(0,RB_KX,RB_KX,RB_KYP);
+  [-1,1].forEach(q=>t.cil('B',.01,.01,.15,6,q*.032,-.46,-.075));                              // pistones atrás de la rodilla
+  u.caja('C',.1,.085,.05,.022,2,0,-.465,.06);u.caja('B',.06,.008,.02,.003,1,0,-.44,.082);     // rodillera de color y su filo
+  u.loft('A',[[-.5,.064,.07],[-.56,.076,.084,0,-.012,2.4],[-.68,.074,.08,0,-.008,2.5],[-.8,.066,.076,0,0,2.5],[-.865,.064,.074,0,0,2.5]],10,1);   // bota con pantorrilla
+  u.banda('A',-.525,.082,.09,.055,0,2.3);                                                     // puño de la bota
+  u.caja('A',.09,.22,.026,.012,1,0,-.69,.088);                                                // placa del frente de la bota
+  [-.64,-.72,-.8].forEach(y=>u.caja('B',.07,.006,.01,.003,1,0,y,.1));                         // costuras
+  [-.62,-.7,-.78].forEach(y=>u.caja('B',.012,.024,.014,.005,1,s*.077,y,0));                   // remaches de la bota
+  u.caja('V',.011,.15,.012,.005,1,s*.058,-.67,.056);                                          // luz del costado de la bota
+  u.loft('B',[[-.835,.045],[-.845,.053],[-.855,.045],[-.865,.053],[-.875,.045],[-.89,.052]],10,1);   // fuelle del tobillo
+  f.caja('A',.13,.066,.26,.032,2,0,-.884,.055);                                               // pie
+  f.caja('A',.11,.05,.07,.024,1,0,-.89,.175);                                                 // puntera
+  f.caja('B',.1,.04,.08,.014,1,0,-.908,-.068);                                                // taco
+  f.caja('B',.136,.016,.29,.007,1,0,-.912,.05);                                               // suela
+  const T=t.fin(0,RB_KX,RB_KX,RB_KYP),S=u.fin(0,RB_KX,RB_KX,RB_KYP),F=f.fin(0,RB_KX,RB_KX,RB_KYP);
+  Object.keys(S).forEach(k=>S[k].translate(0,.465*RB_KYP,0));                                 // la canilla gira alrededor de la rodilla
+  Object.keys(F).forEach(k=>F[k].translate(0,.875*RB_KYP,0));                                 // el pie gira alrededor del tobillo
+  return {T,S,F};
 }
 // accesorios hechos a medida del casco (coordenadas ya a escala 0,78, origen = centro del casco)
 function rbAccesorios(){
@@ -2827,9 +2831,9 @@ function rbGeos(){
   t.caja('B',.007,.2,.01,.003,1,0,1.18,.099);                                                                                                         // surco del medio del abdomen
   for(const sx of [-1,1])t.caja('A',.05,.016,.1,.006,1,sx*.098,1.57,0,0,0,-sx*.42);                                                                 // lengüetas sobre los hombros (como en la lámina)
   // cuello largo y acanalado de 7 segmentos (como en la lámina de la cabeza), con brida de montaje en la base y dos cables por delante
-  const cu=[];for(let k=0;k<=7;k++){const r=.062-.014*(k/7);cu.push([1.555+k*.0165,r*.8,r*.8,0,.012,2.2]);if(k<7)cu.push([1.555+(k+.5)*.0165,r,r,0,.012,2.2]);}
+  const cu=[];for(let k=0;k<=7;k++){const r=.076-.012*(k/7);cu.push([1.555+k*.0108,r*.82,r*.82,0,.012,2.2]);if(k<7)cu.push([1.555+(k+.5)*.0108,r,r,0,.012,2.2]);}
   t.loft('B',cu,12,1);
-  t.cil('B',.074,.074,.012,12,0,1.553,.012);t.cil('K',.07,.07,.006,12,0,1.56,.012);
+  t.cil('B',.086,.086,.012,12,0,1.553,.012);t.cil('K',.082,.082,.006,12,0,1.56,.012);
   t.loft('A',[[1.34,.13,.03,0,-.105,2.6],[1.45,.16,.042,0,-.122,2.6],[1.55,.12,.03,0,-.108,2.6]],12,1);                                               // placa de la espalda
   for(let i=0;i<4;i++)t.caja('B',.05,.03,.03,.01,1,0,1.33+i*.06,-.166);                                                                               // vértebras
   // mochila de energía (como en las escenas): caja redondeada con luces, rejillas, antena y mangueras a la cintura
@@ -2841,7 +2845,7 @@ function rbGeos(){
   // cabeza de la lámina CUE-87 (origen en el centro, tamaño final): domo liso y alto, visor plano de punta a punta con marco,
   // dos sensores redondos a cada lado, cuernito central y líneas finas de armado; el cuello largo va en el torso
   t=rbParte();
-  const HS=[[-.108,.022,.026,0,0,2],[-.098,.036,.04,0,0,2],[-.08,.05,.056,0,.004,2.1],[-.055,.068,.073,0,.006,2.2],[-.03,.085,.087,0,.004,2.2],[-.005,.096,.097,0,0,2.2],[.025,.099,.099,0,-.002,2.2],[.055,.094,.095,0,-.004,2.2],[.083,.082,.085,0,-.005,2.1],[.103,.06,.064,0,-.005,2],[.114,.03,.032,0,-.005,2],[.12,.006,.007,0,-.005,2]];
+  const HS=[[-.108,.044,.046,0,0,2],[-.098,.054,.058,0,0,2],[-.08,.064,.068,0,.004,2.1],[-.055,.068,.073,0,.006,2.2],[-.03,.085,.087,0,.004,2.2],[-.005,.096,.097,0,0,2.2],[.025,.099,.099,0,-.002,2.2],[.055,.094,.095,0,-.004,2.2],[.083,.082,.085,0,-.005,2.1],[.103,.06,.064,0,-.005,2],[.114,.03,.032,0,-.005,2],[.12,.006,.007,0,-.005,2]];
   t.loft('A',HS,20,2);
   const sup=(y,th,m)=>{const q=rbPerfil(HS,y),e=2/2.1,c=Math.cos(th),sn=Math.sin(th);return new THREE.Vector3(q[3]+(q[1]+m)*rbPot(c,e),y,q[4]+(q[2]+m)*rbPot(sn,e));};
   const hilo=(pts,sx)=>t.crudo('B',new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(q=>{const v=sup(q[0],q[1]*Math.PI/180,.0016);v.x*=sx;return v;})),10,.0026,4));
@@ -2944,10 +2948,11 @@ const RB_POLE_L=new THREE.Vector3(.8,-.7,-.3),RB_POLE_R=new THREE.Vector3(-.8,-.
 const RB_UP_L=new THREE.Vector3(.1,1,.2),RB_UP_R=new THREE.Vector3(1,.35,0);               // hacia dónde mira la palma: la izquierda abajo del guardamano, la derecha envuelve la empuñadura
 // m = modelo de buildPlayer, w = arma, aimX = inclinación del arma (rad), swing = balanceo del brazo libre,
 // pose = {p:[x,y,z], yaw} para sostenerla cruzada sobre el pecho (Taquilla); sin pose: en guardia, apuntando hacia adelante
-function rbPose(m,w,aimX,swing,pose){
+function rbPose(m,w,aimX,swing,pose,ex){
   const aim=m.aim,gun=m.gun,una=w===7||w===10;
   if(pose){aim.position.set(pose.p[0],pose.p[1],pose.p[2]);aim.rotation.set(aimX,pose.yaw,0);gun.position.set(0,0,0);}
   else{aim.position.set(-.1,1.46,0);aim.rotation.set(aimX,0,0);gun.position.set(0,0,.3);}
+  if(ex){aim.position.x+=ex.dx;aim.position.y+=ex.dy;aim.position.z+=ex.dz;aim.rotation.y+=ex.yaw;aim.rotation.z+=ex.roll;}   // retroceso, vaivén de la marcha y cambio de arma
   aim.updateMatrix();gun.updateMatrix();rbM.multiplyMatrices(aim.matrix,gun.matrix);
   const e=RB_EMP[w]||RB_EMP[1],f=RB_FORE[w]||RB_FORE[1];
   const TR=new THREE.Vector3(e[0],e[1],e[2]).applyMatrix4(rbM),TL=new THREE.Vector3(f[0],f[1],f[2]).applyMatrix4(rbM);   // los dos objetivos, antes de tocar nada
@@ -2955,24 +2960,128 @@ function rbPose(m,w,aimX,swing,pose){
   if(una){m.armL.rotation.set(swing||0,0,.08);m.armL.fore.rotation.set(-.3,0,0);}
   else rbIK(m.armL,m.armL.position,TL,RB_POLE_L,RB_UP_L);
 }
+// ================= ANIMACIÓN =================
+// Todo se calcula en el cliente a partir de lo que ya llega de cada jugador (velocidad, si está en el suelo, agachado, mira, disparo, daño y arma).
+// Esqueleto: b → pelv (cadera: piernas con rodilla y pie) y up (columna: torso, cabeza, brazos y arma). Las piernas se apoyan en el piso: la cadera baja
+// lo justo para que el pie más bajo toque el suelo, así el balanceo del cuerpo, el agachado y el aterrizaje salen solos de los ángulos.
+const RB_PM=.465*RB_KYP,RB_PC=.41*RB_KYP,RB_HF=.055*RB_KYP,RB_HIP=.93*RB_KYP;   // muslo, canilla, alto del pie y altura de la cadera
+const rbCl=(v,a,b)=>v<a?a:v>b?b:v,rbLe=(a,b,t)=>a+(b-a)*t,rbSm=t=>t*t*(3-2*t);
+const RB_RETRO={0:.05,1:.17,2:.22,3:.035,4:.13,5:.22,6:.045,7:0,8:.2,9:.13,10:0};   // cuánto patea cada arma al disparar
+const rbE=new THREE.Euler(),rbV=new THREE.Vector3();
+// gira un grupo alrededor de un punto (px,py,pz) y lo deja en (bx,by,bz) más el desplazamiento que corresponde al pivote
+function rbPivote(g,bx,by,bz,px,py,pz,rx,ry,rz){
+  rbE.set(rx,ry,rz,'XYZ');g.quaternion.setFromEuler(rbE);rbV.set(px,py,pz).applyQuaternion(g.quaternion);
+  g.position.set(bx+px-rbV.x,by+py-rbV.y,bz+pz-rbV.z);
+}
+function rbAnInit(){return {t:Math.random()*20,ph:0,mov:0,air:0,cro:0,wasG:true,vyU:0,leader:1,takeoff:0,land:0,landAmt:0,flinch:0,fdir:1,swap:0,lastW:-1,fireK:0,lastFire:0,
+  vf:0,vs:0,vfp:null,vsp:null,af:0,as:0,yp:null,turn:0,muerte:0,dd:-1,dz:1};}
+// m = modelo, p = jugador (velocidades suavizadas vxs/vzs, yaw, pitch, onG, vy, crouch, fire, pain, w), dt, pose (Taquilla)
+function rbAnimar(m,p,dt,pose){
+  dt=rbCl(dt,1e-4,.05);const a=m.an;a.t+=dt;a.muerte=0;m.gun.visible=true;
+  const yw=p.yaw||0,sy=Math.sin(yw),cy=Math.cos(yw),vx=p.vxs||0,vz=p.vzs||0;
+  const fwd=-vx*sy-vz*cy,side=vx*cy-vz*sy,spd=Math.hypot(vx,vz),k10=Math.min(1,dt*10);
+  a.vf+=(fwd-a.vf)*k10;a.vs+=(side-a.vs)*k10;
+  if(a.vfp!=null){a.af+=(rbCl((a.vf-a.vfp)/dt,-60,60)-a.af)*Math.min(1,dt*6);a.as+=(rbCl((a.vs-a.vsp)/dt,-60,60)-a.as)*Math.min(1,dt*6);}
+  a.vfp=a.vf;a.vsp=a.vs;
+  let dy=a.yp==null?0:yw-a.yp;if(dy>Math.PI)dy-=2*Math.PI;if(dy<-Math.PI)dy+=2*Math.PI;a.yp=yw;a.turn+=(rbCl(dy/dt,-8,8)-a.turn)*Math.min(1,dt*6);
+  // ---- estados: aire, agachado, despegue, aterrizaje ----
+  const air=!p.onG,vy=p.vy||0;
+  if(a.wasG&&air&&vy>1.5){a.takeoff=1;a.leader=Math.abs(a.vs)>1.5?(a.vs>0?-1:1):-a.leader;}   // despega con la pierna de adelante alternada (o hacia donde se mueve)
+  if(!a.wasG&&!air){a.landAmt=rbCl(-a.vyU/13,.15,1);a.land=1;}
+  a.wasG=!air;if(air)a.vyU=vy;
+  a.takeoff=Math.max(0,a.takeoff-dt/.45);a.land=Math.max(0,a.land-dt/.4);
+  a.air+=((air?1:0)-a.air)*Math.min(1,dt*(air?18:24));
+  a.cro+=((p.crouch?1:0)-a.cro)*Math.min(1,dt*11);
+  a.mov+=(rbCl(spd/6,0,1)-a.mov)*Math.min(1,dt*9);
+  // ---- disparo, daño y cambio de arma ----
+  const fire=p.fire||0;if(fire>0&&a.lastFire<=0)a.fireK=1;a.lastFire=fire;a.fireK*=Math.exp(-dt*13);
+  if((p.pain||0)>0&&a.flinch<.5){a.flinch=1;a.fdir=Math.random()<.5?-1:1;}a.flinch=Math.max(0,a.flinch-dt/.32);
+  if(p.w!==a.lastW){if(a.lastW>=0)a.swap=1;a.lastW=p.w;}a.swap=Math.max(0,a.swap-dt/.42);
+  // ---- marcha / carrera ----
+  const run=rbCl((spd-3.5)/4,0,1),A=rbCl(.22+spd*.028,.22,.42)*(1-.35*a.cro);
+  const om=spd>.3?Math.min(15,spd/(.89*A*.8)):0;a.ph+=(a.vf<-.5?-1:1)*om*dt;
+  const w=a.mov*(1-a.air),back=a.vf<-.5?.8:1,sr=rbCl(a.vs/Math.max(spd,2),-1,1);
+  const bump=a.land>0?(a.land>.7?(1-a.land)/.3:(a.land/.7)):0,aterr=bump*a.landAmt;   // se hunde rápido al tocar el piso y se recupera
+  const rise=rbCl(vy/6,0,1),fall=rbCl(-vy/9,0,1),apex=Math.max(0,1-rise-fall),t0=rbCl((a.takeoff-.65)/.35,0,1);
+  const hip=[0,0],kn=[0,0],ab=[0,0];
+  for(let i=0;i<2;i++){
+    const psi=a.ph+i*Math.PI,s1=Math.sin(psi);
+    let h=A*s1*w*back,kk=w*(.1+(.7+.9*run)*Math.pow(Math.max(0,Math.cos(psi+.35)),1.3))+.12*w*Math.max(0,-s1),z=-sr*.38*s1*w;   // paso, rodilla y apertura al moverse de costado
+    const lead=i===(a.leader>0?1:0);
+    let ha=lead?.85*rise+.65*apex+.35*fall:.1*rise-.1*apex-.15*fall,ka=lead?1.35*rise+1*apex+.4*fall:.95*rise+.7*apex+.25*fall;   // en el aire: una pierna adelante y la otra atrás, recogidas al subir y estiradas al bajar
+    ha=ha*(1-t0)-.1*t0;ka=ka*(1-t0)+.12*t0;                                                                                   // estirón del despegue
+    h=rbLe(h,ha,a.air);kk=rbLe(kk,ka,a.air);z*=1-a.air;
+    h+=.5*aterr;kk+=1.15*aterr;                                                                                                 // amortigua el aterrizaje
+    h=h*(1-.55*a.cro)+1.05*a.cro;kk=kk*(1-.4*a.cro)+2.0*a.cro;                                                                 // agachado profundo (y se puede caminar así)
+    kk+=.1*a.fireK*(RB_RETRO[p.w]>0.1?1:.5);                                                                                    // las armas pesadas se apoyan en las rodillas
+    hip[i]=h;kn[i]=kk;ab[i]=z;
+  }
+  let need=0;
+  for(let i=0;i<2;i++){
+    const th=-hip[i],sh=kn[i],lg=m.legs[i],swing=Math.max(0,Math.cos(a.ph+i*Math.PI+.35));
+    const ft=rbCl(-(th+sh)*rbLe(1-.7*swing*w,.15,a.air),-1.1,1.1);   // el pie se mantiene paralelo al piso apoyado y apunta hacia abajo en el aire
+    lg.rotation.set(th,0,ab[i]);lg.shin.rotation.x=sh;lg.foot.rotation.x=ft;
+    const d=RB_PM*Math.cos(th)+RB_PC*Math.cos(th+sh)+RB_HF*Math.cos(th+sh+ft);if(d>need)need=d;
+  }
+  const t=a.t,idle=(1-a.mov)*(1-a.air),s0=Math.sin(a.ph);
+  // ---- cadera y columna ----
+  const lean=.03+.14*run*w+rbCl(a.af*.012,-.1,.18)*(1-a.air*.6)+.32*a.cro+.24*aterr-.09*a.takeoff-.07*rise+Math.sin(t*1.6)*.012*idle;    // se inclina al acelerar, al correr y al agacharse; respira
+  const roll=a.vs*.014*(1-.4*a.air)+rbCl(a.as*.004,-.1,.1)+a.turn*.035-.5*.05*s0*w+Math.sin(t*.5)*.03*idle;                                  // se inclina hacia donde se mueve y gira
+  const twist=-.7*.16*Math.sin(a.ph)*w*(.5+run)+a.flinch*a.fdir*.22+Math.sin(t*.37)*.05*idle;                                                // la columna contrarresta la cadera
+  rbPivote(m.pelv,0,0,0,0,RB_HIP,0,.03+.05*run*w+.1*a.cro,.16*Math.sin(a.ph)*w*(.5+run),.05*s0*w+Math.sin(t*.5)*.03*idle);
+  rbPivote(m.up,0,-.04,0,0,1.06,0,lean-.22*a.flinch+.03*a.fireK*RB_RETRO[p.w]*4,twist,roll+a.flinch*a.fdir*.1);
+  m.b.rotation.set(0,0,0);
+  m.b.position.set(-.02*s0*w+Math.sin(t*.5)*.015*idle,(need-RB_HIP)*(1-a.air),0);   // el cuerpo baja lo que haga falta para que el pie más bajo toque el piso
+  // ---- cabeza: sigue la mira, compensa la columna y mira alrededor en reposo ----
+  m.head.rotation.set(-(p.pitch||0)*.5-(lean-.22*a.flinch)*.55-.12*a.flinch-(vy>0?-vy*.01:-vy*.008),Math.sin(t*.4)*.14*idle-a.flinch*a.fdir*.1,-roll*.5);
+  // ---- arma: retroceso, vaivén de la marcha, respiración y cambio de arma ----
+  const rt=RB_RETRO[p.w]||0,sw=a.swap*a.swap;
+  const ex={dx:.012*Math.sin(a.ph)*w,dy:.014*Math.abs(Math.sin(a.ph))*w*(.5+run)*-1+.004*Math.sin(t*1.6)*idle-.3*sw-.05*a.cro,dz:-rt*.45*a.fireK-.03*run*w,yaw:.03*Math.sin(a.ph)*w+.35*sw*.0,roll:.05*Math.sin(a.ph)*w+.4*sw};
+  const aimX=-(p.pitch||0)*.8-rt*1.3*a.fireK-.12*rise+.1*fall+.5*sw;
+  rbPose(m,p.w,aimX,Math.sin(a.ph)*.8*w-.6*a.air,pose,ex);
+}
+// nivel de detalle: lejos de la cámara no se dibujan los pistones, remaches ni luces chicas (ahorra unas 18 llamadas de dibujo por personaje)
+function rbLod(m,lejos){if(m.lod===lejos)return;m.lod=lejos;m.fino.forEach(x=>{x.visible=!lejos;});}
+// muerte: las rodillas se doblan, el cuerpo cae (para atrás casi siempre), los brazos quedan sueltos y el arma se resbala
+function rbMuerte(m,p){
+  const a=m.an,t=p.deadT||0;
+  if(!a.muerte){a.muerte=1;a.dd=Math.random()<.7?-1:1;a.dz=Math.random()<.5?-1:1;}
+  const k1=rbSm(rbCl(t/.3,0,1)),fl=rbSm(rbCl((t-.12)/.7,0,1)),sink=t>2?Math.max(-.3,-(t-2)*.3):0;
+  m.b.rotation.set(a.dd*1.5*fl,0,a.dz*.22*fl);m.b.position.set(0,-.3*k1*(1-fl)+.16*fl+sink,0);
+  m.legs.forEach((lg,i)=>{lg.rotation.set(-(i?.5:.9)*k1*(1-fl*.6),0,(i?.5:-.4)*fl*.4);lg.shin.rotation.x=(i?1:1.6)*k1;lg.foot.rotation.x=-.3*k1;});
+  rbPivote(m.pelv,0,0,0,0,RB_HIP,0,0,0,0);rbPivote(m.up,0,-.04,0,0,1.06,0,.45*k1*(1-fl)-.1*fl,a.dz*.2*fl,0);
+  m.head.rotation.set(.5*fl+.2*k1,a.dz*.3*fl,0);
+  m.armR.rotation.set(-.3-.9*fl,0,-.4-.6*fl);m.armR.fore.rotation.set(-.5,0,0);m.armL.rotation.set(-.2+.5*fl,0,.5+.6*fl);m.armL.fore.rotation.set(-.4,0,0);
+  m.aim.position.set(-.1,1.46-.5*fl,.1+.2*fl);m.aim.rotation.set(1.0*fl,0,.5*fl);m.gun.position.set(0,0,.3);m.gun.visible=t<1.4;
+}
 function buildPlayer(skin,name,noTag){
   const G=rbGeos(),P=skinParts(skin);
   const mA=rbMat(P.ck,.55,.1,.45),mP=rbMat(P.cp,.58,.08,.4),mBr=P.cb===P.c?mA:rbMat(P.cb,.38,.35),mL=P.cl===P.c?mA:rbMat(P.cl,.38,.35);
   const mB=rbMat(P.c2,.32,.65),mC=rbMat(P.c3,.4,.45),mK=rbMat(0x2b3036,.3,.85,.9);
   const mV=new THREE.MeshBasicMaterial({color:P.v});
   const mats=(a)=>({A:a,B:mB,C:mC,V:mV,K:mK});
-  const parte=(set,grupo,a)=>{const MZ=mats(a||mA);RB_ZONAS.forEach(k=>{if(set[k])grupo.add(new THREE.Mesh(set[k],MZ[k]));});return grupo;};
+  const fino=[];   // mallas de detalle fino (pistones, remaches y luces): a lo lejos se ocultan (ver rbLod)
+  const parte=(set,grupo,a,sinLod)=>{const MZ=mats(a||mA);RB_ZONAS.forEach(k=>{if(set[k]){const me=new THREE.Mesh(set[k],MZ[k]);grupo.add(me);if(!sinLod&&(k==='K'||k==='V'))fino.push(me);}});return grupo;};
   const g=new THREE.Group(),b=new THREE.Group();g.add(b);
-  const up=new THREE.Group();up.position.y=-.04;b.add(up);   // todo lo que va de la cintura para arriba baja 4 cm (las piernas son más cortas): así la altura total queda cerca de 1,9 m aun con la cabeza más grande
-  parte(G.torso,up,mP);parte(G.pelvis,up,mL);
+  // esqueleto: b (cuerpo entero: sube, baja, cae) → pelv (cadera con las piernas) y up (columna con torso, cabeza, brazos y arma).
+  // pelv y up giran alrededor de la cadera y la cintura (ver rbPivote). up queda 4 cm más abajo: las piernas son más cortas y así la altura total queda cerca de 1,9 m.
+  const pelv=new THREE.Group();b.add(pelv);
+  const up=new THREE.Group();up.position.y=-.04;b.add(up);
+  const pel=parte(G.pelvis,new THREE.Group(),mL);pel.position.y=-.04;pelv.add(pel);
+  parte(G.torso,up,mP);
   // emblema del pecho (o la foto): un plano pegado unos 3 mm adelante de la placa
   const hasImg=!!(skin.img&&(noTag||S.showImg)),em=RB_EMBLEMAS[skin.em]?skin.em:'ancla';
   const dm=hasImg?new THREE.MeshBasicMaterial({map:chestTex(skin.img),polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})
                  :new THREE.MeshBasicMaterial({map:rbEmblemaTex(em),color:P.ce,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
   const dec=new THREE.Mesh(G.acc.decal,dm);dec.position.set(0,1.47,.137*RB_KX);if(hasImg)dec.scale.setScalar(1.6);
   if(hasImg||em!=='ninguno')up.add(dec);   // el emblema es chico; una foto propia va más grande
-  const legs=[-1,1].map(side=>{const l=parte(side<0?G.legL:G.legR,new THREE.Group(),mL);l.position.set(side*.108*RB_KX,.93*RB_KYP,0);b.add(l);return l;});
-  const head=parte(G.head,new THREE.Group(),mA);head.position.y=1.776;head.scale.setScalar(1.12);up.add(head);
+  const pierna=side=>{
+    const L=side<0?G.legL:G.legR,th=parte(L.T,new THREE.Group(),mL);th.position.set(side*.108*RB_KX,RB_HIP,0);
+    const sh=parte(L.S,new THREE.Group(),mL);sh.position.set(0,-.465*RB_KYP,0);th.add(sh);
+    const ft=parte(L.F,new THREE.Group(),mL);ft.position.set(0,-(.875-.465)*RB_KYP,0);sh.add(ft);
+    th.shin=sh;th.foot=ft;pelv.add(th);return th;};
+  const legs=[pierna(-1),pierna(1)];
+  const head=parte(G.head,new THREE.Group(),mA,true);head.position.y=1.735;head.scale.setScalar(1.25);up.add(head);
   const a=skin.a|0,A=G.acc;
   if(a===1)head.add(new THREE.Mesh(A.cresta,mC));
   if(a===2)head.add(new THREE.Mesh(A.antena.B,mB),new THREE.Mesh(A.antena.K,mK),new THREE.Mesh(A.antenaPunta,mC));
@@ -2988,8 +3097,10 @@ function buildPlayer(skin,name,noTag){
   if(noTag){gun.add(tpGun(1));gun.userData.w=1;}
   let tag=null;if(!noTag){tag=nameSprite(name,P.c);g.add(tag);}
   const bas=[mV];if(hasImg||em!=='ninguno')bas.push(dm);   // materiales que brillan solos (de noche se apagan, ver 18-noche.js)
-  const modelo={g,b,legs,armL,armR,aim,head,gun,tag,mats:[mA,mP,mBr,mL,mB,mC,mK],bas};
+  const modelo={g,b,pelv,up,legs,armL,armR,aim,head,gun,tag,mats:[mA,mP,mBr,mL,mB,mC,mK],bas,an:rbAnInit(),fino,lod:false};
+  if(noTag){modelo.pose=RB_POSE_TAQ;modelo.pT={vxs:0,vzs:0,yaw:0,onG:true,crouch:false,pitch:0,fire:0,pain:0,w:1,vy:0,alive:true};}   // la Taquilla respira y se acomoda sola
   rbPose(modelo,noTag?1:0,-.05,0,noTag?RB_POSE_TAQ:null);
+  rbAnimar(modelo,noTag?modelo.pT:{vxs:0,vzs:0,yaw:0,onG:true,crouch:false,pitch:0,fire:0,pain:0,w:0,vy:0},.016,modelo.pose);
   return modelo;
 }
 // pose de la Taquilla (como en la referencia): la escopeta cruzada sobre el pecho, apuntando hacia el lado izquierdo del personaje
@@ -3686,7 +3797,7 @@ function rebuildLockModel(){if(!lock||!lock.r)return;if(lock.model)lock.sc.remov
   c.addEventListener('keydown',e=>{if(!lock)return;if(e.key==='+'||e.key==='='){e.preventDefault();lockZoom(lock.zt*.82);}else if(e.key==='-'||e.key==='_'){e.preventDefault();lockZoom(lock.zt/.82);}else if(e.key==='0'){e.preventDefault();lockZoom(1);}});
   c.addEventListener('keydown',e=>{if(!lock)return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();lock.rot+=(e.key==='ArrowLeft'?-1:1)*.35;lock.hold=3;}else if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();lock.tyt=Math.max(.25,Math.min(1.85,(lock.tyt||1.3)+(e.key==='ArrowUp'?.1:-.1)));lock.hold=3;}});
 })();
-function renderLocker(dt){if(!lock||!lock.r||$('lockerPanel').hidden||$('menu').hidden)return;lock.hold=(lock.hold||0)-dt;if(lock.hold<=0)lock.rot+=dt*.8;lock.model.g.rotation.y=lock.rot;rbPose(lock.model,1,-.05,0,RB_POSE_TAQ);lock.z+=(lock.zt-lock.z)*Math.min(1,dt*10);lock.ty=(lock.ty||1)+((lock.tyt||1)-(lock.ty||1))*Math.min(1,dt*8);lockCam();lock.r.render(lock.sc,lock.cam);}
+function renderLocker(dt){if(!lock||!lock.r||$('lockerPanel').hidden||$('menu').hidden)return;lock.hold=(lock.hold||0)-dt;if(lock.hold<=0)lock.rot+=dt*.8;lock.model.g.rotation.y=lock.rot;rbAnimar(lock.model,lock.model.pT,Math.min(dt,.05),RB_POSE_TAQ);lock.z+=(lock.zt-lock.z)*Math.min(1,dt*10);lock.ty=(lock.ty||1)+((lock.tyt||1)-(lock.ty||1))*Math.min(1,dt*8);lockCam();lock.r.render(lock.sc,lock.cam);}
 function syncLocker(){syncLockerTabs();
   [...$('swVisor').querySelectorAll('button')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===S.skin.v)));
   [...$('segAcc').children].forEach((b,i)=>b.setAttribute('aria-pressed',String(i===S.skin.a)));
@@ -4039,7 +4150,7 @@ function updRemote(dt){
     const alive=!!(cur.fl&1);
     if(alive&&!p.alive){p.alive=true;p.gib=false;p.deadT=0;}
     if(!alive&&p.alive){p.alive=false;p.deadT=0;}
-    p.w=cur.w;p.quad=!!(cur.fl&2);p.onG=!!(cur.fl&4);p.crouch=!!(cur.fl&8);p.spd=Math.hypot(cur.vx,cur.vz);
+    p.vy=cur.vy||0;p.w=cur.w;p.quad=!!(cur.fl&2);p.onG=!!(cur.fl&4);p.crouch=!!(cur.fl&8);p.spd=Math.hypot(cur.vx,cur.vz);
     // el modelo mira a +z y en el juego yaw 0 mira a -z: hay que girarlo media vuelta
     m.g.position.set(p.x,p.y,p.z);m.g.rotation.y=p.yaw+Math.PI;
     // velocidad real a partir de cuánto se movió en pantalla (no depende de lo que mande el servidor)
@@ -4047,20 +4158,9 @@ function updRemote(dt){
     const ivx=(p.x-p.px)/Math.max(dt,1e-3),ivz=(p.z-p.pz)/Math.max(dt,1e-3);p.px=p.x;p.pz=p.z;
     const ks=Math.min(1,dt*10);p.vxs=(p.vxs||0)+(ivx-(p.vxs||0))*ks;p.vzs=(p.vzs||0)+(ivz-(p.vzs||0))*ks;
     if(p.alive){
-      m.g.visible=true;m.b.rotation.set(0,0,0);m.b.position.y=0;
-      const sp=Math.hypot(p.vxs,p.vzs),sy=Math.sin(p.yaw),cyw=Math.cos(p.yaw);
-      const fwd=-p.vxs*sy-p.vzs*cyw,side=p.vxs*cyw-p.vzs*sy;           // hacia adelante y hacia la derecha
-      const fr=sp>.3?fwd/sp:0,sr=sp>.3?side/sp:0;
-      p.phase+=dt*Math.min(sp,14)*1.9*(fwd<-.3?-1:1);
-      const amp=Math.min(1,sp/5)*.85,ph=Math.sin(p.phase);
-      if(p.onG){
-        m.legs[0].rotation.set(-ph*amp*Math.max(.35,Math.abs(fr)),0,ph*amp*sr*.5);
-        m.legs[1].rotation.set(ph*amp*Math.max(.35,Math.abs(fr)),0,-ph*amp*sr*.5);
-        m.b.position.y=Math.abs(Math.cos(p.phase))*amp*.07;
-        m.b.rotation.x=Math.max(-.12,Math.min(.18,fwd*.014));m.b.rotation.z=Math.max(-.12,Math.min(.12,-side*.01));
-      }else{m.legs[0].rotation.set(-.7,0,0);m.legs[1].rotation.set(.35,0,0);m.b.rotation.x=.08;}
-      if(p.crouch){m.b.position.y-=.55;m.legs[0].rotation.x-=.9;m.legs[1].rotation.x-=.5;m.b.rotation.x+=.18;}
-      rbPose(m,p.w,-p.pitch*.8-(p.fire>0?.25:0),ph*amp*.8*(p.onG?1:0)-(p.onG?0:.6));m.head.rotation.x=-p.pitch*.5;
+      m.g.visible=true;
+      rbLod(m,Math.hypot(p.x-me.s.x,p.z-me.s.z)>22);
+      rbAnimar(m,p,dt);   // marcha, salto, agachado, retroceso, golpe y cambio de arma (ver 10-personaje-robot.js)
       p.fire=(p.fire||0)-dt;p.pain=(p.pain||0)-dt;
       const em=p.pain>0?0x803020:p.quad?0x5020a0:0;m.mats.forEach(mm=>mm.emissive.setHex(em));
       if(m.gun.userData.w!==p.w){m.gun.clear();m.gun.add(tpGun(p.w));m.gun.userData.w=p.w;}
@@ -4069,7 +4169,7 @@ function updRemote(dt){
     }else{
       p.deadT+=dt;if(m.tag)m.tag.visible=false;nightHide(m);
       if(p.gib)m.g.visible=false;
-      else{m.b.rotation.x=Math.max(-Math.PI/2,-p.deadT*5);m.b.position.y=p.deadT>2?Math.max(-.3,-(p.deadT-2)*.3):0;m.g.visible=p.deadT<5;
+      else{rbMuerte(m,p);m.g.visible=p.deadT<5;
         if(m.g.visible&&placeBlob(nb,p.x,p.y,p.z,Math.max(0,1-p.deadT/5)))nb++;}
     }
   }

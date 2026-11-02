@@ -861,7 +861,7 @@ function buildUT(ruina){
   o.roof={t:roof,sc:3,shin:50,spec:roof.utSpec};o.step={t:step,sc:1,shin:50,spec:step.utSpec};o.rock={t:rock,sc:3,shin:30,spec:rock.utSpec};o.black={t:black,sc:2,shin:55};o.navy={t:navy,sc:1,shin:60};
   o.roofTiles={t:roofTiles,sc:1.5,shin:10};o.soil={t:soil,sc:1.5,shin:4};o.barn={t:barn,sc:2,shin:14};o.rail={t:rail,sc:1,shin:60,alpha:true};
   // relieve: la propia textura sirve de mapa de relieve (grietas, juntas y manchas se marcan con la luz de la linterna)
-  if(RUIN){const bm={concrete:.5,brick:.8,step:.4,smooth:.4,rock:.8,tiles:.5,whitewall:.3,wood:.5,roof:.3,crate:.5,grass:.3}; /* suaves: más fuerte se ve como agua o purpurina */for(const k in bm)if(o[k])o[k].bump=bm[k];}
+  if(RUIN){const bm={concrete:.5,brick:.8,step:.4,smooth:.4,rock:.8,tiles:.5,whitewall:.3,wood:.5,roof:.3,crate:.5,grass:.3,wall:.5,club:.5,tower:.5,canyon:.7,board:.5,barnB:.5,velvet:.4,basalt:.6,soil:.5}; /* suaves: más fuerte se ve como agua o purpurina */for(const k in bm)if(o[k])o[k].bump=bm[k];}
   return {mats:o,water};
 }
 /* =================== GEOMETRÍA DEL MAPA =================== */
@@ -3671,14 +3671,38 @@ function nightAmbient(dt){
     else nz({dur:1,f0:2000,f1:900,type:'bandpass',q:5,vol:.035});}
 }
 // música de Pyramid: electrónica de tracker con orquesta y guitarras, en la onda de Unreal Tournament (DM-Pyramid suena "bouncy" y a tempo medio).
-// 140 BPM, mi frigio/menor (Mi Mi Do Re | Mi Mi Fa Si), batería saltarina, bajo con filtro, guitarra con distorsión, arpegio con eco, cuerdas, campanas y coro.
-// Se programa con un reloj por adelantado (cada cuadro agenda los próximos 16avos). Pasa por musicGain: la barra de "música" de Ajustes la controla.
+// Una pieza larga de 80 compases (unos 2 min 20 s) a 140 BPM con diez secciones que cambian de tonalidad, acordes, batería, bajo, guitarra y melodía:
+// intro, A, B (melodía), pausa, C y D (modula a Sol), interludio en La, puente oscuro, subida y final. Pasa por musicGain (barra de "música" de Ajustes).
 let pMus=null;
-const PM_S=60/140/4;                                                      // un 16avo
-const PM_ROOT=[82.41,82.41,65.41,73.42,82.41,82.41,87.31,61.74];         // raíz de cada compás de la vuelta de 8
-const PM_CH=[[0,3,7],[0,3,7],[0,4,7],[0,4,7],[0,3,7],[0,3,7],[0,4,7],[0,4,7]];
-const PM_BASS=[[0,-1,0,12,-1,0,-1,7,0,-1,0,12,-1,10,-1,7],[0,0,12,0,0,7,0,12,0,0,12,0,0,10,7,12]];
-const PM_ARP=[0,2,4,2,1,3,5,3,0,2,4,5,3,2,1,0],PM_MEL=[[0,3,6,8,11,12,14],[3,2,4,3,5,4,2]];
+const PM_S=60/140/4,PM_VOL=.4;                                            // un 16avo; volumen general de la música (bajo, para no cansar)
+const PM_PROG={
+  A:[[0,'m'],[0,'m'],[-4,'M'],[-2,'M'],[0,'m'],[0,'m'],[1,'M'],[-5,'M']],
+  B:[[0,'m'],[-4,'M'],[-2,'M'],[-5,'M'],[0,'m'],[-4,'M'],[1,'M'],[-5,'M']],
+  C:[[0,'m'],[-2,'M'],[-4,'M'],[-2,'s'],[0,'m'],[-2,'M'],[-5,'M'],[-5,'p']],
+  D:[[0,'m'],[-1,'d'],[-2,'M'],[-3,'M'],[0,'m'],[-1,'d'],[-2,'M'],[-5,'M']],
+  E:[[0,'m'],[3,'M'],[-4,'M'],[-2,'M'],[0,'m'],[3,'M'],[1,'M'],[-5,'M']]};
+const PM_Q={m:[0,3,7],M:[0,4,7],d:[0,3,6],s:[0,5,7],p:[0,7,12]};
+// dr: batería (0 suave, 1 normal, 2 doble tiempo, 3 medio tiempo, 4 puente, 5 subida) · bass: dibujo del bajo · g: guitarra (0 nada, 1 sincopada, 2 corcheas, 3 acorde largo)
+// arp: 0 nada, 1 suave, 2 fuerte, 3 agudo · mel: melodía (0 nada, 1 frase, 2 corridas, 3 notas largas) · pad: cuerdas · ch: coro · rs: subida de ruido
+const PM_SEC=[
+  {n:'intro',key:0,prog:'A',dr:0,bass:0,g:0,arp:1,mel:0,pad:1,ch:0,rs:0},
+  {n:'A',key:0,prog:'A',dr:1,bass:1,g:1,arp:1,mel:0,pad:1,ch:0,rs:0},
+  {n:'B',key:0,prog:'B',dr:1,bass:1,g:2,arp:2,mel:1,pad:1,ch:0,rs:0},
+  {n:'pausa',key:0,prog:'C',dr:3,bass:0,g:3,arp:3,mel:3,pad:2,ch:1,rs:1},
+  {n:'C',key:3,prog:'A',dr:2,bass:2,g:2,arp:2,mel:1,pad:1,ch:0,rs:0},
+  {n:'D',key:3,prog:'B',dr:2,bass:3,g:1,arp:2,mel:2,pad:1,ch:0,rs:0},
+  {n:'interludio',key:5,prog:'E',dr:3,bass:4,g:0,arp:3,mel:3,pad:2,ch:1,rs:0},
+  {n:'puente',key:0,prog:'D',dr:4,bass:0,g:3,arp:1,mel:0,pad:2,ch:1,rs:0},
+  {n:'subida',key:0,prog:'C',dr:5,bass:2,g:2,arp:2,mel:0,pad:1,ch:0,rs:1},
+  {n:'final',key:0,prog:'A',dr:1,bass:2,g:2,arp:2,mel:1,pad:2,ch:1,rs:0}];
+const PM_BASS=[[0,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[0,-1,0,12,-1,0,-1,7,0,-1,0,12,-1,10,-1,7],[0,0,12,0,0,7,0,12,0,0,12,0,0,10,7,12],[0,-1,-1,0,0,-1,0,0,-1,0,0,-1,0,0,12,-1],[0,-1,12,-1,0,-1,12,-1,0,-1,12,-1,0,-1,7,-1]];
+const PM_GT=[[],[0,3,6,8,11,14],[0,2,4,6,8,10,12,14],[0]];
+const PM_ARP=[0,2,4,2,1,3,5,3,0,2,4,5,3,2,1,0];
+// melodía 1: frase de 4 compases [paso, duración, semitonos sobre la tónica]; se repite con otro final en el segundo grupo de 4
+const PM_M1=[[[0,3,7],[3,1,5],[4,4,3],[8,2,5],[10,2,7],[12,4,3]],[[0,3,3],[3,1,5],[4,4,7],[8,2,8],[10,2,7],[12,4,5]],[[0,3,8],[3,1,7],[4,4,5],[8,2,7],[10,2,8],[12,4,12]],[[0,2,10],[2,2,8],[4,4,7],[8,2,5],[10,2,3],[12,4,0]]];
+const PM_M1B=[[0,4,11],[4,4,10],[8,4,8],[12,4,7]];
+const PM_M2=[[0,-1,2,-1,4,-1,2,-1,3,-1,5,-1,4,-1,2,-1],[0,2,4,6,5,4,2,0,1,3,5,7,6,5,3,1],[7,-1,6,-1,5,-1,4,-1,3,2,1,0,1,2,3,4],[0,3,0,4,0,5,0,6,7,6,5,4,3,2,1,0]];
+const PM_M3=[[[0,16,12]],[[0,8,10],[8,8,8]],[[0,8,7],[8,8,8]],[[0,12,5],[12,4,3]]];
 function pmOsc(type,f,t,dur,vol,o){
   o=o||{};const osc=AC.createOscillator();osc.type=type;osc.frequency.setValueAtTime(f,t);if(o.f1)osc.frequency.exponentialRampToValueAtTime(o.f1,t+dur);
   let node=osc;
@@ -3689,42 +3713,55 @@ function pmOsc(type,f,t,dur,vol,o){
 }
 function pmInit(){
   const bus=AC.createGain();bus.gain.value=0;bus.connect(musicGain||master);
-  const dly=AC.createDelay(1);dly.delayTime.value=PM_S*3;const fb=AC.createGain();fb.gain.value=.38;const df=AC.createBiquadFilter();df.type='lowpass';df.frequency.value=2600;dly.connect(df);df.connect(fb);fb.connect(dly);df.connect(bus);
+  const dly=AC.createDelay(1);dly.delayTime.value=PM_S*3;const fb=AC.createGain();fb.gain.value=.36;const df=AC.createBiquadFilter();df.type='lowpass';df.frequency.value=2200;dly.connect(df);df.connect(fb);fb.connect(dly);df.connect(bus);
   const gtr=AC.createGain(),ws=AC.createWaveShaper(),c=new Float32Array(256);for(let i=0;i<256;i++){const x=i/128-1;c[i]=(3+40)*x*.35/(1+40*.35*Math.abs(x)*.5);}ws.curve=c;
-  const gl=AC.createBiquadFilter();gl.type='lowpass';gl.frequency.value=2400;gtr.connect(ws);ws.connect(gl);gl.connect(bus);   // guitarra: saturación + filtro
+  const gl=AC.createBiquadFilter();gl.type='lowpass';gl.frequency.value=2200;gtr.connect(ws);ws.connect(gl);gl.connect(bus);   // guitarra: saturación + filtro
   pMus={bus,dly,gtr,next:0,step:0,on:false};
 }
-function pmStep(i,t){
-  const bar=(i>>4)&7,st=i&15,root=PM_ROOT[bar],ch=PM_CH[bar],hard=bar>=4,B=pMus.bus;
-  // batería
-  if([0,6,8,11].includes(st)||(bar%4===3&&st===14)){tn({type:'sine',f0:165,f1:44,dur:.2,vol:.8,at:t,out:B});nz({dur:.015,f0:3000,f1:800,type:'highpass',vol:.25,at:t,out:B});}
-  if(st===4||st===12){nz({dur:.15,f0:3200,f1:1100,type:'bandpass',q:.7,vol:.5,at:t,out:B});tn({type:'triangle',f0:210,f1:120,dur:.09,vol:.3,at:t,out:B});}
-  if(st===15&&bar%2===1)nz({dur:.06,f0:3000,f1:1500,type:'bandpass',vol:.18,at:t,out:B});
-  if(st%2===0)nz({dur:.035,f0:9500,f1:7500,type:'highpass',vol:st%4===2?.17:.11,at:t,out:B});else nz({dur:.025,f0:9500,f1:8000,type:'highpass',vol:.05,at:t,out:B});
-  if(st===10)nz({dur:.2,f0:8000,f1:5000,type:'highpass',vol:.13,at:t,out:B});
-  if((bar===3||bar===7)&&st>=12)tn({type:'sine',f0:230-(st-12)*22,f1:90,dur:.2,vol:.55,at:t,out:B});   // redoble al final de cada frase
-  if(st===0&&(bar===0||bar===4))nz({dur:1.3,f0:9000,f1:5000,type:'highpass',vol:.2,at:t,out:B});         // platillo
-  if(bar===7&&st===8)nz({dur:PM_S*8,f0:600,f1:9000,type:'bandpass',q:1.5,vol:.22,at:t,out:B});          // subida de ruido antes de volver al principio
-  // bajo (con barrido de filtro en cada nota)
-  const bn=PM_BASS[hard?1:0][st];if(bn>=0)pmOsc('sawtooth',root*Math.pow(2,bn/12),t,PM_S*.85,.2,{lp:900,lp1:220,q:3,rel:.03});
-  // guitarra: acordes de quinta (raíz + quinta + octava) cortados, desde el compás 3
-  if(bar>=2&&[0,3,6,8,11,14].includes(st)){const gf=root*2,d=st===0||st===8?PM_S*1.6:PM_S*.7;for(const m of [1,1.4983,2])pmOsc('sawtooth',gf*m,t,d,.06,{out:pMus.gtr,rel:.02});}
-  // arpegio de cuadrada con eco
-  const cn=[0,ch[1],ch[2],12,12+ch[1],12+ch[2]][PM_ARP[st]];pmOsc('square',root*4*Math.pow(2,cn/12),t,PM_S*.8,hard?.04:.026,{lp:3200,dly:1,rel:.03});
-  // melodía de sierra (solo en la segunda mitad): notas del acorde en la octava de arriba
-  if(hard){const k=PM_MEL[0].indexOf(st);if(k>=0){const m=[0,ch[1],ch[2],12,12+ch[1],12+ch[2]][PM_MEL[1][k]];pmOsc('sawtooth',root*8*Math.pow(2,m/12),t,PM_S*(k%2?1.5:2.4),.05,{lp:3600,dly:1,att:.01,rel:.08});}}
-  // cuerdas, campana y coro
-  if(st===0){for(const m of ch){for(const dt of [-6,6])pmOsc('sawtooth',root*4*Math.pow(2,m/12)*Math.pow(2,dt/1200),t,PM_S*16,.03,{lp:1000,att:.35,rel:.6});}
-    if(bar%4===0){pmOsc('triangle',659.25,t,2.2,.05,{dly:1,rel:1.8});pmOsc('sine',659.25*2.76,t,1.2,.015,{rel:1});}
-    if(bar===2||bar===6)for(const m of ch)pmOsc('triangle',root*8*Math.pow(2,m/12),t,PM_S*16,.025,{att:.8,rel:1,lp:1800});}   // coro lejano
+function pmDrums(dr,bar,st,t,last){
+  const B=pMus.bus,kick=v=>{tn({type:'sine',f0:165,f1:44,dur:.2,vol:.8*v,at:t,out:B});nz({dur:.015,f0:3000,f1:800,type:'highpass',vol:.2*v,at:t,out:B});};
+  const snare=v=>{nz({dur:.15,f0:3200,f1:1100,type:'bandpass',q:.7,vol:.45*v,at:t,out:B});tn({type:'triangle',f0:210,f1:120,dur:.09,vol:.25*v,at:t,out:B});};
+  const hat=v=>nz({dur:.035,f0:9500,f1:7500,type:'highpass',vol:.1*v,at:t,out:B});
+  if(dr===0){if(st===0||(st===8&&bar%2))kick(.7);if(st%4===2)hat(.6);}
+  else if(dr===1){if([0,6,8,11].includes(st)||(bar%4===3&&st===14))kick(1);if(st===4||st===12)snare(1);if(st===15&&bar%2)snare(.4);hat(st%2===0?(st%4===2?1.5:1):.45);if(st===10)nz({dur:.2,f0:8000,f1:5000,type:'highpass',vol:.12,at:t,out:B});}
+  else if(dr===2){if(st%4===0||st===14||(st===7&&bar%2))kick(1);if(st===4||st===12)snare(1);hat(st%2?.9:1.1);if(st===2||st===10)nz({dur:.1,f0:8000,f1:6000,type:'highpass',vol:.1,at:t,out:B});}
+  else if(dr===3){if(st===0||(st===10&&bar%2))kick(1);if(st===8)snare(1);if(st%4===2)hat(1);if(st===15&&bar%4===3)snare(.6);}
+  else if(dr===4){if(st===0||st===10)kick(.9);if(st===4||st===13)tn({type:'sine',f0:150,f1:70,dur:.25,vol:.5,at:t,out:B});if(st===8&&bar%2)tn({type:'sine',f0:200,f1:90,dur:.25,vol:.4,at:t,out:B});if(st%8===6)hat(.7);}
+  else if(dr===5){if(st%4===0)kick(1);snare(.18+(bar*16+st)/128*.6);if(st%2===0)hat(.8);}
+  if(last&&bar%4===3&&st>=12&&dr!==5)tn({type:'sine',f0:230-(st-12)*22,f1:90,dur:.2,vol:.5,at:t,out:B});   // redoble al cerrar cada frase
+}
+function pmStep(i){
+  const t=pMus.next,gb=(i>>4)%80,sec=PM_SEC[gb>>3],bar=gb&7,st=i&15,B=pMus.bus,ch=PM_PROG[sec.prog][bar],tones=PM_Q[ch[1]];
+  const root=82.41*Math.pow(2,(sec.key+ch[0])/12),tonic=164.81*Math.pow(2,sec.key/12);
+  const nt=k=>[0,tones[1],tones[2],12,12+tones[1],12+tones[2]][k];
+  pmDrums(sec.dr,bar,st,t,true);
+  if(st===0&&bar===0)nz({dur:1.4,f0:9000,f1:5000,type:'highpass',vol:.16,at:t,out:B});                                      // platillo al empezar cada sección
+  if(sec.rs&&bar===7&&st===0)nz({dur:PM_S*16,f0:500,f1:9000,type:'bandpass',q:1.5,vol:.2,at:t,out:B});                       // subida de ruido
+  // bajo
+  const bn=PM_BASS[sec.bass][st];
+  if(sec.bass===0){if(st===0)pmOsc('sawtooth',root,t,PM_S*15,.15,{lp:500,lp1:200,q:2,att:.05,rel:.2});}
+  else if(bn>=0)pmOsc('sawtooth',root*Math.pow(2,bn/12),t,PM_S*.85,.18,{lp:900,lp1:220,q:3,rel:.03});
+  // guitarra
+  if(sec.g===3){if(st===0)for(const m of [1,1.4983,2])pmOsc('sawtooth',root*2*m,t,PM_S*15,.04,{out:pMus.gtr,att:.03,rel:.3});}
+  else if(sec.g&&bar>=(sec.g===1?2:0)&&PM_GT[sec.g].includes(st)){const d=st===0||st===8?PM_S*1.6:PM_S*.7;for(const m of [1,1.4983,2])pmOsc('sawtooth',root*2*m,t,d,.05,{out:pMus.gtr,rel:.02});}
+  // arpegio
+  if(sec.arp){const k=PM_ARP[st],oct=sec.arp===3?2:1;pmOsc(sec.arp===3?'triangle':'square',root*4*oct*Math.pow(2,nt(k)/12),t,PM_S*.8,sec.arp===2?.032:sec.arp===3?.035:.02,{lp:2400,dly:1,rel:.03});}
+  // melodías
+  if(sec.mel===1){const ph=bar&3,notes=bar<4||ph<3?PM_M1[ph]:PM_M1B;for(const [s0,len,sm] of notes)if(s0===st)for(const dt of [-5,5])pmOsc('sawtooth',tonic*Math.pow(2,sm/12)*Math.pow(2,dt/1200),t,PM_S*len*.95,.026,{lp:3000,dly:1,att:.012,rel:.08});}
+  if(sec.mel===2){const k=PM_M2[bar&3][st];if(k>=0)pmOsc('sawtooth',tonic*Math.pow(2,[0,3,7,10,12,15,19,22][k]/12),t,PM_S*1.6,.03,{lp:3400,dly:1,rel:.05});}
+  if(sec.mel===3){for(const [s0,len,sm] of PM_M3[bar&3])if(s0===st){pmOsc('triangle',tonic*Math.pow(2,sm/12),t,PM_S*len,.06,{dly:1,att:.08,rel:.3});pmOsc('sine',tonic*2*Math.pow(2,sm/12),t,PM_S*len,.02,{att:.15,rel:.3});}}
+  // cuerdas, campana, coro
+  if(st===0){const pv=sec.pad===2?.04:.028;for(const m of tones)for(const dt of [-6,6])pmOsc('sawtooth',root*4*Math.pow(2,m/12)*Math.pow(2,dt/1200),t,PM_S*16,pv,{lp:900,att:.4,rel:.7});
+    if(bar%4===0){pmOsc('triangle',tonic*4,t,2.4,.045,{dly:1,rel:2});pmOsc('sine',tonic*4*2.76,t,1.2,.012,{rel:1});}
+    if(sec.ch&&bar%2===0)for(const m of tones)pmOsc('triangle',root*8*Math.pow(2,m/12),t,PM_S*32,.02,{att:1,rel:1.4,lp:1800});}
 }
 function pyramidAmbient(dt,on){
   const t=AC.currentTime,play=on&&inGame&&!paused;
   if(!pMus){if(!play)return;pmInit();}
-  if(play!==pMus.on){pMus.on=play;pMus.bus.gain.cancelScheduledValues(t);pMus.bus.gain.setTargetAtTime(play?1:0,t,play?.4:.2);if(play){pMus.next=t+.1;}}
+  if(play!==pMus.on){pMus.on=play;pMus.bus.gain.cancelScheduledValues(t);pMus.bus.gain.setTargetAtTime(play?PM_VOL:0,t,play?.4:.2);if(play){pMus.next=t+.1;}}
   if(play){
     if(pMus.next<t-.3)pMus.next=t+.05;                                     // si la pestaña se durmió, retoma sin ponerse al día
-    while(pMus.next<t+.3){pmStep(pMus.step,pMus.next);pMus.next+=PM_S;pMus.step++;}
+    while(pMus.next<t+.3){pmStep(pMus.step);pMus.next+=PM_S;pMus.step++;}
   }
   // zumbido de gravedad: solo suena adentro del pozo de gravedad cero
   if(!pMus.hum&&on){const o=AC.createOscillator();o.type='sawtooth';o.frequency.value=64;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=240;const g=AC.createGain();g.gain.value=0;o.connect(f);f.connect(g);g.connect(master);o.start();pMus.hum={o,g,z:0};}

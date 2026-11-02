@@ -121,6 +121,6 @@ function buildUT(ruina){
   o.roof={t:roof,sc:3,shin:50,spec:roof.utSpec};o.step={t:step,sc:1,shin:50,spec:step.utSpec};o.rock={t:rock,sc:3,shin:30,spec:rock.utSpec};o.black={t:black,sc:2,shin:55};o.navy={t:navy,sc:1,shin:60};
   o.roofTiles={t:roofTiles,sc:1.5,shin:10};o.soil={t:soil,sc:1.5,shin:4};o.barn={t:barn,sc:2,shin:14};o.rail={t:rail,sc:1,shin:60,alpha:true};
   // relieve: la propia textura sirve de mapa de relieve (grietas, juntas y manchas se marcan con la luz de la linterna)
-  if(RUIN){const bm={concrete:.5,brick:.8,step:.4,smooth:.4,rock:.8,tiles:.5,whitewall:.3,wood:.5,roof:.3,crate:.5,grass:.3}; /* suaves: más fuerte se ve como agua o purpurina */for(const k in bm)if(o[k])o[k].bump=bm[k];}
+  if(RUIN){const bm={concrete:.5,brick:.8,step:.4,smooth:.4,rock:.8,tiles:.5,whitewall:.3,wood:.5,roof:.3,crate:.5,grass:.3,wall:.5,club:.5,tower:.5,canyon:.7,board:.5,barnB:.5,velvet:.4,basalt:.6,soil:.5}; /* suaves: más fuerte se ve como agua o purpurina */for(const k in bm)if(o[k])o[k].bump=bm[k];}
   return {mats:o,water};
 }

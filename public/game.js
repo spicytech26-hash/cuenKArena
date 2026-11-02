@@ -1633,8 +1633,8 @@ MAPDEFS.skatenight = buildSkatenight;
      o abajo te lleva para ahí. Para salir en un nivel, te movés de costado por encima del borde del piso. Si te quedás sin subir, salís por
      abajo y te caés al vacío. No hay escaleras: el pozo es la única forma de cambiar de nivel (los bots también lo usan, ver 7-bots.js).
    · Nada de ítems en el pozo: armas, escudos y curación están en los pisos.
-   · Los 4 pilares del pozo (basalto con grietas de lava), la punta y las 4 patas son sólidos (se choca y se pisa); las patas no cuentan para la
-     navegación de los bots (nonav). Los obeliscos también son sólidos.
+   · La punta y las 4 patas son sólidos (se choca y se pisa); las patas no cuentan para la navegación de los bots (nonav). Los obeliscos y los
+     escombros también. El pozo está libre: nada adentro.
    · Cada nivel tiene su color (material y luces) y adorno lovecraftiano: obeliscos con ojos, tentáculos que salen del agua, un ojo en el vacío.
    · SIN linterna (no es theme.noche, eso es solo de Skatenight). Música y ambiente propios (theme.ambiente = 'piramide'). */
 function buildPyramid() {
@@ -1645,7 +1645,7 @@ function buildPyramid() {
   const H = 3;                                  // mitad del pozo central
   // cada nivel tiene su identidad: material del cuerpo y color de las luces
   const BODY = ['basalt', 'velvet', 'barnB', 'canyon', 'board'];   // lava, magenta, azul, naranja, verde
-  const TOP = ['tiles', 'club', 'tower', 'wall', 'step'];
+  const TOP = ['concrete', 'club', 'tower', 'wall', 'step'];
   const LCOL = [0x30ff90, 0xa040ff, 0xffa030, 0xff40c0, 0xb8ff30];
   let gs = 11; const rnd = () => { gs = (gs * 1664525 + 1013904223) >>> 0; return gs / 4294967296; };   // azar fijo: el mapa sale siempre igual
 
@@ -1655,11 +1655,17 @@ function buildPyramid() {
     const s = S[k], y = Y[k], th = k ? 1.2 : 3, bd = BODY[k], tp = TOP[k];
     slab(-s, -s, s, -H, y, th, bd, tp); slab(-s, H, s, s, y, th, bd, tp); slab(-s, -H, -H, H, y, th, bd, tp); slab(H, -H, s, H, y, th, bd, tp);
   }
-  // cordón bajito en el borde de cada nivel (solo se ve, se pisa)
+  // cordón del borde de cada nivel: roto, con tramos de distinto alto y huecos (solo se ve, se pisa)
   for (let k = 0; k <= 4; k++) {
-    const s = S[k], y = Y[k], t = .35;
-    add(-s, y, -s, s, y + t, -s + .3, 'concrete', { nc: 1 }); add(-s, y, s - .3, s, y + t, s, 'concrete', { nc: 1 });
-    add(-s, y, -s + .3, -s + .3, y + t, s - .3, 'concrete', { nc: 1 }); add(s - .3, y, -s + .3, s, y + t, s - .3, 'concrete', { nc: 1 });
+    const s = S[k], y = Y[k];
+    for (const side of [0, 1, 2, 3]) {
+      for (let q = -s; q < s - .5;) {
+        const len = .8 + rnd() * 2.2, e = Math.min(s, q + len), h = .12 + rnd() * .5;
+        if (rnd() > .28) { const sg = side % 2 ? 1 : 0;
+          if (side < 2) add(q, y, sg ? s - .3 : -s, e, y + h, sg ? s : -s + .3, 'concrete', { nc: 1 }); else add(sg ? s - .3 : -s, y, q, sg ? s : -s + .3, y + h, e, 'concrete', { nc: 1 }); }
+        q = e + (rnd() < .3 ? .6 : 0);
+      }
+    }
   }
 
   /* ---- pozo de gravedad cero: zona física (baja hasta debajo del nivel 0: ahí salís y te caés al vacío) + efectos casi transparentes ---- */
@@ -1667,10 +1673,6 @@ function buildPyramid() {
   for (let i = 0; i < 90; i++) {                                       // espiral de brillos muy tenues (puntos con halo)
     const a = i * .55, y = -.5 + i * .27;
     deco.push({ t: 'glow', x: Math.cos(a) * 1.7, y, z: Math.sin(a) * 1.7, c: 0x0b3548, s: .55 });
-  }
-  for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {       // 4 pilares de basalto en las esquinas del pozo: sólidos y opacos, con grietas de lava
-    add(sx > 0 ? H - .7 : -H, -3, sz > 0 ? H - .7 : -H, sx > 0 ? H : -H + .7, Y[4] + 4, sz > 0 ? H : -H + .7, 'basalt');
-    add(sx > 0 ? H - .9 : -H - .2, Y[4] + 4, sz > 0 ? H - .9 : -H - .2, sx > 0 ? H + .2 : -H + .9, Y[4] + 4.4, sz > 0 ? H + .2 : -H + .9, 'metal');
   }
 
   /* ---- patas (sólidas, fuera de la navegación de los bots) y la punta: sólida ---- */
@@ -1737,6 +1739,36 @@ function buildPyramid() {
   sp(3, [[-8.5, -5], [8.5, 5], [5, -8.5], [-5, 8.5]]);
   sp(4, [[0, 4.5], [-4.5, 2], [4.5, -2], [2, -4.5]]);
 
+  /* ---- deterioro: parches de roca, tierra y musgo sobre las caras de cada nivel, varillas y cadenas colgando, enredaderas, escombros y bruma baja ---- */
+  const PARCHE = ['rock', 'soil', 'grass', 'concrete', 'metal', 'rock'];
+  for (let k = 0; k <= 4; k++) {
+    const s = S[k], y = Y[k], th = k ? 1.2 : 3, n = Math.round(s * 1.4);
+    for (let i = 0; i < n; i++) for (const side of [0, 1, 2, 3]) {
+      const q = -s + rnd() * (s * 2 - 3), w = 1 + rnd() * 2.4, h = th * (.35 + rnd() * .6), y0 = y - .15 - h - rnd() * (th - h - .15), m = PARCHE[Math.floor(rnd() * PARCHE.length)];
+      if (rnd() > .45) continue;
+      if (side < 2) add(q, y0, side ? s : -s - .05, q + w, y0 + h, side ? s + .05 : -s, m, { nc: 1 }); else add(side === 3 ? s : -s - .05, y0, q, side === 3 ? s + .05 : -s, y0 + h, q + w, m, { nc: 1 });
+    }
+    for (let i = 0; i < 10; i++) {                                     // varillas de hierro que sobresalen del borde roto
+      const side = i % 4, q = -s + 1 + rnd() * (s * 2 - 2), yy = y - .3 - rnd() * (th - .5), L = .7 + rnd() * 1.1;
+      if (side < 2) add(q, yy, side ? s : -s - L, q + .07, yy + .07, side ? s + L : -s, 'metal', { nc: 1 }); else add(side === 3 ? s : -s - L, yy, q, side === 3 ? s + L : -s, yy + .07, q + .07, 'metal', { nc: 1 });
+    }
+    for (let i = 0; i < 7; i++) {                                      // cadenas que cuelgan bajo el borde
+      const side = i % 4, q = -s + 2 + rnd() * (s * 2 - 4), n2 = 3 + Math.floor(rnd() * 4), yy = y - th;
+      const cx = side < 2 ? q : (side === 3 ? s + .15 : -s - .15), cz = side < 2 ? (side ? s + .15 : -s - .15) : q;
+      for (let j = 0; j < n2; j++) add(cx - .05 + (j % 2) * .04, yy - (j + 1) * .42, cz - .05 + (j % 2) * .04, cx + .05 + (j % 2) * .04, yy - j * .42, cz + .05 + (j % 2) * .04, 'metal', { nc: 1 });
+    }
+    for (let q = -s + 1; q < s; q += 2.2 + rnd() * 1.4) {              // enredaderas colgando de los cuatro lados
+      const len = 1.2 + rnd() * 2.4, yv = y - .3 - rnd() * .5;
+      deco.push({ t: 'enredadera', x: q, y: yv, z: -s - .06, len, ry: Math.PI }, { t: 'enredadera', x: q, y: yv, z: s + .06, len: len * .9, ry: 0 },
+        { t: 'enredadera', x: -s - .06, y: yv, z: q, len: len * .8, ry: -Math.PI / 2 }, { t: 'enredadera', x: s + .06, y: yv, z: q, len, ry: Math.PI / 2 });
+    }
+    for (const [x0, z0, x1, z1] of [[-s, -s, s, -H], [-s, H, s, s], [-s, -H, -H, H], [H, -H, s, H]]) deco.push({ t: 'bruma', soft: 1, x0, x1, z0, z1, y: y + .35, o: .1, dir: k % 2 ? 1 : -1 });   // bruma pegada al piso
+  }
+  for (const [k, x, z] of [[0, 21, -21], [0, -21, -21], [0, 22.5, 6], [0, -22.5, -6], [1, 16.5, -16.5], [1, -16.5, -16.5], [2, 12.5, -12.5], [2, -12.5, 12.5]]) {   // montones de escombros (sólidos, sirven de cobertura)
+    const y = Y[k];
+    add(x - .9, y, z - .7, x + .9, y + .7, z + .7, 'rock'); add(x - .5, y + .7, z - .4, x + .5, y + 1.2, z + .4, 'rock'); add(x + .7, y, z - 1.4, x + 1.5, y + .4, z - .7, 'rock'); add(x - 1.5, y, z + .3, x - .9, y + .35, z + 1, 'rock');
+  }
+
   /* ---- decals: grietas, musgo, sangre y charcos sobre los pisos (solo donde el piso es plano) ---- */
   const NOPISO = ['grate', 'roof', 'rail', 'fence', 'metal', 'tube'];
   const flatTop = (x, z, r) => {
@@ -1756,14 +1788,14 @@ function buildPyramid() {
       deco.push({ t: 'decal', x, y: t + .025, z, w, h: w, k: ks[Math.floor(rnd() * ks.length)], rx: -Math.PI / 2, ry: rnd() * 6.28, rz: 0 }); n++;
     }
   };
-  scatter([0, 1, 2, 3, 4, 5], 60, 2.5, 5); scatter([14, 15, 16, 17], 26, 1.8, 3.4); scatter([26, 27, 28, 29], 22, 2.2, 4); scatter([30, 31], 10, 2, 3.4); scatter([6, 7, 8, 9], 14, 2, 3.6);
+  scatter([0, 1, 2, 3, 4, 5], 110, 2.5, 5.5); scatter([14, 15, 16, 17], 46, 1.8, 3.6); scatter([26, 27, 28, 29], 34, 2.2, 4); scatter([30, 31], 14, 2, 3.6); scatter([6, 7, 8, 9], 26, 2, 3.8); scatter([22, 23, 24, 25], 40, 1.5, 2.6);
 
   /* ---- luces de color: cada nivel con su tono (el pozo, apenas un resplandor celeste) ---- */
   for (let k = 0; k <= 4; k++) { const o = S[k] * .55; lights.push({ x: o, y: Y[k] + 2.6, z: -o, c: LCOL[k], i: .75, d: 20 }, { x: -o, y: Y[k] + 2.6, z: o, c: LCOL[k], i: .75, d: 20 }); }
   lights.push({ x: 0, y: 4, z: 0, c: 0x40e0ff, i: .3, d: 12 }, { x: 0, y: 14, z: 0, c: 0x40e0ff, i: .3, d: 12 }, { x: 0, y: -8, z: 0, c: 0xb040ff, i: .9, d: 18 });
 
   return finish({ id: 'pyramid', name: 'Pyramid', navMaxY: 24, zerog, bounds: { x0: -26, x1: 26, z0: -26, z1: 26 }, deco, modos: ['arena', 'gungame'],
-    theme: { sky: 'halloween', tex: 'ruina', ambiente: 'piramide', fog: 0x16102e, fogD: .0055, amb: 0x7a64b8, ambI: .62, hemi: [0x9a80e0, 0x6a5290, .7], sun: true, sunC: 0xd8a0d0, sunI: .65, sunPos: [0, 60, 50], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
+    theme: { sky: 'halloween', tex: 'ruina', ambiente: 'piramide', fog: 0x16102e, fogD: .0055, amb: 0x7a64b8, ambI: .62, hemi: [0x9a80e0, 0x6a5290, .7], sun: true, sunC: 0xb8a0d8, sunI: .5, sunPos: [0, 60, 50], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
 }
 MAPDEFS.pyramid = buildPyramid;
 const MAPS = {};

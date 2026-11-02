@@ -121,8 +121,8 @@ addEventListener('keydown',e=>{
   if(e.code==='KeyQ')quickSwitch();
   if(e.code==='KeyF'&&!e.repeat)inspect();
   if(e.code==='KeyB'&&!e.repeat){e.preventDefault();openShop();}
-  if(e.code==='KeyT'&&NIGHT){e.preventDefault();if(!e.repeat)nightToggle();}   // en los mapas de noche la T es la linterna (el chat queda en Enter)
-  else if(e.code==='KeyT'||e.code==='Enter'){e.preventDefault();openChat();}
+  if(e.code==='KeyG'&&NIGHT){e.preventDefault();if(!e.repeat)nightToggle();}   // en los mapas con linterna (hoy solo Skatenight) la G prende y apaga la linterna; la T vuelve a abrir el chat
+  if(e.code==='KeyT'||e.code==='Enter'){e.preventDefault();openChat();}
   if(e.code==='Tab'){$('board').hidden=false;renderBoard();}
   if(!online&&!e.repeat&&(e.code==='Equal'||e.code==='NumpadAdd'||e.key==='+'))changeBots(1);
   if(!online&&!e.repeat&&(e.code==='Minus'||e.code==='NumpadSubtract'||e.key==='-'))changeBots(-1);

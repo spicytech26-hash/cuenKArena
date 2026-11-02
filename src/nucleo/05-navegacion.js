@@ -9,13 +9,13 @@ function buildNav(W) {
   const cells = new Array(NX * NZ), nodes = [];
   // bloques agrupados por columna (x) para no recorrer todo el mapa en cada celda: el armado tarda varias veces menos
   const cols = [];
-  for (let cx = 0; cx < NX; cx++) { const qx = X0 + cx + .5 + .013; cols.push(W.brushes.filter(b => !b.nc && !b.mover && b.min[0] < qx && b.max[0] > qx)); }
+  for (let cx = 0; cx < NX; cx++) { const qx = X0 + cx + .5 + .013; cols.push(W.brushes.filter(b => !b.nc && !b.mover && !b.nonav && b.min[0] < qx && b.max[0] > qx)); }
   for (let cz = 0; cz < NZ; cz++) for (let cx = 0; cx < NX; cx++) {
     const px = X0 + cx + .5, pz = Z0 + cz + .5, tops = [];
     for (const b of cols[cx]) {
       // se mira un poquito corrido del centro para no caer justo en el borde entre dos escalones
       const qx = px + .013, qz = pz + .017;
-      if (b.nc || b.mover || !(b.min[0] < qx && b.max[0] > qx && b.min[2] < qz && b.max[2] > qz)) continue;
+      if (b.nc || b.mover || b.nonav || !(b.min[0] < qx && b.max[0] > qx && b.min[2] < qz && b.max[2] > qz)) continue;
       const t = topAt(b, qx, qz, qx, qz);
       if (t > (W.navMaxY || 12.5)) continue;   // navMaxY: mapas muy altos (Pyramid) suben el tope de los nodos de navegación
       if (!tops.some(q => Math.abs(q - t) < .05)) tops.push(t);

@@ -134,12 +134,21 @@ function skyHalloween(){return cv(1024,512,(g,w,h)=>{
   g.fillStyle=gr;g.fillRect(0,0,w,h);
   for(let i=0;i<900;i++){const y=rnd()*h*.48;g.fillStyle='rgba(235,225,255,'+(rnd()*.95*(1-y/(h*.5)))+')';g.fillRect(rnd()*w|0,y|0,1,1);}
   for(let i=0;i<26;i++){const x=rnd()*w,y=rnd()*h*.4;g.fillStyle='rgba(255,255,255,.9)';g.fillRect(x,y,2,2);g.fillStyle='rgba(200,170,255,.25)';g.fillRect(x-1,y-1,4,4);}
+  // auroras de otro mundo: cintas verdes, violetas, celestes y rosas que se retuercen en lo alto
+  g.globalCompositeOperation='lighter';
+  for(let r=0;r<5;r++){const col=['60,255,170','150,70,255','60,200,255','255,90,200','120,255,90'][r];
+    for(let k=0;k<22;k++){const x0=r*w/5+rnd()*w/5,gr=g.createLinearGradient(0,h*.04,0,h*.4);gr.addColorStop(0,'rgba('+col+',0)');gr.addColorStop(.5,'rgba('+col+',.07)');gr.addColorStop(1,'rgba('+col+',0)');
+      g.strokeStyle=gr;g.lineWidth=5+rnd()*10;g.beginPath();g.moveTo(x0,h*.05);for(let y=h*.05;y<h*.42;y+=14)g.lineTo(x0+Math.sin(y*.03+r*2)*18+Math.sin(y*.011+k)*40,y);g.stroke();}}
+  g.globalCompositeOperation='source-over';
   const mx=w*.25,my=h*.34,mr=38,halo=g.createRadialGradient(mx,my,mr*.8,mx,my,mr*4.2);halo.addColorStop(0,'rgba(255,60,50,.4)');halo.addColorStop(1,'rgba(255,60,50,0)');
   g.fillStyle=halo;g.fillRect(mx-mr*4.4,my-mr*4.4,mr*8.8,mr*8.8);
   const md=g.createRadialGradient(mx-mr*.25,my-mr*.25,mr*.1,mx,my,mr);md.addColorStop(0,'#ff8a70');md.addColorStop(.6,'#e03a30');md.addColorStop(1,'#9a1418');
   g.fillStyle=md;g.beginPath();g.ellipse(mx,my,mr*1.15,mr,0,0,7);g.fill();   // más ancha que alta: la esfera del cielo la achata hacia arriba
   for(let i=0;i<14;i++){const a=rnd()*6.28,d=rnd()*mr*.8,r=3+rnd()*8;g.fillStyle='rgba(90,10,20,'+(.15+rnd()*.25)+')';g.beginPath();g.ellipse(mx+Math.cos(a)*d*1.15,my+Math.sin(a)*d,r*1.15,r,0,0,7);g.fill();}
   for(let i=0;i<22;i++){const x=rnd()*w,y=h*.1+rnd()*h*.32,rw=60+rnd()*120;if(Math.abs(x-mx)<rw+mr*1.6&&Math.abs(y-my)<mr*2.2)continue;g.fillStyle='rgba(14,5,30,'+(.25+rnd()*.3)+')';g.beginPath();g.ellipse(x,y,rw,5+rnd()*8,0,0,7);g.fill();}
+  // tentáculos gigantes que se alzan del horizonte (siluetas)
+  for(let i=0;i<9;i++){const bx=i*w/9+rnd()*50,hh=50+rnd()*95,ph=rnd()*6;g.fillStyle='#08030f';
+    for(let t=0;t<1;t+=.012){const x=bx+Math.sin(t*3.2+ph)*55*t,y=h*.505-t*hh,r=(11+rnd()*2)*(1-t)+1.5;g.beginPath();g.arc(x,y,r,0,7);g.fill();}}
   g.fillStyle='rgba(150,60,170,.13)';g.fillRect(0,h*.46,w,h*.05);
 });}
 function skyNight(){return cv(1024,512,(g,w,h)=>{

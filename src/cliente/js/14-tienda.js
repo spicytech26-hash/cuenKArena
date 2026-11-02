@@ -72,6 +72,12 @@ function syncLocker(){
   [...$('swBody').querySelectorAll('button')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===S.skin.c)));
   [...$('swVisor').querySelectorAll('button')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===S.skin.v)));
   [...$('segAcc').children].forEach((b,i)=>b.setAttribute('aria-pressed',String(i===S.skin.a)));
+  const P=skinParts(S.skin);
+  [['swBody2','c2'],['swBody3','c3']].forEach(([id,k])=>{
+    [...$(id).querySelectorAll('button[data-c]')].forEach(b=>b.setAttribute('aria-pressed',String(!!S.skin[k]&&b.dataset.c===S.skin[k])));
+    const au=$(id).querySelector('.auto');if(au)au.setAttribute('aria-pressed',String(!S.skin[k]));
+    const ci=$(id).querySelector('input[type=color]');if(ci)ci.value=P[k];
+  });
   const ci=$('swBodyCustom');if(ci)ci.value=S.skin.c;
 }
 // la foto se recorta cuadrada al centro, se achica a 96×96 y se pasa a JPEG liviano para mandarla por la red
@@ -92,12 +98,18 @@ function loadChest(file){
   im.src=url;
 }
 $('chestFile').addEventListener('change',e=>{loadChest(e.target.files[0]);e.target.value='';});
-$('chestDel').addEventListener('click',()=>{delete S.skin.img;setSkin({});$('chestNote').textContent='PNG o JPG. Se recorta cuadrada al centro y cubre todo el pecho.';});
+$('chestDel').addEventListener('click',()=>{delete S.skin.img;setSkin({});$('chestNote').textContent='PNG o JPG. Se recorta cuadrada al centro y va en el pecho.';});
 function syncChest(){const has=!!S.skin.img;$('chestPrev').hidden=!has;$('chestDel').hidden=!has;if(has)$('chestPrev').src=S.skin.img;}
-function setSkin(p){Object.assign(S.skin,p);saveS();syncLocker();syncChest();rebuildLockModel();acctSave();if(net&&inGame)net.send({t:'skin',s:S.skin});SFX.ui();}
+function setSkin(p){for(const k in p){if(p[k]==null)delete S.skin[k];else S.skin[k]=p[k];}saveS();syncLocker();syncChest();rebuildLockModel();acctSave();if(net&&inGame)net.send({t:'skin',s:S.skin});SFX.ui();}
 (function(){
   const mk=(host,cols,key)=>{cols.forEach(c=>{const b=document.createElement('button');b.type='button';b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label','Color '+c);b.addEventListener('click',()=>setSkin({[key]:c}));host.appendChild(b);});};
   mk($('swBody'),BODY_COLS,'c');mk($('swVisor'),VISOR_COLS,'v');
+  // zonas nuevas: cada una con colores, uno a elección y "Auto" (vuelve al color derivado de la armadura)
+  [['swBody2','c2'],['swBody3','c3']].forEach(([id,k])=>{
+    const host=$(id);mk(host,BODY_COLS,k);
+    const au=document.createElement('button');au.type='button';au.className='auto';au.textContent='Auto';au.style.cssText='width:auto;padding:0 8px;font-size:12px';au.setAttribute('aria-label','Color automático');au.addEventListener('click',()=>setSkin({[k]:null}));host.appendChild(au);
+    const ic=document.createElement('input');ic.type='color';ic.setAttribute('aria-label','Color personalizado');ic.addEventListener('input',e=>setSkin({[k]:e.target.value}));host.appendChild(ic);
+  });
   const ci=document.createElement('input');ci.type='color';ci.id='swBodyCustom';ci.setAttribute('aria-label','Color personalizado');ci.addEventListener('input',e=>setSkin({c:e.target.value}));$('swBody').appendChild(ci);
   C.ACCESSORIES.forEach((n,i)=>{const b=document.createElement('button');b.type='button';b.textContent=n;b.addEventListener('click',()=>setSkin({a:i}));$('segAcc').appendChild(b);});
 })();

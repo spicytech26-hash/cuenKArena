@@ -132,6 +132,8 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
 function cleanSkin(k) {
   k = k && typeof k === 'object' ? k : {};
   const out = { c: HEX.test(k.c) ? k.c : '#e8542a', v: HEX.test(k.v) ? k.v : '#ffffff', a: Number.isInteger(k.a) && k.a >= 0 && k.a < ACCESSORIES.length ? k.a : 0 };
+  if (HEX.test(k.c2)) out.c2 = k.c2;   // partes secundarias/articulaciones (opcional: si falta, se deriva de c)
+  if (HEX.test(k.c3)) out.c3 = k.c3;   // detalles y luces (opcional)
   if (okChestImg(k.img)) out.img = k.img;
   return out;
 }

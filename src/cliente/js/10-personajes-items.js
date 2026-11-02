@@ -1,41 +1,13 @@
-/* ---------- personaje con piel (armadura, visor y accesorio) ---------- */
+/* ---------- personaje con piel: el modelo está en 10-personaje-robot.js ---------- */
 const tpCache={};
 function tpGun(w){if(!tpCache[w])tpCache[w]=buildGun(w);return tpCache[w].clone();}
-const chestGeo=new THREE.PlaneGeometry(.52,.52),chestCache=new Map();
+const chestCache=new Map();
 function chestTex(url){
   let t=chestCache.get(url);if(t)return t;
   const img=new Image();t=new THREE.Texture(img);t.minFilter=THREE.LinearFilter;img.onload=()=>{t.needsUpdate=true;};img.src=url;
   chestCache.set(url,t);if(chestCache.size>40)chestCache.delete(chestCache.keys().next().value);
   return t;
 }
-function buildPlayer(skin,name,noTag){
-  const col=new THREE.Color(skin.c),vis=new THREE.Color(skin.v||'#ffffff');
-  const mA=new THREE.MeshPhongMaterial({color:col,flatShading:true,shininess:30,specular:0x332a20});
-  const mL=new THREE.MeshPhongMaterial({color:0x2e2a26,flatShading:true});
-  const mH=new THREE.MeshPhongMaterial({color:col.clone().multiplyScalar(.6),flatShading:true});
-  const mV=new THREE.MeshBasicMaterial({color:vis});
-  const g=new THREE.Group(),b=new THREE.Group();g.add(b);
-  const legs=[-1,1].map(side=>{const l=new THREE.Group();l.position.set(side*.15,.85,0);l.add(bx(.2,.85,.24,mL,0,-.42,0),bx(.24,.13,.33,mA,0,-.8,.04));b.add(l);return l;});
-  const hasImg=!!(skin.img&&(noTag||S.showImg));
-  b.add(bx(.5,.18,.3,mL,0,.9,0),bx(.6,.62,.38,mA,0,1.26,0),bx(.24,.17,.42,mA,-.4,1.53,0),bx(.24,.17,.42,mA,.4,1.53,0));
-  if(!hasImg)b.add(bx(.42,.28,.06,mL,0,1.3,.2),bx(.08,.08,.02,mV,.18,1.42,.23));
-  // imagen del pecho: un cuadrado sobre la placa oscura del frente
-  if(hasImg){const pl=new THREE.Mesh(chestGeo,new THREE.MeshBasicMaterial({map:chestTex(skin.img)}));pl.position.set(0,1.27,.1925);b.add(pl);}
-  const head=new THREE.Group();head.position.y=1.74;head.add(bx(.3,.3,.3,mH,0,0,0),bx(.27,.07,.04,mV,0,.03,.16));b.add(head);
-  const a=skin.a|0;
-  if(a===1)head.add(bx(.06,.14,.34,mV,0,.2,-.01));
-  if(a===2){const ant=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.4,6),mDark);ant.position.set(.1,.32,0);head.add(ant);const tip=new THREE.Mesh(new THREE.SphereGeometry(.05,8,6),mV);tip.position.set(.1,.53,0);head.add(tip);}
-  if(a===3)for(const sx of [-1,1]){const h=new THREE.Mesh(new THREE.ConeGeometry(.05,.22,6),mV);h.position.set(sx*.13,.22,0);h.rotation.z=-sx*.5;head.add(h);}
-  if(a===4)head.add(bx(.32,.08,.32,mA,0,.18,0),bx(.3,.03,.18,mA,0,.15,.22));
-  const armL=new THREE.Group();armL.position.set(-.42,1.45,0);armL.add(bx(.15,.62,.17,mL,0,-.3,0));b.add(armL);
-  const armR=new THREE.Group();armR.position.set(.42,1.45,0);armR.add(bx(.15,.15,.5,mL,0,-.12,.2));b.add(armR);
-  // el arma que tiene en la mano (se cambia sola cuando cambia de arma)
-  const gun=new THREE.Group();gun.position.set(0,-.13,.36);gun.rotation.y=Math.PI;gun.scale.setScalar(1.25);armR.add(gun);
-  if(noTag){gun.add(tpGun(1));gun.userData.w=1;}
-  let tag=null;if(!noTag){tag=nameSprite(name,skin.c);g.add(tag);}
-  return {g,b,legs,armL,armR,head,gun,tag,mats:[mA,mH]};
-}
-
 /* ---------- ítems ---------- */
 const healthTex=new THREE.CanvasTexture(cv(32,32,g=>{g.fillStyle='#d9d2c4';g.fillRect(0,0,32,32);g.fillStyle='#a9a092';g.fillRect(0,30,32,2);g.fillRect(30,0,2,32);g.fillStyle='#c41a12';g.fillRect(12,5,8,22);g.fillRect(5,12,22,8);}));healthTex.magFilter=THREE.NearestFilter;
 // un arma tirada puede cambiar (al agarrar con E queda la tuya en su lugar): se rearma el modelo

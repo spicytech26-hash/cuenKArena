@@ -21,7 +21,7 @@ function mouseSpike(dx,dy){
 }
 // las sueltas de mouse que provoca el propio juego (abrir chat o tienda, fin de partida) no abren la pausa
 let selfUnlockT=0;function selfUnlock(){selfUnlockT=performance.now();if(document.pointerLockElement)document.exitPointerLock();}
-document.addEventListener('pointerlockchange',()=>{if(performance.now()-selfUnlockT<800)return;if(document.pointerLockElement!==canvas&&inGame&&$('menu').hidden&&!chatOpen&&$('shop').hidden&&!kickOpen()&&$('inter').hidden)openPause();});
+document.addEventListener('pointerlockchange',()=>{if(performance.now()-selfUnlockT<800)return;if(document.pointerLockElement!==canvas&&inGame&&$('menu').hidden&&!chatOpen&&$('shop').hidden&&!kickOpen()&&!mapMenuOpen()&&$('inter').hidden)openPause();});
 $('bStay').addEventListener('click',()=>{
   // en el fin de partida: avisa que estás listo; en práctica arranca otra al instante
   if(matchState==='inter'&&net){net.send({t:'ready'});$('bStay').disabled=true;$('bStay').textContent='¡Listo!';if(!online)$('interReady').textContent='Arrancando…';SFX.ui();return;}
@@ -82,11 +82,11 @@ function renderVote(m){
   if(!voteNow){b.hidden=true;return;}
   if(b.hidden){SFX.voteStart();voteMax=Math.max(m.left,1);}
   b.hidden=false;b.classList.toggle('me',m.me===2);
-  const tot=Math.max(m.need*2-1,m.y+m.n,1),pc=v=>Math.min(100,v/tot*100),nd=m.need/tot*100;
+  const map=m.kind==='map',tot=map?Math.max(m.need,m.y+m.n,1):Math.max(m.need*2-1,m.y+m.n,1),pc=v=>Math.min(100,v/tot*100),nd=map?100:m.need/tot*100;
   const row=(cls,lbl,k,v,on)=>'<div class="vrow '+cls+(on?' on':'')+'"><span>'+(k?'<span class="k">'+k+'</span>':'')+lbl+'</span><div class="vbar"><i style="width:'+pc(v)+'%"></i>'+(cls==='yes'?'<span class="need" style="left:'+nd+'%"></span>':'')+'</div><b style="color:#e8f2ff">'+v+'</b></div>';
   const foot=m.me===2?'<span style="color:#ff9a7a">¡Votan para echarte!</span>':m.me===1?'Votaste que sí':m.me===-1?'Votaste que no':'Apretá Y o N para votar';
   b.innerHTML='<div class="vt"><span>VOTACIÓN</span><span>'+m.left+' s</span></div><div class="vtime"><i style="width:'+(m.left/voteMax*100)+'%"></i></div>'
-    +'<div class="vq">¿Echar a <b>'+esc(m.name)+'</b>?</div><div class="vby">lo pidió '+esc(m.by)+' · hacen falta '+m.need+' sí</div>'
+    +'<div class="vq">'+(map?'¿Cambiar el mapa a <b>'+esc(m.name)+'</b>?':'¿Echar a <b>'+esc(m.name)+'</b>?')+'</div><div class="vby">lo pidió '+esc(m.by)+' · '+(map?'tienen que votar sí los '+m.need:'hacen falta '+m.need+' sí')+'</div>'
     +row('yes','Sí',m.me===0?'Y':'',m.y,m.me===1)+row('no','No',m.me===0?'N':'',m.n,m.me===-1)+'<div class="vfoot">'+foot+'</div>';
 }
 let chatDraft='';
@@ -98,8 +98,12 @@ $('chatIn').addEventListener('blur',()=>{if(chatOpen)setTimeout(()=>{if(chatOpen
 $('chatIn').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();closeChat(true);}else if(e.key==='Escape'){e.preventDefault();closeChat(false,false);if(inGame)announce('','Hacé click para volver al juego');}});
 addEventListener('keydown',e=>{
   if(chatOpen){if(document.activeElement===$('chatIn'))return;closeChat(false);}
+  if(mapMenuOpen()){e.preventDefault();
+    if(e.code==='KeyY'||e.code==='Escape'){closeMapMenu(e.code==='Escape');if(e.code==='Escape'&&inGame)announce('','Hacé click para volver al juego');}
+    else{const d=/^(?:Digit|Numpad)([1-9])$/.exec(e.code);if(d&&mmList[d[1]-1])mapPick(mmList[d[1]-1]);}
+    return;}
   if(kickOpen()){e.preventDefault();
-    if(e.code==='KeyY'||(e.code==='Escape'&&!kmSel)){closeKick(e.code==='Escape');if(e.code==='Escape'&&inGame)announce('','Hacé click para volver al juego');}
+    if(e.code==='KeyK'||(e.code==='Escape'&&!kmSel)){closeKick(e.code==='Escape');if(e.code==='Escape'&&inGame)announce('','Hacé click para volver al juego');}
     else if(e.code==='Escape'){kmSel=0;renderKick();}
     else if(e.code==='Enter')kickSend();
     else{const d=/^(?:Digit|Numpad)([1-9])$/.exec(e.code);if(d&&kmList[d[1]-1])kickPick(kmList[d[1]-1][0]);}
@@ -117,9 +121,10 @@ addEventListener('keydown',e=>{
   if(e.code==='KeyR')startReload(me.w);
   if(e.code==='KeyV')selectWeapon(7);if(n!==undefined&&n>=0)selectWeapon(n);
   if(e.code==='KeyG')selectWeapon(10);
-  // Y: si hay una votación sin tu voto, Y es "sí"; si no, abre el menú para echar a alguien
+  // Y: si hay una votación sin tu voto, Y es "sí" (N, "no"); si no, abre la lista para cambiar de mapa. K abre el menú para echar a alguien (online)
   if(voteNow&&voteNow.me===0&&(e.code==='KeyY'||e.code==='KeyN')&&!e.repeat){net.send({t:'vote',y:e.code==='KeyY'});SFX.ui();}
-  else if(e.code==='KeyY'&&!e.repeat&&online){e.preventDefault();openKick();}
+  else if(e.code==='KeyY'&&!e.repeat){e.preventDefault();openMapMenu();}
+  else if(e.code==='KeyK'&&!e.repeat&&online){e.preventDefault();openKick();}
   if(e.code==='KeyQ')quickSwitch();
   if(e.code==='KeyF'&&!e.repeat)inspect();
   if(e.code==='KeyH'&&!e.repeat)tpAlternar();   // vista en primera / tercera persona

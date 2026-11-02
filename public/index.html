@@ -138,7 +138,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 #speed.vfast b{color:var(--quad)}
 #stam{position:fixed;left:50%;top:calc(50% + 66px);transform:translateX(-50%);width:84px;height:5px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.18);box-shadow:0 1px 0 #000;overflow:hidden}
 #stam i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#2bd6ff,#7af0ff);transform-origin:left;transition:background .15s}
-#stam b{position:absolute;left:50%;top:0;width:1px;height:100%;background:rgba(0,0,0,.7)}   /* marca de la mitad: lo que cuesta el doble salto */
+#stam b{position:absolute;left:25%;top:0;width:1px;height:100%;background:rgba(0,0,0,.7)}   /* marca del cuarto: lo que cuesta el doble salto */
 #stam.low i{background:linear-gradient(90deg,#ff5a3a,#ff9a5a)}
 #stam.full{opacity:.35;transition:opacity .6s}
 #huntOv{position:fixed;inset:0;pointer-events:none}
@@ -696,6 +696,28 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 .card img{height:44px}
 .card .nm{font-size:13px}
 .card .ds{font-size:10.5px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+
+/* tienda por categorías: pistolas, escopetas, ametralladoras, rifles, bombas, misiles… */
+.shopgrid{display:flex;flex-wrap:wrap;gap:14px 18px;align-items:flex-start}
+.scat{display:flex;flex-direction:column;gap:6px;min-width:0}
+.scat h3{margin:0;font-family:var(--mono);font-weight:400;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:#7fae8f;display:flex;align-items:center;gap:10px}
+.scat h3::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(127,174,143,.5),transparent)}
+.scards{display:flex;gap:8px;align-items:stretch}
+.scards .card{width:150px}
+
+/* ---------- Y · cambiar mapa ---------- */
+#mapHint{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(194px + env(safe-area-inset-bottom,0px));font-size:12px;color:var(--amber);text-shadow:0 1px 0 #000;letter-spacing:.08em}
+@media (max-width:620px){#mapHint{display:none}}
+#mapMenu{position:fixed;inset:0;display:grid;place-items:center;background:rgba(4,8,18,.78);padding:16px;z-index:20;overflow-y:auto}
+.mmBox{width:min(820px,100%)}
+#mmList{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:10px}
+.mmC{position:relative;display:flex;flex-direction:column;gap:6px;padding:0 0 8px;background:#0d1730;border:1px solid #23406e;color:#e8f2ff;font-family:var(--mono);font-size:14px;text-align:left;cursor:pointer;overflow:hidden;transition:transform .08s,border-color .08s}
+.mmC:hover,.mmC:focus-visible{border-color:#ffb12b;transform:translateY(-2px)}
+.mmC .ph{height:92px;background:linear-gradient(135deg,#1c2c4a,#0a1222);display:block;position:relative}
+.mmC .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.mmC .n{padding:0 10px;font-weight:bold}
+.mmC kbd{position:absolute;left:6px;top:6px;font-size:11px;border:1px solid #3d7fd8;background:rgba(0,0,0,.6);padding:0 5px;color:#8fd0ff}
+#mmMsg{font-size:13px;color:#9fb6d8;min-height:16px}
 </style>
 
 <canvas id="c"></canvas>
@@ -745,7 +767,8 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
     <div class="cell"><div class="lbl">Salud</div><div class="num" id="hHp">100</div></div>
     <div class="cell"><div class="lbl">Blindaje</div><div class="num ar" id="hAr">0</div></div>
   </div>
-  <div id="kickHint" hidden>Y · KICKEAR</div>
+  <div id="kickHint" hidden>K · KICKEAR</div>
+  <div id="mapHint">Y · CAMBIAR MAPA</div>
   <div id="shopHint">B · TIENDA · mantené E: armas</div>
   <div id="slots"></div>
   <div id="voteBox" hidden role="status" aria-live="polite"></div>
@@ -767,9 +790,16 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
   <div id="interTabW"><table id="interTab"></table></div>
   <div id="interXP"></div>
   <div style="display:none"></div></div></div>
+<div id="mapMenu" hidden>
+  <div class="kmBox mmBox">
+    <div class="kmHead"><span class="kmIcon" aria-hidden="true">◈</span><div><h2>CAMBIAR MAPA</h2><small>Elegí el mapa (click o número). La partida cambia solo si votan que sí todos los jugadores, durante 30 s.</small></div><span class="kmKey">Y · Esc cerrar</span></div>
+    <div id="mmList"></div>
+    <div id="mmMsg"></div>
+  </div>
+</div>
 <div id="kickMenu" hidden>
   <div class="kmBox">
-    <div class="kmHead"><span class="kmIcon" aria-hidden="true">⚖</span><div><h2>VOTAR PARA ECHAR</h2><small>Elegí a quién (click o número). Los demás votan sí o no durante 30 s.</small></div><span class="kmKey">Y · Esc cerrar</span></div>
+    <div class="kmHead"><span class="kmIcon" aria-hidden="true">⚖</span><div><h2>VOTAR PARA ECHAR</h2><small>Elegí a quién (click o número). Los demás votan sí o no durante 30 s.</small></div><span class="kmKey">K · Esc cerrar</span></div>
     <div id="kmList"></div>
     <div id="kmConfirm" hidden>
       <div class="kmQ">¿Abrir votación para echar a <b id="kmName"></b>?</div>
@@ -3129,6 +3159,7 @@ function rbAnimar(m,p,dt,pose){
   a.takeoff=Math.max(0,a.takeoff-dt/.45);a.land=Math.max(0,a.land-dt/.4);
   a.air+=((air?1:0)-a.air)*Math.min(1,dt*(air?18:24));
   a.cro+=((p.crouch?1:0)-a.cro)*Math.min(1,dt*11);
+  a.sld=(a.sld||0)+((p.slide?1:0)-(a.sld||0))*Math.min(1,dt*12);   // deslizándose: se tira hacia atrás con una pierna estirada adelante y la otra recogida
   a.mov+=(rbCl(spd/6,0,1)-a.mov)*Math.min(1,dt*9);
   // ---- disparo, daño y cambio de arma ----
   const fire=p.fire||0;if(fire>0&&a.lastFire<=0)a.fireK=1;a.lastFire=fire;a.fireK*=Math.exp(-dt*13);
@@ -3152,6 +3183,7 @@ function rbAnimar(m,p,dt,pose){
     h=rbLe(h,ha,a.air);kk=rbLe(kk,ka,a.air);z*=1-a.air;
     h+=.5*aterr;kk+=1.15*aterr;                                                                                                 // amortigua el aterrizaje
     h=h*(1-.55*a.cro)+1.05*a.cro;kk=kk*(1-.4*a.cro)+2.0*a.cro;                                                                 // agachado profundo (y se puede caminar así)
+    if(a.sld>.01){h=rbLe(h,lead?1.4:.45,a.sld);kk=rbLe(kk,lead?.12:1.9,a.sld);z*=1-a.sld;}                                      // slide: pierna de adelante estirada, la de atrás doblada abajo
     kk+=.1*a.fireK*(RB_RETRO[p.w]>0.1?1:.5);                                                                                    // las armas pesadas se apoyan en las rodillas
     hip[i]=h;kn[i]=kk;ab[i]=z;
   }
@@ -3164,7 +3196,7 @@ function rbAnimar(m,p,dt,pose){
   }
   const t=a.t,idle=(1-a.mov)*(1-a.air),s0=Math.sin(a.ph);
   // ---- cadera y columna ----
-  const lean=.03+.14*run*w+rbCl(a.af*.012,-.1,.18)*(1-a.air*.6)+.32*a.cro+.24*aterr-.09*a.takeoff-.07*rise+Math.sin(t*1.6)*.012*idle;    // se inclina al acelerar, al correr y al agacharse; respira
+  const lean=.03+.14*run*w+rbCl(a.af*.012,-.1,.18)*(1-a.air*.6)+.32*a.cro-.8*(a.sld||0)+.24*aterr-.09*a.takeoff-.07*rise+Math.sin(t*1.6)*.012*idle;    // se inclina al acelerar, al correr y al agacharse; respira
   const roll=a.vs*.014*(1-.4*a.air)+rbCl(a.as*.004,-.1,.1)+a.turn*.035-.5*.05*s0*w+Math.sin(t*.5)*.03*idle;                                  // se inclina hacia donde se mueve y gira
   const twist=-.7*.16*Math.sin(a.ph)*w*(.5+run)+a.flinch*a.fdir*.22+Math.sin(t*.37)*.05*idle;                                                // la columna contrarresta la cadera
   rbPivote(m.pelv,0,0,0,0,RB_HIP,0,.03+.05*run*w+.1*a.cro,.16*Math.sin(a.ph)*w*(.5+run),.05*s0*w+Math.sin(t*.5)*.03*idle);
@@ -3889,7 +3921,7 @@ function wheelList(){
   const cur=C.primaryOf(me.ow);if(cur>=0&&!l.includes(cur))l.push(cur);   // un arma agarrada del piso también aparece (si la cambiás, se pierde)
   return l;
 }
-function wheelOk(){return inGame&&me.alive&&C.MODES[MODE].shop&&MODE!=='gungame'&&$('shop').hidden&&!chatOpen&&$('menu').hidden&&!kickOpen();}
+function wheelOk(){return inGame&&me.alive&&C.MODES[MODE].shop&&MODE!=='gungame'&&$('shop').hidden&&!chatOpen&&$('menu').hidden&&!kickOpen()&&!mapMenuOpen();}
 function openWheel(){
   WH.tm=null;if(!WH.down||!wheelOk())return;
   const ic=shopIcons(),l=wheelList(),n=l.length,cur=C.primaryOf(me.ow);
@@ -3970,16 +4002,18 @@ let shopEls=null;
 function buildShop(){
   if(shopEls)return;shopEls={};
   const ic=shopIcons(),cats=[];C.SHOP.forEach(it=>{if(!cats.includes(it.cat))cats.push(it.cat);});
+  const ORD=['Pistolas','Cuerpo a cuerpo','Escopetas','Ametralladoras','Rifles','Bombas','Misiles','Blindaje','Suministros'];
+  cats.sort((a,b)=>{const i=ORD.indexOf(a),j=ORD.indexOf(b);return (i<0?99:i)-(j<0?99:j);});
   const host=$('shopGrid');host.textContent='';
   cats.forEach(cat=>{
+    const sc=document.createElement('div');sc.className='scat';const h3=document.createElement('h3');h3.textContent=cat;const cd=document.createElement('div');cd.className='scards';sc.append(h3,cd);host.appendChild(sc);
     C.SHOP.filter(it=>it.cat===cat).forEach(it=>{
       const b=document.createElement('button');b.type='button';b.className='card';b.dataset.id=it.id;
-      const ct=document.createElement('span');ct.className='cat';ct.textContent=cat;
       const im=document.createElement('img');im.alt='';im.src=ic[it.id]||ic['w'+it.w]||'';
       const nm=document.createElement('span');nm.className='nm';nm.textContent=it.name;
       const pr=document.createElement('span');pr.className='pr';
       const ds=document.createElement('span');ds.className='ds';ds.textContent=it.desc;
-      b.append(ct,im,nm,pr,ds);host.appendChild(b);shopEls[it.id]={b,pr};
+      b.append(im,nm,pr,ds);cd.appendChild(b);shopEls[it.id]={b,pr};
     });
   });
 }
@@ -4203,7 +4237,7 @@ function mouseSpike(dx,dy){
 }
 // las sueltas de mouse que provoca el propio juego (abrir chat o tienda, fin de partida) no abren la pausa
 let selfUnlockT=0;function selfUnlock(){selfUnlockT=performance.now();if(document.pointerLockElement)document.exitPointerLock();}
-document.addEventListener('pointerlockchange',()=>{if(performance.now()-selfUnlockT<800)return;if(document.pointerLockElement!==canvas&&inGame&&$('menu').hidden&&!chatOpen&&$('shop').hidden&&!kickOpen()&&$('inter').hidden)openPause();});
+document.addEventListener('pointerlockchange',()=>{if(performance.now()-selfUnlockT<800)return;if(document.pointerLockElement!==canvas&&inGame&&$('menu').hidden&&!chatOpen&&$('shop').hidden&&!kickOpen()&&!mapMenuOpen()&&$('inter').hidden)openPause();});
 $('bStay').addEventListener('click',()=>{
   // en el fin de partida: avisa que estás listo; en práctica arranca otra al instante
   if(matchState==='inter'&&net){net.send({t:'ready'});$('bStay').disabled=true;$('bStay').textContent='¡Listo!';if(!online)$('interReady').textContent='Arrancando…';SFX.ui();return;}
@@ -4264,11 +4298,11 @@ function renderVote(m){
   if(!voteNow){b.hidden=true;return;}
   if(b.hidden){SFX.voteStart();voteMax=Math.max(m.left,1);}
   b.hidden=false;b.classList.toggle('me',m.me===2);
-  const tot=Math.max(m.need*2-1,m.y+m.n,1),pc=v=>Math.min(100,v/tot*100),nd=m.need/tot*100;
+  const map=m.kind==='map',tot=map?Math.max(m.need,m.y+m.n,1):Math.max(m.need*2-1,m.y+m.n,1),pc=v=>Math.min(100,v/tot*100),nd=map?100:m.need/tot*100;
   const row=(cls,lbl,k,v,on)=>'<div class="vrow '+cls+(on?' on':'')+'"><span>'+(k?'<span class="k">'+k+'</span>':'')+lbl+'</span><div class="vbar"><i style="width:'+pc(v)+'%"></i>'+(cls==='yes'?'<span class="need" style="left:'+nd+'%"></span>':'')+'</div><b style="color:#e8f2ff">'+v+'</b></div>';
   const foot=m.me===2?'<span style="color:#ff9a7a">¡Votan para echarte!</span>':m.me===1?'Votaste que sí':m.me===-1?'Votaste que no':'Apretá Y o N para votar';
   b.innerHTML='<div class="vt"><span>VOTACIÓN</span><span>'+m.left+' s</span></div><div class="vtime"><i style="width:'+(m.left/voteMax*100)+'%"></i></div>'
-    +'<div class="vq">¿Echar a <b>'+esc(m.name)+'</b>?</div><div class="vby">lo pidió '+esc(m.by)+' · hacen falta '+m.need+' sí</div>'
+    +'<div class="vq">'+(map?'¿Cambiar el mapa a <b>'+esc(m.name)+'</b>?':'¿Echar a <b>'+esc(m.name)+'</b>?')+'</div><div class="vby">lo pidió '+esc(m.by)+' · '+(map?'tienen que votar sí los '+m.need:'hacen falta '+m.need+' sí')+'</div>'
     +row('yes','Sí',m.me===0?'Y':'',m.y,m.me===1)+row('no','No',m.me===0?'N':'',m.n,m.me===-1)+'<div class="vfoot">'+foot+'</div>';
 }
 let chatDraft='';
@@ -4280,8 +4314,12 @@ $('chatIn').addEventListener('blur',()=>{if(chatOpen)setTimeout(()=>{if(chatOpen
 $('chatIn').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();closeChat(true);}else if(e.key==='Escape'){e.preventDefault();closeChat(false,false);if(inGame)announce('','Hacé click para volver al juego');}});
 addEventListener('keydown',e=>{
   if(chatOpen){if(document.activeElement===$('chatIn'))return;closeChat(false);}
+  if(mapMenuOpen()){e.preventDefault();
+    if(e.code==='KeyY'||e.code==='Escape'){closeMapMenu(e.code==='Escape');if(e.code==='Escape'&&inGame)announce('','Hacé click para volver al juego');}
+    else{const d=/^(?:Digit|Numpad)([1-9])$/.exec(e.code);if(d&&mmList[d[1]-1])mapPick(mmList[d[1]-1]);}
+    return;}
   if(kickOpen()){e.preventDefault();
-    if(e.code==='KeyY'||(e.code==='Escape'&&!kmSel)){closeKick(e.code==='Escape');if(e.code==='Escape'&&inGame)announce('','Hacé click para volver al juego');}
+    if(e.code==='KeyK'||(e.code==='Escape'&&!kmSel)){closeKick(e.code==='Escape');if(e.code==='Escape'&&inGame)announce('','Hacé click para volver al juego');}
     else if(e.code==='Escape'){kmSel=0;renderKick();}
     else if(e.code==='Enter')kickSend();
     else{const d=/^(?:Digit|Numpad)([1-9])$/.exec(e.code);if(d&&kmList[d[1]-1])kickPick(kmList[d[1]-1][0]);}
@@ -4299,9 +4337,10 @@ addEventListener('keydown',e=>{
   if(e.code==='KeyR')startReload(me.w);
   if(e.code==='KeyV')selectWeapon(7);if(n!==undefined&&n>=0)selectWeapon(n);
   if(e.code==='KeyG')selectWeapon(10);
-  // Y: si hay una votación sin tu voto, Y es "sí"; si no, abre el menú para echar a alguien
+  // Y: si hay una votación sin tu voto, Y es "sí" (N, "no"); si no, abre la lista para cambiar de mapa. K abre el menú para echar a alguien (online)
   if(voteNow&&voteNow.me===0&&(e.code==='KeyY'||e.code==='KeyN')&&!e.repeat){net.send({t:'vote',y:e.code==='KeyY'});SFX.ui();}
-  else if(e.code==='KeyY'&&!e.repeat&&online){e.preventDefault();openKick();}
+  else if(e.code==='KeyY'&&!e.repeat){e.preventDefault();openMapMenu();}
+  else if(e.code==='KeyK'&&!e.repeat&&online){e.preventDefault();openKick();}
   if(e.code==='KeyQ')quickSwitch();
   if(e.code==='KeyF'&&!e.repeat)inspect();
   if(e.code==='KeyH'&&!e.repeat)tpAlternar();   // vista en primera / tercera persona
@@ -4318,6 +4357,30 @@ addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyE')wheelKey(fals
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouseDown=false;WH.down=false;closeWheel(false);});
 function changeBots(d){S.bots=Math.max(0,Math.min(15,S.bots+d));saveS();syncSettings();if(net&&!online){net.send({t:'cfg',bots:S.bots});sysChat('Bots en la arena: '+S.bots);}}
 
+/* =================== VOTACIÓN PARA CAMBIAR DE MAPA (Y) ===================
+   Y abre la lista de mapas del modo; al elegir uno se abre una votación y el mapa cambia solo si votan que sí TODAS las personas
+   de la partida (Y = sí, N = no). Si estás solo, cambia al instante. El que decide es el servidor (mensaje `mapchg`). */
+let mmList=[];
+function mapMenuOpen(){return !$('mapMenu').hidden;}
+function openMapMenu(){
+  if(!inGame||matchState==='inter')return;
+  closeWheel(false);if(!$('shop').hidden)closeShop(true);if(kickOpen())closeKick(true);
+  mmList=C.MODES[MODE].maps.filter(id=>id!==W.id&&C.MAPS[id]);
+  $('mapMenu').hidden=false;mouseDown=false;for(const k in keys)keys[k]=false;selfUnlock();
+  $('mmMsg').textContent=mmList.length?'':'En este modo no hay otro mapa para elegir.';
+  $('mmList').textContent='';
+  mmList.forEach((id,i)=>{
+    const b=document.createElement('button');b.type='button';b.className='mmC';
+    const ph=document.createElement('span');ph.className='ph';const im=new Image();im.alt='';im.src='maps/'+id+'.jpg';im.addEventListener('error',()=>im.remove());ph.appendChild(im);
+    const k=document.createElement('kbd');k.textContent=String(i+1);ph.appendChild(k);
+    const n=document.createElement('span');n.className='n';n.textContent=C.MAPS[id].name;
+    b.append(ph,n);b.addEventListener('click',()=>mapPick(id));$('mmList').appendChild(b);
+  });
+  SFX.ui();
+}
+function closeMapMenu(silent){if(!mapMenuOpen())return;$('mapMenu').hidden=true;if(!silent&&inGame){lockPointer();SFX.ui();}}
+function mapPick(id){if(!net)return;net.send({t:'mapchg',m:id});closeMapMenu(true);SFX.ui();if(inGame)announce('','Hacé click para volver al juego');}
+$('mapMenu').addEventListener('mousedown',e=>{if(e.target===$('mapMenu'))closeMapMenu(true);});
 /* =================== SIMULACIÓN LOCAL =================== */
 function updMe(dt){
   // aviso "E · agarrar" si hay un arma principal tirada al lado y no es la tuya
@@ -4371,7 +4434,7 @@ function updMe(dt){
   if(mouseDown&&me.cool<=0&&me.raise<.4&&!(W_.semi&&me.held)&&liveState()&&$('shop').hidden){fire();me.held=true;}
   G.sendT-=dt;if(G.sendT<=0){G.sendT=1/30;sendState();}
 }
-function sendState(){if(net)net.send({t:'st',p:r3([me.s.x,me.s.y,me.s.z]),v:r3([me.s.vx,me.s.vy,me.s.vz]),y:Math.round(me.yaw*1000)/1000,x:Math.round(me.pitch*1000)/1000,w:me.w,o:me.s.on?1:0,c:me.s.crouch?1:0});}
+function sendState(){if(net)net.send({t:'st',p:r3([me.s.x,me.s.y,me.s.z]),v:r3([me.s.vx,me.s.vy,me.s.vz]),y:Math.round(me.yaw*1000)/1000,x:Math.round(me.pitch*1000)/1000,w:me.w,o:me.s.on?1:0,c:me.s.crouch?1:0,sl:me.s.slide?1:0});}
 
 /* ---------- jugadores remotos: interpolación con colchón adaptativo ---------- */
 const angLerp=(a,b,t)=>{let d=b-a;while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;return a+d*t;};
@@ -4418,7 +4481,7 @@ function updRemote(dt){
     const alive=!!(cur.fl&1);
     if(alive&&!p.alive){p.alive=true;p.gib=false;p.deadT=0;}
     if(!alive&&p.alive){p.alive=false;p.deadT=0;}
-    p.vy=cur.vy||0;p.w=cur.w;p.quad=!!(cur.fl&2);p.onG=!!(cur.fl&4);p.crouch=!!(cur.fl&8);p.spd=Math.hypot(cur.vx,cur.vz);
+    p.vy=cur.vy||0;p.w=cur.w;p.quad=!!(cur.fl&2);p.onG=!!(cur.fl&4);p.crouch=!!(cur.fl&8);p.slide=!!(cur.fl&16);p.spd=Math.hypot(cur.vx,cur.vz);
     // el modelo mira a +z y en el juego yaw 0 mira a -z: hay que girarlo media vuelta
     m.g.position.set(p.x,p.y,p.z);m.g.rotation.y=p.yaw+Math.PI;
     // velocidad real a partir de cuánto se movió en pantalla (no depende de lo que mande el servidor)
@@ -4497,7 +4560,7 @@ function renderBoard(){
 }
 function applyMode(){
   const gg=MODE==='gungame',tm=teamsMode();
-  $('tCrBox').hidden=!C.MODES[MODE].shop;$('shopHint').hidden=!C.MODES[MODE].shop;$('kickHint').hidden=!online;$('tLvlBox').hidden=!gg;$('tNextBox').hidden=!gg;
+  $('tCrBox').hidden=!C.MODES[MODE].shop;$('shopHint').hidden=!C.MODES[MODE].shop;$('kickHint').hidden=!online;$('mapHint').hidden=C.MODES[MODE].maps.length<2;$('tLvlBox').hidden=!gg;$('tNextBox').hidden=!gg;
   $('ctfBox').hidden=!tm;$('carry').hidden=true;$('tRank').parentElement.hidden=tm;$('lobbyBox').hidden=true;
   $('slots').innerHTML='';updateHUD();
 }
@@ -4647,7 +4710,7 @@ function updEffects(dt){
   setOp('qtint',me.q>0&&me.alive?.6+Math.sin(G.time*6)*.15:0);
   setOp('hitm',G.hitT>0?1:0);
   setOp('dmgdir',G.dmgT);if(G.dmgT>0)$('dmgdir').style.transform='rotate('+(-(G.dmgAng-me.yaw)).toFixed(3)+'rad)';
-  const sp=Math.round(Math.hypot(me.s.vx,me.s.vz)*32);setTxt('spdV',String(sp));{const st=me.s.stam===undefined?1:me.s.stam,e=$('stam');if(e._v!==st){e._v=st;e.firstChild.style.transform='scaleX('+st.toFixed(3)+')';e.classList.toggle('low',st<.5);e.classList.toggle('full',st>=.999);}}$('speed').className=sp>500?'vfast':sp>360?'fast':'';
+  const sp=Math.round(Math.hypot(me.s.vx,me.s.vz)*32);setTxt('spdV',String(sp));{const st=me.s.stam===undefined?1:me.s.stam,e=$('stam');if(e._v!==st){e._v=st;e.firstChild.style.transform='scaleX('+st.toFixed(3)+')';e.classList.toggle('low',st<.25);e.classList.toggle('full',st>=.999);}}$('speed').className=sp>500?'vfast':sp>360?'fast':'';
   $('xh').hidden=!me.alive;xhUpdate(dt);
   if(level){
     for(const o of level.items){if(!o.g.visible)continue;o.ph+=dt;o.g.rotation.y+=dt*1.6;o.g.position.y=o.it.y+.6+Math.sin(o.ph*2.2)*.12;}
@@ -5079,7 +5142,7 @@ function updMiModelo(dt){
   const m=tpModelo(),P=TP.p;
   if(me.alive){
     TP.fireT=Math.max(0,TP.fireT-dt);TP.painT=Math.max(0,TP.painT-dt);
-    P.vxs=me.s.vx;P.vzs=me.s.vz;P.vy=me.s.vy;P.yaw=me.yaw;P.pitch=me.pitch;P.onG=me.s.on;P.crouch=!!me.s.crouch;P.fire=TP.fireT;P.pain=TP.painT;P.w=me.w;P.rel=me.rel>0&&me.relW===me.w;
+    P.vxs=me.s.vx;P.vzs=me.s.vz;P.vy=me.s.vy;P.yaw=me.yaw;P.pitch=me.pitch;P.onG=me.s.on;P.crouch=!!me.s.crouch;P.slide=!!me.s.slide;P.fire=TP.fireT;P.pain=TP.painT;P.w=me.w;P.rel=me.rel>0&&me.relW===me.w;
     if(m.gun.userData.w!==me.w){m.gun.clear();m.gun.add(tpGun(me.w));m.gun.userData.w=me.w;}
     m.g.position.set(me.s.x,me.s.y,me.s.z);m.g.rotation.y=me.yaw+Math.PI;
     m.gun.scale.setScalar(.72*(me.w===0?1.55:me.w===7||me.w===10?1.45:1.3));P.tp=true;   // un poco más grande que en el mundo para que se distinga desde atrás; las manos siguen al arma

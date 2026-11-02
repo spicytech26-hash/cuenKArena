@@ -396,6 +396,7 @@ function rbAnimar(m,p,dt,pose){
   a.takeoff=Math.max(0,a.takeoff-dt/.45);a.land=Math.max(0,a.land-dt/.4);
   a.air+=((air?1:0)-a.air)*Math.min(1,dt*(air?18:24));
   a.cro+=((p.crouch?1:0)-a.cro)*Math.min(1,dt*11);
+  a.sld=(a.sld||0)+((p.slide?1:0)-(a.sld||0))*Math.min(1,dt*12);   // deslizándose: se tira hacia atrás con una pierna estirada adelante y la otra recogida
   a.mov+=(rbCl(spd/6,0,1)-a.mov)*Math.min(1,dt*9);
   // ---- disparo, daño y cambio de arma ----
   const fire=p.fire||0;if(fire>0&&a.lastFire<=0)a.fireK=1;a.lastFire=fire;a.fireK*=Math.exp(-dt*13);
@@ -419,6 +420,7 @@ function rbAnimar(m,p,dt,pose){
     h=rbLe(h,ha,a.air);kk=rbLe(kk,ka,a.air);z*=1-a.air;
     h+=.5*aterr;kk+=1.15*aterr;                                                                                                 // amortigua el aterrizaje
     h=h*(1-.55*a.cro)+1.05*a.cro;kk=kk*(1-.4*a.cro)+2.0*a.cro;                                                                 // agachado profundo (y se puede caminar así)
+    if(a.sld>.01){h=rbLe(h,lead?1.4:.45,a.sld);kk=rbLe(kk,lead?.12:1.9,a.sld);z*=1-a.sld;}                                      // slide: pierna de adelante estirada, la de atrás doblada abajo
     kk+=.1*a.fireK*(RB_RETRO[p.w]>0.1?1:.5);                                                                                    // las armas pesadas se apoyan en las rodillas
     hip[i]=h;kn[i]=kk;ab[i]=z;
   }
@@ -431,7 +433,7 @@ function rbAnimar(m,p,dt,pose){
   }
   const t=a.t,idle=(1-a.mov)*(1-a.air),s0=Math.sin(a.ph);
   // ---- cadera y columna ----
-  const lean=.03+.14*run*w+rbCl(a.af*.012,-.1,.18)*(1-a.air*.6)+.32*a.cro+.24*aterr-.09*a.takeoff-.07*rise+Math.sin(t*1.6)*.012*idle;    // se inclina al acelerar, al correr y al agacharse; respira
+  const lean=.03+.14*run*w+rbCl(a.af*.012,-.1,.18)*(1-a.air*.6)+.32*a.cro-.8*(a.sld||0)+.24*aterr-.09*a.takeoff-.07*rise+Math.sin(t*1.6)*.012*idle;    // se inclina al acelerar, al correr y al agacharse; respira
   const roll=a.vs*.014*(1-.4*a.air)+rbCl(a.as*.004,-.1,.1)+a.turn*.035-.5*.05*s0*w+Math.sin(t*.5)*.03*idle;                                  // se inclina hacia donde se mueve y gira
   const twist=-.7*.16*Math.sin(a.ph)*w*(.5+run)+a.flinch*a.fdir*.22+Math.sin(t*.37)*.05*idle;                                                // la columna contrarresta la cadera
   rbPivote(m.pelv,0,0,0,0,RB_HIP,0,.03+.05*run*w+.1*a.cro,.16*Math.sin(a.ph)*w*(.5+run),.05*s0*w+Math.sin(t*.5)*.03*idle);

@@ -9,7 +9,7 @@ function wheelList(){
   const cur=C.primaryOf(me.ow);if(cur>=0&&!l.includes(cur))l.push(cur);   // un arma agarrada del piso también aparece (si la cambiás, se pierde)
   return l;
 }
-function wheelOk(){return inGame&&me.alive&&C.MODES[MODE].shop&&MODE!=='gungame'&&$('shop').hidden&&!chatOpen&&$('menu').hidden&&!kickOpen();}
+function wheelOk(){return inGame&&me.alive&&C.MODES[MODE].shop&&MODE!=='gungame'&&$('shop').hidden&&!chatOpen&&$('menu').hidden&&!kickOpen()&&!mapMenuOpen();}
 function openWheel(){
   WH.tm=null;if(!WH.down||!wheelOk())return;
   const ic=shopIcons(),l=wheelList(),n=l.length,cur=C.primaryOf(me.ow);

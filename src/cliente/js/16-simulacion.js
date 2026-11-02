@@ -51,7 +51,7 @@ function updMe(dt){
   if(mouseDown&&me.cool<=0&&me.raise<.4&&!(W_.semi&&me.held)&&liveState()&&$('shop').hidden){fire();me.held=true;}
   G.sendT-=dt;if(G.sendT<=0){G.sendT=1/30;sendState();}
 }
-function sendState(){if(net)net.send({t:'st',p:r3([me.s.x,me.s.y,me.s.z]),v:r3([me.s.vx,me.s.vy,me.s.vz]),y:Math.round(me.yaw*1000)/1000,x:Math.round(me.pitch*1000)/1000,w:me.w,o:me.s.on?1:0,c:me.s.crouch?1:0});}
+function sendState(){if(net)net.send({t:'st',p:r3([me.s.x,me.s.y,me.s.z]),v:r3([me.s.vx,me.s.vy,me.s.vz]),y:Math.round(me.yaw*1000)/1000,x:Math.round(me.pitch*1000)/1000,w:me.w,o:me.s.on?1:0,c:me.s.crouch?1:0,sl:me.s.slide?1:0});}
 
 /* ---------- jugadores remotos: interpolación con colchón adaptativo ---------- */
 const angLerp=(a,b,t)=>{let d=b-a;while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;return a+d*t;};
@@ -98,7 +98,7 @@ function updRemote(dt){
     const alive=!!(cur.fl&1);
     if(alive&&!p.alive){p.alive=true;p.gib=false;p.deadT=0;}
     if(!alive&&p.alive){p.alive=false;p.deadT=0;}
-    p.vy=cur.vy||0;p.w=cur.w;p.quad=!!(cur.fl&2);p.onG=!!(cur.fl&4);p.crouch=!!(cur.fl&8);p.spd=Math.hypot(cur.vx,cur.vz);
+    p.vy=cur.vy||0;p.w=cur.w;p.quad=!!(cur.fl&2);p.onG=!!(cur.fl&4);p.crouch=!!(cur.fl&8);p.slide=!!(cur.fl&16);p.spd=Math.hypot(cur.vx,cur.vz);
     // el modelo mira a +z y en el juego yaw 0 mira a -z: hay que girarlo media vuelta
     m.g.position.set(p.x,p.y,p.z);m.g.rotation.y=p.yaw+Math.PI;
     // velocidad real a partir de cuánto se movió en pantalla (no depende de lo que mande el servidor)

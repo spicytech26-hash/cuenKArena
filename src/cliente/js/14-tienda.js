@@ -44,16 +44,18 @@ let shopEls=null;
 function buildShop(){
   if(shopEls)return;shopEls={};
   const ic=shopIcons(),cats=[];C.SHOP.forEach(it=>{if(!cats.includes(it.cat))cats.push(it.cat);});
+  const ORD=['Pistolas','Cuerpo a cuerpo','Escopetas','Ametralladoras','Rifles','Bombas','Misiles','Blindaje','Suministros'];
+  cats.sort((a,b)=>{const i=ORD.indexOf(a),j=ORD.indexOf(b);return (i<0?99:i)-(j<0?99:j);});
   const host=$('shopGrid');host.textContent='';
   cats.forEach(cat=>{
+    const sc=document.createElement('div');sc.className='scat';const h3=document.createElement('h3');h3.textContent=cat;const cd=document.createElement('div');cd.className='scards';sc.append(h3,cd);host.appendChild(sc);
     C.SHOP.filter(it=>it.cat===cat).forEach(it=>{
       const b=document.createElement('button');b.type='button';b.className='card';b.dataset.id=it.id;
-      const ct=document.createElement('span');ct.className='cat';ct.textContent=cat;
       const im=document.createElement('img');im.alt='';im.src=ic[it.id]||ic['w'+it.w]||'';
       const nm=document.createElement('span');nm.className='nm';nm.textContent=it.name;
       const pr=document.createElement('span');pr.className='pr';
       const ds=document.createElement('span');ds.className='ds';ds.textContent=it.desc;
-      b.append(ct,im,nm,pr,ds);host.appendChild(b);shopEls[it.id]={b,pr};
+      b.append(im,nm,pr,ds);cd.appendChild(b);shopEls[it.id]={b,pr};
     });
   });
 }

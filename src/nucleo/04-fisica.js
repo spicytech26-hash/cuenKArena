@@ -115,9 +115,9 @@ const ZG = { DRIFT: -4.5, VSPEED: 9.5, HSPEED: .7 };
 /* Movimiento avanzado (solo lo usa el cliente humano con cmd.mech; los bots siguen con el movimiento de siempre).
    Stamina 0..1: deslizar gasta un poco, el doble salto gasta la mitad; el salto de pared es gratis. */
 const MV = {
-  SL_MIN: 6, SL_BOOST: 2.4, SL_MAX: 15, SL_END: 3.4, SL_FRIC: 1.4, SL_STEER: .6,   // deslizamiento: velocidad mínima para arrancar, empujón, tope, velocidad a la que se corta, fricción, control
+  SL_MIN: 6, SL_BOOST: 3, SL_MAX: 16, SL_END: 3.4, SL_FRIC: .9, SL_STEER: .6,   // deslizamiento: velocidad mínima para arrancar, empujón, tope, velocidad a la que se corta, fricción, control
   SL_START: .06, SL_DRAIN: .12,                                                      // costo de stamina: al arrancar y por segundo
-  DJ_COST: .5, DJ_JUMP: .95,                                                         // doble salto: mitad de la barra
+  DJ_COST: .25, DJ_JUMP: 1.15,                                                       // doble salto: un cuarto de la barra, y sube más que antes
   WJ_UP: 1.05, WJ_OUT: 6.5, WJ_CD: .3, WJ_REACH: .14,                                // salto de pared: impulso arriba y hacia afuera, espera entre saltos, distancia a la pared
   REGEN: .22, REGEN_DELAY: .7, COYOTE: .09
 };
@@ -172,7 +172,7 @@ function pmove(W, s, cmd, dt) {
         s.vy = K.JUMP * MV.WJ_UP; s.wjT = MV.WJ_CD; s.didJump = true; out.wj = true;
       } else if (!s.didJump && s.offT < MV.COYOTE) {   // recién te caíste del borde: cuenta como salto normal
         s.vy = K.JUMP; s.didJump = true; out.jumped = true;
-      } else if (!s.dj && s.stam >= MV.DJ_COST - 1e-6) {   // doble salto: uno solo por vuelo (hasta tocar el piso), cuesta la mitad de la barra
+      } else if (!s.dj && s.stam >= MV.DJ_COST - 1e-6) {   // doble salto: uno solo por vuelo (hasta tocar el piso), cuesta un cuarto de la barra
         s.dj = true; s.stam -= MV.DJ_COST; s.stT = MV.REGEN_DELAY; s.vy = K.JUMP * MV.DJ_JUMP; out.dj = true;
         if (wl > 1e-4) { const sp = Math.max(hsp, 5); s.vx = wx * sp; s.vz = wz * sp; }   // el doble salto reencauza hacia donde apuntás
       }

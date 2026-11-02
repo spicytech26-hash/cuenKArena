@@ -45,7 +45,7 @@ function renderBoard(){
 }
 function applyMode(){
   const gg=MODE==='gungame',tm=teamsMode();
-  $('tCrBox').hidden=!C.MODES[MODE].shop;$('shopHint').hidden=!C.MODES[MODE].shop;$('kickHint').hidden=!online;$('tLvlBox').hidden=!gg;$('tNextBox').hidden=!gg;
+  $('tCrBox').hidden=!C.MODES[MODE].shop;$('shopHint').hidden=!C.MODES[MODE].shop;$('kickHint').hidden=!online;$('mapHint').hidden=C.MODES[MODE].maps.length<2;$('tLvlBox').hidden=!gg;$('tNextBox').hidden=!gg;
   $('ctfBox').hidden=!tm;$('carry').hidden=true;$('tRank').parentElement.hidden=tm;$('lobbyBox').hidden=true;
   $('slots').innerHTML='';updateHUD();
 }

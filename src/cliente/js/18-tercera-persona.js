@@ -22,7 +22,7 @@ function updMiModelo(dt){
   const m=tpModelo(),P=TP.p;
   if(me.alive){
     TP.fireT=Math.max(0,TP.fireT-dt);TP.painT=Math.max(0,TP.painT-dt);
-    P.vxs=me.s.vx;P.vzs=me.s.vz;P.vy=me.s.vy;P.yaw=me.yaw;P.pitch=me.pitch;P.onG=me.s.on;P.crouch=!!me.s.crouch;P.fire=TP.fireT;P.pain=TP.painT;P.w=me.w;P.rel=me.rel>0&&me.relW===me.w;
+    P.vxs=me.s.vx;P.vzs=me.s.vz;P.vy=me.s.vy;P.yaw=me.yaw;P.pitch=me.pitch;P.onG=me.s.on;P.crouch=!!me.s.crouch;P.slide=!!me.s.slide;P.fire=TP.fireT;P.pain=TP.painT;P.w=me.w;P.rel=me.rel>0&&me.relW===me.w;
     if(m.gun.userData.w!==me.w){m.gun.clear();m.gun.add(tpGun(me.w));m.gun.userData.w=me.w;}
     m.g.position.set(me.s.x,me.s.y,me.s.z);m.g.rotation.y=me.yaw+Math.PI;
     m.gun.scale.setScalar(.72*(me.w===0?1.55:me.w===7||me.w===10?1.45:1.3));P.tp=true;   // un poco más grande que en el mundo para que se distinga desde atrás; las manos siguen al arma

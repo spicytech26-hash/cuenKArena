@@ -56,7 +56,8 @@
     <div class="cell"><div class="lbl">Salud</div><div class="num" id="hHp">100</div></div>
     <div class="cell"><div class="lbl">Blindaje</div><div class="num ar" id="hAr">0</div></div>
   </div>
-  <div id="kickHint" hidden>Y · KICKEAR</div>
+  <div id="kickHint" hidden>K · KICKEAR</div>
+  <div id="mapHint">Y · CAMBIAR MAPA</div>
   <div id="shopHint">B · TIENDA · mantené E: armas</div>
   <div id="slots"></div>
   <div id="voteBox" hidden role="status" aria-live="polite"></div>
@@ -78,9 +79,16 @@
   <div id="interTabW"><table id="interTab"></table></div>
   <div id="interXP"></div>
   <div style="display:none"></div></div></div>
+<div id="mapMenu" hidden>
+  <div class="kmBox mmBox">
+    <div class="kmHead"><span class="kmIcon" aria-hidden="true">◈</span><div><h2>CAMBIAR MAPA</h2><small>Elegí el mapa (click o número). La partida cambia solo si votan que sí todos los jugadores, durante 30 s.</small></div><span class="kmKey">Y · Esc cerrar</span></div>
+    <div id="mmList"></div>
+    <div id="mmMsg"></div>
+  </div>
+</div>
 <div id="kickMenu" hidden>
   <div class="kmBox">
-    <div class="kmHead"><span class="kmIcon" aria-hidden="true">⚖</span><div><h2>VOTAR PARA ECHAR</h2><small>Elegí a quién (click o número). Los demás votan sí o no durante 30 s.</small></div><span class="kmKey">Y · Esc cerrar</span></div>
+    <div class="kmHead"><span class="kmIcon" aria-hidden="true">⚖</span><div><h2>VOTAR PARA ECHAR</h2><small>Elegí a quién (click o número). Los demás votan sí o no durante 30 s.</small></div><span class="kmKey">K · Esc cerrar</span></div>
     <div id="kmList"></div>
     <div id="kmConfirm" hidden>
       <div class="kmQ">¿Abrir votación para echar a <b id="kmName"></b>?</div>

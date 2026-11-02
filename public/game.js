@@ -90,15 +90,15 @@ const SHOP = [
   { id: 'w0', cat: 'Pistolas', name: 'Pistola', w: 0, price: 0, free: 1, desc: 'Arrancás con 60 balas; comparte munición con la ametralladora' },
   { id: 'w1', cat: 'Escopetas', name: 'Escopeta', w: 1, price: 0, free: 1, desc: 'Tu arma principal de base (gratis). Elegila para volver a la escopeta' },
   { id: 'w2', cat: 'Escopetas', name: 'Escopeta doble', w: 2, price: 500, pack: ['shells', 20], desc: '20 perdigones, gasta 2 cartuchos' },
-  { id: 'w3', cat: 'Automáticas', name: 'Ametralladora', w: 3, price: 600, pack: ['bullets', 100], desc: 'Fuego continuo a media distancia' },
-  { id: 'w4', cat: 'Explosivas', name: 'Lanzagranadas', w: 4, price: 900, pack: ['grenades', 10], desc: 'Explotan al segundo. Un impacto directo explota en el acto y da premio' },
+  { id: 'w3', cat: 'Ametralladoras', name: 'Ametralladora', w: 3, price: 600, pack: ['bullets', 100], desc: 'Fuego continuo a media distancia' },
+  { id: 'w4', cat: 'Bombas', name: 'Lanzagranadas', w: 4, price: 900, pack: ['grenades', 10], desc: 'Explotan al segundo. Un impacto directo explota en el acto y da premio' },
   // la molotov es de un solo uso: se compra estando vivo y si te matan la perdés
-  { id: 'w10', cat: 'Explosivas', name: 'Bomba molotov', w: 10, price: 300, once: 1, pack: ['molotov', 3], desc: 'Tecla G. 3 molotovs que dejan el piso en llamas 6 s. Si te matan, las perdés' },
-  { id: 'w5', cat: 'Explosivas', name: 'Lanzacohetes', w: 5, price: 1300, pack: ['rockets', 10], desc: 'Daño en área y rocket jump' },
-  { id: 'w6', cat: 'Precisión', name: 'Rifle de plasma', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Atraviesa a todos los que estén en línea' },
-  { id: 'w8', cat: 'Precisión', name: 'Francotirador', w: 8, price: 1500, pack: ['sniper', 10], desc: 'Click derecho para apuntar con mira. Mata de un tiro a quien no tiene blindaje' },
-  { id: 'w9', cat: 'Precisión', name: 'Rifle de caza', w: 9, price: 1400, pack: ['caza', 8], desc: 'La bala viaja y cae: cualquier impacto mata. Tiros largos o al aire dan premio' },
-  { id: 'w7', cat: 'Pistolas', name: 'Cuchillo', w: 7, price: 0, free: 1, desc: 'Cuchillo mariposa: dos puñaladas matan siempre. No lo frena el blindaje' },
+  { id: 'w10', cat: 'Bombas', name: 'Bomba molotov', w: 10, price: 300, once: 1, pack: ['molotov', 3], desc: 'Tecla G. 3 molotovs que dejan el piso en llamas 6 s. Si te matan, las perdés' },
+  { id: 'w5', cat: 'Misiles', name: 'Lanzacohetes', w: 5, price: 1300, pack: ['rockets', 10], desc: 'Daño en área y rocket jump' },
+  { id: 'w6', cat: 'Rifles', name: 'Rifle de plasma', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Atraviesa a todos los que estén en línea' },
+  { id: 'w8', cat: 'Rifles', name: 'Francotirador', w: 8, price: 1500, pack: ['sniper', 10], desc: 'Click derecho para apuntar con mira. Mata de un tiro a quien no tiene blindaje' },
+  { id: 'w9', cat: 'Rifles', name: 'Rifle de caza', w: 9, price: 1400, pack: ['caza', 8], desc: 'La bala viaja y cae: cualquier impacto mata. Tiros largos o al aire dan premio' },
+  { id: 'w7', cat: 'Cuerpo a cuerpo', name: 'Cuchillo', w: 7, price: 0, free: 1, desc: 'Cuchillo mariposa: dos puñaladas matan siempre. No lo frena el blindaje' },
   { id: 'a1', cat: 'Blindaje', name: 'Chaleco', price: 400, armor: 50, desc: 'Aparecés con 50 de blindaje' },
   { id: 'a2', cat: 'Blindaje', name: 'Armadura pesada', price: 900, armor: 100, desc: 'Aparecés con 100 de blindaje' },
   { id: 'am', cat: 'Suministros', name: 'Cartuchera doble', price: 500, desc: 'Aparecés con el doble de munición' },
@@ -1950,9 +1950,9 @@ const ZG = { DRIFT: -4.5, VSPEED: 9.5, HSPEED: .7 };
 /* Movimiento avanzado (solo lo usa el cliente humano con cmd.mech; los bots siguen con el movimiento de siempre).
    Stamina 0..1: deslizar gasta un poco, el doble salto gasta la mitad; el salto de pared es gratis. */
 const MV = {
-  SL_MIN: 6, SL_BOOST: 2.4, SL_MAX: 15, SL_END: 3.4, SL_FRIC: 1.4, SL_STEER: .6,   // deslizamiento: velocidad mínima para arrancar, empujón, tope, velocidad a la que se corta, fricción, control
+  SL_MIN: 6, SL_BOOST: 3, SL_MAX: 16, SL_END: 3.4, SL_FRIC: .9, SL_STEER: .6,   // deslizamiento: velocidad mínima para arrancar, empujón, tope, velocidad a la que se corta, fricción, control
   SL_START: .06, SL_DRAIN: .12,                                                      // costo de stamina: al arrancar y por segundo
-  DJ_COST: .5, DJ_JUMP: .95,                                                         // doble salto: mitad de la barra
+  DJ_COST: .25, DJ_JUMP: 1.15,                                                       // doble salto: un cuarto de la barra, y sube más que antes
   WJ_UP: 1.05, WJ_OUT: 6.5, WJ_CD: .3, WJ_REACH: .14,                                // salto de pared: impulso arriba y hacia afuera, espera entre saltos, distancia a la pared
   REGEN: .22, REGEN_DELAY: .7, COYOTE: .09
 };
@@ -2007,7 +2007,7 @@ function pmove(W, s, cmd, dt) {
         s.vy = K.JUMP * MV.WJ_UP; s.wjT = MV.WJ_CD; s.didJump = true; out.wj = true;
       } else if (!s.didJump && s.offT < MV.COYOTE) {   // recién te caíste del borde: cuenta como salto normal
         s.vy = K.JUMP; s.didJump = true; out.jumped = true;
-      } else if (!s.dj && s.stam >= MV.DJ_COST - 1e-6) {   // doble salto: uno solo por vuelo (hasta tocar el piso), cuesta la mitad de la barra
+      } else if (!s.dj && s.stam >= MV.DJ_COST - 1e-6) {   // doble salto: uno solo por vuelo (hasta tocar el piso), cuesta un cuarto de la barra
         s.dj = true; s.stam -= MV.DJ_COST; s.stT = MV.REGEN_DELAY; s.vy = K.JUMP * MV.DJ_JUMP; out.dj = true;
         if (wl > 1e-4) { const sp = Math.max(hsp, 5); s.vx = wx * sp; s.vz = wz * sp; }   // el doble salto reencauza hacia donde apuntás
       }
@@ -2441,7 +2441,7 @@ class Game {
     this.mode = MODES[this.o.mode];
     if (this.mode.timelimit) this.o.timelimit = this.mode.timelimit;   // la Arena dura 6 minutos, online y en práctica
     this.shards = []; this.sid = 1; this.mapVotes = new Map(); this.voteOpts = null;
-    this.players = new Map(); this.nextId = 1; this.projs = []; this.fires = []; this.pid = 1; this.vote = null; this.bans = new Map(); this.kickN = new Map();
+    this.players = new Map(); this.nextId = 1; this.projs = []; this.fires = []; this.pid = 1; this.vote = null; this.mvote = null; this.bans = new Map(); this.kickN = new Map();
     this.time = 0; this.snapT = 0; this.scT = 0; this.botT = 0; this.state = 'play'; this.left = this.o.timelimit; this.interT = 0;
     this.ts = [0, 0]; this.flags = []; this.countT = 0;
     if (this.mode.minPlayers && this.o.online) this.state = 'lobby';
@@ -2478,6 +2478,7 @@ class Game {
     if (p.acct && this.state === 'play' && this.o.onXP) { const xp = this.matchXP(p, false, false); if (xp > 0) this.o.onXP(p, xp, { kills: p.kills, partida: 0, victoria: 0 }); }
     if (p.joined) { this.bcast({ t: 'ev', e: 'leave', id, n: p.name }); this.botT = 0; }
     if (this.vote) this.checkVote();
+    if (this.mvote) this.checkMapVote();
     if (this.state === 'inter') this.checkReady();
   }
   newPlayer(id, name, skin, bot) {
@@ -2547,7 +2548,7 @@ class Game {
         if (Array.isArray(v) && v.length === 3 && v.every(Number.isFinite)) { p.s.vx = clamp(v[0], -80, 80); p.s.vy = clamp(v[1], -80, 80); p.s.vz = clamp(v[2], -80, 80); }
         if (Number.isFinite(m.y)) p.yaw = m.y; if (Number.isFinite(m.x)) p.pitch = clamp(m.x, -1.6, 1.6);
         if (Number.isInteger(m.w) && m.w >= 0 && m.w < NW && p.ow[m.w]) p.w = m.w;
-        p.s.on = !!m.o; p.s.crouch = !!m.c;
+        p.s.on = !!m.o; p.s.crouch = !!m.c; p.s.slide = !!m.sl;
         break;
       }
       case 'fire': this.humanFire(p, m); break;
@@ -2579,6 +2580,7 @@ class Game {
       case 'equip': this.equip(p, m.w | 0); break;
       case 'ready': if (this.state === 'inter' && p.joined && !p.bot && !p.ready) { p.ready = true; this.checkReady(); } break;
       case 'vote': this.castVote(p, !!m.y); break;
+      case 'mapchg': this.startMapVote(p, String(m.m || '')); break;
       case 'mapvote': this.castMapVote(p, String(m.m || '')); break;
     }
   }
@@ -2626,11 +2628,52 @@ class Game {
     this.sendVote();
   }
   castVote(p, yes) {
+    if (this.mvote) return this.castMapYes(p, yes);
     const v = this.vote; if (!v || !p.joined || p.bot || p.id === v.target) return;
     v.yes.delete(p.id); v.no.delete(p.id); (yes ? v.yes : v.no).add(p.id);
     this.sendVote(); this.checkVote();
   }
+  /* ---- votación para cambiar de mapa (tecla Y): pasa solo si TODAS las personas de la partida votan que sí ---- */
+  startMapVote(p, id) {
+    const say = s => p.send && p.send({ t: 'ev', e: 'sys', m: s });
+    if (!p.joined || p.bot || this.state === 'inter') return;
+    if (this.vote || this.mvote) return say('Ya hay una votación en curso');
+    if (!MAPS[id] || !this.mode.maps.includes(id) || id === this.W.id) return say('Ese mapa no se puede elegir en ' + this.mode.name);
+    if ((p.mapCd || 0) > this.time) return say('Esperá ' + Math.ceil(p.mapCd - this.time) + ' s para pedir otro cambio de mapa');
+    if (this.voters().length <= 1) { this.bcast({ t: 'ev', e: 'sys', m: p.name + ' cambió el mapa a ' + MAPS[id].name }); this.restart(id); return; }   // solo en la partida: no hay a quién preguntarle
+    p.mapCd = this.time + 45;
+    this.mvote = { map: id, name: MAPS[id].name, by: p.name, yes: new Set([p.id]), no: new Set(), end: this.time + 30 };
+    this.bcast({ t: 'ev', e: 'sys', m: p.name + ' propone cambiar el mapa a ' + MAPS[id].name + ' (Y = sí · N = no; tienen que votar sí todos)' });
+    this.sendVote();
+  }
+  castMapYes(p, yes) {
+    const v = this.mvote; if (!v || !p.joined || p.bot) return;
+    v.yes.delete(p.id); v.no.delete(p.id); (yes ? v.yes : v.no).add(p.id);
+    this.sendVote(); this.checkMapVote();
+  }
+  checkMapVote() {
+    const v = this.mvote; if (!v) return;
+    const el = this.voters(), ids = new Set(el.map(q => q.id));
+    for (const s of [v.yes, v.no]) for (const id of [...s]) if (!ids.has(id)) s.delete(id);
+    if (this.state === 'inter') { this.mvote = null; this.sendVote(); return; }
+    if (el.length && el.every(q => v.yes.has(q.id))) {
+      this.mvote = null; this.sendVote();
+      this.bcast({ t: 'ev', e: 'sys', m: 'Votaron todos que sí: cambia el mapa a ' + v.name });
+      this.restart(v.map); return;
+    }
+    if (v.no.size > 0 || this.time >= v.end) {
+      this.mvote = null; this.sendVote();
+      this.bcast({ t: 'ev', e: 'sys', m: 'El cambio de mapa a ' + v.name + ' no pasó (' + v.yes.size + ' sí, ' + v.no.size + ' no)' });
+    }
+  }
   sendVote() {
+    const mv = this.mvote;
+    if (mv) {
+      const el = this.voters();
+      for (const q of this.players.values()) if (q.send && q.joined)
+        q.send({ t: 'vote', on: 1, kind: 'map', name: mv.name, by: mv.by, y: mv.yes.size, n: mv.no.size, need: el.length, left: Math.max(0, Math.ceil(mv.end - this.time)), me: mv.yes.has(q.id) ? 1 : mv.no.has(q.id) ? -1 : 0 });
+      return;
+    }
     const v = this.vote;
     if (!v) { this.bcast({ t: 'vote', on: 0 }); return; }
     const el = this.voters(this.players.get(v.target)).length, need = Math.floor(el / 2) + 1;
@@ -3243,6 +3286,7 @@ class Game {
     for (const q of this.players.values()) if (q.send && q.joined) q.send({ t: 'mv', o: st.o, c: st.c, me: this.mapVotes.get(q.id) || null });
   }
   restart(mapId) {
+    if (this.mvote) { this.mvote = null; this.sendVote(); }
     this.bans.clear(); this.kickN.clear();
     if (!mapId && !this.nextMap && this.voteOpts) this.nextMap = this.voteWinner();
     this.voteOpts = null; this.mapVotes.clear();
@@ -3331,6 +3375,7 @@ class Game {
       if (tr.water) this.damage(p, 999, null, null, null, 0, 'water');
       if (p.alive && p.s.y < K.KILLY) this.damage(p, 999, null, null, null, 0, 'void');
     }
+    if (this.mvote) { this.mvT = (this.mvT || 0) - dt; if (this.mvT <= 0) { this.mvT = 1; this.checkMapVote(); if (this.mvote) this.sendVote(); } }
     if (this.vote) { this.voteT = (this.voteT || 0) - dt; if (this.voteT <= 0) { this.voteT = 1; this.checkVote(); if (this.vote) this.sendVote(); } }
     if (this.live()) { this.tickProjs(dt); this.tickFires(dt); this.tickItems(dt); this.tickShards(dt); if (this.flags.length && this.state === 'play') this.tickFlags(dt); }
     this.snapT -= dt;
@@ -3342,7 +3387,7 @@ class Game {
     const ps = [];
     for (const p of this.players.values()) {
       if (!p.joined) continue;
-      ps.push([p.id, r2(p.s.x), r2(p.s.y), r2(p.s.z), r2(p.yaw), r2(p.pitch), p.w, (p.alive ? 1 : 0) | (p.quadT > 0 ? 2 : 0) | (p.s.on ? 4 : 0) | (p.s.crouch ? 8 : 0), r2(p.s.vx), r2(p.s.vy), r2(p.s.vz)]);
+      ps.push([p.id, r2(p.s.x), r2(p.s.y), r2(p.s.z), r2(p.yaw), r2(p.pitch), p.w, (p.alive ? 1 : 0) | (p.quadT > 0 ? 2 : 0) | (p.s.on ? 4 : 0) | (p.s.crouch ? 8 : 0) | (p.s.slide ? 16 : 0), r2(p.s.vx), r2(p.s.vy), r2(p.s.vz)]);
       if (p.bot && p.ai && this.flags.length && !p.alive) p.ai.path = null;
     }
     this.bcast({ t: 'sn', tm: Math.round(this.time * 1000) / 1000, ps });

@@ -40,7 +40,7 @@ Se elige al escoger el modo (y en práctica también desde Ajustes, en plena par
 
 - **Espectador**: cuando te eliminan, primero ves al que te mató. Con **clic izquierdo** pasás a mirar por los ojos de otro jugador o bot vivo (otro clic, al siguiente), y con **Espacio** la cámara gira alrededor del jugador que mirás (el mouse la mueve, como en Counter-Strike o TF2); otro Espacio vuelve a la primera persona. Al terminar el tiempo de reaparición volvés a jugar.
 - Al terminar una partida se ve el ganador, el próximo mapa y la cuenta regresiva (25 s), con **Seguir jugando** y **Volver al menú**.
-- **Movimiento:** **Ctrl** corriendo = deslizamiento (cuesta un poco de stamina); **Espacio** en el aire = doble salto (cuesta la mitad de la barra y no hay triple); **Espacio** pegado a una pared = salto de pared (gratis). La barra de stamina está bajo el medidor de velocidad y se recupera sola. La mira se abre al moverte, saltar y disparar, y se cierra quieto y agachado.
+- **Movimiento:** **Ctrl** corriendo = deslizamiento (cuesta un poco de stamina); **Espacio** en el aire = doble salto (cuesta un cuarto de la barra y no hay triple hasta tocar el piso); **Espacio** pegado a una pared = salto de pared (gratis). La barra de stamina está bajo el medidor de velocidad y se recupera sola. La mira se abre al moverte, saltar y disparar, y se cierra quieto y agachado.
 - Agacharse con **Ctrl** necesita pantalla completa: el juego la pide al empezar (se desactiva en Ajustes). Sin pantalla completa, Ctrl+W cierra la pestaña en el navegador, así que usá **C**; igual el juego pide confirmación antes de cerrar.
 - El rifle de caza se apunta con sus miras de hierro (click derecho), sin mira telescópica.
 - En La Represa, si caés al pozo de lava del centro hay dos salidas: el **géiser de magma** del medio, que burbujea para avisar y cada 3,6 s erupciona y te tira afuera (justo sobre el saltador que lleva al balcón), y **cuatro piedras de basalto** que suben y bajan por turnos: abajo quedan a ras de la lava, te subís caminando y desde arriba saltás al borde.
@@ -146,9 +146,13 @@ Las bajas con francotirador o rifle de caza **sin apuntar con la mira** se anunc
 
 Al terminar aparece la tabla con la cuenta regresiva a la próxima partida. **Jugar de nuevo** en práctica arranca otra al instante; online marca que estás listo (se ve *2/3 jugadores listos*) y, cuando todos los que están en la sala lo apretaron, arranca sin esperar la cuenta.
 
+## Cambio de mapa por votación (Y)
+
+Con **Y** se abre la lista de mapas del modo (con foto si hay). Al elegir uno, todos ven la votación; para que cambie tienen que votar **sí todas las personas** de la partida (Y = sí, N = no, 30 s). Un solo *no* o que se acabe el tiempo la cancela. Cada uno puede pedir un cambio cada 45 s.
+
 ## Votación para echar a un jugador
 
-En las partidas online, con **Y** (el cartel *Y · KICKEAR* está arriba de *B · TIENDA*) se abre un menú con las personas de la partida: elegís a una con el número o un click y confirmás con Enter. A todos los demás les aparece a la izquierda un panel de votación con barras de sí y no, la marca de cuántos votos hacen falta y una barra del tiempo que queda. También se puede desde el menú de pausa (**Esc**) → el enlace chiquito *Votar para echar a alguien* (abajo de los botones), o con `/echar NOMBRE` en el chat. Todos ven el cartel y votan con **Y** o **N** durante 30 segundos. Pasa si vota que sí más de la mitad de los demás jugadores (hacen falta 3 personas como mínimo). La primera vez que echan a alguien en una partida puede volver a entrar enseguida, y le aparece un cartel avisándole que una segunda echada no lo dejará entrar hasta que termine la partida. Si lo echan por segunda vez, el cartel le muestra cuánto falta para que termine la partida (con cuenta regresiva) y recién ahí puede volver. Al terminar la partida se borra todo y se empieza de cero. Al echado se lo reconoce por su cuenta de Google o por su navegador, nunca por la IP ni por el nombre, así los que juegan en el mismo wifi o se llaman igual no quedan afuera. Cada jugador puede iniciar una votación cada 90 segundos.
+En las partidas online, con **K** (el cartel *K · KICKEAR* está arriba de *B · TIENDA*) se abre un menú con las personas de la partida: elegís a una con el número o un click y confirmás con Enter. A todos los demás les aparece a la izquierda un panel de votación con barras de sí y no, la marca de cuántos votos hacen falta y una barra del tiempo que queda. También se puede desde el menú de pausa (**Esc**) → el enlace chiquito *Votar para echar a alguien* (abajo de los botones), o con `/echar NOMBRE` en el chat. Todos ven el cartel y votan con **Y** o **N** durante 30 segundos. Pasa si vota que sí más de la mitad de los demás jugadores (hacen falta 3 personas como mínimo). La primera vez que echan a alguien en una partida puede volver a entrar enseguida, y le aparece un cartel avisándole que una segunda echada no lo dejará entrar hasta que termine la partida. Si lo echan por segunda vez, el cartel le muestra cuánto falta para que termine la partida (con cuenta regresiva) y recién ahí puede volver. Al terminar la partida se borra todo y se empieza de cero. Al echado se lo reconoce por su cuenta de Google o por su navegador, nunca por la IP ni por el nombre, así los que juegan en el mismo wifi o se llaman igual no quedan afuera. Cada jugador puede iniciar una votación cada 90 segundos.
 
 ## Palabras censuradas
 
@@ -190,8 +194,9 @@ Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 
 | R | recargar la escopeta doble |
 | Click derecho | mira del francotirador: un toque la deja puesta, otro la saca; si lo mantenés, se saca al soltar |
 | G | bomba molotov |
-| Y | online: abre el menú para elegir a quién echar (número o click, Enter confirma). Si hay una votación en la que no votaste, Y es *sí* |
-| N | votar *no* en la votación para echar |
+| K | online: abre el menú para elegir a quién echar (número o click, Enter confirma) |
+| Y | abre la lista de mapas del modo para pedir un **cambio de mapa**: se abre una votación de 30 s y cambia solo si votan *sí* todas las personas (si estás solo, cambia al instante). Si hay una votación en la que no votaste, Y es *sí* |
+| N | votar *no* en una votación (echar o cambiar de mapa) |
 | B | tienda |
 | Tab | tabla de frags |
 | T o Enter | chat |

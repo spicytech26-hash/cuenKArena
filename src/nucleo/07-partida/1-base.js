@@ -5,7 +5,7 @@ class Game {
     this.mode = MODES[this.o.mode];
     if (this.mode.timelimit) this.o.timelimit = this.mode.timelimit;   // la Arena dura 6 minutos, online y en práctica
     this.shards = []; this.sid = 1; this.mapVotes = new Map(); this.voteOpts = null;
-    this.players = new Map(); this.nextId = 1; this.projs = []; this.fires = []; this.pid = 1; this.vote = null; this.bans = new Map(); this.kickN = new Map();
+    this.players = new Map(); this.nextId = 1; this.projs = []; this.fires = []; this.pid = 1; this.vote = null; this.mvote = null; this.bans = new Map(); this.kickN = new Map();
     this.time = 0; this.snapT = 0; this.scT = 0; this.botT = 0; this.state = 'play'; this.left = this.o.timelimit; this.interT = 0;
     this.ts = [0, 0]; this.flags = []; this.countT = 0;
     if (this.mode.minPlayers && this.o.online) this.state = 'lobby';
@@ -42,6 +42,7 @@ class Game {
     if (p.acct && this.state === 'play' && this.o.onXP) { const xp = this.matchXP(p, false, false); if (xp > 0) this.o.onXP(p, xp, { kills: p.kills, partida: 0, victoria: 0 }); }
     if (p.joined) { this.bcast({ t: 'ev', e: 'leave', id, n: p.name }); this.botT = 0; }
     if (this.vote) this.checkVote();
+    if (this.mvote) this.checkMapVote();
     if (this.state === 'inter') this.checkReady();
   }
   newPlayer(id, name, skin, bot) {
@@ -111,7 +112,7 @@ class Game {
         if (Array.isArray(v) && v.length === 3 && v.every(Number.isFinite)) { p.s.vx = clamp(v[0], -80, 80); p.s.vy = clamp(v[1], -80, 80); p.s.vz = clamp(v[2], -80, 80); }
         if (Number.isFinite(m.y)) p.yaw = m.y; if (Number.isFinite(m.x)) p.pitch = clamp(m.x, -1.6, 1.6);
         if (Number.isInteger(m.w) && m.w >= 0 && m.w < NW && p.ow[m.w]) p.w = m.w;
-        p.s.on = !!m.o; p.s.crouch = !!m.c;
+        p.s.on = !!m.o; p.s.crouch = !!m.c; p.s.slide = !!m.sl;
         break;
       }
       case 'fire': this.humanFire(p, m); break;
@@ -143,6 +144,7 @@ class Game {
       case 'equip': this.equip(p, m.w | 0); break;
       case 'ready': if (this.state === 'inter' && p.joined && !p.bot && !p.ready) { p.ready = true; this.checkReady(); } break;
       case 'vote': this.castVote(p, !!m.y); break;
+      case 'mapchg': this.startMapVote(p, String(m.m || '')); break;
       case 'mapvote': this.castMapVote(p, String(m.m || '')); break;
     }
   }
@@ -190,11 +192,52 @@ class Game {
     this.sendVote();
   }
   castVote(p, yes) {
+    if (this.mvote) return this.castMapYes(p, yes);
     const v = this.vote; if (!v || !p.joined || p.bot || p.id === v.target) return;
     v.yes.delete(p.id); v.no.delete(p.id); (yes ? v.yes : v.no).add(p.id);
     this.sendVote(); this.checkVote();
   }
+  /* ---- votación para cambiar de mapa (tecla Y): pasa solo si TODAS las personas de la partida votan que sí ---- */
+  startMapVote(p, id) {
+    const say = s => p.send && p.send({ t: 'ev', e: 'sys', m: s });
+    if (!p.joined || p.bot || this.state === 'inter') return;
+    if (this.vote || this.mvote) return say('Ya hay una votación en curso');
+    if (!MAPS[id] || !this.mode.maps.includes(id) || id === this.W.id) return say('Ese mapa no se puede elegir en ' + this.mode.name);
+    if ((p.mapCd || 0) > this.time) return say('Esperá ' + Math.ceil(p.mapCd - this.time) + ' s para pedir otro cambio de mapa');
+    if (this.voters().length <= 1) { this.bcast({ t: 'ev', e: 'sys', m: p.name + ' cambió el mapa a ' + MAPS[id].name }); this.restart(id); return; }   // solo en la partida: no hay a quién preguntarle
+    p.mapCd = this.time + 45;
+    this.mvote = { map: id, name: MAPS[id].name, by: p.name, yes: new Set([p.id]), no: new Set(), end: this.time + 30 };
+    this.bcast({ t: 'ev', e: 'sys', m: p.name + ' propone cambiar el mapa a ' + MAPS[id].name + ' (Y = sí · N = no; tienen que votar sí todos)' });
+    this.sendVote();
+  }
+  castMapYes(p, yes) {
+    const v = this.mvote; if (!v || !p.joined || p.bot) return;
+    v.yes.delete(p.id); v.no.delete(p.id); (yes ? v.yes : v.no).add(p.id);
+    this.sendVote(); this.checkMapVote();
+  }
+  checkMapVote() {
+    const v = this.mvote; if (!v) return;
+    const el = this.voters(), ids = new Set(el.map(q => q.id));
+    for (const s of [v.yes, v.no]) for (const id of [...s]) if (!ids.has(id)) s.delete(id);
+    if (this.state === 'inter') { this.mvote = null; this.sendVote(); return; }
+    if (el.length && el.every(q => v.yes.has(q.id))) {
+      this.mvote = null; this.sendVote();
+      this.bcast({ t: 'ev', e: 'sys', m: 'Votaron todos que sí: cambia el mapa a ' + v.name });
+      this.restart(v.map); return;
+    }
+    if (v.no.size > 0 || this.time >= v.end) {
+      this.mvote = null; this.sendVote();
+      this.bcast({ t: 'ev', e: 'sys', m: 'El cambio de mapa a ' + v.name + ' no pasó (' + v.yes.size + ' sí, ' + v.no.size + ' no)' });
+    }
+  }
   sendVote() {
+    const mv = this.mvote;
+    if (mv) {
+      const el = this.voters();
+      for (const q of this.players.values()) if (q.send && q.joined)
+        q.send({ t: 'vote', on: 1, kind: 'map', name: mv.name, by: mv.by, y: mv.yes.size, n: mv.no.size, need: el.length, left: Math.max(0, Math.ceil(mv.end - this.time)), me: mv.yes.has(q.id) ? 1 : mv.no.has(q.id) ? -1 : 0 });
+      return;
+    }
     const v = this.vote;
     if (!v) { this.bcast({ t: 'vote', on: 0 }); return; }
     const el = this.voters(this.players.get(v.target)).length, need = Math.floor(el / 2) + 1;

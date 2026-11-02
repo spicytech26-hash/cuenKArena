@@ -47,6 +47,7 @@
     for (const q of this.players.values()) if (q.send && q.joined) q.send({ t: 'mv', o: st.o, c: st.c, me: this.mapVotes.get(q.id) || null });
   }
   restart(mapId) {
+    if (this.mvote) { this.mvote = null; this.sendVote(); }
     this.bans.clear(); this.kickN.clear();
     if (!mapId && !this.nextMap && this.voteOpts) this.nextMap = this.voteWinner();
     this.voteOpts = null; this.mapVotes.clear();
@@ -135,6 +136,7 @@
       if (tr.water) this.damage(p, 999, null, null, null, 0, 'water');
       if (p.alive && p.s.y < K.KILLY) this.damage(p, 999, null, null, null, 0, 'void');
     }
+    if (this.mvote) { this.mvT = (this.mvT || 0) - dt; if (this.mvT <= 0) { this.mvT = 1; this.checkMapVote(); if (this.mvote) this.sendVote(); } }
     if (this.vote) { this.voteT = (this.voteT || 0) - dt; if (this.voteT <= 0) { this.voteT = 1; this.checkVote(); if (this.vote) this.sendVote(); } }
     if (this.live()) { this.tickProjs(dt); this.tickFires(dt); this.tickItems(dt); this.tickShards(dt); if (this.flags.length && this.state === 'play') this.tickFlags(dt); }
     this.snapT -= dt;
@@ -146,7 +148,7 @@
     const ps = [];
     for (const p of this.players.values()) {
       if (!p.joined) continue;
-      ps.push([p.id, r2(p.s.x), r2(p.s.y), r2(p.s.z), r2(p.yaw), r2(p.pitch), p.w, (p.alive ? 1 : 0) | (p.quadT > 0 ? 2 : 0) | (p.s.on ? 4 : 0) | (p.s.crouch ? 8 : 0), r2(p.s.vx), r2(p.s.vy), r2(p.s.vz)]);
+      ps.push([p.id, r2(p.s.x), r2(p.s.y), r2(p.s.z), r2(p.yaw), r2(p.pitch), p.w, (p.alive ? 1 : 0) | (p.quadT > 0 ? 2 : 0) | (p.s.on ? 4 : 0) | (p.s.crouch ? 8 : 0) | (p.s.slide ? 16 : 0), r2(p.s.vx), r2(p.s.vy), r2(p.s.vz)]);
       if (p.bot && p.ai && this.flags.length && !p.alive) p.ai.path = null;
     }
     this.bcast({ t: 'sn', tm: Math.round(this.time * 1000) / 1000, ps });

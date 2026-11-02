@@ -51,7 +51,7 @@ function lockerInit(){
   try{
     const r=new THREE.WebGLRenderer({canvas:$('lockPrev'),alpha:true,antialias:true});r.setPixelRatio(1);r.setSize(440,520,false);
     const sc=new THREE.Scene();sc.add(new THREE.AmbientLight(0xffffff,.55));const dl=new THREE.DirectionalLight(0xffe2c0,.9);dl.position.set(1.5,3,2);sc.add(dl);
-    const rim=new THREE.DirectionalLight(0xff3fd2,.6);rim.position.set(-2,1.5,-2);sc.add(rim);
+    const rim=new THREE.DirectionalLight(0x2bd6ff,1.1);rim.position.set(-2,1.5,-2);sc.add(rim);const fill=new THREE.DirectionalLight(0xffffff,.45);fill.position.set(-2.5,1.2,3);sc.add(fill);
     const cam=new THREE.PerspectiveCamera(32,440/520,.1,20);cam.position.set(0,1.35,4.4);cam.lookAt(0,1.05,0);
     lock={r,sc,cam,model:null,rot:.6,z:1,zt:1};
   }catch(e){lock={r:null};}
@@ -81,13 +81,13 @@ function rebuildLockModel(){if(!lock||!lock.r)return;if(lock.model)lock.sc.remov
   c.addEventListener('keydown',e=>{if(!lock)return;if(e.key==='+'||e.key==='='){e.preventDefault();lockZoom(lock.zt*.82);}else if(e.key==='-'||e.key==='_'){e.preventDefault();lockZoom(lock.zt/.82);}else if(e.key==='0'){e.preventDefault();lockZoom(1);}});
   c.addEventListener('keydown',e=>{if(!lock)return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();lock.rot+=(e.key==='ArrowLeft'?-1:1)*.35;lock.hold=3;}});
 })();
-function renderLocker(dt){if(!lock||!lock.r||$('lockerPanel').hidden||$('menu').hidden)return;lock.hold=(lock.hold||0)-dt;if(lock.hold<=0)lock.rot+=dt*.8;lock.model.g.rotation.y=lock.rot;rbPose(lock.model,1,-.05,0);lock.z+=(lock.zt-lock.z)*Math.min(1,dt*10);lockCam();lock.r.render(lock.sc,lock.cam);}
+function renderLocker(dt){if(!lock||!lock.r||$('lockerPanel').hidden||$('menu').hidden)return;lock.hold=(lock.hold||0)-dt;if(lock.hold<=0)lock.rot+=dt*.8;lock.model.g.rotation.y=lock.rot;rbPose(lock.model,1,-.05,0,RB_POSE_TAQ);lock.z+=(lock.zt-lock.z)*Math.min(1,dt*10);lockCam();lock.r.render(lock.sc,lock.cam);}
 function syncLocker(){
   [...$('swBody').querySelectorAll('button')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===S.skin.c)));
   [...$('swVisor').querySelectorAll('button')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===S.skin.v)));
   [...$('segAcc').children].forEach((b,i)=>b.setAttribute('aria-pressed',String(i===S.skin.a)));
   const P=skinParts(S.skin);
-  [['swBody2','c2'],['swBody3','c3']].forEach(([id,k])=>{
+  [['swBody2','c2'],['swBody3','c3'],['swPecho','cp'],['swBrazos','cb'],['swPiernas','cl']].forEach(([id,k])=>{
     [...$(id).querySelectorAll('button[data-c]')].forEach(b=>b.setAttribute('aria-pressed',String(!!S.skin[k]&&b.dataset.c===S.skin[k])));
     const au=$(id).querySelector('.auto');if(au)au.setAttribute('aria-pressed',String(!S.skin[k]));
     const ci=$(id).querySelector('input[type=color]');if(ci)ci.value=P[k];
@@ -119,7 +119,7 @@ function setSkin(p){for(const k in p){if(p[k]==null)delete S.skin[k];else S.skin
   const mk=(host,cols,key)=>{cols.forEach(c=>{const b=document.createElement('button');b.type='button';b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label','Color '+c);b.addEventListener('click',()=>setSkin({[key]:c}));host.appendChild(b);});};
   mk($('swBody'),BODY_COLS,'c');mk($('swVisor'),VISOR_COLS,'v');
   // zonas nuevas: cada una con colores, uno a elección y "Auto" (vuelve al color derivado de la armadura)
-  [['swBody2','c2'],['swBody3','c3']].forEach(([id,k])=>{
+  [['swBody2','c2'],['swBody3','c3'],['swPecho','cp'],['swBrazos','cb'],['swPiernas','cl']].forEach(([id,k])=>{
     const host=$(id);mk(host,BODY_COLS,k);
     const au=document.createElement('button');au.type='button';au.className='auto';au.textContent='Auto';au.style.cssText='width:auto;padding:0 8px;font-size:12px';au.setAttribute('aria-label','Color automático');au.addEventListener('click',()=>setSkin({[k]:null}));host.appendChild(au);
     const ic=document.createElement('input');ic.type='color';ic.setAttribute('aria-label','Color personalizado');ic.addEventListener('input',e=>setSkin({[k]:e.target.value}));host.appendChild(ic);

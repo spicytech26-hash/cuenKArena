@@ -295,9 +295,11 @@ function buildDeco(group,list){
   if(vDc.length)atlasMesh(vDc,8,4,cv(2048,1024,(g)=>{for(let i=0;i<32;i++)dcPiece(g,(i%8)*256,Math.floor(i/8)*256,256,i);}),0x000000,0);
   if(vVn.length)volcar(vVn,M_('vid',()=>new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(cv(32,128,(g,w,h)=>{g.clearRect(0,0,w,h);g.strokeStyle='#1d3a22';g.lineWidth=2;g.beginPath();g.moveTo(16,0);for(let y=0;y<h;y+=8)g.lineTo(16+Math.sin(y*.13)*5,y);g.stroke();
     for(let y=6;y<h;y+=7){const x=16+Math.sin(y*.13)*5,s=y%14?1:-1;g.fillStyle=(y%3)?'#2c5a30':'#1f4426';g.beginPath();g.ellipse(x+s*5,y,5,2.6,s*.5,0,7);g.fill();}})),transparent:true,alphaTest:.4,side:THREE.DoubleSide})));
-  if(vGl.length){const pos=[],col=[];for(const q of vGl){const c=new THREE.Color(q.c||0xffd08a);pos.push(q.x,q.y,q.z);col.push(c.r,c.g,c.b);}
-    const gg=new THREE.BufferGeometry();gg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));gg.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
-    group.add(new THREE.Points(gg,new THREE.PointsMaterial({map:M_('glowTex',()=>new THREE.CanvasTexture(cv(64,64,(g,w,h)=>{const r=g.createRadialGradient(32,32,0,32,32,32);r.addColorStop(0,'rgba(255,255,255,1)');r.addColorStop(.25,'rgba(255,255,255,.5)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,w,h);}))),size:2.6,vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false})));}
+  if(vGl.length){   // un grupo por tamaño (d.s, por defecto 2,6 m): los brillos chicos y tenues no se ven como círculos grandes
+    const bySize=new Map();for(const q of vGl){const k=q.s||2.6;if(!bySize.has(k))bySize.set(k,[]);bySize.get(k).push(q);}
+    for(const [sz,list] of bySize){const pos=[],col=[];for(const q of list){const c=new THREE.Color(q.c||0xffd08a);pos.push(q.x,q.y,q.z);col.push(c.r,c.g,c.b);}
+      const gg=new THREE.BufferGeometry();gg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));gg.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+      group.add(new THREE.Points(gg,new THREE.PointsMaterial({map:M_('glowTex',()=>new THREE.CanvasTexture(cv(64,64,(g,w,h)=>{const r=g.createRadialGradient(32,32,0,32,32,32);r.addColorStop(0,'rgba(255,255,255,1)');r.addColorStop(.25,'rgba(255,255,255,.5)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,w,h);}))),size:sz,vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false})));}}
   volcar(vAv,M_('aviso',()=>new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv(256,256,(g,w,h)=>{
     g.fillStyle='#f4f4f0';g.fillRect(0,0,w,h);g.strokeStyle='#c9c9c2';g.lineWidth=6;g.strokeRect(3,3,w-6,h-6);
     g.strokeStyle='#d62b2b';g.lineWidth=16;g.beginPath();g.arc(128,110,78,0,7);g.stroke();

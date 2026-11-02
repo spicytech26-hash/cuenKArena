@@ -28,7 +28,7 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `src/nucleo/02-mapas/N-id.js` | **un archivo por mapa**: 1 represa, 2 humita (el id interno sigue siendo `panymanteca`, no cambiarlo: lo usan los ajustes guardados, la votación y `public/maps/panymanteca.jpg`), 3 lacuenca, 4 puente (CTF), 5 fuertes (francotiradores), 6 cuartotramo, 7 skatenight (de noche, con linternas), 8 pyramid (de noche, 5 niveles con pozo de **gravedad cero**: `zerog` en el mapa + `inZeroG`/`ZG` en `04-fisica.js`; usa `navMaxY` para que los bots naveguen por encima de 12,5 m y `theme.ambiente:'piramide'` para su sonido). Cada uno termina con `MAPDEFS.id = función;` (el `id`, no el nombre del archivo) |
 | `src/nucleo/03-registro-mapas.js` | arma `MAPS`, apariciones seguras, alias de mapas viejos, plataformas móviles, mapa de prueba del editor |
 | `src/nucleo/04-fisica.js` | movimiento estilo Quake (`pmove`), saltadores, raycast, impactos a jugadores, proyectiles |
-| `src/nucleo/05-navegacion.js` | grafo de navegación de los bots |
+| `src/nucleo/05-navegacion.js` | grafo de navegación de los bots (links tipo 5 = flotar por el pozo de gravedad cero de Pyramid; el bot los recorre con `zgSteer` en `7-bots.js`) |
 | `src/nucleo/06-bots-y-filtros.js` | dificultad de bots `SKILL`, palabras censuradas, nombres y pieles |
 | `src/nucleo/07-partida/1-base.js` | clase `Game`: constructor, conexiones, mensajes de los clientes, votación para echar |
 | `src/nucleo/07-partida/2-aparicion-tienda.js` | aparecer, equipo inicial, tienda, créditos |

@@ -91,13 +91,26 @@ function buildNav(W) {
     const a = nodeAt(t.x, t.y + .1, t.z), b = nodeAt(t.to[0], t.to[1] + .1, t.to[2]);
     if (a && b) a.l.push([b.id, 3, 4]);
   }
+  // gravedad cero: desde la boca del pozo de cada nivel se puede ir a la boca de cualquier otro nivel (tipo 5: el bot flota hasta ahí, ver 7-bots.js)
+  const zlev = [];
+  for (const zb of W.zerog || []) {
+    const cx = (zb.min[0] + zb.max[0]) / 2, cz = (zb.min[2] + zb.max[2]) / 2, hx = (zb.max[0] - zb.min[0]) / 2, hz = (zb.max[2] - zb.min[2]) / 2;
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const px = cx + dx * (hx + .5), pz = cz + dz * (hz + .5);
+      const rim = at(Math.floor(px) - X0, Math.floor(pz) - Z0).filter(m => m.y >= zb.min[1] && m.y <= zb.max[1]).sort((a, b) => a.y - b.y);
+      for (let i = rim.length - 2; i >= 0; i--) if (rim[i + 1].y - rim[i].y < .3) rim.splice(i, 1);   // baldosa sobre ladrillo: dos nodos casi a la misma altura, queda el de arriba
+      for (const m of rim) if (!zlev.some(y => Math.abs(y - m.y) < .05)) zlev.push(m.y);
+      for (let i = 0; i < rim.length; i++) for (let j = 0; j < rim.length; j++) if (i !== j) rim[i].l.push([rim[j].id, 3 + Math.abs(rim[j].y - rim[i].y) * .4, 5]);
+    }
+  }
+  zlev.sort((a, b) => a - b);
   // adyacencia compacta para búsquedas rápidas
   const N = nodes.length; let E = 0; nodes.forEach(n => E += n.l.length);
   const off = new Int32Array(N + 1), to = new Int32Array(E), cost = new Float32Array(E);
   let k = 0;
   nodes.forEach((n, i) => { off[i] = k; n.l.forEach(l => { to[k] = l[0]; cost[k] = l[1]; k++; }); });
   off[N] = k;
-  return { X0, Z0, NX, NZ, cells, nodes, at, nodeAt, off, to, cost };
+  return { X0, Z0, NX, NZ, cells, nodes, at, nodeAt, off, to, cost, zlev };
 }
 function getNav(W) { W = W || WORLD; if (!NAVS[W.id]) NAVS[W.id] = buildNav(W); return NAVS[W.id]; }
 function findNode(nav, x, y, z) {

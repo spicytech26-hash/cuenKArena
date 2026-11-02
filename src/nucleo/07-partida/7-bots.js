@@ -1,3 +1,15 @@
+  // gravedad cero: lleva al bot a la altura yb del borde de un nivel (piso en yb) y, ya a esa altura, hacia (tx, tz). Antes de llegar se queda dentro del pozo.
+  zgSteer(s, yb, tx, tz) {
+    const zb = this.W.zerog[0], cx = (zb.min[0] + zb.max[0]) / 2, cz = (zb.min[2] + zb.max[2]) / 2, inZ = inZeroG(this.W, s);
+    const dy = s.y - yb;
+    let up = false, cr = false, gx = cx, gz = cz;
+    if (inZ) {
+      if (dy > 1.4) cr = true;                 // más arriba del borde: bajar
+      else { up = dy < .9; if (dy >= .35) { gx = tx; gz = tz; } }   // a la altura justa: salir de costado
+    }
+    const ax = gx - s.x, az = gz - s.z, al = Math.hypot(ax, az) || 1;
+    return { wx: ax / al, wz: az / al, up, cr };
+  }
   newAI() { return { think: 0, replan: 0, path: null, pi: 0, tgt: 0, seeT: 0, lostT: 0, last: null, strafe: Math.random() < .5 ? 1 : -1, strafeT: 1, stuckT: 0, bestD: 1e9, hurtBy: 0, hurtT: 0, aimErrX: 0, aimErrY: 0, errT: 0, hopT: 0, goal: null, flyT: 0, noLook: 0 }; }
   skill() { return SKILL[this.o.botSkill] || SKILL[1]; }
   findTarget(p) {
@@ -99,7 +111,7 @@
     const tgt = ai.tgt ? this.players.get(ai.tgt) : null;
     if (tgt) ai.seeT += dt;
     // --- movimiento ---
-    let wx = 0, wz = 0, jump = false;
+    let wx = 0, wz = 0, jump = false, zg = null;   // zg: {up, cr} cuando el bot flota en el pozo de gravedad cero
     let nextLink = 0;
     if (ai.path && ai.pi < ai.path.length && ai.flyT <= 0) {
       let n = nav.nodes[ai.path[ai.pi]];
@@ -119,16 +131,24 @@
         const ax = aim.x - s.x, az = aim.z - s.z, al = Math.hypot(ax, az) || 1;
         wx = ax / al; wz = az / al;
         const d = Math.hypot(n.x - s.x, n.z - s.z);
+        if (nextLink === 5) { zg = this.zgSteer(s, n.y, n.x, n.z); wx = zg.wx; wz = zg.wz; ai.stuckT = 0; ai.bestD = 1e9; }   // gravedad cero: flota hasta el nivel del próximo nodo
         if (nextLink === 2 && s.on) {
           const prev = nav.nodes[ai.path[ai.pi - 1]];
           if (Math.hypot(prev.x - s.x, prev.z - s.z) < 1.1 || d < 4.5) { jump = true; ai.flyT = .05; }
         }
-        if (d < ai.bestD - .2) { ai.bestD = d; ai.stuckT = 0; } else ai.stuckT += dt;
+        if (nextLink === 5) { /* flotando: no cuenta como trabado */ } else if (d < ai.bestD - .2) { ai.bestD = d; ai.stuckT = 0; } else ai.stuckT += dt;
         if (ai.stuckT > 1.2) { jump = true; ai.replan = 0; ai.stuckT = 0; ai.noLook = 1.5; }
       } else ai.path = null;
     } else if (!ai.path && !findNode(nav, s.x, s.y, s.z)) { jump = true; }
+    if (!zg && this.W.zerog && inZeroG(this.W, s)) {   // cayó al pozo sin querer: sube hasta el borde del nivel de arriba y sale de costado
+      const lv = nav.zlev || [0]; let yb = lv[lv.length - 1];
+      for (const y of lv) if (y >= s.y - 1.4) { yb = y; break; }
+      const zb = this.W.zerog[0], dx = s.x - (zb.min[0] + zb.max[0]) / 2, dz = s.z - (zb.min[2] + zb.max[2]) / 2;
+      const ex = Math.abs(dx) > Math.abs(dz) ? s.x + Math.sign(dx || 1) * 6 : s.x, ez = Math.abs(dx) > Math.abs(dz) ? s.z : s.z + Math.sign(dz || 1) * 6;
+      zg = this.zgSteer(s, yb, ex, ez); wx = zg.wx; wz = zg.wz;
+    }
     // combate: esquivar de costado y acercarse/alejarse
-    if (tgt) {
+    if (tgt && !zg) {
       const dx = tgt.s.x - s.x, dz = tgt.s.z - s.z, dist = Math.hypot(dx, dz) || 1;
       ai.strafeT -= dt; if (ai.strafeT <= 0) { ai.strafe *= -1; ai.strafeT = .5 + Math.random() * 1.2; }
       const melee = !!WEAPONS[p.w].melee;
@@ -143,7 +163,7 @@
       if (s.on && !nav.nodeAt(fx, s.y, fz)) { wx = -wx * .3; wz = -wz * .3; }
     }
     const was = s.on;
-    pmove(this.W, s, { wx, wz, jump }, dt);
+    pmove(this.W, s, zg ? { wx, wz, jump: false, up: zg.up, crouch: zg.cr } : { wx, wz, jump }, dt);
     const landed = was !== s.on && s.on;
     if (landed) ai.flyT = 0;
     // plataformas de salto y teletransportadores

@@ -305,11 +305,13 @@ Inspirado en el **skatepark de la Costanera de Posadas**, pero **abandonado y de
 
 ## Pyramid (mapa nuevo, de noche de Halloween)
 
-Una **pirámide de piedra** inspirada en *dm-pyramid* de Unreal Tournament, flotando sobre un agua oscura con bruma, bajo un **cielo violeta estrellado con una luna roja enorme**. Es de noche (`noche: true`): linternas en las armas, ambiente sonoro y tecla **T**. De los bordes de cada nivel cuelgan **faroles rojos**.
-- **Cinco niveles** (cada 4,8 m) que **se achican hacia arriba**: el de abajo es el más grande (68 x 68 m), así que si te caés de un borde aterrizás en el nivel de abajo (solo te matás si te caés del primero). Cuatro **patas** inclinadas llegan hasta la punta dorada.
-- **Pozo de gravedad:** un hueco de 7 x 7 m atraviesa los niveles 1 a 4, con una **columna negra y una espiral celeste** en el medio. En cada nivel sale un **puente** hasta la columna (norte, este, sur, oeste) con un **saltador** al final: te manda al puente del nivel de arriba (subís de a un piso). Desde el piso de abajo hay dos saltadores: uno al nivel 1 y uno directo al nivel 3. En el nivel 4 un saltador te lleva a la **punta de la columna**, con la **armadura pesada**. Para bajar te tirás al pozo y vas cayendo de puente en puente.
-- **Cada nivel tiene arma, escudo y curación:** abajo escopetas, ametralladora y botiquines; en el nivel 1 lanzagranadas, rifle de caza y armadura pesada; en el 2 lanzacohetes y la **megasalud**; en el 3 el rifle de plasma y el **daño triple**; arriba el francotirador. Cajones y muretes de cobertura en cada nivel.
-- Solo modos **Arena** y **Gungame**. Los bots suben y bajan por todos los niveles. Foto de la votación en `public/maps/pyramid.jpg`.
+Una **pirámide de piedra** inspirada en *dm-pyramid* de Unreal Tournament, flotando sobre un agua oscura con bruma, bajo un **cielo violeta estrellado con una luna roja enorme**. Es de noche (`noche: true`): linternas en las armas y tecla **T**. De los bordes de cada nivel cuelgan **faroles rojos**.
+- **Cinco niveles chicos y rápidos** (cada 4,8 m) que **se achican hacia arriba**: el de abajo es el más grande (48 x 48 m), así que si te caés de un borde aterrizás en el nivel de abajo (solo te matás si te caés del primero). Cuatro **patas** inclinadas llegan hasta la punta dorada.
+- **Pozo de gravedad cero:** un hueco de 6 x 6 m atraviesa los niveles 1 a 4, con una espiral celeste. Al entrar, **flotás**: te vas yendo despacio hacia abajo y te movés libre: **Espacio sube**, **agacharse baja** y **W mirando arriba o abajo** te lleva para ahí. Para salir en un nivel, te movés de costado por encima del borde del piso. Parado en el piso del pozo no flotás hasta que apretás Espacio. Adentro flotan la **megasalud**, botiquines y, arriba, la **armadura pesada**. Al entrar suena un zumbido de gravedad.
+- **Escaleras largas por afuera** (dos por nivel, en lados opuestos) para subir caminando; para bajar te tirás del borde al nivel de abajo.
+- **Cada nivel tiene arma, escudo y curación:** abajo escopetas y ametralladora; en el nivel 1 lanzagranadas y rifle de caza; en el 2 lanzacohetes; en el 3 el rifle de plasma y el **daño triple**; arriba el francotirador. Cajones y muretes de cobertura.
+- **Sonido propio:** viento que aúlla, notas graves, campana lejana, aullidos, ululatos y crujidos de cadena (nada que ver con el viento, el tren y los pasos de Skatenight).
+- Solo modos **Arena** y **Gungame**. Los bots suben por las escaleras y bajan de los bordes. Foto de la votación en `public/maps/pyramid.jpg`.
 
 ## Novedades de La Cuenca y Humita
 

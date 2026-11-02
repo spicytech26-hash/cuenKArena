@@ -25,7 +25,7 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `src/nucleo/00-encabezado.js` | apertura del módulo (UMD) |
 | `src/nucleo/01-datos.js` | física `K`, **`WEAPONS` (daño, cadencia, cargador)**, `ITEMS` (respawn), munición, `SHOP` (tienda y precios), `ECON`, **`MODES`** (modos y qué mapas usan), gungame, equipos, XP, niveles y medallas |
 | `src/nucleo/02-kit-mapas.js` | `mapKit()` (`add`, `ramp`, `wall`, `stairs`, `mover`, `I`, `finish`), `MAPDEFS` y `mapFromData()` (mapas del editor) |
-| `src/nucleo/02-mapas/N-id.js` | **un archivo por mapa**: 1 represa, 2 humita (el id interno sigue siendo `panymanteca`, no cambiarlo: lo usan los ajustes guardados, la votación y `public/maps/panymanteca.jpg`), 3 lacuenca, 4 puente (CTF), 5 fuertes (francotiradores), 6 cuartotramo, 7 skatenight (de noche, con linternas), 8 pyramid (de noche, 5 niveles con pozo de gravedad y saltadores; usa `navMaxY` en el mapa para que los bots naveguen por encima de 12,5 m). Cada uno termina con `MAPDEFS.id = función;` (el `id`, no el nombre del archivo) |
+| `src/nucleo/02-mapas/N-id.js` | **un archivo por mapa**: 1 represa, 2 humita (el id interno sigue siendo `panymanteca`, no cambiarlo: lo usan los ajustes guardados, la votación y `public/maps/panymanteca.jpg`), 3 lacuenca, 4 puente (CTF), 5 fuertes (francotiradores), 6 cuartotramo, 7 skatenight (de noche, con linternas), 8 pyramid (de noche, 5 niveles con pozo de **gravedad cero**: `zerog` en el mapa + `inZeroG`/`ZG` en `04-fisica.js`; usa `navMaxY` para que los bots naveguen por encima de 12,5 m y `theme.ambiente:'piramide'` para su sonido). Cada uno termina con `MAPDEFS.id = función;` (el `id`, no el nombre del archivo) |
 | `src/nucleo/03-registro-mapas.js` | arma `MAPS`, apariciones seguras, alias de mapas viejos, plataformas móviles, mapa de prueba del editor |
 | `src/nucleo/04-fisica.js` | movimiento estilo Quake (`pmove`), saltadores, raycast, impactos a jugadores, proyectiles |
 | `src/nucleo/05-navegacion.js` | grafo de navegación de los bots |
@@ -63,7 +63,7 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `js/16-simulacion.js` | movimiento propio e interpolación de los demás |
 | `js/17-hud.js` | HUD |
 | `js/18-camara.js` | cámara, arma en mano y jugadores remotos (`updRemote`) |
-| `js/18-noche.js` | **modo noche** (mapas con `theme.noche`: Skatenight y Pyramid): linterna del arma, haces y focos de los rivales, visores apagados (`updNight`, `nightRemote`) |
+| `js/18-noche.js` | **modo noche** (mapas con `theme.noche`: Skatenight y Pyramid; cada uno tiene su ambiente sonoro, `nightAmbient` / `pyramidAmbient`): linterna del arma, haces y focos de los rivales, visores apagados (`updNight`, `nightRemote`) |
 | `js/18-espectador.js` | **espectador** al estar muerto: clic izquierdo = mirar a otro jugador vivo, Espacio = cámara orbital; arma en mano del que mirás (`povGun`) |
 | `js/19-mira-cuenta-fin.js` | mira personalizable, cuentas de Google, pantalla de fin de partida |
 | `js/20-modelos-glb.js` | carga de modelos `.glb` |

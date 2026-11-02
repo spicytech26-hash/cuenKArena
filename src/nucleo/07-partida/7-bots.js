@@ -47,6 +47,7 @@
     if (best < 99) {
       for (const it of this.items) {
         if (!it.up) continue;
+        if (this.W.zerog && inZeroG(this.W, { x: it.x, y: it.y, z: it.z })) continue;   // los ítems que flotan en gravedad cero no los buscan
         const n = findNode(nav, it.x, it.y + .2, it.z); if (!n || dj.dist[n.id] === Infinity) continue;
         const info = ITEMS[it.type]; let v = 0;
         if (it.type === 'quad') v = 6;

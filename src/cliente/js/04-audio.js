@@ -65,6 +65,7 @@ const SFX={
   land:v=>nz({dur:.08,f0:400,f1:100,vol:.25*v}),
   step:()=>nz({dur:.05,f0:600,f1:200,vol:.06}),
   geyser:v=>{nz({dur:1.1,f0:250,f1:1400,vol:.7*v});tn({type:'sine',f0:60,f1:140,dur:.9,vol:.4*v});},
+  zero:v=>{tn({type:'sine',f0:900,f1:180,dur:.55,vol:.14*v});nz({dur:.5,f0:2500,f1:400,type:'bandpass',vol:.1*v});},   // al entrar en gravedad cero
   pad:v=>{tn({type:'sine',f0:150,f1:900,dur:.35,vol:.25*v});nz({dur:.3,f0:300,f1:3000,type:'bandpass',vol:.2*v});},
   tele:v=>{tn({type:'sine',f0:1600,f1:120,dur:.6,vol:.2*v});nz({dur:.5,f0:5000,f1:400,type:'bandpass',vol:.2*v});},
   click:()=>tn({type:'square',f0:200,f1:180,dur:.04,vol:.1}),

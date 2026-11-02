@@ -26,7 +26,8 @@ function updMe(dt){
   const jumpKey=free&&!!keys.Space;
   const jump=jumpKey&&(S.hop||!me.jumpHeld);
   const crouch=free&&!!(keys.ControlLeft||keys.ControlRight||keys.KeyC);
-  const r=C.pmove(W,me.s,{wx,wz,jump,crouch,fast:MODE==='snipers'&&me.w===7?1.3:1},dt);
+  const r=C.pmove(W,me.s,{wx,wz,jump,up:jumpKey,wy:f*Math.sin(me.pitch),crouch,fast:MODE==='snipers'&&me.w===7?1.3:1},dt);   // up/wy: en gravedad cero Espacio sube, agacharse baja y W mirando arriba o abajo te lleva para ahí
+  if(r.zerog&&!me.zg)SFX.zero(1);me.zg=r.zerog;
   me.jumpHeld=jumpKey;
   if(r.jumped)SFX.jump();
   if(r.landed<-9){me.dip=Math.min(.25,-r.landed*.015);SFX.land(Math.min(1,-r.landed/20));}

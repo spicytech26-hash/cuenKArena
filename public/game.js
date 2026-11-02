@@ -1626,20 +1626,20 @@ function buildSkatenight() {
 }
 MAPDEFS.skatenight = buildSkatenight;
 /* ---------- Pyramid — la pirámide de gravedad, de noche de Halloween ----------
-   Inspirado en dm-pyramid de Unreal Tournament. Cinco niveles de piedra (cada 4,8 m, así los bots pueden bajar de uno al otro) apilados que se achican hacia arriba (el de abajo es el más grande,
-   así que si te caés de un borde aterrizás en el nivel de abajo). Cielo estrellado violeta con luna roja y faroles rojos colgando de los bordes.
-   · Pozo central de 7x7 m que atraviesa los niveles 1 a 4, con la columna de gravedad (negra, con la espiral celeste) en el medio.
-   · En cada nivel sale un puente hasta la columna (N, E, S, O). Al final del puente hay un saltador que te manda al puente del nivel de arriba:
-     subís de a un piso, o con los dos saltadores del piso de abajo salteás directo al nivel 1 o al nivel 3. Para bajar te tirás al pozo.
-   · Cada nivel tiene arma, escudo y curación; arriba de todo, en la punta de la columna, está el escudo amarillo.
-   · Mapa de noche (theme.noche): linternas en las armas, ambiente y tecla T. */
+   Inspirado en dm-pyramid de Unreal Tournament. Cinco niveles de piedra apilados (cada 4,8 m) que se achican hacia arriba: el de abajo es el
+   más grande, así que si te caés de un borde aterrizás en el nivel de abajo. Pisos chicos para que el juego sea rápido.
+   · Pozo central de 6x6 m que atraviesa los niveles 1 a 4 y es una ZONA DE GRAVEDAD CERO (W.zerog, ver pmove en 04-fisica.js): al entrar
+     flotás y te vas yendo despacio hacia abajo; Espacio sube, agacharse baja y W mirando arriba o abajo te lleva para ahí. Para salir en un
+     nivel, te movés de costado por encima del borde del piso. Alrededor del pozo hay una espiral celeste (solo se ve).
+   · Escaleras largas por afuera (dos por nivel, en lados opuestos) para subir y bajar caminando: los bots usan estas y se tiran de los bordes.
+   · Cada nivel tiene arma, escudo y curación; flotando en el pozo hay megasalud, botiquines y, arriba, el escudo amarillo.
+   · Mapa de noche (theme.noche): linternas en las armas y tecla T. Ambiente sonoro propio (theme.ambiente = 'piramide'). */
 function buildPyramid() {
   const { B, pads, teles, lava, spawns, lights, add, ramp, wall, stairs, D, face, I, mover, finish } = mapKit();
   const deco = [];
-  const Y = [0, 4.8, 9.6, 14.4, 19.2];                 // altura del piso de cada nivel
-  const S = [34, 27.75, 21.5, 15.25, 9];            // mitad del lado de cada nivel (las patas pasan justo por las esquinas)
-  const H = 3.5;                                // mitad del pozo central
-  const DIR = [[0, -1], [1, 0], [0, 1], [-1, 0]];   // puente del nivel 1 al norte, 2 al este, 3 al sur, 4 al oeste
+  const Y = [0, 4.8, 9.6, 14.4, 19.2];          // altura del piso de cada nivel
+  const S = [24, 19.5, 15, 10.5, 6];            // mitad del lado de cada nivel (las patas pasan justo por las esquinas)
+  const H = 3;                                  // mitad del pozo central
 
   /* ---- niveles: cuerpo de ladrillo + piso de baldosa; del 1 al 4 son un anillo alrededor del pozo ---- */
   const slab = (x0, z0, x1, z1, y) => { add(x0, y - 1.2, z0, x1, y - .15, z1, 'brick'); add(x0, y - .15, z0, x1, y, z1, 'tiles'); };
@@ -1655,46 +1655,46 @@ function buildPyramid() {
     add(-s, y, -s + .3, -s + .3, y + t, s - .3, 'concrete', { nc: 1 }); add(s - .3, y, -s + .3, s, y + t, s - .3, 'concrete', { nc: 1 });
   }
 
-  /* ---- columna de gravedad: negra, con una espiral celeste que sube alrededor ---- */
-  add(-.5, 0, -.5, .5, Y[4] + 3.2, .5, 'black');
-  add(-1.2, Y[4] + 3.2, -1.2, 1.2, Y[4] + 3.6, 1.2, 'trim');                       // plataforma de la punta (escudo amarillo)
-  add(-1.1, 0, -1.1, 1.1, .35, 1.1, 'metal', { nc: 1 });             // base
-  for (let i = 0; i < 100; i++) {                                    // espiral de cubos celestes (un solo material: una sola llamada de dibujo)
-    const a = i * .42, y = .5 + i * .23, r = .95;
-    add(Math.cos(a) * r - .13, y, Math.sin(a) * r - .13, Math.cos(a) * r + .13, y + .26, Math.sin(a) * r + .13, 'tube', { nc: 1 });
+  /* ---- escaleras por afuera: dos por nivel (lados opuestos), pegadas al borde del nivel de arriba y subiendo a lo largo del lado;
+     18 escalones de 27 cm en 9 m (los bots caminan hasta 60 cm por metro) ---- */
+  for (let k = 0; k < 4; k++) {
+    const b = S[k + 1], r = 4.8 / 18;
+    if (k % 2 === 0) { stairs(-4.5, -b - 3, 4.5, -b, Y[k], r, 18, 'x', 1); stairs(-4.5, b, 4.5, b + 3, Y[k], r, 18, 'x', -1); }   // norte y sur
+    else { stairs(b, -4.5, b + 3, 4.5, Y[k], r, 18, 'z', 1); stairs(-b - 3, -4.5, -b, 4.5, Y[k], r, 18, 'z', -1); }             // este y oeste
   }
-  deco.push({ t: 'glow', x: 0, y: .9, z: 0, c: 0x40e0ff }, { t: 'glow', x: 0, y: Y[4] + 4.4, z: 0, c: 0xffd040 });
 
-  /* ---- puentes y saltadores: cada nivel (1 a 4) tiene un puente de la pared del pozo a la columna ---- */
-  const at = (k, r, w) => [DIR[k - 1][0] * r + DIR[k - 1][1] * w, DIR[k - 1][1] * r + DIR[k - 1][0] * w];   // punto a r metros del centro (w al costado)
-  for (let k = 1; k <= 4; k++) {
-    const a = at(k, .5, -.7), b = at(k, H + .1, .7), y = Y[k];
-    add(Math.min(a[0], b[0]), y - .5, Math.min(a[1], b[1]), Math.max(a[0], b[0]), y, Math.max(a[1], b[1]), 'metal');
-    const g = at(k, 2, 0); deco.push({ t: 'glow', x: g[0], y: y + .3, z: g[1], c: 0x40e0ff });
+  /* ---- pozo de gravedad cero: zona física + efectos que solo se ven ---- */
+  const zerog = [{ min: [-H, 0, -H], max: [H, Y[4] + 6, H] }];
+  {
+    for (let i = 0; i < 110; i++) {                                    // espiral de cubos celestes (un solo material: una sola llamada de dibujo)
+      const a = i * .4, y = .5 + i * .19, r = 1.8;
+      add(Math.cos(a) * r - .13, y, Math.sin(a) * r - .13, Math.cos(a) * r + .13, y + .26, Math.sin(a) * r + .13, 'tube', { nc: 1 });
+    }
+    add(-.12, 0, -.12, .12, Y[4] + 4, .12, 'tube', { nc: 1 });          // rayo central
+    for (const [x, z] of [[-H + .15, -H + .15], [H - .15, -H + .15], [-H + .15, H - .15], [H - .15, H - .15]]) add(x - .1, 0, z - .1, x + .1, Y[4] + 4, z + .1, 'tube', { nc: 1 });   // esquinas del campo
+    add(-H, 0, -H, H, .35, H, 'metal', { nc: 1 });                      // base del pozo
+    for (let k = 0; k <= 4; k++) deco.push({ t: 'glow', x: 0, y: Y[k] + 1.2, z: 0, c: 0x40e0ff });
+    deco.push({ t: 'glow', x: 0, y: Y[4] + 3, z: 0, c: 0xffd040 });
   }
-  for (let k = 1; k <= 3; k++) { const p = at(k, 2, 0), t = at(k + 1, 3.1, 0); pads.push({ x: p[0], y: Y[k], z: p[1], r: .7, t: [t[0], Y[k + 1], t[1]], apex: k === 3 ? 1.2 : 2.5 }); }
-  { const p = at(4, 2.3, 0); pads.push({ x: p[0], y: Y[4], z: p[1], r: .7, t: [-.75, Y[4] + 3.6, 0], apex: 3 }); }   // nivel 4 -> punta de la columna
-  pads.push({ x: 2, y: 0, z: 0, r: .7, t: [0, Y[1], -3.1], apex: 2.5 });          // base -> puente del nivel 1
-  pads.push({ x: -2.6, y: 0, z: 0, r: .7, t: [0, Y[3], 3.1], apex: 2.5 });         // base -> puente del nivel 3 (directo)
-  deco.push({ t: 'glow', x: 2, y: .3, z: 0, c: 0x40e0ff }, { t: 'glow', x: -2.6, y: .3, z: 0, c: 0x40e0ff });
 
   /* ---- patas: cuatro vigas inclinadas desde las esquinas de abajo hasta la punta (solo se ven) y el remate dorado ---- */
+  const slope = (S[0] - S[4]) / Y[4];
   for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
-    for (let y = -3; y < 25; y += .5) {
-      const c = 34 - 1.302 * y;   // la viga pasa justo por la esquina de cada nivel
-      add(sx * (c - .95), y, sz * (c - .95), sx * (c + .95), y + .56, sz * (c + .95), 'metal', { nc: 1 });
+    for (let y = -3; y < 24.4; y += .5) {
+      const c = S[0] - slope * y;   // la viga pasa justo por la esquina de cada nivel
+      add(sx * (c - .9), y, sz * (c - .9), sx * (c + .9), y + .56, sz * (c + .9), 'metal', { nc: 1 });
     }
   }
-  add(-2, 25, -2, 2, 25.8, 2, 'trim', { nc: 1 }); add(-1.2, 25.8, -1.2, 1.2, 26.6, 1.2, 'trim', { nc: 1 }); add(-.5, 26.6, -.5, .5, 27.3, .5, 'trim', { nc: 1 });
-  deco.push({ t: 'glow', x: 0, y: 27.7, z: 0, c: 0xffa040 });
+  add(-1.8, 24.4, -1.8, 1.8, 25.2, 1.8, 'trim', { nc: 1 }); add(-1.1, 25.2, -1.1, 1.1, 26, 1.1, 'trim', { nc: 1 }); add(-.5, 26, -.5, .5, 26.7, .5, 'trim', { nc: 1 });
+  deco.push({ t: 'glow', x: 0, y: 27.1, z: 0, c: 0xffa040 });
 
   /* ---- abajo: el pilar, el agua oscura y bruma baja ---- */
   add(-2.5, -14, -2.5, 2.5, -3, 2.5, 'black', { nc: 1 });
   lava.push({ min: [-500, -40, -500], max: [500, -14, 500], water: true, dps: 0 });
-  for (const [x, z, w] of [[-44, -30, 5], [40, 38, 6], [-38, 44, 4], [48, -22, 4], [0, -52, 7], [-56, 6, 5]]) add(x, -15, z, x + w, -12.6, z + w * .8, 'rock', { nc: 1 });
+  for (const [x, z, w] of [[-34, -22, 5], [30, 28, 6], [-30, 32, 4], [36, -18, 4], [0, -40, 7], [-42, 4, 5]]) add(x, -15, z, x + w, -12.6, z + w * .8, 'rock', { nc: 1 });
   for (let i = 0; i < 14; i++) {
-    const a = i * 2.4, r = 30 + (i % 4) * 9, cx = Math.cos(a) * r, cz = Math.sin(a) * r, w = 22 + (i % 3) * 8;
-    deco.push({ t: 'bruma', soft: 1, x0: cx - w / 2, x1: cx + w / 2, z0: cz - w / 3, z1: cz + w / 3, y: -12 + (i % 4) * 1.8, o: .13, dir: i % 2 ? 1 : -1 });
+    const a = i * 2.4, r = 34 + (i % 4) * 9, cx = Math.cos(a) * r, cz = Math.sin(a) * r, w = 20 + (i % 3) * 8;
+    deco.push({ t: 'bruma', soft: 1, x0: cx - w / 2, x1: cx + w / 2, z0: cz - w / 3, z1: cz + w / 3, y: -12 + (i % 4) * 1.8, o: .07, dir: i % 2 ? 1 : -1 });
   }
   add(-80, 45, -80, 80, 55, 80, 'clip');                                                       // techo: inalcanzable
 
@@ -1711,39 +1711,39 @@ function buildPyramid() {
   /* ---- cobertura: cajones y muretes en cada nivel (para pelear, no para encerrarse) ---- */
   const cajon = (x, y, z, s) => add(x - s * .7, y, z - s * .7, x + s * .7, y + s, z + s * .7, 'crate');
   const muro = (x0, z0, x1, z1, y) => { add(x0, y, z0, x1, y + 1.5, z1, 'concrete'); add(x0 - .06, y + 1.5, z0 - .06, x1 + .06, y + 1.62, z1 + .06, 'smooth'); };
-  for (const [x, z] of [[-14, -22], [14, 22], [-22, 14], [22, -14]]) { muro(x - 2.5, z - .2, x + 2.5, z + .2, 0); }
-  for (const [x, z] of [[-6, 20], [6, -20], [-20, -6], [20, 6], [-26, -26], [26, 26]]) cajon(x, 0, z, 1.4);
-  for (const [x, z] of [[-12, -22], [12, 22], [-22, 12], [22, -12]]) cajon(x, Y[1], z, 1.3);
-  for (const [x, z] of [[-9, -16], [9, 16], [-16, 9], [16, -9]]) cajon(x, Y[2], z, 1.3);
-  for (const [x, z] of [[-6, -11], [6, 11], [-11, 6], [11, -6]]) cajon(x, Y[3], z, 1.2);
-  for (const [x, z] of [[-6.6, 0], [6.6, 0], [0, 6.6], [0, -6.6]]) cajon(x, Y[4], z, 1);
+  for (const [x, z] of [[-12, -17], [12, 17]]) muro(x - 2.5, z - .2, x + 2.5, z + .2, 0);
+  for (const [x, z] of [[-17, 12], [17, -12]]) muro(x - .2, z - 2.5, x + .2, z + 2.5, 0);
+  for (const [x, z] of [[-6, 16], [6, -16], [-16, -6], [16, 6], [-20, -20], [20, 20]]) cajon(x, 0, z, 1.4);
+  for (const [x, z] of [[-10, -16], [10, 16], [-16, 10], [16, -10]]) cajon(x, Y[1], z, 1.3);
+  for (const [x, z] of [[-6, -12], [6, 12], [-12, 6], [12, -6]]) cajon(x, Y[2], z, 1.3);
+  for (const [x, z] of [[-4.5, -9], [4.5, 9]]) cajon(x, Y[3], z, 1.2);
 
-  /* ---- ítems: en cada nivel hay arma, escudo y curación ---- */
+  /* ---- ítems: en cada nivel hay arma, escudo y curación; en el pozo flotan megasalud, botiquines y la armadura pesada ---- */
   const it = (k, list) => list.forEach(([t, x, z]) => I(t, x, Y[k], z));
-  it(0, [['w1', -12, 12], ['w2', -12, -12], ['w3', 12, 12], ['armor', 12, -12], ['armor', -30, 30], ['health', -28, 0], ['health', 28, 0], ['health', 0, -28], ['health', 0, 28], ['health', 18, 18],
-    ['shells', -20, 6], ['bullets', 20, -6], ['rockets', 6, 20], ['grenades', -6, -20], ['slugs', 30, 30], ['caza', -30, -30]]);
-  it(1, [['w4', -20, -20], ['w9', 20, 20], ['armor', 20, -20], ['armorH', -22, 22], ['health', -20, 20], ['health', 20, -12], ['health', 0, 22], ['shells', 0, -22], ['rockets', 22, 0], ['bullets', -22, 0]]);
-  it(2, [['w5', -14, -14], ['mega', 14, 14], ['armor', 14, -14], ['health', -14, 14], ['health', 0, -16], ['grenades', 16, 0], ['slugs', -16, 0], ['bullets', 0, 16]]);
-  it(3, [['w6', -9, -9], ['quad', 9, 9], ['armor', 9, -9], ['health', -9, 9], ['rockets', 0, -11], ['caza', 0, 11]]);
-  it(4, [['w8', -6.6, -6.6], ['armor', 6.6, 6.6], ['health', 6.6, -6.6], ['health', -6.6, 6.6], ['slugs', 3.5, -7.5], ['shells', -3.5, 7.5]]);
-  I('armorH', 0, Y[4] + 3.6, 0);   // la punta de la columna
+  it(0, [['w1', -14, 14], ['w2', -14, -14], ['w3', 14, 14], ['armor', 14, -14], ['armor', -21, 21], ['health', -20, 0], ['health', 20, 0], ['health', -10, -21], ['health', 10, 21],
+    ['shells', -8, 5], ['bullets', 8, -5], ['rockets', 6, 8], ['grenades', -6, -8], ['slugs', 22, 22], ['caza', -22, -22]]);
+  it(1, [['w4', -14, -14], ['w9', 14, 14], ['armor', 14, -14], ['health', -14, 14], ['health', 0, 15], ['shells', 0, -15], ['rockets', 12, 0], ['bullets', -12, 0]]);
+  it(2, [['w5', -10, -10], ['armor', 10, -10], ['health', -10, 10], ['health', 10, 10], ['grenades', -9, -12], ['slugs', 9, 12]]);
+  it(3, [['w6', -7, -7], ['armor', 7, -7], ['health', -7, 7], ['quad', 7, 7], ['rockets', 0, -8], ['caza', 0, 8]]);
+  it(4, [['w8', -4.5, -4.5], ['armor', 4.5, 4.5], ['health', 4.5, -4.5], ['health', -4.5, 4.5], ['slugs', -1.5, -4.5], ['shells', 1.5, 4.5]]);
+  I('health', 0, Y[1] + 2, 0); I('mega', 0, Y[2] + 2, 0); I('health', 0, Y[3] + 2, 0); I('armorH', 0, Y[4] + 2.6, 0);   // flotando en el pozo
 
-  /* ---- apariciones: repartidas por todos los niveles (las del pozo no, ahí se cae) ---- */
+  /* ---- apariciones: repartidas por todos los niveles ---- */
   const sp = (k, list) => list.forEach(([x, z]) => spawns.push({ x, y: Y[k], z, yaw: face(x, z, 0, 0) }));
-  sp(0, [[-30, -20], [-20, -30], [30, -22], [22, -30], [-30, 22], [-22, 30], [30, 20], [22, 22], [0, -14], [14, 0], [0, 14], [-14, 0], [-26, 8], [26, -8]]);
-  sp(1, [[-23, -23], [23, 23], [23, -23], [-23, 23], [-10, -22], [10, 22], [22, 10], [-22, -10]]);
-  sp(2, [[-17, -17], [17, 17], [17, -17], [-17, 17], [-8, 17], [8, -17]]);
-  sp(3, [[-12, -12], [12, 12], [12, -12], [-12, 12]]);
-  sp(4, [[-7.5, -4.5], [7.5, 4.5], [4.5, -7.5], [-4.5, 7.5]]);
+  sp(0, [[-20, -18], [18, -20], [20, 18], [-18, 20], [-20, 6], [20, -6], [6, 20], [-6, -20], [-9, -9], [9, 9], [9, -9], [-9, 9]]);
+  sp(1, [[-17, -17], [17, 17], [17, -17], [-17, 17], [-8, -16], [8, 16], [16, 8], [-16, -8]]);
+  sp(2, [[-12, -12], [12, 12], [12, -12], [-12, 12], [-5, 12], [5, -12]]);
+  sp(3, [[-8.5, -5], [8.5, 5], [5, -8.5], [-5, 8.5]]);
+  sp(4, [[-4.5, 0], [4.5, 0], [1.5, -4.5], [-1.5, 4.5]]);
 
   /* ---- luces: unos pocos pozos rojos y la luz celeste del pozo (la luna y la linterna hacen el resto) ---- */
   lights.push({ x: 0, y: 2.4, z: 0, c: 0x40e0ff, i: .9, d: 14 }, { x: 0, y: Y[1] + 2.4, z: 0, c: 0x40e0ff, i: .8, d: 14 }, { x: 0, y: Y[2] + 2.4, z: 0, c: 0x40e0ff, i: .8, d: 14 }, { x: 0, y: Y[3] + 2.4, z: 0, c: 0x40e0ff, i: .8, d: 14 },
-    { x: 0, y: Y[4] + 5.4, z: 0, c: 0xffc040, i: .9, d: 12 },
-    { x: -28, y: 2, z: -28, c: 0xff3a2a, i: .5, d: 22 }, { x: 28, y: 2, z: 28, c: 0xff3a2a, i: .5, d: 22 }, { x: 28, y: 2, z: -28, c: 0xff3a2a, i: .5, d: 22 }, { x: -28, y: 2, z: 28, c: 0xff3a2a, i: .5, d: 22 },
-    { x: -20, y: Y[1] + 2.4, z: -20, c: 0xff3a2a, i: .45, d: 18 }, { x: 20, y: Y[1] + 2.4, z: 20, c: 0xff3a2a, i: .45, d: 18 }, { x: -14, y: Y[2] + 2.4, z: 14, c: 0xff3a2a, i: .45, d: 16 }, { x: 14, y: Y[3] + 2.4, z: -10, c: 0xff3a2a, i: .45, d: 14 });
+    { x: 0, y: Y[4] + 3.4, z: 0, c: 0xffc040, i: .9, d: 12 },
+    { x: -18, y: 2, z: -18, c: 0xff3a2a, i: .5, d: 20 }, { x: 18, y: 2, z: 18, c: 0xff3a2a, i: .5, d: 20 }, { x: 18, y: 2, z: -18, c: 0xff3a2a, i: .5, d: 20 }, { x: -18, y: 2, z: 18, c: 0xff3a2a, i: .5, d: 20 },
+    { x: -13, y: Y[1] + 2.4, z: -13, c: 0xff3a2a, i: .45, d: 16 }, { x: 13, y: Y[1] + 2.4, z: 13, c: 0xff3a2a, i: .45, d: 16 }, { x: -9, y: Y[2] + 2.4, z: 9, c: 0xff3a2a, i: .45, d: 14 }, { x: 7, y: Y[3] + 2.4, z: -7, c: 0xff3a2a, i: .45, d: 12 });
 
-  return finish({ id: 'pyramid', name: 'Pyramid', navMaxY: 24, bounds: { x0: -36, x1: 36, z0: -36, z1: 36 }, deco, modos: ['arena', 'gungame'],
-    theme: { sky: 'halloween', tex: 'ruina', noche: true, skyDim: .95, fog: 0x1c0f30, fogD: .0065, amb: 0x5a4a96, ambI: .62, hemi: [0x7a68c0, 0x2a1438, .6], sun: true, sunC: 0xd8a0c0, sunI: .6, sunPos: [0, 60, 50], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
+  return finish({ id: 'pyramid', name: 'Pyramid', navMaxY: 24, zerog, bounds: { x0: -26, x1: 26, z0: -26, z1: 26 }, deco, modos: ['arena', 'gungame'],
+    theme: { sky: 'halloween', tex: 'ruina', noche: true, ambiente: 'piramide', skyDim: .95, fog: 0x1c0f30, fogD: .0065, amb: 0x5a4a96, ambI: .62, hemi: [0x7a68c0, 0x2a1438, .6], sun: true, sunC: 0xd8a0c0, sunI: .6, sunPos: [0, 60, 50], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
 }
 MAPDEFS.pyramid = buildPyramid;
 const MAPS = {};
@@ -1899,6 +1899,16 @@ function crouchUpdate(W, s, want) {
     else if (!solidAt(W, s.x, s.y + .01, s.z, K.R, K.H)) s.crouch = false;           // no se para si no hay lugar arriba
   }
 }
+/* Zonas de gravedad cero (W.zerog = [{ min: [x, y, z], max: [x, y, z] }], hoy el pozo de Pyramid): adentro no hay gravedad, te vas
+   cayendo despacio hacia abajo y te movés libre: salto/Espacio sube, agacharse baja, y W mirando arriba o abajo te lleva para ahí.
+   Parado en el piso solo se activa si apretás para subir. */
+const ZG = { DRIFT: -4.5, VSPEED: 9.5, HSPEED: .7 };
+function inZeroG(W, s) {
+  if (!W.zerog) return false;
+  const y = s.y + .9;
+  for (const z of W.zerog) if (s.x > z.min[0] && s.x < z.max[0] && s.z > z.min[2] && s.z < z.max[2] && y > z.min[1] && y < z.max[1]) return true;
+  return false;
+}
 function pmove(W, s, cmd, dt) {
   if (W.movers.length) carry(W, s);
   crouchUpdate(W, s, !!cmd.crouch);
@@ -1908,9 +1918,22 @@ function pmove(W, s, cmd, dt) {
   if (wl > 1e-4) { wish = K.MAXSPD * Math.min(1, wl); wx /= wl; wz /= wl; }
   if (s.crouch && s.on) wish *= K.CROUCH_SPD;
   if (cmd.fast > 1) wish *= Math.min(1.5, cmd.fast);
-  const out = { jumped: false, landed: 0 };
+  const out = { jumped: false, landed: 0, zerog: false };
+  const up = cmd.up !== undefined ? cmd.up : cmd.jump;
   for (let i = 0; i < steps; i++) {
     const wasOn = s.on;
+    if (W.zerog && inZeroG(W, s) && (!s.on || up)) {
+      const upIn = clamp((up ? 1 : 0) - (cmd.crouch ? 1 : 0) + (cmd.wy || 0), -1, 1);
+      s.vy += ((upIn ? upIn * ZG.VSPEED : ZG.DRIFT) - s.vy) * Math.min(1, 5 * h);
+      const kh = Math.min(1, 3 * h);
+      s.vx += (wx * wish * ZG.HSPEED - s.vx) * kh; s.vz += (wz * wish * ZG.HSPEED - s.vz) * kh;
+      s.on = false;
+      stepAxis(W, s, 0, s.vx * h);
+      stepAxis(W, s, 2, s.vz * h);
+      stepY(W, s, h, false);
+      out.zerog = true;
+      continue;
+    }
     let jumpedNow = false;
     if (s.on) {
       if (cmd.jump) { s.vy = K.JUMP; s.on = false; jumpedNow = out.jumped = true; }
@@ -3240,6 +3263,7 @@ class Game {
     if (best < 99) {
       for (const it of this.items) {
         if (!it.up) continue;
+        if (this.W.zerog && inZeroG(this.W, { x: it.x, y: it.y, z: it.z })) continue;   // los ítems que flotan en gravedad cero no los buscan
         const n = findNode(nav, it.x, it.y + .2, it.z); if (!n || dj.dist[n.id] === Infinity) continue;
         const info = ITEMS[it.type]; let v = 0;
         if (it.type === 'quad') v = 6;
@@ -3381,5 +3405,5 @@ class Game {
   }
 }
 
-return { PRIMARY, primaryOf, censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, SKILL, topAt, pmove, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
+return { PRIMARY, primaryOf, censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, SKILL, topAt, pmove, inZeroG, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
 });

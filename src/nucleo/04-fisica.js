@@ -108,6 +108,16 @@ function crouchUpdate(W, s, want) {
     else if (!solidAt(W, s.x, s.y + .01, s.z, K.R, K.H)) s.crouch = false;           // no se para si no hay lugar arriba
   }
 }
+/* Zonas de gravedad cero (W.zerog = [{ min: [x, y, z], max: [x, y, z] }], hoy el pozo de Pyramid): adentro no hay gravedad, te vas
+   cayendo despacio hacia abajo y te movés libre: salto/Espacio sube, agacharse baja, y W mirando arriba o abajo te lleva para ahí.
+   Parado en el piso solo se activa si apretás para subir. */
+const ZG = { DRIFT: -4.5, VSPEED: 9.5, HSPEED: .7 };
+function inZeroG(W, s) {
+  if (!W.zerog) return false;
+  const y = s.y + .9;
+  for (const z of W.zerog) if (s.x > z.min[0] && s.x < z.max[0] && s.z > z.min[2] && s.z < z.max[2] && y > z.min[1] && y < z.max[1]) return true;
+  return false;
+}
 function pmove(W, s, cmd, dt) {
   if (W.movers.length) carry(W, s);
   crouchUpdate(W, s, !!cmd.crouch);
@@ -117,9 +127,22 @@ function pmove(W, s, cmd, dt) {
   if (wl > 1e-4) { wish = K.MAXSPD * Math.min(1, wl); wx /= wl; wz /= wl; }
   if (s.crouch && s.on) wish *= K.CROUCH_SPD;
   if (cmd.fast > 1) wish *= Math.min(1.5, cmd.fast);
-  const out = { jumped: false, landed: 0 };
+  const out = { jumped: false, landed: 0, zerog: false };
+  const up = cmd.up !== undefined ? cmd.up : cmd.jump;
   for (let i = 0; i < steps; i++) {
     const wasOn = s.on;
+    if (W.zerog && inZeroG(W, s) && (!s.on || up)) {
+      const upIn = clamp((up ? 1 : 0) - (cmd.crouch ? 1 : 0) + (cmd.wy || 0), -1, 1);
+      s.vy += ((upIn ? upIn * ZG.VSPEED : ZG.DRIFT) - s.vy) * Math.min(1, 5 * h);
+      const kh = Math.min(1, 3 * h);
+      s.vx += (wx * wish * ZG.HSPEED - s.vx) * kh; s.vz += (wz * wish * ZG.HSPEED - s.vz) * kh;
+      s.on = false;
+      stepAxis(W, s, 0, s.vx * h);
+      stepAxis(W, s, 2, s.vz * h);
+      stepY(W, s, h, false);
+      out.zerog = true;
+      continue;
+    }
     let jumpedNow = false;
     if (s.on) {
       if (cmd.jump) { s.vy = K.JUMP; s.on = false; jumpedNow = out.jumped = true; }

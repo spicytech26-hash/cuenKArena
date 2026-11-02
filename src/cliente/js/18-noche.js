@@ -59,7 +59,9 @@ function nightHide(m){if(m.beam)m.beam.visible=m.glow.visible=false;m.b.visible=
 let nAmb=null,nAmbT=4,nGustT=8,nTrainT=40,nStepT=22;
 function nightAmbient(dt){
   if(!AC||!noiseBuf)return;
-  if(!NIGHT){if(nAmb){const t=AC.currentTime;for(const g of [nAmb.g.gain,nAmb.g2.gain]){g.cancelScheduledValues(t);g.setTargetAtTime(0,t,.05);}}return;}   // fuera de Skatenight no suena nada
+  const pir=NIGHT&&W&&W.theme&&W.theme.ambiente==='piramide';   // cada mapa de noche tiene su propio ambiente: Skatenight (viento, tren, pasos) y Pyramid (aullido, campana, zumbido de gravedad)
+  pyramidAmbient(dt,pir);
+  if(!NIGHT||pir){if(nAmb){const t=AC.currentTime;for(const g of [nAmb.g.gain,nAmb.g2.gain]){g.cancelScheduledValues(t);g.setTargetAtTime(0,t,.05);}}return;}   // fuera de Skatenight no suena nada
   if(!nAmb){
     const mkL=(type,fr,q)=>{const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;const f=AC.createBiquadFilter();f.type=type;f.frequency.value=fr;if(q)f.Q.value=q;const g=AC.createGain();g.gain.value=0;s.connect(f);f.connect(g);g.connect(master);s.start();return {g,f};};
     const a=mkL('lowpass',380),b=mkL('bandpass',1000,.4);nAmb={g:a.g,f:a.f,g2:b.g,gust:0};   // viento bajo + capa de niebla (aire)
@@ -76,6 +78,31 @@ function nightAmbient(dt){
     if(k<.4){tn({type:'sawtooth',f0:230,f1:150,dur:1.2,vol:.025});nz({dur:1.2,f0:520,f1:300,type:'bandpass',q:7,vol:.05});}
     else if(k<.75)tn({type:'sine',f0:72,f1:36,dur:.55,vol:.2});
     else nz({dur:1,f0:2000,f1:900,type:'bandpass',q:5,vol:.035});}
+}
+// ambiente de Pyramid (Halloween): viento que aúlla (filtro que barre), dos notas graves de fondo, de tanto en tanto una campana lejana,
+// un aullido, un par de ululatos o un crujido de cadena; y un zumbido que se enciende solo cuando estás en la gravedad cero del pozo
+let pAmb=null,pEvT=5;
+function pyramidAmbient(dt,on){
+  if(!on){if(pAmb){const t=AC.currentTime;for(const g of pAmb.gs){g.cancelScheduledValues(t);g.setTargetAtTime(0,t,.05);}}return;}
+  if(!pAmb){
+    const ns=(type,fr,q)=>{const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;const f=AC.createBiquadFilter();f.type=type;f.frequency.value=fr;if(q)f.Q.value=q;const g=AC.createGain();g.gain.value=0;s.connect(f);f.connect(g);g.connect(master);s.start();return {g,f};};
+    const os=(type,fr)=>{const o=AC.createOscillator();o.type=type;o.frequency.value=fr;const g=AC.createGain();g.gain.value=0;o.connect(g);g.connect(master);o.start();return {g,o};};
+    const wind=ns('bandpass',500,1.6),d1=os('sine',55),d2=os('triangle',82.7),hum=os('sawtooth',64),hf=AC.createBiquadFilter();
+    hf.type='lowpass';hf.frequency.value=260;hum.o.disconnect();hum.o.connect(hf);hf.connect(hum.g);   // zumbido de gravedad: sierra grave filtrada
+    pAmb={wind,d1,d2,hum,gs:[wind.g.gain,d1.g.gain,d2.g.gain,hum.g.gain],z:0};
+  }
+  const t=AC.currentTime,A=pAmb;
+  pEvT-=dt;
+  A.wind.f.frequency.setTargetAtTime(520+260*Math.sin(t*.21)+140*Math.sin(t*.67),t,.4);   // el aullido sube y baja
+  A.wind.g.gain.setTargetAtTime(.05+.03*Math.sin(t*.3)+.015*Math.sin(t*1.3),t,.5);
+  A.d1.g.gain.setTargetAtTime(.03+.012*Math.sin(t*.4),t,.6);A.d2.g.gain.setTargetAtTime(.016+.01*Math.sin(t*.27+1),t,.6);
+  const zg=!!(me.alive&&W.zerog&&C.inZeroG(W,me.s));A.z+=((zg?1:0)-A.z)*Math.min(1,dt*3);
+  A.hum.g.gain.setTargetAtTime(.05*A.z,t,.2);A.hum.o.frequency.setTargetAtTime(58+14*A.z+6*Math.sin(t*3),t,.2);
+  if(pEvT<=0){pEvT=7+Math.random()*13;const k=Math.random();
+    if(k<.3){for(const [m,v] of [[1,.07],[2.76,.03],[5.4,.012]])tn({type:'sine',f0:196*m,f1:195*m,dur:3.6,vol:v});}   // campana lejana
+    else if(k<.55){tn({type:'sine',f0:420,f1:620,dur:1.3,vol:.035});tn({type:'sine',f0:620,f1:380,dur:1.7,vol:.035,delay:1.3});nz({dur:3,f0:900,f1:500,type:'bandpass',q:3,vol:.012});}   // aullido
+    else if(k<.8){for(let i=0;i<2;i++)tn({type:'sine',f0:340,f1:290,dur:.4,vol:.07,delay:i*.7});}   // ululato
+    else{tn({type:'sawtooth',f0:150,f1:95,dur:.9,vol:.02});nz({dur:.9,f0:1800,f1:700,type:'bandpass',q:8,vol:.04});}}   // crujido de cadena
 }
 // tren que pasa a lo lejos: retumbo grave que sube y baja yendo de un lado al otro, bocina de dos notas y traqueteo de ruedas
 function nightTrain(){

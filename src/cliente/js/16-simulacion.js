@@ -115,7 +115,7 @@ function updRemote(dt){
         m.b.rotation.x=Math.max(-.12,Math.min(.18,fwd*.014));m.b.rotation.z=Math.max(-.12,Math.min(.12,-side*.01));
       }else{m.legs[0].rotation.set(-.7,0,0);m.legs[1].rotation.set(.35,0,0);m.b.rotation.x=.08;}
       if(p.crouch){m.b.position.y-=.55;m.legs[0].rotation.x-=.9;m.legs[1].rotation.x-=.5;m.b.rotation.x+=.18;}
-      m.armL.rotation.x=ph*amp*.8*(p.onG?1:0)-(p.onG?0:.6);m.armR.rotation.x=-p.pitch*.8-(p.fire>0?.25:0);m.head.rotation.x=-p.pitch*.5;
+      rbPose(m,p.w,-p.pitch*.8-(p.fire>0?.25:0),ph*amp*.8*(p.onG?1:0)-(p.onG?0:.6));m.head.rotation.x=-p.pitch*.5;
       p.fire=(p.fire||0)-dt;p.pain=(p.pain||0)-dt;
       const em=p.pain>0?0x803020:p.quad?0x5020a0:0;m.mats.forEach(mm=>mm.emissive.setHex(em));
       if(m.gun.userData.w!==p.w){m.gun.clear();m.gun.add(tpGun(p.w));m.gun.userData.w=p.w;}

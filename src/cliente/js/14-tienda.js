@@ -143,7 +143,7 @@ function setSkin(p){for(const k in p){if(p[k]==null)delete S.skin[k];else S.skin
   });
 })();
 // ---------- Taquilla v2: pestañas por parte (la cámara se acerca sola), looks listos, aleatorio y restablecer ----------
-const LK_FOCO={cuerpo:[1,1.0],casco:[.42,1.74],pecho:[.5,1.45],brazos:[.62,1.36],piernas:[.62,.6],detalles:[.85,1.05]};
+const LK_FOCO={cuerpo:[1,1.0],casco:[.4,1.76],pecho:[.5,1.45],brazos:[.62,1.36],piernas:[.62,.6],detalles:[.85,1.05]};
 function lockTab(n,foco){
   [...$('lkTabs').children].forEach(b=>{const on=b.dataset.tab===n;b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1;});
   ['cuerpo','casco','pecho','brazos','piernas','detalles'].forEach(k=>$('lkP-'+k).hidden=k!==n);

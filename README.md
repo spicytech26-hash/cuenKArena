@@ -62,6 +62,8 @@ Desde el menú: color de armadura (o uno a elección), color de visor, accesorio
 
 ## Mira
 
+**Ajustes** está ordenado en secciones (Controles, Video, Audio, Mira y Juego). En **Controles** la sensibilidad se ajusta con el deslizador o escribiendo el valor exacto, la de la mira con zoom (francotirador) es aparte (1,00 = igual que sin mira), se puede invertir el eje vertical y hay una zona de prueba para ver cuánto gira la vista (click derecho = con zoom).
+
 En **Ajustes → Mira** hay 12 formas (cruz, cruz chica, cruz con punto, punto, círculo, círculo con punto, anillo punteado, horizontal, T, cruz hueca, equis y paréntesis), 8 colores o uno a elección y tamaño de 50 % a 250 %. Todas llevan un borde oscuro para verse sobre cualquier fondo.
 
 ## Cuentas, niveles y medallas

@@ -263,15 +263,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 .card.poor img{opacity:.45}
 .shopfoot{font-size:12px;color:var(--muted);letter-spacing:.06em}
 /* ---------- menú ---------- */
-#menu{position:fixed;inset:0;display:grid;place-items:center;background:rgba(8,6,5,.66);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px;overflow-y:auto}
-#menu::after{content:"";position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px)}
-.mbox{position:relative;z-index:1;max-width:660px;width:100%;display:flex;flex-direction:column;gap:14px}
 .kicker{font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--rust)}
-/* logo con los azules de la Universidad de la Cuenca del Plata */
-#mBy{margin:-4px 0 10px;font-family:var(--mono);font-size:15px;letter-spacing:.06em;color:var(--muted)}#mBy b{color:var(--ink);font-weight:800}
-#mTitle{margin:0;font-family:var(--display);font-weight:400;font-size:clamp(46px,12vw,104px);line-height:.88;color:#2f8cff;letter-spacing:.02em;text-shadow:0 5px 0 #071d45,0 0 44px rgba(40,130,255,.3)}
-#mTitle span{color:transparent;-webkit-text-stroke:2px #8fd0ff;text-shadow:none}
-#mTitle small{display:block;font-family:var(--mono);font-size:clamp(12px,1.6vw,16px);letter-spacing:.5em;color:#8fd0ff;text-shadow:none;margin:10px 0 0 4px;-webkit-text-stroke:0}
 #mSub{margin:0;font-size:16px;line-height:1.5;color:var(--ink);max-width:54ch}
 .idrow{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
 .idrow label{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
@@ -361,6 +353,122 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-
 body.noche #nvig{display:block;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 40%,rgba(0,0,0,.35) 72%,rgba(0,0,0,.72) 100%)}
 body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");animation:ngr .5s steps(5) infinite}
 @keyframes ngr{0%{transform:translate(0,0)}20%{transform:translate(-4%,3%)}40%{transform:translate(3%,-4%)}60%{transform:translate(-3%,-2%)}80%{transform:translate(4%,2%)}100%{transform:translate(0,0)}}
+
+/* ---------- menú de inicio · edición Halloween ---------- */
+#menu{--pump:#ff7a1a;--pump2:#ffb347;--blood2:#b3120b;--slime:#8dff3a;--witch:#9b4dff;
+  position:fixed;inset:0;display:flex;overflow-y:auto;overflow-x:hidden;
+  padding:clamp(14px,3vh,34px) max(16px,env(safe-area-inset-right,0px)) clamp(14px,3vh,34px) max(16px,env(safe-area-inset-left,0px));
+  background:radial-gradient(ellipse 70% 55% at 84% 6%,rgba(255,110,20,.22),transparent 60%),radial-gradient(ellipse 90% 70% at 8% 100%,rgba(110,30,170,.30),transparent 65%),linear-gradient(rgba(9,3,15,.80),rgba(5,2,9,.93))}
+#menu::after{content:"";position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 1px,transparent 1px 3px),radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%)}
+#mFx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+.mmoon{position:fixed;right:6vw;top:5vh;width:clamp(90px,15vw,200px);aspect-ratio:1;border-radius:50%;pointer-events:none;opacity:.5;
+  background:radial-gradient(circle at 62% 38%,rgba(120,30,0,.35) 0 7%,transparent 8%),radial-gradient(circle at 30% 60%,rgba(120,30,0,.3) 0 10%,transparent 11%),radial-gradient(circle at 35% 32%,#ffe2ae,#ff8a3a 55%,#a83306);
+  box-shadow:0 0 90px 24px rgba(255,120,30,.32);animation:moonP 7s ease-in-out infinite}
+.mfog{position:fixed;inset:0;pointer-events:none;opacity:.5;background:radial-gradient(ellipse 40% 18% at 20% 88%,rgba(190,150,255,.20),transparent),radial-gradient(ellipse 45% 16% at 75% 94%,rgba(160,255,160,.12),transparent),radial-gradient(ellipse 35% 14% at 50% 78%,rgba(200,170,255,.12),transparent);background-size:140% 100%;animation:fogD 38s ease-in-out infinite alternate}
+.mbox{position:relative;z-index:1;margin:auto;max-width:1180px;width:100%;display:flex;flex-direction:column;gap:clamp(14px,3vh,26px)}
+.mhead{display:flex;align-items:center;gap:clamp(12px,2vw,28px)}
+.memb{width:clamp(66px,10.5vw,138px);flex:none;filter:drop-shadow(0 0 18px rgba(255,120,20,.6));animation:floaty 5s ease-in-out infinite}
+.embface{animation:flick 3.1s steps(1) infinite;filter:drop-shadow(0 0 5px #ffcc33)}
+.mlogo{min-width:0}
+#menu .kicker{font-size:12px;letter-spacing:.34em;text-transform:uppercase;color:var(--pump);margin-bottom:8px;text-shadow:0 0 10px rgba(255,122,26,.5)}
+#mTitle{margin:0;font-weight:400;font-family:var(--display)}
+.mword{display:inline-block;position:relative;isolation:isolate;white-space:nowrap;font-size:clamp(40px,10.4vw,122px);line-height:.94;letter-spacing:.015em;
+  transform:perspective(900px) rotateX(9deg) skewX(-5deg);transform-origin:50% 100%;animation:lgJit 8s steps(1) infinite}
+.lg{position:relative;display:inline-block;-webkit-background-clip:text;background-clip:text;color:transparent}
+.lg::before{content:attr(data-t);position:absolute;left:0;top:0;z-index:-1;color:#000;-webkit-text-fill-color:#000;pointer-events:none}
+.lg1{background:linear-gradient(100deg,transparent 42%,rgba(255,255,255,.8) 50%,transparent 58%) 0 0/260% 100% no-repeat,linear-gradient(180deg,#fff8e3 0%,#e6d9b8 36%,#8c7e5d 56%,#d8cba6 68%,#695c42 100%);-webkit-text-stroke:2px #140803;animation:shine 6s ease-in-out infinite}
+.lg1::before{text-shadow:1px 1px 0 #2a1005,2px 2px 0 #2a1005,3px 3px 0 #2a1005,4px 4px 0 #1d0a03,5px 5px 0 #1d0a03,6px 6px 0 #1d0a03,7px 7px 0 #120502,8px 8px 0 #120502,0 0 46px rgba(255,90,0,.65)}
+.lg2{background:linear-gradient(100deg,transparent 42%,rgba(255,255,255,.8) 50%,transparent 58%) 0 0/260% 100% no-repeat,linear-gradient(180deg,#fff2a0 0%,#ffb12b 30%,#ff5a0a 62%,#c4160c 100%);-webkit-text-stroke:2px #2a0400;animation:shine 6s ease-in-out 1.2s infinite}
+.lg2::before{text-shadow:1px 1px 0 #4a0a02,2px 2px 0 #4a0a02,3px 3px 0 #3a0802,4px 4px 0 #3a0802,5px 5px 0 #2a0501,6px 6px 0 #2a0501,7px 7px 0 #1a0300,8px 8px 0 #1a0300,0 0 46px rgba(255,60,0,.75)}
+.drips{position:absolute;left:0;top:78%;width:100%;height:24%;overflow:visible;pointer-events:none;z-index:2}
+.dr{transform-box:fill-box;transform-origin:50% 0;animation:drip var(--t) ease-in-out var(--d) infinite alternate;filter:drop-shadow(0 0 3px rgba(255,30,10,.6))}
+#mTitle small{display:block;font-family:var(--mono);font-size:clamp(11px,1.5vw,16px);letter-spacing:.42em;color:var(--pump2);margin:clamp(10px,1.8vh,16px) 0 0 6px;text-shadow:0 0 12px rgba(255,122,26,.55)}
+#mTitle small i{color:var(--witch);font-style:normal}
+.mmain{display:grid;grid-template-columns:minmax(270px,350px) minmax(0,1fr);gap:clamp(16px,2.4vw,30px);align-items:start}
+.mnav{display:flex;flex-direction:column;gap:14px;min-width:0}
+.mpane{display:flex;flex-direction:column;gap:14px;min-width:0}
+#menu .idrow{display:flex;flex-direction:column;align-items:stretch;gap:5px}
+#menu .idrow label{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--muted)}
+#menu #pName{width:100%;font-family:var(--display);font-size:24px;letter-spacing:.04em;background:rgba(8,4,14,.85);color:var(--pump2);border:1px solid rgba(255,122,26,.35);border-left:5px solid var(--pump);box-shadow:inset 0 2px 10px rgba(0,0,0,.7);padding:7px 12px}
+#menu .mrow{display:flex;flex-direction:column;align-items:stretch;gap:9px}
+#menu .mrow .btn{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;text-transform:uppercase;font-family:var(--display);font-size:22px;letter-spacing:.05em;line-height:1.05;padding:12px 30px 12px 22px;color:var(--ink);
+  background:linear-gradient(100deg,rgba(46,22,66,.94),rgba(20,9,32,.94));border:0;border-left:6px solid #4a2f6b;box-shadow:none;clip-path:polygon(0 0,100% 0,calc(100% - 18px) 100%,0 100%);
+  transition:transform .15s,border-color .15s,background .15s,color .15s}
+#menu .mrow .btn::after{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--muted)}
+#bOnline::after{content:"Partida con otros jugadores"}
+#bOffline::after{content:"Vos contra los bots"}
+#bLocker::after{content:"Armadura, visor y accesorios"}
+#bSet::after{content:"Controles · video · audio · mira · juego"}
+#bLeave::after{content:"Volver al inicio"}
+#menu .mrow .btn:hover:not(:disabled),#menu .mrow .btn:focus-visible,#menu .mrow .btn[aria-expanded="true"]{transform:translateX(10px);border-left-color:var(--pump);background:linear-gradient(100deg,#5a230a,#2a1040);color:var(--pump2);text-shadow:0 0 12px rgba(255,122,26,.7)}
+#menu .mrow .btn.primary{font-size:30px;padding:17px 34px 17px 24px;color:#1a0600;background:linear-gradient(100deg,#ffa72e,#e4480a 72%,#b3120b);border-left-color:#ffe28a;animation:primP 2.6s ease-in-out infinite}
+#menu .mrow .btn.primary::after{color:rgba(26,6,0,.72)}
+#menu .mrow .btn.primary:hover:not(:disabled),#menu .mrow .btn.primary:focus-visible{background:linear-gradient(100deg,#ffc04a,#f25a14 72%,#c4160c);color:#1a0600;text-shadow:none;filter:brightness(1.08)}
+#menu .mrow .btn:disabled{opacity:.45;animation:none;transform:none}
+#menu button:focus-visible,#menu input:focus-visible{outline:2px solid var(--slime);outline-offset:3px}
+#menu .panel{position:relative;background:linear-gradient(rgba(36,18,52,.95),rgba(14,7,22,.96));border:1px solid rgba(255,122,26,.26);border-top:3px solid var(--pump);box-shadow:0 12px 44px rgba(0,0,0,.65),inset 0 0 44px rgba(120,40,180,.08);padding:16px 18px;gap:12px}
+#menu .ptitle{font-family:var(--display);font-size:15px;letter-spacing:.28em;text-transform:uppercase;color:var(--pump)}
+#menu .srow{grid-template-columns:minmax(150px,240px) minmax(0,1fr) auto}
+#menu .srow:has(input[type=checkbox]){grid-template-columns:minmax(0,1fr) auto}
+#menu .srow label small{display:block;margin-top:2px;font-size:11px;line-height:1.35;color:var(--muted)}
+#menu .srow output{min-width:52px;color:var(--pump2)}
+#menu .srow input[type=range],#menu .sensrow input[type=range]{accent-color:var(--pump)}
+#menu input[type=checkbox]{appearance:none;-webkit-appearance:none;position:relative;flex:none;width:46px;height:24px;margin:0;justify-self:end;border-radius:12px;background:#1a1027;border:1px solid #000;cursor:pointer;transition:background .15s}
+#menu input[type=checkbox]::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#7a6a90;transition:left .15s,background .15s}
+#menu input[type=checkbox]:checked{background:linear-gradient(90deg,#b34a0a,var(--pump))}
+#menu input[type=checkbox]:checked::after{left:24px;background:#fff3d0}
+#menu .numin{width:76px;font-family:var(--mono);font-size:14px;text-align:center;background:#120a1a;color:var(--pump2);border:1px solid rgba(255,122,26,.4);padding:5px 6px}
+#menu .seg button,#menu .stepper button{background:#150c1f;color:var(--muted)}
+#menu .seg button:hover,#menu .stepper button:hover{color:var(--ink)}
+#menu .seg button[aria-pressed="true"]{background:var(--pump);color:#1a0600}
+#menu .stepper output{color:var(--pump2)}
+#menu .sep{background:rgba(255,122,26,.18);box-shadow:none}
+.stabs{display:flex;flex-wrap:wrap;gap:2px;border-bottom:1px solid rgba(255,122,26,.25)}
+.stabs button{font-family:var(--display);font-size:16px;letter-spacing:.07em;text-transform:uppercase;padding:8px 14px;background:none;border:0;border-bottom:3px solid transparent;margin-bottom:-1px;color:var(--muted);cursor:pointer}
+.stabs button:hover{color:var(--ink)}
+.stabs button[aria-selected="true"]{color:var(--pump2);border-bottom-color:var(--pump)}
+.sec{display:flex;flex-direction:column;gap:14px;padding-top:6px}
+.sensbox{display:flex;flex-direction:column;gap:10px;padding:12px 14px;background:rgba(0,0,0,.28);border:1px solid rgba(255,122,26,.18)}
+.sensh{font-family:var(--display);font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--pump2)}
+.sensrow{display:grid;grid-template-columns:minmax(110px,170px) minmax(0,1fr) auto;align-items:center;gap:10px;font-size:14px}
+.sensrow label small{display:block;font-size:11px;color:var(--muted)}
+#sensInfo{font-family:var(--mono);font-size:12px;line-height:1.6}
+#sensInfo b{color:var(--pump2);font-weight:400}
+#sensPad{position:relative;height:100px;overflow:hidden;cursor:crosshair;user-select:none;border:1px solid rgba(255,122,26,.35);background-color:#0d0714;
+  background-image:repeating-linear-gradient(90deg,rgba(255,177,43,.6) 0 2px,transparent 2px 60px),repeating-linear-gradient(90deg,rgba(255,177,43,.2) 0 1px,transparent 1px 15px),repeating-linear-gradient(0deg,rgba(255,177,43,.16) 0 1px,transparent 1px 24px);
+  background-size:60px 100%,15px 100%,100% 24px;background-position:var(--px,0) 0,var(--px,0) 0,0 var(--py,0)}
+#sensPad::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--slime);opacity:.7}
+#sensPad.zoom{border-color:var(--witch);box-shadow:inset 0 0 0 2px rgba(155,77,255,.35)}
+.padTop{position:absolute;left:10px;right:10px;top:6px;z-index:1;display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:var(--pump2)}
+.padTop b{font-weight:400;color:var(--slime)}
+.padHint{position:absolute;left:0;right:0;bottom:6px;z-index:1;text-align:center;font-size:11px;color:var(--muted);pointer-events:none}
+#menu .modes{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+#menu .mcard{background:linear-gradient(#1c1028,#0f0816);border:1px solid rgba(255,255,255,.09);box-shadow:0 5px 0 rgba(0,0,0,.6);transition:transform .15s,border-color .15s}
+#menu .mcard:hover,#menu .mcard:focus-visible{transform:translateY(-4px);background:linear-gradient(#26143a,#140a1e);border-color:var(--acc);box-shadow:0 12px 28px rgba(0,0,0,.6),0 0 0 1px var(--acc)}
+.mcard .mi{display:flex;gap:4px;margin-top:2px}
+.mcard .mi img{flex:1;min-width:0;aspect-ratio:16/10;object-fit:cover;opacity:.7;border:1px solid #000;transition:opacity .15s}
+.mcard:hover .mi img{opacity:1}
+.mapseg{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;width:100%}
+#menu .srow:has(.mapseg){grid-template-columns:minmax(0,1fr)}
+#menu .srow .mapseg{grid-column:1}
+.mapseg button{display:flex;flex-direction:column;gap:5px;padding:0 0 6px;overflow:hidden;font-size:12px;text-align:center;border:1px solid #000!important}
+.mapseg img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;opacity:.65;transition:opacity .15s}
+.mapseg button:hover img,.mapseg button[aria-pressed="true"] img{opacity:1}
+#menu .keys{padding:14px 16px;background:rgba(10,5,16,.62);border:1px solid rgba(255,255,255,.07)}
+#menu .keys kbd{background:#2a1740;color:var(--pump2)}
+.mpane:has(.panel:not([hidden])) .keys{display:none}
+#menu .legal{text-align:center}
+@keyframes lgJit{0%,93%,100%{transform:perspective(900px) rotateX(9deg) skewX(-5deg)}94%{transform:perspective(900px) rotateX(9deg) skewX(-7deg) translate(3px,-1px)}96%{transform:perspective(900px) rotateX(9deg) skewX(-3deg) translate(-3px,1px)}98%{transform:perspective(900px) rotateX(9deg) skewX(-5deg) translate(1px,0)}}
+@keyframes shine{0%,35%{background-position:160% 0,0 0}75%,100%{background-position:-60% 0,0 0}}
+@keyframes drip{from{transform:scaleY(.3)}to{transform:scaleY(1)}}
+@keyframes floaty{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-8px) rotate(2deg)}}
+@keyframes flick{0%,100%{opacity:1}20%{opacity:.78}22%{opacity:1}60%{opacity:.88}64%{opacity:1}}
+@keyframes moonP{0%,100%{opacity:.42}50%{opacity:.62}}
+@keyframes fogD{from{background-position:0 0}to{background-position:70% 0}}
+@keyframes primP{0%,100%{filter:brightness(1)}50%{filter:brightness(1.14)}}
+@media (max-width:900px){.mmain{grid-template-columns:minmax(0,1fr)}#menu .mrow .btn.primary{font-size:26px}}
+@media (max-width:620px){.mhead{flex-direction:column;align-items:flex-start}.sensrow{grid-template-columns:minmax(0,1fr) auto}.sensrow input[type=range]{grid-column:1 / 3;grid-row:2}}
+@media (prefers-reduced-motion:reduce){#menu *,.mmoon,.mfog{animation:none!important}}
 </style>
 
 <canvas id="c"></canvas>
@@ -452,91 +560,154 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
   </div>
 </div>
 <div id="menu">
+  <canvas id="mFx" aria-hidden="true"></canvas>
+  <div class="mmoon" aria-hidden="true"></div>
+  <div class="mfog" aria-hidden="true"></div>
   <div class="mbox">
-    <div class="kicker" id="mKick">Arena · Gungame · Team Deathmatch · Captura la bandera</div>
-    <h1 id="mTitle">CUENK<span>ARENA</span><small>SNIPER UPDATE</small></h1>
-    <div id="acctBox" hidden></div>
-    <div class="idrow"><label for="pName">Tu nombre</label><input id="pName" maxlength="16" autocomplete="off" spellcheck="false"></div>
-    <div class="mrow">
-      <button id="bOnline" class="btn primary" type="button" disabled>Jugar online</button>
-      <button id="bOffline" class="btn" type="button">Práctica con bots</button>
-      <button id="bLocker" class="btn" type="button" aria-expanded="false" aria-controls="lockerPanel">Taquilla</button>
-      <button id="bSet" class="btn" type="button" aria-expanded="false" aria-controls="settings">Ajustes</button>
-      <button id="bLeave" class="btn" type="button" hidden>Salir de la partida</button>
-    </div>
-    <div id="kickNote" role="status" aria-live="polite" hidden><div class="kt"></div><div class="ks"></div><button type="button" aria-label="Cerrar">×</button></div>
-    <details id="kickPanel" hidden>
-      <summary>Votar para echar a alguien</summary>
-      <div class="kRow"><select id="kickSel" aria-label="Jugador"></select><button type="button" id="bKick">Votar</button></div>
-      <div class="kNote">Pasa si vota que sí más de la mitad de los demás (Y sí · N no). La 1ª vez el echado puede volver; la 2ª no entra hasta que termine la partida.</div>
-    </details>
-    <div id="modePanel" class="panel" hidden>
-      <div class="ptitle" id="modeTitle">Elegí el modo</div>
-      <div class="srow" id="modeLimitRow"><span>Bajas para ganar (Team Deathmatch)</span><div class="seg" id="mLimit" role="group" aria-label="Bajas para ganar"><button type="button" data-v="25">25</button><button type="button" data-v="50">50</button><button type="button" data-v="75">75</button><button type="button" data-v="100">100</button><input type="number" id="mLimitN" min="5" max="500" step="1" aria-label="Otra cantidad" style="width:70px;font-family:var(--mono);font-size:14px;background:#120e0b;color:var(--ink);border:1px solid #000;padding:5px 6px"></div></div>
-      <div class="srow" id="modeSkillRow"><span>Dificultad de los bots</span><div class="seg" id="mSkill" role="group" aria-label="Dificultad de los bots"><button type="button" data-v="0">Fácil</button><button type="button" data-v="1">Normal</button><button type="button" data-v="2">Difícil</button><button type="button" data-v="3">Pesadilla</button></div></div>
-      <div class="modes" id="modeGrid"></div>
-      <p class="note" id="modeNote"></p>
-    </div>
-    <div id="netNote"><span class="dot" id="netDot"></span><span id="netTxt">Buscando servidor…</span></div>
-    <div id="limitPanel" class="panel" hidden>
-      <div class="ptitle">Team Deathmatch · bajas para ganar</div>
-      <div class="srow"><span>Límite del equipo</span><div class="seg" id="pLimit" role="group" aria-label="Bajas para ganar"><button type="button" data-v="25">25</button><button type="button" data-v="50">50</button><button type="button" data-v="75">75</button><button type="button" data-v="100">100</button><input type="number" id="pLimitN" min="5" max="500" step="1" aria-label="Otra cantidad" style="width:70px;font-family:var(--mono);font-size:14px;background:#120e0b;color:var(--ink);border:1px solid #000;padding:5px 6px"></div></div>
-      <p class="note">Se puede cambiar mientras esperan jugadores. Cuando arranca la partida queda fijo.</p>
-    </div>
-    <div id="lockerPanel" class="panel" hidden>
-      <div class="ptitle">Taquilla</div>
-      <div class="locker">
-        <canvas id="lockPrev" width="440" height="520"></canvas>
-        <div class="lockopts">
-          <div class="lab">Armadura</div><div class="sw-row" id="swBody"></div>
-          <div class="lab">Visor</div><div class="sw-row" id="swVisor"></div>
-          <div class="lab">Accesorio</div><div class="seg" id="segAcc" role="group" aria-label="Accesorio" style="grid-column:auto"></div>
-          <div class="lab">Imagen en el pecho</div>
-          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-            <img id="chestPrev" alt="Imagen del pecho" width="56" height="56" style="width:56px;height:56px;border:1px solid #000;background:#2e2a26;object-fit:cover" hidden>
-            <label class="btn" for="chestFile" style="cursor:pointer">Elegir foto…</label>
-            <input type="file" id="chestFile" accept="image/png,image/jpeg,image/webp" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
-            <button type="button" class="btn" id="chestDel" hidden>Quitar</button>
-          </div>
-          <p class="note" id="chestNote" style="margin:0">PNG o JPG. Se recorta cuadrada al centro y cubre todo el pecho.</p>
-          <p class="note">Los cambios se guardan solos. Si estás en una partida online, los demás te ven así al instante.</p>
-        </div>
+    <header class="mhead">
+      <svg class="memb" viewBox="0 0 120 120" aria-hidden="true">
+        <defs>
+          <radialGradient id="embG" cx="50%" cy="55%" r="55%"><stop offset="0" stop-color="#ff8a1f" stop-opacity=".55"/><stop offset="1" stop-color="#ff5a00" stop-opacity="0"/></radialGradient>
+          <linearGradient id="embP" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb347"/><stop offset=".55" stop-color="#ff7a1a"/><stop offset="1" stop-color="#b83a08"/></linearGradient>
+          <linearGradient id="embS" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6b727c"/><stop offset=".5" stop-color="#d8dde3"/><stop offset="1" stop-color="#6b727c"/></linearGradient>
+        </defs>
+        <circle cx="60" cy="62" r="58" fill="url(#embG)"/>
+        <g stroke="#0a0508" stroke-width="2.5" stroke-linejoin="round">
+          <g transform="rotate(45 60 62)"><rect x="55.5" y="2" width="9" height="112" fill="url(#embS)"/><rect x="46" y="86" width="28" height="6" fill="#3b1d12"/></g>
+          <g transform="rotate(-45 60 62)"><rect x="55.5" y="2" width="9" height="112" fill="url(#embS)"/><rect x="46" y="86" width="28" height="6" fill="#3b1d12"/></g>
+          <ellipse cx="38" cy="68" rx="21" ry="28" fill="url(#embP)"/>
+          <ellipse cx="82" cy="68" rx="21" ry="28" fill="url(#embP)"/>
+          <ellipse cx="60" cy="66" rx="25" ry="31" fill="url(#embP)"/>
+          <path d="M56 36 C56 28 60 24 66 20 L70 24 C66 27 64 31 64 36 Z" fill="#4b7a1d"/>
+        </g>
+        <g class="embface" fill="#ffe36a">
+          <polygon points="42,60 56,60 49,46"/><polygon points="64,60 78,60 71,46"/>
+          <polygon points="60,66 55,75 65,75"/>
+          <path d="M37 80 L46 75 L52 84 L60 76 L68 84 L74 75 L83 80 L78 93 L70 88 L64 97 L58 89 L52 97 L46 88 L42 93 Z"/>
+        </g>
+      </svg>
+      <div class="mlogo">
+        <div class="kicker" id="mKick">Arena · Gungame · Team Deathmatch · Captura la bandera</div>
+        <h1 id="mTitle" aria-label="CuenkArena"><span class="mword" aria-hidden="true"><span class="lg lg1" data-t="CUENK">CUENK</span><span class="lg lg2" data-t="ARENA">ARENA</span>
+          <svg class="drips" viewBox="0 0 1000 80" preserveAspectRatio="none"><g fill="#b3120b">
+            <path class="dr" style="--d:0s;--t:5.2s" d="M70 0h14v46a7 7 0 0 1-14 0z"/><path class="dr" style="--d:1.3s;--t:6.4s" d="M205 0h10v30a5 5 0 0 1-10 0z"/>
+            <path class="dr" style="--d:.6s;--t:4.8s" d="M330 0h16v58a8 8 0 0 1-16 0z"/><path class="dr" style="--d:2.1s;--t:6s" d="M470 0h10v26a5 5 0 0 1-10 0z"/>
+            <path class="dr" style="--d:.2s;--t:5.6s" d="M590 0h14v40a7 7 0 0 1-14 0z"/><path class="dr" style="--d:1.7s;--t:4.6s" d="M720 0h10v34a5 5 0 0 1-10 0z"/>
+            <path class="dr" style="--d:.9s;--t:6.2s" d="M850 0h16v54a8 8 0 0 1-16 0z"/><path class="dr" style="--d:2.6s;--t:5s" d="M940 0h10v24a5 5 0 0 1-10 0z"/>
+          </g></svg></span><small>HALLOWEEN UPDATE <i>·</i> NOCHE DE BRUJAS</small></h1>
       </div>
-    </div>
-    <div id="settings" class="panel" hidden>
-      <div class="ptitle">Controles</div>
-      <div class="srow"><label for="sSens">Sensibilidad del mouse</label><input type="range" id="sSens" min="0.1" max="4" step="0.05"><output id="oSens"></output></div>
-      <div class="srow"><label for="sFov">Campo de visión</label><input type="range" id="sFov" min="70" max="120" step="1"><output id="oFov"></output></div>
-      <div class="srow"><label for="sVol">Volumen</label><input type="range" id="sVol" min="0" max="1" step="0.05"><output id="oVol"></output></div>
-      <div class="srow"><label for="sMus">Música del boliche</label><input type="range" id="sMus" min="0" max="1" step="0.05"><output id="oMus"></output></div>
-      <div class="srow"><label for="sInv">Invertir eje vertical</label><input type="checkbox" id="sInv"></div>
-      <div class="srow"><label for="sHop">Salto automático (bunny hop)</label><input type="checkbox" id="sHop"></div>
-      <div class="sep"></div>
-      <div class="ptitle">Mira</div>
-      <div class="srow"><span>Forma</span><div class="xhgrid" id="xhGrid" role="group" aria-label="Forma de la mira"></div></div>
-      <div class="srow"><span>Color</span><div class="sw-row" id="xhCols" style="grid-column:2 / 4"></div></div>
-      <div class="srow"><label for="sXz">Tamaño</label><input type="range" id="sXz" min="0.5" max="2.5" step="0.05"><output id="oXz"></output></div>
-      <div class="srow"><span>Vista previa</span><div id="xhPrev"><div id="xhPrevIn"></div></div></div>
-      <div class="sep"></div>
-      <div class="srow"><label for="sFps">Mostrar FPS (cuadros por segundo)</label><input type="checkbox" id="sFps"></div>
-      <div class="srow"><label for="sImg">Ver las imágenes que los demás tienen en el pecho</label><input type="checkbox" id="sImg"></div>
-      <div class="srow"><label for="sFs">Pantalla completa al jugar (permite agacharse con Ctrl sin que el navegador cierre la pestaña)</label><input type="checkbox" id="sFs"></div>
-      <div class="srow"><span>Sombras</span><div class="seg" id="sSh" role="group" aria-label="Sombras"><button type="button" data-v="1">Sí</button><button type="button" data-v="0">No</button></div></div>
-      <div class="srow"><span>Calidad gráfica</span><div class="seg" id="sQ" role="group" aria-label="Calidad"><button type="button" data-v="1">Alta</button><button type="button" data-v="0">Liviana</button></div></div>
-      <div class="sep"></div>
-      <div class="ptitle">Práctica con bots</div>
-      <div class="srow"><span>Mapa</span><div class="seg" id="sMap" role="group" aria-label="Mapa"><button type="button" data-v="represa">La Represa</button><button type="button" data-v="panymanteca">Humita</button><button type="button" data-v="lacuenca">La Cuenca</button></div></div>
-      <div class="srow"><span>Bots en la arena</span><div class="stepper"><button type="button" id="bMinus" aria-label="Sacar un bot">−</button><output id="oBots"></output><button type="button" id="bPlus" aria-label="Agregar un bot">+</button></div></div>
-      <div class="srow"><span>Dificultad</span><div class="seg" id="sSkill" role="group" aria-label="Dificultad"><button type="button" data-v="0">Fácil</button><button type="button" data-v="1">Normal</button><button type="button" data-v="2">Difícil</button><button type="button" data-v="3">Pesadilla</button></div></div>
-      <div class="srow"><span>Límite de frags</span><div class="seg" id="sFl" role="group" aria-label="Límite de frags"><button type="button" data-v="10">10</button><button type="button" data-v="20">20</button><button type="button" data-v="30">30</button><button type="button" data-v="50">50</button></div></div>
-      <p class="note">El mapa vale para Arena, Gungame y Team Deathmatch; Captura la bandera se juega en El Puente. En la práctica, los bots se agregan o sacan al instante con <b>+</b> y <b>−</b>. Online, desde el chat: <b>/bots 6</b>, <b>/skill 2</b>, <b>/fraglimit 30</b>, <b>/caplimit 3</b>, <b>/map pan</b>.</p>
-    </div>
-    <div class="keys" id="mKeys">
-      <kbd>W A S D</kbd><span>moverse</span><kbd>Espacio</kbd><span>saltar (mantené para bunny hop)</span>
-      <kbd>Click</kbd><span>disparar (click derecho: mira del francotirador)</span><kbd>1 · 2 · 3 · 4</kbd><span>arma principal · pistola · cuchillo · molotov · Q arma anterior · E agarrar arma del piso · F inspeccionar · R recargar</span>
-      <kbd>Ctrl · C</kbd><span>agacharse (saltá y agachate para pasar por ventanas)</span>
-      <kbd>B</kbd><span>tienda</span><kbd>Tab</kbd><span>tabla de frags</span>
-      <kbd>T · Enter</kbd><span>chat</span><kbd>Esc</kbd><span>menú</span>
+    </header>
+    <div class="mmain">
+      <nav class="mnav" aria-label="Menú principal">
+        <div id="acctBox" hidden></div>
+        <div class="idrow"><label for="pName">Tu nombre</label><input id="pName" maxlength="16" autocomplete="off" spellcheck="false"></div>
+        <div class="mrow">
+          <button id="bOnline" class="btn primary" type="button" disabled>Jugar online</button>
+          <button id="bOffline" class="btn" type="button">Práctica con bots</button>
+          <button id="bLocker" class="btn" type="button" aria-expanded="false" aria-controls="lockerPanel">Taquilla</button>
+          <button id="bSet" class="btn" type="button" aria-expanded="false" aria-controls="settings">Ajustes</button>
+          <button id="bLeave" class="btn" type="button" hidden>Salir de la partida</button>
+        </div>
+        <div id="kickNote" role="status" aria-live="polite" hidden><div class="kt"></div><div class="ks"></div><button type="button" aria-label="Cerrar">×</button></div>
+        <details id="kickPanel" hidden>
+          <summary>Votar para echar a alguien</summary>
+          <div class="kRow"><select id="kickSel" aria-label="Jugador"></select><button type="button" id="bKick">Votar</button></div>
+          <div class="kNote">Pasa si vota que sí más de la mitad de los demás (Y sí · N no). La 1ª vez el echado puede volver; la 2ª no entra hasta que termine la partida.</div>
+        </details>
+        <div id="netNote"><span class="dot" id="netDot"></span><span id="netTxt">Buscando servidor…</span></div>
+      </nav>
+      <section class="mpane">
+        <div id="modePanel" class="panel" hidden>
+          <div class="ptitle" id="modeTitle">Elegí el modo</div>
+          <div class="srow" id="modeLimitRow"><span>Bajas para ganar (Team Deathmatch)</span><div class="seg" id="mLimit" role="group" aria-label="Bajas para ganar"><button type="button" data-v="25">25</button><button type="button" data-v="50">50</button><button type="button" data-v="75">75</button><button type="button" data-v="100">100</button><input type="number" id="mLimitN" class="numin" min="5" max="500" step="1" aria-label="Otra cantidad"></div></div>
+          <div class="srow" id="modeSkillRow"><span>Dificultad de los bots</span><div class="seg" id="mSkill" role="group" aria-label="Dificultad de los bots"><button type="button" data-v="0">Fácil</button><button type="button" data-v="1">Normal</button><button type="button" data-v="2">Difícil</button><button type="button" data-v="3">Pesadilla</button></div></div>
+          <div class="modes" id="modeGrid"></div>
+          <p class="note" id="modeNote"></p>
+        </div>
+        <div id="limitPanel" class="panel" hidden>
+          <div class="ptitle">Team Deathmatch · bajas para ganar</div>
+          <div class="srow"><span>Límite del equipo</span><div class="seg" id="pLimit" role="group" aria-label="Bajas para ganar"><button type="button" data-v="25">25</button><button type="button" data-v="50">50</button><button type="button" data-v="75">75</button><button type="button" data-v="100">100</button><input type="number" id="pLimitN" class="numin" min="5" max="500" step="1" aria-label="Otra cantidad"></div></div>
+          <p class="note">Se puede cambiar mientras esperan jugadores. Cuando arranca la partida queda fijo.</p>
+        </div>
+        <div id="lockerPanel" class="panel" hidden>
+          <div class="ptitle">Taquilla</div>
+          <div class="locker">
+            <canvas id="lockPrev" width="440" height="520"></canvas>
+            <div class="lockopts">
+              <div class="lab">Armadura</div><div class="sw-row" id="swBody"></div>
+              <div class="lab">Visor</div><div class="sw-row" id="swVisor"></div>
+              <div class="lab">Accesorio</div><div class="seg" id="segAcc" role="group" aria-label="Accesorio" style="grid-column:auto"></div>
+              <div class="lab">Imagen en el pecho</div>
+              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                <img id="chestPrev" alt="Imagen del pecho" width="56" height="56" style="width:56px;height:56px;border:1px solid #000;background:#2e2a26;object-fit:cover" hidden>
+                <label class="btn" for="chestFile" style="cursor:pointer">Elegir foto…</label>
+                <input type="file" id="chestFile" accept="image/png,image/jpeg,image/webp" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
+                <button type="button" class="btn" id="chestDel" hidden>Quitar</button>
+              </div>
+              <p class="note" id="chestNote" style="margin:0">PNG o JPG. Se recorta cuadrada al centro y cubre todo el pecho.</p>
+              <p class="note">Los cambios se guardan solos. Si estás en una partida online, los demás te ven así al instante.</p>
+            </div>
+          </div>
+        </div>
+        <div id="settings" class="panel" hidden>
+          <div class="ptitle">Ajustes</div>
+          <div class="stabs" id="sTabs" role="tablist" aria-label="Secciones de los ajustes">
+            <button type="button" role="tab" data-tab="ctl" aria-selected="true">Controles</button>
+            <button type="button" role="tab" data-tab="vid" aria-selected="false">Video</button>
+            <button type="button" role="tab" data-tab="aud" aria-selected="false">Audio</button>
+            <button type="button" role="tab" data-tab="mir" aria-selected="false">Mira</button>
+            <button type="button" role="tab" data-tab="jue" aria-selected="false">Juego</button>
+          </div>
+          <div class="sec" data-sec="ctl">
+            <div class="sensbox">
+              <div class="sensh">Sensibilidad del mouse</div>
+              <div class="sensrow"><label for="sSens">Normal</label><input type="range" id="sSens" min="0.1" max="4" step="0.05"><input type="number" id="sSensN" class="numin" min="0.05" max="10" step="0.01" aria-label="Sensibilidad normal, valor exacto"></div>
+              <div class="sensrow"><label for="sSensZ">Con zoom <small>francotirador</small></label><input type="range" id="sSensZ" min="0.2" max="3" step="0.05"><input type="number" id="sSensZN" class="numin" min="0.1" max="5" step="0.01" aria-label="Sensibilidad con zoom, valor exacto"></div>
+              <p class="note" id="sensInfo"></p>
+              <div id="sensPad" aria-label="Zona de prueba de sensibilidad">
+                <div class="padTop"><span id="padMode">Normal</span><b id="padDeg">0°</b></div>
+                <div class="padHint">Mové el mouse acá · mantené click derecho para probar con zoom</div>
+              </div>
+            </div>
+            <div class="srow"><label for="sInv">Invertir eje vertical<small>Mouse hacia arriba = mirar hacia abajo</small></label><input type="checkbox" id="sInv"></div>
+            <div class="srow"><label for="sHop">Salto automático (bunny hop)<small>Mantené Espacio para seguir saltando</small></label><input type="checkbox" id="sHop"></div>
+          </div>
+          <div class="sec" data-sec="vid" hidden>
+            <div class="srow"><label for="sFov">Campo de visión</label><input type="range" id="sFov" min="70" max="120" step="1"><output id="oFov"></output></div>
+            <div class="srow"><span>Calidad gráfica</span><div class="seg" id="sQ" role="group" aria-label="Calidad"><button type="button" data-v="1">Alta</button><button type="button" data-v="0">Liviana</button></div></div>
+            <div class="srow"><span>Sombras</span><div class="seg" id="sSh" role="group" aria-label="Sombras"><button type="button" data-v="1">Sí</button><button type="button" data-v="0">No</button></div></div>
+            <div class="srow"><label for="sFps">Mostrar FPS<small>Cuadros por segundo, arriba en pantalla</small></label><input type="checkbox" id="sFps"></div>
+            <div class="srow"><label for="sFs">Pantalla completa al jugar<small>Permite agacharse con Ctrl sin que el navegador cierre la pestaña</small></label><input type="checkbox" id="sFs"></div>
+          </div>
+          <div class="sec" data-sec="aud" hidden>
+            <div class="srow"><label for="sVol">Volumen general</label><input type="range" id="sVol" min="0" max="1" step="0.05"><output id="oVol"></output></div>
+            <div class="srow"><label for="sMus">Música del boliche</label><input type="range" id="sMus" min="0" max="1" step="0.05"><output id="oMus"></output></div>
+          </div>
+          <div class="sec" data-sec="mir" hidden>
+            <div class="srow"><span>Forma</span><div class="xhgrid" id="xhGrid" role="group" aria-label="Forma de la mira"></div></div>
+            <div class="srow"><span>Color</span><div class="sw-row" id="xhCols" style="grid-column:2 / 4"></div></div>
+            <div class="srow"><label for="sXz">Tamaño</label><input type="range" id="sXz" min="0.5" max="2.5" step="0.05"><output id="oXz"></output></div>
+            <div class="srow"><span>Vista previa</span><div id="xhPrev"><div id="xhPrevIn"></div></div></div>
+          </div>
+          <div class="sec" data-sec="jue" hidden>
+            <div class="srow"><label for="sImg">Imágenes del pecho<small>Ver las que los demás tienen puestas</small></label><input type="checkbox" id="sImg"></div>
+            <div class="sep"></div>
+            <div class="ptitle">Práctica con bots</div>
+            <div class="srow"><span>Mapa</span><div class="seg mapseg" id="sMap" role="group" aria-label="Mapa"><button type="button" data-v="represa">La Represa</button><button type="button" data-v="panymanteca">Humita</button><button type="button" data-v="lacuenca">La Cuenca</button></div></div>
+            <div class="srow"><span>Bots en la arena</span><div class="stepper"><button type="button" id="bMinus" aria-label="Sacar un bot">−</button><output id="oBots"></output><button type="button" id="bPlus" aria-label="Agregar un bot">+</button></div></div>
+            <div class="srow"><span>Dificultad</span><div class="seg" id="sSkill" role="group" aria-label="Dificultad"><button type="button" data-v="0">Fácil</button><button type="button" data-v="1">Normal</button><button type="button" data-v="2">Difícil</button><button type="button" data-v="3">Pesadilla</button></div></div>
+            <div class="srow"><span>Límite de frags</span><div class="seg" id="sFl" role="group" aria-label="Límite de frags"><button type="button" data-v="10">10</button><button type="button" data-v="20">20</button><button type="button" data-v="30">30</button><button type="button" data-v="50">50</button></div></div>
+            <p class="note">El mapa vale para Arena, Gungame y Team Deathmatch; Captura la bandera se juega en El Puente. En la práctica, los bots se agregan o sacan al instante con <b>+</b> y <b>−</b>. Online, desde el chat: <b>/bots 6</b>, <b>/skill 2</b>, <b>/fraglimit 30</b>, <b>/caplimit 3</b>, <b>/map pan</b>.</p>
+          </div>
+        </div>
+        <div class="keys" id="mKeys">
+          <kbd>W A S D</kbd><span>moverse</span><kbd>Espacio</kbd><span>saltar (mantené para bunny hop)</span>
+          <kbd>Click</kbd><span>disparar (click derecho: mira del francotirador)</span><kbd>1 · 2 · 3 · 4</kbd><span>arma principal · pistola · cuchillo · molotov · Q arma anterior · E agarrar arma del piso · F inspeccionar · R recargar</span>
+          <kbd>Ctrl · C</kbd><span>agacharse (saltá y agachate para pasar por ventanas)</span>
+          <kbd>B</kbd><span>tienda</span><kbd>Tab</kbd><span>tabla de frags</span>
+          <kbd>T · Enter</kbd><span>chat</span><kbd>Esc</kbd><span>menú</span>
+        </div>
+      </section>
     </div>
     <p class="legal"><a href="/privacidad.html" target="_blank" rel="noopener">Privacidad</a> · <a href="/terminos.html" target="_blank" rel="noopener">Condiciones</a> · <a href="editor.html" target="_blank" rel="noopener">Editor de mapas</a></p>
   </div>
@@ -559,12 +730,14 @@ const liveState=()=>matchState==='play'||matchState==='lobby'||matchState==='cou
 const GG=C.GG,TEAMS=C.TEAMS;
 
 /* =================== AJUSTES =================== */
-const S={sens:1,fov:95,vol:.5,music:.45,invY:false,hop:true,name:'',skin:{c:C.COLORS[0],v:'#ffffff',a:0},bots:5,skill:1,fl:20,map:'represa',q:1,mode:'arena',tdmLimit:50,fs:true,showImg:true,mira:{s:'cruz',c:'#ffffff',z:1}};
+const S={sens:1,sensZ:1,fov:95,vol:.5,music:.45,invY:false,hop:true,name:'',skin:{c:C.COLORS[0],v:'#ffffff',a:0},bots:5,skill:1,fl:20,map:'represa',q:1,mode:'arena',tdmLimit:50,fs:true,showImg:true,mira:{s:'cruz',c:'#ffffff',z:1}};
 try{const saved=JSON.parse(localStorage.getItem('cuenk_settings')||'{}');if(saved.color&&!saved.skin)saved.skin={c:saved.color,v:'#ffffff',a:0};Object.assign(S,saved);}catch(e){}
 if(S.map==='sagrado'||S.map==='salvaje')S.map='panymanteca';
 // mapa del editor: se juega solo en esta pestaña; si el mapa guardado ya no existe se vuelve a La Represa
 const EDITOR_MAP=self.CK_MAPA_EDITOR&&C.MAPS[self.CK_MAPA_EDITOR.id]?self.CK_MAPA_EDITOR.id:null;
 if(!C.MAPS[S.map])S.map='represa';
+// sensibilidad con zoom (ajuste nuevo): los jugadores que ya tenían ajustes guardados arrancan en 1 = igual que antes
+if(!(S.sensZ>0))S.sensZ=1;
 if(!S.mira||typeof S.mira!=='object')S.mira={s:'cruz',c:'#ffffff',z:1};
 if(!S.skin||typeof S.skin!=='object')S.skin={c:C.COLORS[0],v:'#ffffff',a:0};
 // identificador al azar de este navegador (solo sirve para que un jugador echado por votación no vuelva enseguida)
@@ -3004,7 +3177,8 @@ document.addEventListener('mousemove',e=>{
   if(!me.alive){spLook(e.movementX,e.movementY);return;}
   if(mouseSpike(e.movementX,e.movementY))return;
   // con mira, la sensibilidad baja en proporción al zoom: el movimiento en pantalla se siente igual que sin mira
-  const sc=me.scope&&WEAPONS[me.w].scope?Math.tan((WEAPONS[me.w].zoom||22)*Math.PI/360)/Math.tan(S.fov*Math.PI/360):1;
+  // S.sensZ (Ajustes → Controles) es un multiplicador extra para la mira; 1 = como siempre
+  const sc=me.scope&&WEAPONS[me.w].scope?Math.tan((WEAPONS[me.w].zoom||22)*Math.PI/360)/Math.tan(S.fov*Math.PI/360)*(S.sensZ>0?S.sensZ:1):1;
   const k=.0022*S.sens*sc;me.yaw-=e.movementX*k;me.pitch=Math.max(-1.55,Math.min(1.55,me.pitch-e.movementY*k*(S.invY?-1:1)));
 });
 addEventListener('wheel',e=>{if(inGame&&$('menu').hidden&&$('shop').hidden&&!chatOpen&&Math.abs(e.deltaY)>2)cycleWeapon(e.deltaY>0?1:-1);},{passive:true});
@@ -4024,10 +4198,72 @@ async function glbCargar(){let man;try{const r=await fetch('modelos/modelos.json
       if(tipo==='armas')glbArma(+k);else if(level)for(const o of level.items)if(o.ty===k){o.ty=null;setItemType(o,k);}
       ok();},undefined,e=>{console.warn('Modelo '+c.archivo+' no cargó',e);ok();});})));}
 glbCargar();
+/* =================== MENÚ · FONDO ANIMADO (brasas, murciélagos y relámpagos lejanos) =================== */
+// Se dibuja solo mientras el menú está abierto: al cerrarlo el bucle se corta solo y showMenu() lo vuelve a arrancar.
+let mFxOn=false;
+function mFxGo(){
+  const cv=$('mFx');
+  if(mFxOn||!cv||(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches))return;
+  const g=cv.getContext('2d');if(!g)return;
+  mFxOn=true;
+  let w=0,h=0,last=performance.now(),flash=0,nextFlash=last+5000+Math.random()*7000,nextBat=last+1500;
+  const em=[],bats=[];
+  function size(){
+    const dpr=Math.min(1.5,window.devicePixelRatio||1);w=cv.clientWidth;h=cv.clientHeight;
+    cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);g.setTransform(dpr,0,0,dpr,0,0);
+    const n=Math.max(24,Math.min(80,Math.round(w*h/18000)));
+    while(em.length<n)em.push(newEmber(true));
+    em.length=n;
+  }
+  function newEmber(any){
+    const slime=Math.random()<.12;
+    return {x:Math.random()*w,y:any?Math.random()*h:h+10,vy:-(18+Math.random()*52),r:.8+Math.random()*2.2,ph:Math.random()*6.28,sw:6+Math.random()*22,hue:slime?95:18+Math.random()*28,a:.35+Math.random()*.55};
+  }
+  function newBat(){
+    const dir=Math.random()<.5?1:-1;
+    return {x:dir>0?-90:w+90,y:h*(.08+Math.random()*.38),vx:dir*(90+Math.random()*80),dir,s:9+Math.random()*7,ph:Math.random()*6.28,wob:Math.random()*6.28};
+  }
+  // silueta de murciélago en unidades de "ala": s las escala; f (-1..1) es el aleteo
+  function drawBat(b,t){
+    const f=Math.sin(t*.016+b.ph);
+    g.save();g.translate(b.x,b.y+Math.sin(t*.002+b.wob)*14);g.scale(b.dir*b.s,b.s);g.fillStyle='#1c0b2b';
+    g.beginPath();g.moveTo(0,0);
+    g.quadraticCurveTo(1.2,-1.6-f*1.4,3.2,-1-f*2.2);g.quadraticCurveTo(2.5,-.2-f*1.2,2.2,.5-f*.8);g.quadraticCurveTo(1.6,.1,1,.9-f*.4);g.quadraticCurveTo(.5,.3,0,.9);
+    g.quadraticCurveTo(-.5,.3,-1,.9-f*.4);g.quadraticCurveTo(-1.6,.1,-2.2,.5-f*.8);g.quadraticCurveTo(-2.5,-.2-f*1.2,-3.2,-1-f*2.2);g.quadraticCurveTo(-1.2,-1.6-f*1.4,0,0);
+    g.fill();
+    g.beginPath();g.arc(0,-.15,.5,0,6.3);g.moveTo(-.4,-.45);g.lineTo(-.3,-1);g.lineTo(-.05,-.55);g.moveTo(.4,-.45);g.lineTo(.3,-1);g.lineTo(.05,-.55);g.fill();
+    g.restore();
+  }
+  function frame(now){
+    if($('menu').hidden){mFxOn=false;removeEventListener('resize',size);g.clearRect(0,0,w,h);return;}
+    const dt=Math.min(.05,(now-last)/1000);last=now;
+    g.clearRect(0,0,w,h);
+    // relámpago lejano: un destello violeta que se apaga rápido
+    if(now>nextFlash){flash=1;nextFlash=now+6000+Math.random()*9000;}
+    if(flash>.01){g.fillStyle='rgba(190,160,255,'+(flash*flash*.13).toFixed(3)+')';g.fillRect(0,0,w,h);flash*=Math.pow(.02,dt);}
+    // murciélagos
+    if(now>nextBat&&bats.length<3){bats.push(newBat());nextBat=now+4500+Math.random()*7000;}
+    for(let i=bats.length-1;i>=0;i--){const b=bats[i];b.x+=b.vx*dt;if(b.x<-140||b.x>w+140){bats.splice(i,1);continue;}drawBat(b,now);}
+    // brasas que suben (las verdes son "ectoplasma")
+    g.globalCompositeOperation='lighter';
+    for(const e of em){
+      e.y+=e.vy*dt;e.x+=Math.sin(now*.001+e.ph)*e.sw*dt;
+      if(e.y<-12){Object.assign(e,newEmber(false));continue;}
+      const fade=Math.min(1,e.y/(h*.35)),col=e.hue+',100%,'+(e.hue>80?'60%':'58%');
+      g.fillStyle='hsla('+col+','+(e.a*.18*fade).toFixed(3)+')';g.beginPath();g.arc(e.x,e.y,e.r*4,0,6.3);g.fill();
+      g.fillStyle='hsla('+col+','+(e.a*fade).toFixed(3)+')';g.beginPath();g.arc(e.x,e.y,e.r,0,6.3);g.fill();
+    }
+    g.globalCompositeOperation='source-over';
+    requestAnimationFrame(frame);
+  }
+  size();addEventListener('resize',size);requestAnimationFrame(frame);
+}
+mFxGo();
 /* =================== MENÚ =================== */
 // botones de mapa en Ajustes: salen solos de los mapas de la Arena (un mapa nuevo aparece sin tocar el HTML)
-$('sMap').innerHTML=C.MODES.arena.maps.map(id=>'<button type="button" data-v="'+id+'">'+esc(C.MAPS[id].name.split(' · ').pop())+'</button>').join('');
-function showMenu(){$('menu').hidden=false;$('hud').hidden=true;if(document.pointerLockElement)document.exitPointerLock();}
+// cada mapa con su foto (si hay maps/id.jpg; si no, queda solo el nombre)
+$('sMap').innerHTML=C.MODES.arena.maps.map(id=>'<button type="button" data-v="'+id+'"><img src="maps/'+id+'.jpg" alt="" loading="lazy" onerror="this.remove()"><span>'+esc(C.MAPS[id].name.split(' · ').pop())+'</span></button>').join('');
+function showMenu(){$('menu').hidden=false;mFxGo();$('hud').hidden=true;if(document.pointerLockElement)document.exitPointerLock();}
 function hideMenu(){$('menu').hidden=true;$('hud').hidden=false;['settings','lockerPanel','modePanel','limitPanel'].forEach(id=>$(id).hidden=true);['bSet','bLocker'].forEach(id=>$(id).setAttribute('aria-expanded','false'));updateHUD();}
 function openPause(){
   if(!inGame)return;
@@ -4068,7 +4304,7 @@ function openModePicker(isOnline){
   $('modeTitle').textContent='Elegí el modo · '+(isOnline?'online':'práctica con '+S.bots+' bots');
   $('modeNote').innerHTML=isOnline?'Cada modo es una sala aparte del servidor: entrás con los que estén jugando ese modo. Team Deathmatch arranca cuando hay 4 jugadores; el primero en entrar elige las bajas para ganar. La dificultad elegida se aplica a los bots de la sala; cualquiera la puede cambiar después con <b>/skill 0-3</b> en el chat.':'Los bots se suman a tu partida. En Captura la bandera se reparten entre los dos equipos. La dificultad se puede cambiar en plena partida desde Ajustes.';
   const grid=$('modeGrid');
-  grid.innerHTML=C.MODE_IDS.map(id=>{const md=C.MODES[id];return '<button type="button" class="mcard" data-m="'+id+'"><span class="mn">'+md.name+'</span><span class="md">'+md.desc+'</span><span class="mp" id="mp_'+id+'"></span><span class="mm">'+md.maps.map(k=>esc(C.MAPS[k].name)).join(' · ')+'</span></button>';}).join('');
+  grid.innerHTML=C.MODE_IDS.map(id=>{const md=C.MODES[id];return '<button type="button" class="mcard" data-m="'+id+'"><span class="mn">'+md.name+'</span><span class="md">'+md.desc+'</span><span class="mp" id="mp_'+id+'"></span><span class="mi">'+md.maps.map(k=>'<img src="maps/'+k+'.jpg" alt="" loading="lazy" onerror="this.remove()">').join('')+'</span><span class="mm">'+md.maps.map(k=>esc(C.MAPS[k].name)).join(' · ')+'</span></button>';}).join('');
   const cards=[...grid.querySelectorAll('.mcard')];const def=cards.find(b=>b.dataset.m===S.mode)||cards[0];if(def)def.focus();
   if(isOnline&&/^https?:$/.test(location.protocol))fetch('/status',{cache:'no-store'}).then(r=>r.json()).then(j=>{for(const id in (j.salas||{})){const e=$('mp_'+id);if(e){const n=j.salas[id].humanos;e.textContent=n?n+(n===1?' jugando ahora':' jugando ahora'):'Sala vacía';}}}).catch(()=>{});
 }
@@ -4085,7 +4321,8 @@ $('pName').addEventListener('change',saveName);
 $('pName').addEventListener('keydown',e=>{if(e.key==='Enter'){saveName();e.target.blur();}});
 function syncSettings(){
   $('pName').value=S.name;
-  $('sSens').value=S.sens;$('oSens').textContent=(+S.sens).toFixed(2);
+  $('sSens').value=S.sens;if(document.activeElement!==$('sSensN'))$('sSensN').value=(+S.sens).toFixed(2);
+  $('sSensZ').value=S.sensZ;if(document.activeElement!==$('sSensZN'))$('sSensZN').value=(+S.sensZ).toFixed(2);sensInfo();
   $('sFov').value=S.fov;$('oFov').textContent=S.fov+'°';
   $('sVol').value=S.vol;$('oVol').textContent=Math.round(S.vol*100)+'%';
   $('sMus').value=S.music;$('oMus').textContent=Math.round(S.music*100)+'%';
@@ -4097,7 +4334,41 @@ function syncSettings(){
   [...$('sQ').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.q)));
   [...$('sSh').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===(S.sh===0?0:1))));
 }
-$('sSens').addEventListener('input',e=>{S.sens=+e.target.value;saveS();syncSettings();});
+// sensibilidad: control deslizante + valor exacto, y aparte la de la mira con zoom (S.sensZ, 1 = igual que sin mira)
+const SENS_K=.0022,SENS_DPI=800;
+function sensRatio(){const z=(WEAPONS[8]&&WEAPONS[8].zoom)||22;return Math.tan(z*Math.PI/360)/Math.tan(S.fov*Math.PI/360);}
+function sensInfo(){
+  const full=2*Math.PI/(SENS_K*S.sens),zr=sensRatio()*S.sensZ,cm=n=>(n/SENS_DPI*2.54).toFixed(1).replace('.',',');
+  $('sensInfo').innerHTML='Una vuelta completa (360°): <b>'+Math.round(full)+'</b> puntos de mouse · unos <b>'+cm(full)+' cm</b> con 800 DPI<br>Con zoom: <b>'+Math.round(full/zr)+'</b> puntos · unos <b>'+cm(full/zr)+' cm</b> · en 1,00 el movimiento en pantalla se siente igual que sin mira';
+}
+function setSens(v){v=+v;if(!(v>0))return;S.sens=Math.round(Math.max(.05,Math.min(10,v))*100)/100;saveS();syncSettings();}
+function setSensZ(v){v=+v;if(!(v>0))return;S.sensZ=Math.round(Math.max(.1,Math.min(5,v))*100)/100;saveS();syncSettings();}
+$('sSens').addEventListener('input',e=>setSens(e.target.value));
+$('sSensN').addEventListener('input',e=>setSens(e.target.value));
+$('sSensN').addEventListener('change',()=>{$('sSensN').value=(+S.sens).toFixed(2);});
+$('sSensZ').addEventListener('input',e=>setSensZ(e.target.value));
+$('sSensZN').addEventListener('input',e=>setSensZ(e.target.value));
+$('sSensZN').addEventListener('change',()=>{$('sSensZN').value=(+S.sensZ).toFixed(2);});
+// zona de prueba: mové el mouse (click derecho = con zoom) y se ve cuánto gira la vista con tus valores actuales
+(function(){
+  const pad=$('sensPad'),PPD=4;let yaw=0,px=0,py=0,zoom=false;
+  function mode(z){zoom=z;pad.classList.toggle('zoom',z);$('padMode').textContent=z?'Con zoom':'Normal';}
+  pad.addEventListener('mousemove',e=>{
+    if(!!(e.buttons&2)!==zoom)mode(!zoom);
+    const r=zoom?sensRatio():1,kd=SENS_K*S.sens*(zoom?r*S.sensZ:1)*180/Math.PI;   // grados por punto de mouse
+    yaw+=e.movementX*kd;px=(px-e.movementX*kd*PPD/r)%60;py=(py-e.movementY*kd*PPD/r*(S.invY?-1:1))%24;
+    pad.style.setProperty('--px',px.toFixed(1)+'px');pad.style.setProperty('--py',py.toFixed(1)+'px');
+    $('padDeg').textContent=Math.round(((yaw%360)+360)%360)+'°';
+  });
+  pad.addEventListener('mousedown',e=>{if(e.button===2)mode(true);});
+  pad.addEventListener('mouseup',e=>{if(e.button===2)mode(false);});
+  pad.addEventListener('mouseleave',()=>mode(false));
+  pad.addEventListener('contextmenu',e=>e.preventDefault());
+  pad.addEventListener('dblclick',()=>{yaw=0;$('padDeg').textContent='0°';});
+})();
+// secciones de Ajustes
+function setTab(t){[...$('sTabs').children].forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===t)));document.querySelectorAll('#settings .sec').forEach(x=>x.hidden=x.dataset.sec!==t);}
+$('sTabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&b.dataset.tab){setTab(b.dataset.tab);SFX.ui();}});
 $('sFov').addEventListener('input',e=>{S.fov=+e.target.value;saveS();syncSettings();});
 $('sVol').addEventListener('input',e=>{S.vol=+e.target.value;if(master)master.gain.value=S.vol;saveS();syncSettings();});
 $('sMus').addEventListener('input',e=>{S.music=+e.target.value;if(musicGain)musicGain.gain.value=S.music*.5;saveS();syncSettings();});
@@ -4120,7 +4391,7 @@ addEventListener('beforeunload',e=>{if(inGame){e.preventDefault();e.returnValue=
 $('bMinus').addEventListener('click',()=>changeBots(-1));$('bPlus').addEventListener('click',()=>changeBots(1));
 $('sSkill').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.skill=+v;saveS();syncSettings();if(net&&!online)net.send({t:'cfg',skill:S.skill});});
 $('sFl').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.fl=+v;saveS();syncSettings();if(net&&!online)net.send({t:'cfg',fl:S.fl});});
-$('sMap').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(!v)return;S.map=v;saveS();syncSettings();if(net&&!online)net.send({t:'cfg',map:v});else if(!inGame)loadMap(v);});
+$('sMap').addEventListener('click',e=>{const b=e.target.closest('button'),v=b&&b.dataset.v;if(!v)return;S.map=v;saveS();syncSettings();if(net&&!online)net.send({t:'cfg',map:v});else if(!inGame)loadMap(v);});
 $('sSh').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.sh=+v;saveS();syncSettings();if(level&&level.sun){level.sun.castShadow=!!S.sh;renderer.shadowMap.needsUpdate=true;}scene.traverse(o=>{if(o.material)o.material.needsUpdate=true;});SFX.ui();});
 $('sQ').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.q=+v;saveS();syncSettings();resize();});
 syncSettings();probeServer();loadMap(S.map);initAccounts();syncChest();

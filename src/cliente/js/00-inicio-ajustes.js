@@ -10,12 +10,14 @@ const liveState=()=>matchState==='play'||matchState==='lobby'||matchState==='cou
 const GG=C.GG,TEAMS=C.TEAMS;
 
 /* =================== AJUSTES =================== */
-const S={sens:1,fov:95,vol:.5,music:.45,invY:false,hop:true,name:'',skin:{c:C.COLORS[0],v:'#ffffff',a:0},bots:5,skill:1,fl:20,map:'represa',q:1,mode:'arena',tdmLimit:50,fs:true,showImg:true,mira:{s:'cruz',c:'#ffffff',z:1}};
+const S={sens:1,sensZ:1,fov:95,vol:.5,music:.45,invY:false,hop:true,name:'',skin:{c:C.COLORS[0],v:'#ffffff',a:0},bots:5,skill:1,fl:20,map:'represa',q:1,mode:'arena',tdmLimit:50,fs:true,showImg:true,mira:{s:'cruz',c:'#ffffff',z:1}};
 try{const saved=JSON.parse(localStorage.getItem('cuenk_settings')||'{}');if(saved.color&&!saved.skin)saved.skin={c:saved.color,v:'#ffffff',a:0};Object.assign(S,saved);}catch(e){}
 if(S.map==='sagrado'||S.map==='salvaje')S.map='panymanteca';
 // mapa del editor: se juega solo en esta pestaña; si el mapa guardado ya no existe se vuelve a La Represa
 const EDITOR_MAP=self.CK_MAPA_EDITOR&&C.MAPS[self.CK_MAPA_EDITOR.id]?self.CK_MAPA_EDITOR.id:null;
 if(!C.MAPS[S.map])S.map='represa';
+// sensibilidad con zoom (ajuste nuevo): los jugadores que ya tenían ajustes guardados arrancan en 1 = igual que antes
+if(!(S.sensZ>0))S.sensZ=1;
 if(!S.mira||typeof S.mira!=='object')S.mira={s:'cruz',c:'#ffffff',z:1};
 if(!S.skin||typeof S.skin!=='object')S.skin={c:C.COLORS[0],v:'#ffffff',a:0};
 // identificador al azar de este navegador (solo sirve para que un jugador echado por votación no vuelva enseguida)

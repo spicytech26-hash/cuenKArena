@@ -2544,6 +2544,47 @@ function rbJuntar(lista){
   o.setAttribute('position',new THREE.BufferAttribute(P,3));o.setAttribute('normal',new THREE.BufferAttribute(N,3));o.setIndex(new THREE.BufferAttribute(I,1));
   return o;
 }
+// loft: superficie suave que pasa por secciones [y,rx,rz,ox,oz,n] (radio en x y en z, centro, n=2 elipse, n>2 más "cuadrada").
+// Las secciones se interpolan con Catmull-Rom, así salen músculos y placas redondeadas sin aristas.
+function rbPot(v,p){return Math.sign(v)*Math.pow(Math.abs(v),p);}
+function rbLoft(secs,seg,sub){
+  seg=seg||12;sub=sub||1;
+  const D=[0,1,1,0,0,2],S=secs.map(q=>[0,1,2,3,4,5].map(j=>q[j]===undefined?(j===2?q[1]:D[j]):q[j]));
+  const cr=(p0,p1,p2,p3,t)=>.5*(2*p1+(-p0+p2)*t+(2*p0-5*p1+4*p2-p3)*t*t+(-p0+3*p1-3*p2+p3)*t*t*t);
+  const n=S.length,R=[];
+  for(let i=0;i<n-1;i++)for(let k=0;k<sub;k++){
+    const t=k/sub,a=S[Math.max(0,i-1)],b=S[i],c=S[i+1],d=S[Math.min(n-1,i+2)];
+    R.push([0,1,2,3,4,5].map(j=>cr(a[j],b[j],c[j],d[j],t)));
+  }
+  R.push(S[n-1].slice());
+  const P=[],I=[];
+  R.forEach(r=>{
+    const rx=Math.max(.0008,r[1]),rz=Math.max(.0008,r[2]),e=2/Math.max(1.2,r[5]);
+    for(let j=0;j<seg;j++){const a=j/seg*Math.PI*2;P.push(r[3]+rx*rbPot(Math.cos(a),e),r[0],r[4]+rz*rbPot(Math.sin(a),e));}
+  });
+  const nr=R.length,V=new THREE.Vector3(),A=new THREE.Vector3(),B=new THREE.Vector3(),C=new THREE.Vector3();
+  // agrega un triángulo con el sentido que apunta hacia afuera de "ref"
+  const tri=(a,b,c,rx,ry,rz)=>{
+    A.set(P[a*3],P[a*3+1],P[a*3+2]);B.set(P[b*3],P[b*3+1],P[b*3+2]);C.set(P[c*3],P[c*3+1],P[c*3+2]);
+    V.subVectors(B,A).cross(C.clone().sub(A));
+    const cx=(A.x+B.x+C.x)/3-rx,cy=(A.y+B.y+C.y)/3-ry,cz=(A.z+B.z+C.z)/3-rz;
+    if(V.x*cx+V.y*cy+V.z*cz<0)I.push(a,c,b);else I.push(a,b,c);
+  };
+  for(let i=0;i<nr-1;i++)for(let j=0;j<seg;j++){
+    const a=i*seg+j,b=i*seg+(j+1)%seg,c=(i+1)*seg+j,d=(i+1)*seg+(j+1)%seg,r=R[i];
+    tri(a,b,c,r[3],r[0],r[4]);tri(b,d,c,r[3],r[0],r[4]);
+  }
+  // tapas planas con vértices propios (así no se mezclan las normales)
+  [[0,1],[nr-1,nr-2]].forEach(([i,o])=>{
+    const r=R[i],dir=Math.sign(r[0]-R[o][0])||1,base=P.length/3;
+    P.push(r[3],r[0],r[4]);for(let j=0;j<seg;j++)P.push(P[(i*seg+j)*3],P[(i*seg+j)*3+1],P[(i*seg+j)*3+2]);
+    for(let j=0;j<seg;j++)tri(base,base+1+j,base+1+(j+1)%seg,r[3],r[0]-dir,r[4]);
+  });
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(P),3));
+  g.setIndex(I);g.computeVertexNormals();
+  return g;
+}
 // un "juego de piezas" (una parte del cuerpo) con ayudas para ir poniendo primitivas por zona
 function rbParte(){
   const z={A:[],B:[],C:[],V:[],K:[]},M=new THREE.Matrix4(),E=new THREE.Euler(),Q=new THREE.Quaternion(),S1=new THREE.Vector3(),P1=new THREE.Vector3();
@@ -2556,87 +2597,82 @@ function rbParte(){
     cil:(zona,r1,r2,h,lados,x,y,zz,rx,ry,rz,sx,sy,sz)=>poner(zona,new THREE.CylinderGeometry(r1,r2,h,lados||8,1),x,y,zz,rx,ry,rz,sx,sy,sz),
     esf:(zona,r,x,y,zz,sx,sy,sz,lw,lh)=>poner(zona,new THREE.SphereGeometry(r,lw||8,lh||6),x,y,zz,0,0,0,sx,sy,sz),
     cono:(zona,r,h,x,y,zz,rx,ry,rz)=>poner(zona,new THREE.ConeGeometry(r,h,6),x,y,zz,rx,ry,rz),
+    loft:(zona,secs,seg,sub,x,y,zz,rx,ry,rz)=>poner(zona,rbLoft(secs,seg,sub),x,y,zz,rx,ry,rz),
+    // anillo finito que marca una junta entre placas (rx, rz = radios de la pieza en esa altura)
+    banda:(zona,y,rx,rz,h,oz,n)=>poner(zona,rbLoft([[y-h/2,rx-.006,rz-.006,0,oz||0,n||2.4],[y-h/2+.003,rx+.003,rz+.003,0,oz||0,n||2.4],[y+h/2-.003,rx+.003,rz+.003,0,oz||0,n||2.4],[y+h/2,rx-.006,rz-.006,0,oz||0,n||2.4]],12,1),0,0,0),
     crudo:(zona,g)=>z[zona].push(g),
     fin:(rotX)=>{const o={};RB_ZONAS.forEach(k=>{if(z[k].length){o[k]=rbJuntar(z[k]);if(rotX)o[k].rotateX(rotX);}});return o;}
   };
 }
-// brazo musculoso: s = lado hacia afuera (-1 izquierdo, +1 derecho); el origen es el hombro y cuelga hacia -y
+// brazo: s = lado hacia afuera (-1 izquierdo, +1 derecho); el origen es el hombro y cuelga hacia -y
 function rbBrazo(s,adelante){
-  const t=rbParte(),X=s*.03;                                  // el brazo cuelga un poco hacia afuera del hombro, para no meterse en el pecho
-  t.esf('A',.072,s*.012,0,0,.95,.9,1,9,7);                    // deltoides grande y redondeado
-  t.cil('A',.06,.05,.27,9,X,-.17,0);                          // brazo
-  t.esf('A',.052,X,-.14,.012,1,1.5,1.1);                      // bíceps
-  t.esf('B',.046,X,-.3,0);                                    // codo (articulación)
-  t.cil('A',.05,.037,.25,9,X,-.435,0);                        // antebrazo
-  t.esf('A',.043,X,-.38,.008,1,1.4,1);                        // músculo del antebrazo
-  t.cil('B',.04,.04,.03,8,X,-.55,0);                          // muñequera
-  t.caja('A',.062,.075,.034,.012,1,X,-.6,0);                  // palma
-  for(let i=0;i<4;i++)t.caja('A',.013,.06,.02,.005,1,X+(i-1.5)*.0145,-.665,.004);   // cuatro dedos
-  t.caja('A',.014,.045,.02,.006,1,X,-.62,.03,.5,0,0);         // pulgar
-  return t.fin(adelante?-1.3:0);                              // el derecho apunta hacia adelante (-1.3 rad) para sostener el arma
+  const t=rbParte(),X=s*.03;
+  t.esf('A',.088,s*.012,.005,0,1,.95,1.05,10,7);                                            // hombrera grande y redonda
+  t.loft('A',[[-.03,.074,.076,X],[-.12,.074,.074,X],[-.22,.062,.064,X],[-.29,.052,.054,X]],10,1);   // manga del brazo
+  t.banda('B',-.1,.076,.076,.012,0);                                                        // junta de la hombrera
+  t.esf('B',.05,X,-.315,0);                                                                // codo oscuro
+  t.loft('A',[[-.335,.054,.054,X],[-.39,.062,.062,X,.004],[-.47,.047,.047,X],[-.545,.036,.036,X]],10,1);   // antebrazo
+  t.cil('B',.04,.04,.034,8,X,-.56,0);                                                     // muñeca oscura
+  t.caja('A',.064,.068,.022,.01,1,X,-.605,0);                                               // palma
+  for(let i=0;i<4;i++)t.caja('A',.013,.055,.014,.005,1,X+(i-1.5)*.0145,-.662,.002);        // dedos juntos
+  t.caja('A',.014,.042,.016,.006,1,X,-.62,.022,.5,0,0);                                     // pulgar
+  return t.fin(adelante?-1.3:0);                                                            // el derecho apunta adelante (-1.3 rad) para sostener el arma
 }
-// pierna musculosa con bota alta; la costura va del lado de afuera (por eso hay una izquierda y una derecha)
+// pierna: muslo grueso, rodilla oscura, bota alta y grande; cadena de remaches del lado de afuera (por eso hay izquierda y derecha)
 function rbPierna(s){
   const t=rbParte();
-  t.esf('B',.065,0,-.01,0);                                   // cadera
-  t.cil('A',.092,.064,.43,9,0,-.23,0,0,0,0,1,1,1.08);         // muslo grueso
-  t.esf('A',.075,s*.015,-.19,.035,1,1.6,1,8,6);               // cuádriceps
-  t.esf('B',.063,0,-.46,0);                                   // rodilla
-  t.caja('A',.1,.08,.05,.02,1,0,-.46,.062);                   // rodillera
-  t.cil('A',.066,.05,.40,9,0,-.67,0);                         // caña de la bota
-  t.esf('A',.062,0,-.58,-.025,1,1.5,1.05);                    // pantorrilla
-  t.caja('B',.012,.3,.014,.004,1,s*.06,-.67,0);               // costura exterior
-  t.esf('B',.048,0,-.875,0);                                  // tobillo
-  t.caja('A',.105,.06,.25,.03,1,0,-.886,.055);                // pie
-  t.caja('K',.09,.045,.075,.015,1,0,-.907,-.07);              // taco (más bajo que la punta)
-  t.caja('K',.112,.016,.26,.007,1,0,-.912,.05);               // suela
+  t.esf('B',.06,0,-.005,0);                                                                 // cadera
+  t.loft('A',[[0,.1,.105],[-.08,.112,.116],[-.2,.104,.11,0,.004],[-.34,.08,.088,0,.004],[-.44,.06,.068,0,.004]],12,1);   // muslo grueso
+  [[-.05,.11],[-.12,.112],[-.2,.103],[-.28,.093],[-.36,.078],[-.43,.062]].forEach(q=>t.caja('K',.014,.03,.016,.005,1,s*q[1],q[0],0));   // cadena de remaches
+  t.esf('B',.062,0,-.465,0);                                                                // rodilla
+  t.caja('A',.09,.075,.042,.02,1,0,-.46,.06);                                               // rodillera
+  t.loft('A',[[-.5,.064,.07],[-.56,.076,.084,0,-.012,2.8],[-.68,.074,.08,0,-.008,3],[-.8,.066,.076,0,0,3],[-.865,.064,.074,0,0,3]],12,1);   // bota grande
+  t.banda('A',-.525,.08,.088,.05);                                                          // puño de la bota
+  [-.6,-.66,-.72,-.78].forEach(y=>t.caja('K',.012,.024,.014,.005,1,s*.077,y,0));            // remaches de la bota
+  t.caja('B',.008,.22,.012,.004,1,0,-.69,.08);                                              // costura del frente
+  t.esf('B',.052,0,-.875,0);                                                                // tobillo
+  t.caja('A',.13,.066,.26,.032,2,0,-.884,.055);                                              // pie
+  t.caja('K',.1,.04,.08,.014,1,0,-.908,-.068);                                             // taco
+  t.caja('K',.136,.016,.29,.007,1,0,-.912,.05);                                            // suela
   return t.fin();
 }
 function rbGeos(){
   if(rbGeos.c)return rbGeos.c;
   const R={};
-  // torso (todo en coordenadas del cuerpo, +z es el frente)
+  // torso (coordenadas del cuerpo, +z es el frente)
   let t=rbParte();
-  t.caja('A',.33,.15,.21,.05,1,0,.975,0);                     // pelvis
-  t.caja('A',.13,.09,.05,.025,1,0,.955,.105,.2,0,0);          // placa en V de la ingle
-  t.esf('A',.075,.07,.95,-.065,1,1,.9,6,4);t.esf('A',.075,-.07,.95,-.065,1,1,.9,6,4);   // glúteos (se ven de espalda)
-  t.caja('K',.355,.05,.235,.02,1,0,1.055,0);                  // cinturón de 4 cm
-  t.caja('C',.07,.04,.02,.01,1,0,1.055,.122);                 // hebilla
-  [[.11,.108,.35],[-.11,.108,-.35],[.17,.06,1.1],[-.17,.06,-1.1],[.07,-.125,3.0],[-.07,-.125,-3.0]].forEach(p=>t.caja('K',.065,.08,.05,.015,1,p[0],1.035,p[1],0,p[2],0));   // bolsitas del cinturón
-  t.crudo('A',new THREE.CylinderGeometry(.2546,.17,.2,4,1).rotateY(Math.PI/4).scale(1,1,.55).translate(0,1.15,0));  // abdomen plano en V (36 cm en la cintura)
-  for(let f=0;f<3;f++)for(const sx of [-1,1])t.caja('A',.075,.045,.035,.014,1,sx*.045,1.1+f*.055,.095);   // placas de los abdominales
-  t.caja('B',.30,.03,.19,.015,1,0,1.265,0);                   // junta de la cintura
-  t.caja('A',.36,.13,.22,.06,2,0,1.33,0);                     // caja torácica
-  t.caja('A',.44,.22,.235,.055,3,0,1.46,0);                   // pecho redondeado de 44 cm (el frente es la zona del decal)
-  t.esf('A',.08,.125,1.39,.07,1,.72,.7);t.esf('A',.08,-.125,1.39,.07,1,.72,.7);          // pectorales, a los costados del emblema
-  t.caja('A',.14,.05,.17,.02,1,.115,1.585,-.01,0,0,-.4);t.caja('A',.14,.05,.17,.02,1,-.115,1.585,-.01,0,0,.4);   // trapecios en pendiente
-  t.caja('A',.19,.05,.15,.02,1,0,1.59,0);                     // cuello de armadura
-  t.cil('B',.042,.045,.08,8,0,1.625,0);                       // cuello
-  t.caja('A',.34,.26,.05,.025,1,0,1.43,-.13);                 // placa de la espalda
-  t.caja('A',.12,.24,.07,.035,1,.14,1.38,-.12,0,0,-.08);t.caja('A',.12,.24,.07,.035,1,-.14,1.38,-.12,0,0,.08);   // dorsales
-  for(let i=0;i<4;i++)t.caja('B',.045,.035,.03,.01,1,0,1.32+i*.06,-.168);                // vértebras de la columna
+  t.loft('A',[[.84,.06,.06,0,0,2.2],[.89,.125,.085,0,0,2.4],[.95,.158,.105,0,0,2.6],[1.01,.16,.108,0,0,2.6],[1.07,.14,.098,0,0,2.4]],12,1);   // pelvis
+  t.loft('A',[[.85,.03,.02,0,.085],[.9,.06,.03,0,.098],[.97,.075,.035,0,.108],[1.02,.08,.035,0,.108]],10,1);                                  // calzón en U
+  t.banda('K',1.055,.172,.122,.06,0,2.6);                                                                                                       // cinturón de 4 cm
+  [[.075,.13,.1],[-.075,.13,-.1],[.15,.08,.9],[-.15,.08,-.9],[.085,-.12,3.0],[-.085,-.12,-3.0]].forEach(p=>t.caja('K',.058,.062,.04,.013,1,p[0],1.04,p[1],0,p[2],0));   // bolsitas
+  t.caja('K',.045,.03,.03,.01,1,0,1.05,.136);t.caja('C',.036,.026,.012,.006,1,0,1.05,.153);                                                     // bolsita del medio y hebilla
+  t.loft('A',[[1.06,.142,.098,0,0],[1.12,.14,.09,0,.004],[1.2,.134,.086,0,.006],[1.27,.142,.092,0,.004],[1.32,.158,.102,0,0]],12,1);          // abdomen
+  t.banda('B',1.165,.139,.09,.012,.005);t.banda('B',1.235,.138,.089,.012,.005);                                                                 // juntas de las placas
+  t.loft('A',[[1.29,.15,.1,0,0,2.4],[1.35,.19,.112,0,.004,2.6],[1.43,.218,.126,0,.008,2.8],[1.51,.218,.122,0,.004,2.8],[1.555,.19,.1,0,-.004,2.6],[1.585,.095,.062,0,-.01,2.2],[1.605,.045,.04,0,-.01,2]],14,2);   // pecho de 44 cm
+  t.banda('B',1.345,.192,.114,.01,.004,2.6);                                                                                                    // borde de la placa del pecho
+  t.loft('B',[[1.55,.034],[1.57,.041],[1.59,.034],[1.61,.041],[1.63,.034],[1.66,.04]],10,1);                                                    // cuello con ranuras
+  t.loft('A',[[1.34,.13,.03,0,-.105,3],[1.45,.16,.042,0,-.122,3],[1.55,.12,.03,0,-.108,3]],12,1);                                              // placa de la espalda
+  for(let i=0;i<4;i++)t.caja('B',.05,.03,.03,.01,1,0,1.33+i*.06,-.166);                                                                         // vértebras
   R.torso=t.fin();
-  // cabeza (origen en el centro del casco): cráneo ovalado, cara angosta, visor cian y cuernito
+  // cabeza (origen en el centro del casco): domo ovalado, cara lisa que se afina, visor cian y cuernito; se achica a 0,78
   t=rbParte();
-  t.esf('A',.12,0,.015,0,1,1.06,1.1,10,7);                    // casco
-  t.cil('A',.096,.05,.14,10,0,-.075,.015,0,0,0,1,1,.95);      // cara que se afina hacia el mentón
-  t.cil('B',.033,.033,.028,8,.12,-.005,0,0,0,Math.PI/2);t.cil('B',.033,.033,.028,8,-.12,-.005,0,0,0,Math.PI/2);   // orejeras
-  t.cono('C',.014,.04,0,.155,-.03,-.2,0,0);                   // cuerno del casco
-  t.crudo('V',new THREE.CylinderGeometry(.136,.136,.034,14,1,true,-1.22,2.44).translate(0,.012,0)); // visor curvo
-  t.crudo('B',new THREE.CylinderGeometry(.1375,.1375,.007,14,1,true,-1.22,2.44).translate(0,.0325,0)); // marco de arriba
-  t.crudo('B',new THREE.CylinderGeometry(.1375,.1375,.007,14,1,true,-1.22,2.44).translate(0,-.0085,0)); // marco de abajo
-  R.head=t.fin();
+  t.loft('A',[[-.165,.03,.034,0,.02,2],[-.145,.048,.054,0,.02,2.3],[-.115,.07,.08,0,.016,2.5],[-.075,.095,.108,0,.008,2.6],[-.03,.115,.128,0,0,2.4],[.03,.124,.138,0,-.004,2.2],[.09,.118,.13,0,-.008,2.1],[.135,.085,.098,0,-.008,2],[.158,.035,.045,0,-.008,2],[.165,.005,.006,0,-.008,2]],16,1);
+  t.cil('B',.035,.035,.03,8,.124,-.01,0,0,0,Math.PI/2);t.cil('B',.035,.035,.03,8,-.124,-.01,0,0,0,Math.PI/2);                                   // orejeras
+  t.cono('C',.015,.06,0,.175,-.03,-.4,0,0);                                                                                                     // cuerno
+  const visor=(h,y,ex)=>new THREE.CylinderGeometry(1,1,h,20,1,true,-1.4,2.8).scale(.14+ex,1,.152+ex).translate(0,y,0);
+  t.crudo('V',visor(.04,.03,0));t.crudo('B',visor(.008,.056,.003));t.crudo('B',visor(.008,.004,.003));                                          // visor y su marco
+  R.head=t.fin();Object.keys(R.head).forEach(k=>R.head[k].scale(.78,.78,.78));
   R.legL=rbPierna(-1);R.legR=rbPierna(1);
   R.armL=rbBrazo(-1,false);R.armR=rbBrazo(1,true);
   // accesorios (origen = centro del casco)
   R.acc={
-    cresta:rbCaja(.03,.09,.2,.012,1).translate(0,.145,-.045),
-    antena:new THREE.CylinderGeometry(.008,.008,.2,6).translate(.075,.23,-.02),
-    antenaPunta:new THREE.SphereGeometry(.03,8,6).translate(.075,.34,-.02),
+    cresta:rbCaja(.03,.09,.2,.012,1).translate(0,.12,-.045),
+    antena:new THREE.CylinderGeometry(.008,.008,.2,6).translate(.075,.2,-.02),
+    antenaPunta:new THREE.SphereGeometry(.03,8,6).translate(.075,.31,-.02),
     cuerno:new THREE.ConeGeometry(.035,.17,6),
-    gorra:new THREE.CylinderGeometry(.142,.146,.04,12).translate(0,.112,0),
-    visera:rbCaja(.2,.016,.1,.006,1).translate(0,.098,.16),
-    decal:new THREE.PlaneGeometry(.15,.15)
+    gorra:new THREE.CylinderGeometry(.12,.124,.04,12).translate(0,.1,0),
+    visera:rbCaja(.2,.016,.1,.006,1).translate(0,.088,.15),
+    decal:new THREE.PlaneGeometry(.11,.11)
   };
   return rbGeos.c=R;
 }
@@ -2656,8 +2692,8 @@ function rbAnclaTex(){
 }
 function buildPlayer(skin,name,noTag){
   const G=rbGeos(),P=skinParts(skin);
-  const mA=new THREE.MeshPhongMaterial({color:P.c,shininess:70,specular:0x555555});   // armadura lustrosa, como en las láminas
-  const mB=new THREE.MeshPhongMaterial({color:P.c2,shininess:60,specular:0x555555});
+  const mA=new THREE.MeshPhongMaterial({color:P.c,shininess:40,specular:0x333333});   // armadura lustrosa, como en las láminas
+  const mB=new THREE.MeshPhongMaterial({color:P.c2,shininess:50,specular:0x333333});
   const mC=new THREE.MeshPhongMaterial({color:P.c3,shininess:60,specular:0x444444});
   const mV=new THREE.MeshBasicMaterial({color:P.v});
   const mK=new THREE.MeshPhongMaterial({color:0x3d4952,shininess:20});                // tela del cinturón gris azulada
@@ -2669,18 +2705,18 @@ function buildPlayer(skin,name,noTag){
   const hasImg=!!(skin.img&&(noTag||S.showImg));
   const dm=hasImg?new THREE.MeshBasicMaterial({map:chestTex(skin.img),polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})
                  :new THREE.MeshBasicMaterial({map:rbAnclaTex(),color:P.c3,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
-  const dec=new THREE.Mesh(G.acc.decal,dm);dec.position.set(0,1.46,.121);b.add(dec);
-  const legs=[-1,1].map(side=>{const l=parte(side<0?G.legL:G.legR,new THREE.Group());l.position.set(side*.1,.93,0);b.add(l);return l;});
-  const head=parte(G.head,new THREE.Group());head.position.y=1.715;b.add(head);
+  const dec=new THREE.Mesh(G.acc.decal,dm);dec.position.set(0,1.47,.139);b.add(dec);
+  const legs=[-1,1].map(side=>{const l=parte(side<0?G.legL:G.legR,new THREE.Group());l.position.set(side*.108,.93,0);b.add(l);return l;});
+  const head=parte(G.head,new THREE.Group());head.position.y=1.735;b.add(head);
   const a=skin.a|0,A=G.acc;
   if(a===1)head.add(new THREE.Mesh(A.cresta,mC));
   if(a===2)head.add(new THREE.Mesh(A.antena,mK),new THREE.Mesh(A.antenaPunta,mC));
   if(a===3)for(const sx of [-1,1]){const h=new THREE.Mesh(A.cuerno,mC);h.position.set(sx*.1,.14,0);h.rotation.z=-sx*.5;head.add(h);}
   if(a===4)head.add(new THREE.Mesh(A.gorra,mA),new THREE.Mesh(A.visera,mA));
-  const armL=parte(G.armL,new THREE.Group());armL.position.set(-.19,1.52,0);b.add(armL);
-  const armR=parte(G.armR,new THREE.Group());armR.position.set(.19,1.52,0);b.add(armR);
+  const armL=parte(G.armL,new THREE.Group());armL.position.set(-.2,1.5,0);b.add(armL);
+  const armR=parte(G.armR,new THREE.Group());armR.position.set(.2,1.5,0);b.add(armR);
   // el arma que tiene en la mano (se cambia sola cuando cambia de arma)
-  const gun=new THREE.Group();gun.position.set(0,-.15,.56);gun.rotation.y=Math.PI;gun.scale.setScalar(1.2);armR.add(gun);
+  const gun=new THREE.Group();gun.position.set(0,-.15,.56);gun.rotation.y=Math.PI;gun.scale.setScalar(.72);armR.add(gun);
   if(noTag){gun.add(tpGun(1));gun.userData.w=1;}
   let tag=null;if(!noTag){tag=nameSprite(name,P.c);g.add(tag);}
   const bas=[mV];if(hasImg)bas.push(dm);   // materiales que brillan solos (de noche se apagan, ver 18-noche.js)

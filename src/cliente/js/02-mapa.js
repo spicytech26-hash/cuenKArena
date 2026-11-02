@@ -11,7 +11,7 @@ function skyDay(){return cv(1024,512,(g,w,h)=>{
   for(let x=0;x<w;x+=5){const bh=4+rnd()*rnd()*40;g.fillStyle=['#c9cdd2','#b7bcc2','#d8d4cc','#a9aeb4'][rnd()*4|0];g.fillRect(x,h*.5-bh,5,bh);}
   for(let x=0;x<w;x+=9){if(rnd()<.35){g.fillStyle='#4f6e3a';g.beginPath();g.arc(x,h*.5-2,4+rnd()*8,Math.PI,0);g.fill();}}
 });}
-const skyTex={dusk:new THREE.CanvasTexture(skyDusk()),night:new THREE.CanvasTexture(skyNight()),day:new THREE.CanvasTexture(skyDay()),sunset:new THREE.CanvasTexture(skySunset())};
+const skyTex={dusk:new THREE.CanvasTexture(skyDusk()),night:new THREE.CanvasTexture(skyNight()),halloween:new THREE.CanvasTexture(skyHalloween()),day:new THREE.CanvasTexture(skyDay()),sunset:new THREE.CanvasTexture(skySunset())};
 function quad(g,v,nrm,uvs,shade){
   const b=g.p.length/3;
   v.forEach(q=>g.p.push(q[0],q[1],q[2]));

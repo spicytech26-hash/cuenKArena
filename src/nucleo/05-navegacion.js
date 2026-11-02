@@ -17,7 +17,7 @@ function buildNav(W) {
       const qx = px + .013, qz = pz + .017;
       if (b.nc || b.mover || !(b.min[0] < qx && b.max[0] > qx && b.min[2] < qz && b.max[2] > qz)) continue;
       const t = topAt(b, qx, qz, qx, qz);
-      if (t > 12.5) continue;
+      if (t > (W.navMaxY || 12.5)) continue;   // navMaxY: mapas muy altos (Pyramid) suben el tope de los nodos de navegación
       if (!tops.some(q => Math.abs(q - t) < .05)) tops.push(t);
     }
     const list = [];

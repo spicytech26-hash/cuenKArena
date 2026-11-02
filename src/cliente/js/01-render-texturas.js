@@ -128,6 +128,20 @@ function skyDusk(){return cv(1024,512,(g,w,h)=>{
   for(let x=304;x<560;x+=18){g.fillStyle='#1a100c';g.fillRect(x,h*.5-24,8,22);g.fillStyle='rgba(255,170,90,.55)';g.fillRect(x+3,h*.5-20,2,3);}
   g.strokeStyle='#120a08';g.lineWidth=2;for(const tx of [120,700,860]){g.beginPath();g.moveTo(tx-10,h*.5);g.lineTo(tx,h*.5-60);g.lineTo(tx+10,h*.5);g.moveTo(tx-14,h*.5-46);g.lineTo(tx+14,h*.5-46);g.stroke();}
 });}
+function skyHalloween(){return cv(1024,512,(g,w,h)=>{
+  // noche de Halloween: cielo violeta, estrellas y una luna roja grande (en u=.25: hacia el sur, +z)
+  const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#08031a');gr.addColorStop(.3,'#1a0b34');gr.addColorStop(.46,'#3b1752');gr.addColorStop(.5,'#2a1038');gr.addColorStop(.52,'#0d0618');gr.addColorStop(1,'#07030f');
+  g.fillStyle=gr;g.fillRect(0,0,w,h);
+  for(let i=0;i<900;i++){const y=rnd()*h*.48;g.fillStyle='rgba(235,225,255,'+(rnd()*.95*(1-y/(h*.5)))+')';g.fillRect(rnd()*w|0,y|0,1,1);}
+  for(let i=0;i<26;i++){const x=rnd()*w,y=rnd()*h*.4;g.fillStyle='rgba(255,255,255,.9)';g.fillRect(x,y,2,2);g.fillStyle='rgba(200,170,255,.25)';g.fillRect(x-1,y-1,4,4);}
+  const mx=w*.25,my=h*.34,mr=38,halo=g.createRadialGradient(mx,my,mr*.8,mx,my,mr*4.2);halo.addColorStop(0,'rgba(255,60,50,.4)');halo.addColorStop(1,'rgba(255,60,50,0)');
+  g.fillStyle=halo;g.fillRect(mx-mr*4.4,my-mr*4.4,mr*8.8,mr*8.8);
+  const md=g.createRadialGradient(mx-mr*.25,my-mr*.25,mr*.1,mx,my,mr);md.addColorStop(0,'#ff8a70');md.addColorStop(.6,'#e03a30');md.addColorStop(1,'#9a1418');
+  g.fillStyle=md;g.beginPath();g.ellipse(mx,my,mr*1.15,mr,0,0,7);g.fill();   // más ancha que alta: la esfera del cielo la achata hacia arriba
+  for(let i=0;i<14;i++){const a=rnd()*6.28,d=rnd()*mr*.8,r=3+rnd()*8;g.fillStyle='rgba(90,10,20,'+(.15+rnd()*.25)+')';g.beginPath();g.ellipse(mx+Math.cos(a)*d*1.15,my+Math.sin(a)*d,r*1.15,r,0,0,7);g.fill();}
+  for(let i=0;i<22;i++){const x=rnd()*w,y=h*.1+rnd()*h*.32,rw=60+rnd()*120;if(Math.abs(x-mx)<rw+mr*1.6&&Math.abs(y-my)<mr*2.2)continue;g.fillStyle='rgba(14,5,30,'+(.25+rnd()*.3)+')';g.beginPath();g.ellipse(x,y,rw,5+rnd()*8,0,0,7);g.fill();}
+  g.fillStyle='rgba(150,60,170,.13)';g.fillRect(0,h*.46,w,h*.05);
+});}
 function skyNight(){return cv(1024,512,(g,w,h)=>{
   // noche de Posadas: costanera, el río y el puente a Encarnación
   const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#03020a');gr.addColorStop(.4,'#140b2a');gr.addColorStop(.49,'#3a1648');gr.addColorStop(.5,'#0a0712');gr.addColorStop(1,'#050308');

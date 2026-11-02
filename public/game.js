@@ -1635,13 +1635,14 @@ MAPDEFS.skatenight = buildSkatenight;
    · Nada de ítems en el pozo: armas, escudos y curación están en los pisos.
    · La punta y las 4 patas son sólidos (se choca y se pisa); las patas no cuentan para la navegación de los bots (nonav). Los obeliscos y los
      escombros también. El pozo está libre: nada adentro.
-   · Cada nivel tiene su color (material y luces) y adorno lovecraftiano: obeliscos con ojos, tentáculos que salen del agua, un ojo en el vacío.
+   · Cada nivel tiene su color (material y luces) y adorno lovecraftiano: obeliscos con ojos y un ojo en el vacío (los tentáculos se ven solo a lo lejos, en el cielo).
    · SIN linterna (no es theme.noche, eso es solo de Skatenight). Música y ambiente propios (theme.ambiente = 'piramide'). */
 function buildPyramid() {
   const { B, pads, teles, lava, spawns, lights, add, ramp, wall, stairs, D, face, I, mover, finish } = mapKit();
   const deco = [];
   const Y = [0, 4.8, 9.6, 14.4, 19.2];          // altura del piso de cada nivel
-  const S = [24, 19.5, 15, 10.5, 6];            // mitad del lado de cada nivel (las patas pasan justo por las esquinas)
+  const S = [19, 16, 13, 9.5, 6];               // mitad del lado de cada nivel (las patas pasan justo por las esquinas)
+  const F = [19 / 24, 16 / 19.5, 13 / 15, 9.5 / 10.5, 1];   // cuánto se achicó cada nivel respecto del diseño anterior: las posiciones de ítems, apariciones y cobertura se escalan con esto
   const H = 3;                                  // mitad del pozo central
   // cada nivel tiene su identidad: material del cuerpo y color de las luces
   const BODY = ['basalt', 'velvet', 'barnB', 'canyon', 'board'];   // lava, magenta, azul, naranja, verde
@@ -1686,23 +1687,13 @@ function buildPyramid() {
   add(-1.8, 24.4, -1.8, 1.8, 25.2, 1.8, 'trim'); add(-1.1, 25.2, -1.1, 1.1, 26, 1.1, 'trim'); add(-.5, 26, -.5, .5, 26.7, .5, 'trim');
   deco.push({ t: 'glow', x: 0, y: 27.3, z: 0, c: 0xc060ff, s: 1.6 });
 
-  /* ---- lovecraft: obeliscos con ojo en los primeros tres niveles, tentáculos que salen del agua y un ojo gigante en el vacío ---- */
+  /* ---- lovecraft: obeliscos con ojo en los primeros tres niveles y un ojo gigante en el vacío ---- */
   const obelisco = (k, x, z, h) => {
     const y = Y[k], c = LCOL[k];
     add(x - .7, y, z - .7, x + .7, y + .5, z + .7, 'basalt'); add(x - .45, y + .5, z - .45, x + .45, y + h * .72, z + .45, 'basalt'); add(x - .25, y + h * .72, z - .25, x + .25, y + h, z + .25, 'basalt');
     deco.push({ t: 'glow', x, y: y + h + .35, z, c, s: 1.3 }, { t: 'glow', x, y: y + h * .45, z, c, s: .7 });
   };
   for (const k of [0, 1, 2]) { const o = S[k] - (k ? 1.8 : 2); for (const [x, z] of [[o, 0], [-o, 0], [0, o], [0, -o]]) obelisco(k, x, z, 3.6); }
-  const tentaculo = (cx, cz, h, ang, rr) => {
-    const n = Math.round(h / 1.5);
-    for (let i = 0; i < n; i++) {
-      const t = i / n, r = rr * (1 - t * .8) + .3, x = cx + Math.sin(t * 4 + ang) * 5 * t, z = cz + Math.cos(t * 3.4 + ang) * 5 * t, y = -14 + t * h;
-      add(x - r, y, z - r, x + r, y + 1.7, z + r, i % 3 === 2 ? 'grass' : 'barn', { nc: 1 });
-      if (i % 4 === 3) deco.push({ t: 'glow', x: x + r * .9, y: y + .8, z, c: 0x70ff50, s: .6 });
-    }
-    const t = (n - 1) / n; deco.push({ t: 'glow', x: cx + Math.sin(t * 4 + ang) * 5 * t, y: -14 + h + .5, z: cz + Math.cos(t * 3.4 + ang) * 5 * t, c: 0xe040ff, s: 1.5 });   // ojo en la punta
-  };
-  for (let i = 0; i < 8; i++) { const a = i * .785 + .3, r = 38 + (i % 3) * 6; tentaculo(Math.cos(a) * r, Math.sin(a) * r, 18 + (i % 4) * 7, i * 1.3, 2.4 + (i % 2) * .6); }
   deco.push({ t: 'glow', x: 0, y: -9, z: 0, c: 0x6a1a8a, s: 18 }, { t: 'glow', x: 0, y: -9.5, z: 0, c: 0xb040ff, s: 7 }, { t: 'glow', x: 0, y: -9.8, z: 0, c: 0xfff0c0, s: 2 });   // el ojo
   lava.push({ min: [-500, -40, -500], max: [500, -14, 500], water: true, dps: 0 });
   for (const [x, z, w] of [[-34, -22, 5], [30, 28, 6], [-30, 32, 4], [36, -18, 4], [0, -44, 7], [-44, 4, 5]]) add(x, -15, z, x + w, -12.6, z + w * .8, 'rock', { nc: 1 });
@@ -1715,15 +1706,15 @@ function buildPyramid() {
   /* ---- cobertura: cajones y muretes en cada nivel (para pelear, no para encerrarse) ---- */
   const cajon = (x, y, z, s) => add(x - s * .7, y, z - s * .7, x + s * .7, y + s, z + s * .7, 'crate');
   const muro = (x0, z0, x1, z1, y) => { add(x0, y, z0, x1, y + 1.5, z1, 'concrete'); add(x0 - .06, y + 1.5, z0 - .06, x1 + .06, y + 1.62, z1 + .06, 'smooth'); };
-  for (const [x, z] of [[-12, -17], [12, 17]]) muro(x - 2.5, z - .2, x + 2.5, z + .2, 0);
-  for (const [x, z] of [[-17, 12], [17, -12]]) muro(x - .2, z - 2.5, x + .2, z + 2.5, 0);
-  for (const [x, z] of [[-6, 16], [6, -16], [-16, -6], [16, 6], [-20, -20], [20, 20]]) cajon(x, 0, z, 1.4);
-  for (const [x, z] of [[-10, -16], [10, 16], [-16, 10], [16, -10]]) cajon(x, Y[1], z, 1.3);
-  for (const [x, z] of [[-6, -12], [6, 12], [-12, 6], [12, -6]]) cajon(x, Y[2], z, 1.3);
-  for (const [x, z] of [[-4.5, -9], [4.5, 9]]) cajon(x, Y[3], z, 1.2);
+  for (const [x, z] of [[-12, -17], [12, 17]]) muro(x * F[0] - 2.5, z * F[0] - .2, x * F[0] + 2.5, z * F[0] + .2, 0);
+  for (const [x, z] of [[-17, 12], [17, -12]]) muro(x * F[0] - .2, z * F[0] - 2.5, x * F[0] + .2, z * F[0] + 2.5, 0);
+  for (const [x, z] of [[-6, 16], [6, -16], [-16, -6], [16, 6], [-20, -20], [20, 20]]) cajon(x * F[0], 0, z * F[0], 1.4);
+  for (const [x, z] of [[-10, -16], [10, 16], [-16, 10], [16, -10]]) cajon(x * F[1], Y[1], z * F[1], 1.3);
+  for (const [x, z] of [[-6, -12], [6, 12], [-12, 6], [12, -6]]) cajon(x * F[2], Y[2], z * F[2], 1.3);
+  for (const [x, z] of [[-4.5, -9], [4.5, 9]]) cajon(x * F[3], Y[3], z * F[3], 1.2);
 
   /* ---- ítems: todo en los pisos, en esquinas, laterales y cerca del pozo (ninguno flota en la gravedad cero) ---- */
-  const it = (k, list) => list.forEach(([t, x, z]) => I(t, x, Y[k], z));
+  const it = (k, list) => list.forEach(([t, x, z]) => I(t, x * F[k], Y[k], z * F[k]));
   it(0, [['w1', -14, 14], ['w2', -14, -14], ['w3', 14, 14], ['armor', 14, -14], ['armor', -21, 21], ['health', -19, 0], ['health', 19, 0], ['health', -10, -21], ['health', 10, 21],
     ['shells', -8, 5], ['bullets', 8, -5], ['rockets', 6, 8], ['grenades', -6, -8], ['slugs', 22, 16], ['caza', -22, -16]]);
   it(1, [['w4', -14, -14], ['w9', 14, 14], ['armor', 14, -14], ['health', -14, 14], ['health', 0, 14.5], ['shells', 0, -14.5], ['rockets', 12, 0], ['bullets', -12, 0], ['health', 7, -7]]);
@@ -1732,10 +1723,10 @@ function buildPyramid() {
   it(4, [['w8', -3.9, -3.9], ['armor', 3.9, 3.9], ['health', 3.9, -3.9], ['health', -3.9, 3.9], ['armorH', 0, -4.5], ['slugs', -4.5, 0], ['shells', 4.5, 0]]);
 
   /* ---- apariciones: repartidas por todos los niveles ---- */
-  const sp = (k, list) => list.forEach(([x, z]) => spawns.push({ x, y: Y[k], z, yaw: face(x, z, 0, 0) }));
+  const sp = (k, list) => list.forEach(([x, z]) => { x *= F[k]; z *= F[k]; spawns.push({ x, y: Y[k], z, yaw: face(x, z, 0, 0) }); });
   sp(0, [[-20, -18], [18, -20], [20, 18], [-18, 20], [-20, 6], [20, -6], [6, 20], [-6, -20], [-9, -9], [9, 9], [9, -9], [-9, 9]]);
-  sp(1, [[-17, -17], [17, 17], [17, -17], [-17, 17], [-8, -16], [8, 16], [16, 8], [-16, -8]]);
-  sp(2, [[-12, -12], [12, 12], [12, -12], [-12, 12], [-5, 12], [5, -12]]);
+  sp(1, [[-12, -17], [12, 17], [17, -12], [-17, 12], [-8, -16], [8, 16], [16, 8], [-16, -8]]);
+  sp(2, [[-14, -3], [14, 3], [3, -14], [-3, 14], [-5, 12], [5, -12]]);
   sp(3, [[-8.5, -5], [8.5, 5], [5, -8.5], [-5, 8.5]]);
   sp(4, [[0, 4.5], [-4.5, 2], [4.5, -2], [2, -4.5]]);
 
@@ -1764,8 +1755,8 @@ function buildPyramid() {
     }
     for (const [x0, z0, x1, z1] of [[-s, -s, s, -H], [-s, H, s, s], [-s, -H, -H, H], [H, -H, s, H]]) deco.push({ t: 'bruma', soft: 1, x0, x1, z0, z1, y: y + .35, o: .1, dir: k % 2 ? 1 : -1 });   // bruma pegada al piso
   }
-  for (const [k, x, z] of [[0, 21, -21], [0, -21, -21], [0, 22.5, 6], [0, -22.5, -6], [1, 16.5, -16.5], [1, -16.5, -16.5], [2, 12.5, -12.5], [2, -12.5, 12.5]]) {   // montones de escombros (sólidos, sirven de cobertura)
-    const y = Y[k];
+  for (let [k, x, z] of [[0, 21, -21], [0, -21, -21], [0, 22.5, 6], [0, -22.5, -6], [1, 16.5, -16.5], [1, -16.5, -16.5], [2, 12.5, -12.5], [2, -12.5, 12.5]]) {   // montones de escombros (sólidos, sirven de cobertura)
+    const y = Y[k]; x *= F[k]; z *= F[k];
     add(x - .9, y, z - .7, x + .9, y + .7, z + .7, 'rock'); add(x - .5, y + .7, z - .4, x + .5, y + 1.2, z + .4, 'rock'); add(x + .7, y, z - 1.4, x + 1.5, y + .4, z - .7, 'rock'); add(x - 1.5, y, z + .3, x - .9, y + .35, z + 1, 'rock');
   }
 
@@ -1791,11 +1782,11 @@ function buildPyramid() {
   scatter([0, 1, 2, 3, 4, 5], 110, 2.5, 5.5); scatter([14, 15, 16, 17], 46, 1.8, 3.6); scatter([26, 27, 28, 29], 34, 2.2, 4); scatter([30, 31], 14, 2, 3.6); scatter([6, 7, 8, 9], 26, 2, 3.8); scatter([22, 23, 24, 25], 40, 1.5, 2.6);
 
   /* ---- luces de color: cada nivel con su tono (el pozo, apenas un resplandor celeste) ---- */
-  for (let k = 0; k <= 4; k++) { const o = S[k] * .55; lights.push({ x: o, y: Y[k] + 2.6, z: -o, c: LCOL[k], i: .75, d: 20 }, { x: -o, y: Y[k] + 2.6, z: o, c: LCOL[k], i: .75, d: 20 }); }
+  for (let k = 0; k <= 4; k++) { const o = S[k] * .55; lights.push({ x: o, y: Y[k] + 2.6, z: -o, c: LCOL[k], i: .6, d: 18 }, { x: -o, y: Y[k] + 2.6, z: o, c: LCOL[k], i: .6, d: 18 }); }
   lights.push({ x: 0, y: 4, z: 0, c: 0x40e0ff, i: .3, d: 12 }, { x: 0, y: 14, z: 0, c: 0x40e0ff, i: .3, d: 12 }, { x: 0, y: -8, z: 0, c: 0xb040ff, i: .9, d: 18 });
 
-  return finish({ id: 'pyramid', name: 'Pyramid', navMaxY: 24, zerog, bounds: { x0: -26, x1: 26, z0: -26, z1: 26 }, deco, modos: ['arena', 'gungame'],
-    theme: { sky: 'halloween', tex: 'ruina', ambiente: 'piramide', fog: 0x16102e, fogD: .0055, amb: 0x7a64b8, ambI: .62, hemi: [0x9a80e0, 0x6a5290, .7], sun: true, sunC: 0xb8a0d8, sunI: .5, sunPos: [0, 60, 50], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
+  return finish({ id: 'pyramid', name: 'Pyramid', navMaxY: 24, zerog, bounds: { x0: -21, x1: 21, z0: -21, z1: 21 }, deco, modos: ['arena', 'gungame'],
+    theme: { sky: 'halloween', tex: 'ruina', ambiente: 'piramide', fog: 0x0c0818, fogD: .006, amb: 0x5a4a90, ambI: .48, hemi: [0x6a58a8, 0x3a2a58, .52], sun: true, sunC: 0x9a88c0, sunI: .4, sunPos: [0, 60, 50], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
 }
 MAPDEFS.pyramid = buildPyramid;
 const MAPS = {};

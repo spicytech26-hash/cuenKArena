@@ -3670,11 +3670,12 @@ function nightAmbient(dt){
     else if(k<.75)tn({type:'sine',f0:72,f1:36,dur:.55,vol:.2});
     else nz({dur:1,f0:2000,f1:900,type:'bandpass',q:5,vol:.035});}
 }
-// música de Pyramid: electrónica de tracker con orquesta y guitarras, en la onda de Unreal Tournament (DM-Pyramid suena "bouncy" y a tempo medio).
+// música de Pyramid: base de electrónica de tracker con cuerdas y guitarras, pero SUAVE, como las bases de los primeros Doom (música de fondo que acompaña un
+// nivel entero sin cansar): sin picos (compresor + filtro que corta los agudos), percusión blanda, ataques lentos, notas largas y mucho pad.
 // Una pieza larga de 80 compases (unos 2 min 20 s) a 140 BPM con diez secciones que cambian de tonalidad, acordes, batería, bajo, guitarra y melodía:
 // intro, A, B (melodía), pausa, C y D (modula a Sol), interludio en La, puente oscuro, subida y final. Pasa por musicGain (barra de "música" de Ajustes).
 let pMus=null;
-const PM_S=60/140/4,PM_VOL=.4;                                            // un 16avo; volumen general de la música (bajo, para no cansar)
+const PM_S=60/140/4,PM_VOL=.3;                                            // un 16avo; volumen general de la música (bajo, para no cansar)
 const PM_PROG={
   A:[[0,'m'],[0,'m'],[-4,'M'],[-2,'M'],[0,'m'],[0,'m'],[1,'M'],[-5,'M']],
   B:[[0,'m'],[-4,'M'],[-2,'M'],[-5,'M'],[0,'m'],[-4,'M'],[1,'M'],[-5,'M']],
@@ -3712,48 +3713,56 @@ function pmOsc(type,f,t,dur,vol,o){
   node.connect(g);g.connect(o.out||pMus.bus);if(o.dly)g.connect(pMus.dly);osc.start(t);osc.stop(t+dur+.03);
 }
 function pmInit(){
-  const bus=AC.createGain();bus.gain.value=0;bus.connect(musicGain||master);
-  const dly=AC.createDelay(1);dly.delayTime.value=PM_S*3;const fb=AC.createGain();fb.gain.value=.36;const df=AC.createBiquadFilter();df.type='lowpass';df.frequency.value=2200;dly.connect(df);df.connect(fb);fb.connect(dly);df.connect(bus);
-  const gtr=AC.createGain(),ws=AC.createWaveShaper(),c=new Float32Array(256);for(let i=0;i<256;i++){const x=i/128-1;c[i]=(3+40)*x*.35/(1+40*.35*Math.abs(x)*.5);}ws.curve=c;
-  const gl=AC.createBiquadFilter();gl.type='lowpass';gl.frequency.value=2200;gtr.connect(ws);ws.connect(gl);gl.connect(bus);   // guitarra: saturación + filtro
+  const bus=AC.createGain();bus.gain.value=0;
+  const cp=AC.createDynamicsCompressor();cp.threshold.value=-34;cp.knee.value=24;cp.ratio.value=10;cp.attack.value=.004;cp.release.value=.3;   // aplana los picos
+  const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3400;lp.Q.value=.3;                                                 // sin agudos molestos
+  bus.connect(cp);cp.connect(lp);lp.connect(musicGain||master);
+  const dly=AC.createDelay(1);dly.delayTime.value=PM_S*3;const fb=AC.createGain();fb.gain.value=.3;const df=AC.createBiquadFilter();df.type='lowpass';df.frequency.value=1500;dly.connect(df);df.connect(fb);fb.connect(dly);df.connect(bus);
+  const gtr=AC.createGain(),ws=AC.createWaveShaper(),c=new Float32Array(256);for(let i=0;i<256;i++){const x=i/128-1;c[i]=Math.tanh(x*2.2)*.8;}ws.curve=c;
+  const gl=AC.createBiquadFilter();gl.type='lowpass';gl.frequency.value=1300;gtr.connect(ws);ws.connect(gl);gl.connect(bus);   // guitarra: saturación suave + filtro
   pMus={bus,dly,gtr,next:0,step:0,on:false};
 }
+// ruido con ataque suave (para la percusión): filtro, subida de 8 ms y caída
+function pmNz(t,dur,f0,f1,type,vol){
+  const s=AC.createBufferSource();s.buffer=noiseBuf;const f=AC.createBiquadFilter();f.type=type;f.frequency.setValueAtTime(f0,t);f.frequency.exponentialRampToValueAtTime(Math.max(40,f1),t+dur);f.Q.value=.6;
+  const g=AC.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+dur);s.connect(f);f.connect(g);g.connect(pMus.bus);s.start(t,Math.random()*.5);s.stop(t+dur+.02);
+}
 function pmDrums(dr,bar,st,t,last){
-  const B=pMus.bus,kick=v=>{tn({type:'sine',f0:165,f1:44,dur:.2,vol:.8*v,at:t,out:B});nz({dur:.015,f0:3000,f1:800,type:'highpass',vol:.2*v,at:t,out:B});};
-  const snare=v=>{nz({dur:.15,f0:3200,f1:1100,type:'bandpass',q:.7,vol:.45*v,at:t,out:B});tn({type:'triangle',f0:210,f1:120,dur:.09,vol:.25*v,at:t,out:B});};
-  const hat=v=>nz({dur:.035,f0:9500,f1:7500,type:'highpass',vol:.1*v,at:t,out:B});
-  if(dr===0){if(st===0||(st===8&&bar%2))kick(.7);if(st%4===2)hat(.6);}
-  else if(dr===1){if([0,6,8,11].includes(st)||(bar%4===3&&st===14))kick(1);if(st===4||st===12)snare(1);if(st===15&&bar%2)snare(.4);hat(st%2===0?(st%4===2?1.5:1):.45);if(st===10)nz({dur:.2,f0:8000,f1:5000,type:'highpass',vol:.12,at:t,out:B});}
-  else if(dr===2){if(st%4===0||st===14||(st===7&&bar%2))kick(1);if(st===4||st===12)snare(1);hat(st%2?.9:1.1);if(st===2||st===10)nz({dur:.1,f0:8000,f1:6000,type:'highpass',vol:.1,at:t,out:B});}
-  else if(dr===3){if(st===0||(st===10&&bar%2))kick(1);if(st===8)snare(1);if(st%4===2)hat(1);if(st===15&&bar%4===3)snare(.6);}
-  else if(dr===4){if(st===0||st===10)kick(.9);if(st===4||st===13)tn({type:'sine',f0:150,f1:70,dur:.25,vol:.5,at:t,out:B});if(st===8&&bar%2)tn({type:'sine',f0:200,f1:90,dur:.25,vol:.4,at:t,out:B});if(st%8===6)hat(.7);}
-  else if(dr===5){if(st%4===0)kick(1);snare(.18+(bar*16+st)/128*.6);if(st%2===0)hat(.8);}
-  if(last&&bar%4===3&&st>=12&&dr!==5)tn({type:'sine',f0:230-(st-12)*22,f1:90,dur:.2,vol:.5,at:t,out:B});   // redoble al cerrar cada frase
+  const kick=v=>pmOsc('sine',118,t,.26,.5*v,{f1:46,att:.006,rel:.2}),tom=(f,v)=>pmOsc('sine',f,t,.3,.3*v,{f1:f*.5,att:.008,rel:.25});
+  const snare=v=>{pmNz(t,.2,1700,700,'bandpass',.16*v);pmOsc('triangle',190,t,.12,.08*v,{f1:130,att:.006});};
+  const hat=v=>pmNz(t,.05,6500,5000,'bandpass',.03*v);
+  if(dr===0){if(st===0||(st===8&&bar%2))kick(.7);if(st%8===4)hat(.7);}
+  else if(dr===1){if([0,6,8,11].includes(st)||(bar%4===3&&st===14))kick(1);if(st===4||st===12)snare(1);if(st===15&&bar%2)snare(.3);if(st%4===2)hat(1);}
+  else if(dr===2){if(st%4===0||(st===14&&bar%2))kick(1);if(st===4||st===12)snare(1);if(st%2===0)hat(.9);}
+  else if(dr===3){if(st===0||(st===10&&bar%2))kick(1);if(st===8)snare(.9);if(st%8===4)hat(.8);}
+  else if(dr===4){if(st===0||st===10)kick(.8);if(st===4||st===13)tom(150,.8);if(st===8&&bar%2)tom(200,.7);}
+  else if(dr===5){if(st%4===0)kick(.9);if(st%2===0)snare(.12+(bar*16+st)/128*.4);if(st%4===2)hat(.8);}
+  if(last&&bar%4===3&&st>=12&&dr!==5)tom(230-(st-12)*22,.8);   // redoble al cerrar cada frase
 }
 function pmStep(i){
   const t=pMus.next,gb=(i>>4)%80,sec=PM_SEC[gb>>3],bar=gb&7,st=i&15,B=pMus.bus,ch=PM_PROG[sec.prog][bar],tones=PM_Q[ch[1]];
   const root=82.41*Math.pow(2,(sec.key+ch[0])/12),tonic=164.81*Math.pow(2,sec.key/12);
   const nt=k=>[0,tones[1],tones[2],12,12+tones[1],12+tones[2]][k];
   pmDrums(sec.dr,bar,st,t,true);
-  if(st===0&&bar===0)nz({dur:1.4,f0:9000,f1:5000,type:'highpass',vol:.16,at:t,out:B});                                      // platillo al empezar cada sección
-  if(sec.rs&&bar===7&&st===0)nz({dur:PM_S*16,f0:500,f1:9000,type:'bandpass',q:1.5,vol:.2,at:t,out:B});                       // subida de ruido
+  if(st===0&&bar===0)pmNz(t,1.8,3200,1200,'bandpass',.05);                                      // platillo al empezar cada sección
+  if(sec.rs&&bar===7&&st===0)pmNz(t,PM_S*16,400,3000,'bandpass',.07);                       // subida de ruido
   // bajo
   const bn=PM_BASS[sec.bass][st];
-  if(sec.bass===0){if(st===0)pmOsc('sawtooth',root,t,PM_S*15,.15,{lp:500,lp1:200,q:2,att:.05,rel:.2});}
-  else if(bn>=0)pmOsc('sawtooth',root*Math.pow(2,bn/12),t,PM_S*.85,.18,{lp:900,lp1:220,q:3,rel:.03});
+  if(sec.bass===0){if(st===0)pmOsc('sawtooth',root,t,PM_S*15,.11,{lp:420,lp1:190,q:1,att:.12,rel:.3});}
+  else if(bn>=0)pmOsc('sawtooth',root*Math.pow(2,bn/12),t,PM_S*.9,.12,{lp:650,lp1:230,q:1.2,att:.012,rel:.06});
   // guitarra
-  if(sec.g===3){if(st===0)for(const m of [1,1.4983,2])pmOsc('sawtooth',root*2*m,t,PM_S*15,.04,{out:pMus.gtr,att:.03,rel:.3});}
-  else if(sec.g&&bar>=(sec.g===1?2:0)&&PM_GT[sec.g].includes(st)){const d=st===0||st===8?PM_S*1.6:PM_S*.7;for(const m of [1,1.4983,2])pmOsc('sawtooth',root*2*m,t,d,.05,{out:pMus.gtr,rel:.02});}
+  if(sec.g===3){if(st===0)for(const m of [1,1.4983,2])pmOsc('sawtooth',root*2*m,t,PM_S*15,.03,{out:pMus.gtr,att:.25,rel:.5});}
+  else if(sec.g&&bar>=(sec.g===1?2:0)&&PM_GT[sec.g].includes(st)){const d=st===0||st===8?PM_S*1.6:PM_S*.7;for(const m of [1,1.4983,2])pmOsc('sawtooth',root*2*m,t,d,.032,{out:pMus.gtr,att:.012,rel:.05});}
   // arpegio
-  if(sec.arp){const k=PM_ARP[st],oct=sec.arp===3?2:1;pmOsc(sec.arp===3?'triangle':'square',root*4*oct*Math.pow(2,nt(k)/12),t,PM_S*.8,sec.arp===2?.032:sec.arp===3?.035:.02,{lp:2400,dly:1,rel:.03});}
+  if(sec.arp){const k=PM_ARP[st],oct=sec.arp===3?2:1;pmOsc('triangle',root*4*oct*Math.pow(2,nt(k)/12),t,PM_S*.9,sec.arp===2?.028:sec.arp===3?.026:.016,{lp:1700,dly:1,att:.01,rel:.05});}
   // melodías
-  if(sec.mel===1){const ph=bar&3,notes=bar<4||ph<3?PM_M1[ph]:PM_M1B;for(const [s0,len,sm] of notes)if(s0===st)for(const dt of [-5,5])pmOsc('sawtooth',tonic*Math.pow(2,sm/12)*Math.pow(2,dt/1200),t,PM_S*len*.95,.026,{lp:3000,dly:1,att:.012,rel:.08});}
-  if(sec.mel===2){const k=PM_M2[bar&3][st];if(k>=0)pmOsc('sawtooth',tonic*Math.pow(2,[0,3,7,10,12,15,19,22][k]/12),t,PM_S*1.6,.03,{lp:3400,dly:1,rel:.05});}
-  if(sec.mel===3){for(const [s0,len,sm] of PM_M3[bar&3])if(s0===st){pmOsc('triangle',tonic*Math.pow(2,sm/12),t,PM_S*len,.06,{dly:1,att:.08,rel:.3});pmOsc('sine',tonic*2*Math.pow(2,sm/12),t,PM_S*len,.02,{att:.15,rel:.3});}}
+  if(sec.mel===1){const ph=bar&3,notes=bar<4||ph<3?PM_M1[ph]:PM_M1B;for(const [s0,len,sm] of notes)if(s0===st)for(const dt of [-5,5])pmOsc('sawtooth',tonic*Math.pow(2,sm/12)*Math.pow(2,dt/1200),t,PM_S*len*.95,.016,{lp:1700,dly:1,att:.07,rel:.15});}
+  if(sec.mel===2){const k=PM_M2[bar&3][st];if(k>=0)pmOsc('triangle',tonic*Math.pow(2,[0,3,7,10,12,15,19,22][k]/12),t,PM_S*1.8,.03,{lp:2200,dly:1,att:.02,rel:.1});}
+  if(sec.mel===3){for(const [s0,len,sm] of PM_M3[bar&3])if(s0===st){pmOsc('triangle',tonic*Math.pow(2,sm/12),t,PM_S*len,.045,{dly:1,att:.2,rel:.5});pmOsc('sine',tonic*2*Math.pow(2,sm/12),t,PM_S*len,.012,{att:.3,rel:.5});}}
   // cuerdas, campana, coro
-  if(st===0){const pv=sec.pad===2?.04:.028;for(const m of tones)for(const dt of [-6,6])pmOsc('sawtooth',root*4*Math.pow(2,m/12)*Math.pow(2,dt/1200),t,PM_S*16,pv,{lp:900,att:.4,rel:.7});
-    if(bar%4===0){pmOsc('triangle',tonic*4,t,2.4,.045,{dly:1,rel:2});pmOsc('sine',tonic*4*2.76,t,1.2,.012,{rel:1});}
-    if(sec.ch&&bar%2===0)for(const m of tones)pmOsc('triangle',root*8*Math.pow(2,m/12),t,PM_S*32,.02,{att:1,rel:1.4,lp:1800});}
+  if(st===0){const pv=sec.pad===2?.05:.04;for(const m of tones)for(const dt of [-6,6])pmOsc('sawtooth',root*4*Math.pow(2,m/12)*Math.pow(2,dt/1200),t,PM_S*16,pv,{lp:800,att:.9,rel:1.2});
+    if(bar%4===0){pmOsc('sine',tonic*2,t,3.2,.035,{dly:1,att:.12,rel:2.4});}
+    if(sec.ch&&bar%2===0)for(const m of tones)pmOsc('triangle',root*8*Math.pow(2,m/12),t,PM_S*32,.016,{att:1.6,rel:2,lp:1500});}
 }
 function pyramidAmbient(dt,on){
   const t=AC.currentTime,play=on&&inGame&&!paused;

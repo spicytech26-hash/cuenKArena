@@ -396,7 +396,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 #menu .mrow .btn::after{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:#7c6a62;text-shadow:none;transition:color .15s}
 #bOnline::after{content:"Partida con otros jugadores"}
 #bOffline::after{content:"Vos contra los bots"}
-#bLocker::after{content:"Armadura, visor y accesorios"}
+#bLocker::after{content:"Customizá tu armadura"}
 #bSet::after{content:"Controles · video · audio · mira · juego"}
 #bLeave::after{content:"Volver al inicio"}
 #menu .mrow .btn:hover:not(:disabled),#menu .mrow .btn:focus-visible,#menu .mrow .btn[aria-expanded="true"]{background-size:100% 100%;transform:translateX(12px);color:#fff}
@@ -563,6 +563,38 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 .lockzoom button{width:26px;height:26px;padding:0;font:700 15px/1 var(--mono);color:#e6d9b8;background:linear-gradient(#4a4e56,#2a2c31);border:1px solid #000;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 2px 0 #000;cursor:pointer}
 .lockzoom button:hover,.lockzoom button:focus-visible{color:#fff;background:linear-gradient(#6a2018,#3a1010);outline:none}
 .lockzoom button:active{transform:translateY(1px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+
+/* taquilla v2: looks, pestañas por parte y una sola paleta a la vez */
+.lkhead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.lktitle{font-family:var(--display);font-size:24px;letter-spacing:.06em;color:var(--bone);text-transform:uppercase;line-height:1.05}
+.lktitle small{display:block;margin-top:5px;font-family:var(--mono);font-size:12px;letter-spacing:.04em;text-transform:none;color:var(--muted)}
+.lkacts{display:flex;gap:8px}
+#menu .lkacts .btn{padding:6px 12px;font-size:13px}
+#menu .lockopts .lkcap{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+#menu .lockopts .lkcap::before{content:"";width:14px;height:2px;background:var(--blood)}
+.lklooks{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:6px}
+.lklook{position:relative;display:flex;flex-direction:column;gap:5px;padding:5px 5px 4px;background:#0c0709;border:2px solid #000;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);cursor:pointer;color:var(--muted);font-family:var(--display);font-size:11px;letter-spacing:.04em;text-transform:uppercase;transition:transform .12s,color .12s,background .12s}
+.lklook:hover,.lklook:focus-visible{transform:translateY(-3px);color:#fff;background:#2a0c10;outline:none}
+.lklook:active{transform:translateY(0)}
+.lklook .bars{display:grid;grid-template-columns:1.3fr 1fr 1fr;height:20px;border:1px solid #000}
+.lklook .bars i{display:block}
+.lktabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;margin-top:4px;border-bottom:2px solid #000}
+.lktabs button{position:relative;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 4px 9px;font-family:var(--display);font-size:13px;letter-spacing:.06em;text-transform:uppercase;background:#0c0709;color:#8c7f74;border:2px solid #000;border-bottom:none;margin-right:-2px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);transition:color .12s,background .12s}
+.lktabs button i{width:13px;height:13px;background:var(--c,#888);border:1px solid #000;box-shadow:0 0 0 1px rgba(255,255,255,.25);transform:rotate(45deg);transition:transform .2s}
+.lktabs button:hover{color:#fff;background:#1a0b10}
+.lktabs button[aria-selected="true"]{background:linear-gradient(#3a1015,#1a0a0d);color:#fff;box-shadow:inset 0 3px 0 var(--blood)}
+.lktabs button[aria-selected="true"] i{transform:rotate(45deg) scale(1.25)}
+.lkpane{display:flex;flex-direction:column;gap:10px;padding:14px;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.01));border:2px solid #000;border-top:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);animation:lkIn .22s ease-out}
+.lkpane[hidden]{display:none}
+@keyframes lkIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+#menu .lkpane .sw-row{gap:8px}
+#menu .lkpane .sw-row button[data-c]{width:40px;height:40px}
+#menu .lkpane .sw-row button[data-c][aria-pressed="true"]{outline:3px solid #fff;outline-offset:2px;box-shadow:inset 0 0 0 2px #000,0 0 14px rgba(255,255,255,.25)}
+#menu .lkpane .sw-row .auto{height:40px}
+#menu .lkpane .sw-row input[type=color]{width:46px;height:40px}
+.lkfoot{margin:0}
+@media (prefers-reduced-motion:reduce){.lkpane{animation:none}.lklook,.lktabs button i{transition:none}}
+@media (max-width:620px){.lktabs button{padding:9px 3px 8px;font-size:11px}.lktabs button i{display:none}}
 </style>
 
 <canvas id="c"></canvas>
@@ -746,23 +778,48 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
               <div class="lockplate" aria-hidden="true">Taquilla Nº <b>07</b></div>
             </div>
             <div class="lockopts">
-              <div class="lab">Armadura (casco y base)</div><div class="sw-row" id="swBody"></div>
-              <div class="lab">Pecho</div><div class="sw-row" id="swPecho"></div>
-              <div class="lab">Brazos y manos</div><div class="sw-row" id="swBrazos"></div>
-              <div class="lab">Piernas y cadera</div><div class="sw-row" id="swPiernas"></div>
-              <div class="lab">Partes secundarias y articulaciones</div><div class="sw-row" id="swBody2"></div>
-              <div class="lab">Detalles y luces</div><div class="sw-row" id="swBody3"></div>
-              <div class="lab">Visor</div><div class="sw-row" id="swVisor"></div>
-              <div class="lab">Accesorio</div><div class="seg" id="segAcc" role="group" aria-label="Accesorio" style="grid-column:auto"></div>
-              <div class="lab">Imagen en el pecho</div>
-              <div class="chestrow">
-                <img id="chestPrev" alt="Imagen del pecho" width="56" height="56" style="width:56px;height:56px;border:1px solid #000;background:#2e2a26;object-fit:cover" hidden>
-                <label class="btn" for="chestFile" style="cursor:pointer">Elegir foto…</label>
-                <input type="file" id="chestFile" accept="image/png,image/jpeg,image/webp" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
-                <button type="button" class="btn" id="chestDel" hidden>Quitar</button>
+              <div class="lkhead">
+                <div class="lktitle">Customizá tu armadura<small>Elegí una parte y probá colores: la vista se acerca sola.</small></div>
+                <div class="lkacts">
+                  <button type="button" class="btn" id="lkRand" title="Una combinación al azar">Aleatorio</button>
+                  <button type="button" class="btn" id="lkReset" title="Volver a los colores de fábrica">Restablecer</button>
+                </div>
               </div>
-              <p class="note" id="chestNote" style="margin:0">PNG o JPG. Se recorta cuadrada al centro y va en el pecho.</p>
-              <p class="note">Los cambios se guardan solos. Si estás en una partida online, los demás te ven así al instante.</p>
+              <div class="lkcap">Looks listos</div>
+              <div class="lklooks" id="lkLooks" role="group" aria-label="Looks listos"></div>
+              <div class="lktabs" id="lkTabs" role="tablist" aria-label="Partes de la armadura">
+                <button type="button" role="tab" id="lkT-casco" data-tab="casco" aria-selected="true" aria-controls="lkP-casco"><i></i>Casco</button>
+                <button type="button" role="tab" id="lkT-pecho" data-tab="pecho" aria-selected="false" aria-controls="lkP-pecho" tabindex="-1"><i></i>Pecho</button>
+                <button type="button" role="tab" id="lkT-brazos" data-tab="brazos" aria-selected="false" aria-controls="lkP-brazos" tabindex="-1"><i></i>Brazos</button>
+                <button type="button" role="tab" id="lkT-piernas" data-tab="piernas" aria-selected="false" aria-controls="lkP-piernas" tabindex="-1"><i></i>Piernas</button>
+                <button type="button" role="tab" id="lkT-detalles" data-tab="detalles" aria-selected="false" aria-controls="lkP-detalles" tabindex="-1"><i></i>Detalles</button>
+              </div>
+              <div class="lkpane" id="lkP-casco" role="tabpanel" aria-labelledby="lkT-casco">
+                <div class="lkcap">Color del casco</div><div class="sw-row" id="swBody"></div>
+                <div class="lkcap">Visor</div><div class="sw-row" id="swVisor"></div>
+                <div class="lkcap">Accesorio</div><div class="seg" id="segAcc" role="group" aria-label="Accesorio"></div>
+              </div>
+              <div class="lkpane" id="lkP-pecho" role="tabpanel" aria-labelledby="lkT-pecho" hidden>
+                <div class="lkcap">Color del pecho</div><div class="sw-row" id="swPecho"></div>
+                <div class="lkcap">Emblema</div>
+                <div class="chestrow">
+                  <img id="chestPrev" alt="Imagen del pecho" width="56" height="56" style="width:56px;height:56px;border:1px solid #000;background:#2e2a26;object-fit:cover" hidden>
+                  <label class="btn" for="chestFile" style="cursor:pointer">Elegir foto…</label>
+                  <input type="file" id="chestFile" accept="image/png,image/jpeg,image/webp" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
+                  <button type="button" class="btn" id="chestDel" hidden>Quitar</button>
+                </div>
+                <p class="note" id="chestNote" style="margin:0">PNG o JPG. Se recorta cuadrada al centro y va en el pecho; sin foto lleva el ancla.</p>
+              </div>
+              <div class="lkpane" id="lkP-brazos" role="tabpanel" aria-labelledby="lkT-brazos" hidden>
+                <div class="lkcap">Color de brazos y manos</div><div class="sw-row" id="swBrazos"></div>
+              </div>
+              <div class="lkpane" id="lkP-piernas" role="tabpanel" aria-labelledby="lkT-piernas" hidden>
+                <div class="lkcap">Color de piernas y cadera</div><div class="sw-row" id="swPiernas"></div>
+              </div>
+              <div class="lkpane" id="lkP-detalles" role="tabpanel" aria-labelledby="lkT-detalles" hidden>
+                <div class="lkcap">Bolsitas, rodilleras, muñequeras y cuerno</div><div class="sw-row" id="swBody3"></div>
+              </div>
+              <p class="note lkfoot">Los cambios se guardan solos. Si estás en una partida online, los demás te ven así al instante.</p>
             </div>
           </div>
         </div>
@@ -2717,7 +2774,7 @@ function rbAccesorios(){
   return A;
 }
 // torso: UNA sola superficie continua (cadera → cintura → pecho → cuello) para que el cuerpo tenga forma anatómica y no se vea cuadrado
-const RB_TORSO=[[.84,.06,.06,0,0,2.2],[.89,.12,.085,0,0,2.2],[.95,.152,.103,0,0,2.3],[1.01,.16,.108,0,0,2.3],[1.07,.142,.098,0,.002,2.3],[1.14,.128,.088,0,.004,2.2],[1.22,.132,.088,0,.006,2.2],[1.3,.162,.102,0,.004,2.3],[1.38,.205,.118,0,.006,2.4],[1.46,.222,.126,0,.008,2.5],[1.52,.216,.12,0,.004,2.5],[1.56,.19,.1,0,-.004,2.4],[1.585,.09,.06,0,-.01,2.2],[1.6,.045,.04,0,-.01,2]];
+const RB_TORSO=[[.84,.06,.06,0,0,2.2],[.89,.12,.085,0,0,2.2],[.95,.152,.103,0,0,2.3],[1.01,.16,.108,0,0,2.3],[1.07,.142,.098,0,.002,2.3],[1.14,.128,.088,0,.004,2.2],[1.22,.132,.088,0,.006,2.2],[1.3,.158,.1,0,.004,2.4],[1.36,.2,.114,0,.006,2.6],[1.43,.222,.124,0,.01,2.8],[1.5,.218,.12,0,.006,2.8],[1.55,.196,.102,0,-.002,2.5],[1.575,.12,.07,0,-.01,2.2],[1.6,.05,.04,0,-.01,2]];
 function rbGeos(){
   if(rbGeos.c)return rbGeos.c;
   const R={};
@@ -2733,21 +2790,11 @@ function rbGeos(){
   t.banda('K',1.055,.172,.122,.06,0,2.5);                                                                                                             // cinturón de 4 cm
   [[.075,.13,.1],[-.075,.13,-.1],[.15,.08,.9],[-.15,.08,-.9],[.085,-.12,3.0],[-.085,-.12,-3.0]].forEach(p=>{t.caja('C',.058,.062,.04,.013,1,p[0],1.04,p[1],0,p[2],0);t.caja('B',.05,.008,.034,.003,1,p[0],1.063,p[1],0,p[2],0);});   // bolsitas con tapa
   t.caja('C',.045,.03,.03,.01,1,0,1.05,.136);t.caja('K',.04,.028,.012,.006,1,0,1.05,.153);t.caja('V',.016,.012,.004,.002,1,0,1.05,.16);                // bolsita del medio, hebilla y su luz
-  // cintura flexible (anillos oscuros) entre el pecho y la cadera
-  const flex=[];for(let k=0;k<6;k++){const y=1.13+k*.026,p=rbPerfil(RB_TORSO,y),r=k%2?.013:.005;flex.push([y,p[1]+r,p[2]+r,p[3],p[4],2.2]);}
-  t.loft('B',flex,14,1);
+  junta(1.165,.012);junta(1.245,.012);                                                                                                              // juntas finas de la cintura
   for(let f=0;f<3;f++)for(const sx of [-1,1])t.caja('A',.07,.04,.02,.012,1,sx*.043,1.1+f*.05,.098);                                                   // placas de los abdominales
-  junta(1.3,.012);junta(1.35,.012);junta(1.535,.012,.006);                                                                                            // juntas entre placas
-  t.caja('B',.007,.2,.01,.003,1,0,1.18,.099);                                                                                                         // surco del medio
-  for(const sx of [-1,1]){
-    t.caja('A',.07,.022,.15,.008,1,sx*.088,1.59,0,0,0,-sx*.32);                                                                                       // tira del arnés sobre el hombro
-    t.caja('B',.01,.12,.014,.004,1,sx*.075,1.5,.118,0,0,-sx*.1);                                                                                      // costura del arnés
-    t.esf('A',.1,sx*.105,1.435,.1,1.15,.6,.3,10,6,0,0,-sx*.1);                                                                                        // pectoral plano (no redondo)
-    t.caja('V',.013,.1,.012,.005,1,sx*.17,1.44,.1,0,-sx*.6,0);                                                                                        // luces de los costados del pecho
-    t.caja('V',.012,.09,.01,.004,1,sx*.15,1.23,.088,0,-sx*.4,0);                                                                                      // luces del abdomen
-    for(let i=0;i<3;i++)t.caja('K',.04,.007,.014,.003,1,sx*.2,1.34+i*.018,.04,0,-sx*1.2,0);                                                          // rejillas del costado
-  }
-  t.caja('A',.30,.04,.03,.016,1,0,1.385,.114);t.caja('B',.008,.09,.01,.003,1,0,1.365,.133);                                                           // repisa bajo el emblema y surco del esternón
+  t.banda('A',1.345,rbPerfil(RB_TORSO,1.345)[1]+.004,rbPerfil(RB_TORSO,1.345)[2]+.004,.014,rbPerfil(RB_TORSO,1.345)[4],2.6);                           // borde inferior de la placa del pecho (pieza única, mismo color)
+  t.caja('B',.007,.2,.01,.003,1,0,1.18,.099);                                                                                                         // surco del medio del abdomen
+  for(const sx of [-1,1])t.caja('A',.065,.02,.13,.008,1,sx*.088,1.588,0,0,0,-sx*.32);                                                                 // lengüetas sobre los hombros (como en la lámina)
   t.loft('B',[[1.54,.034],[1.56,.042],[1.58,.034],[1.6,.042],[1.62,.034],[1.66,.04]],10,1);                                                           // cuello con ranuras
   [-1,1].forEach(q=>t.cil('K',.007,.007,.1,6,q*.046,1.6,-.01));                                                                                       // cables del cuello
   t.loft('A',[[1.34,.13,.03,0,-.105,2.6],[1.45,.16,.042,0,-.122,2.6],[1.55,.12,.03,0,-.108,2.6]],12,1);                                               // placa de la espalda
@@ -2770,7 +2817,7 @@ function rbGeos(){
   R.head=t.fin();Object.keys(R.head).forEach(k=>R.head[k].scale(.78,.78,.78));
   R.legL=rbPierna(-1);R.legR=rbPierna(1);
   const bl=rbBrazo(-1),br=rbBrazo(1);R.armLu=bl.U;R.armLf=bl.F;R.armRu=br.U;R.armRf=br.F;
-  R.acc=rbAccesorios();R.acc.decal=new THREE.PlaneGeometry(.11,.11);
+  R.acc=rbAccesorios();R.acc.decal=new THREE.PlaneGeometry(.075,.075);
   return rbGeos.c=R;
 }
 // ---------- materiales: pintura lustrosa con reflejos y desgaste ----------
@@ -2807,7 +2854,9 @@ function rbMat(color,rug,met,esp){
   const b=rbDesgaste();
   return new THREE.MeshStandardMaterial({color,roughness:rug,metalness:met,envMap:rbEnv(),envMapIntensity:esp||.75,bumpMap:b,bumpScale:.003,map:rbMapT});
 }
-// ancla blanca sobre fondo transparente (se tiñe con el color de detalles)
+// ancla negra sobre el pecho (clara si el pecho es oscuro, para que siempre se lea)
+function rbTintaAncla(hex){const c=new THREE.Color(hex),l=.299*c.r+.587*c.g+.114*c.b;return l>.3?0x14181c:0xf2efe6;}
+// ancla blanca sobre fondo transparente (se tiñe con la tinta de arriba)
 let rbAncla=null;
 function rbAnclaTex(){
   if(rbAncla)return rbAncla;
@@ -2858,7 +2907,7 @@ function rbPose(m,w,aimX,swing,pose){
 }
 function buildPlayer(skin,name,noTag){
   const G=rbGeos(),P=skinParts(skin);
-  const mA=rbMat(P.c,.38,.35),mP=P.cp===P.c?mA:rbMat(P.cp,.38,.35),mBr=P.cb===P.c?mA:rbMat(P.cb,.38,.35),mL=P.cl===P.c?mA:rbMat(P.cl,.38,.35);
+  const mA=rbMat(P.c,.38,.35),mP=rbMat(P.cp,.58,.08,.4),mBr=P.cb===P.c?mA:rbMat(P.cb,.38,.35),mL=P.cl===P.c?mA:rbMat(P.cl,.38,.35);
   const mB=rbMat(P.c2,.32,.65),mC=rbMat(P.c3,.4,.45),mK=rbMat(0x2b3036,.3,.85,.9);
   const mV=new THREE.MeshBasicMaterial({color:P.v});
   const mats=(a)=>({A:a,B:mB,C:mC,V:mV,K:mK});
@@ -2868,8 +2917,8 @@ function buildPlayer(skin,name,noTag){
   // imagen del pecho (o el ancla de origen): un plano cuadrado pegado unos 3 mm adelante de la placa
   const hasImg=!!(skin.img&&(noTag||S.showImg));
   const dm=hasImg?new THREE.MeshBasicMaterial({map:chestTex(skin.img),polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})
-                 :new THREE.MeshBasicMaterial({map:rbAnclaTex(),color:P.c3,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
-  const dec=new THREE.Mesh(G.acc.decal,dm);dec.position.set(0,1.47,.137);b.add(dec);
+                 :new THREE.MeshBasicMaterial({map:rbAnclaTex(),color:rbTintaAncla(P.cp),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+  const dec=new THREE.Mesh(G.acc.decal,dm);dec.position.set(0,1.47,.137);if(hasImg)dec.scale.setScalar(1.6);b.add(dec);   // el ancla es chica; una foto propia va más grande
   const legs=[-1,1].map(side=>{const l=parte(side<0?G.legL:G.legR,new THREE.Group(),mL);l.position.set(side*.108,.93,0);b.add(l);return l;});
   const head=parte(G.head,new THREE.Group(),mA);head.position.y=1.76;b.add(head);
   const a=skin.a|0,A=G.acc;
@@ -2892,7 +2941,7 @@ function buildPlayer(skin,name,noTag){
   return modelo;
 }
 // pose de la Taquilla (como en la referencia): la escopeta cruzada sobre el pecho, apuntando hacia el lado izquierdo del personaje
-const RB_POSE_TAQ={p:[-.08,1.36,.17],yaw:1.3};
+const RB_POSE_TAQ={p:[-.08,1.25,.19],yaw:1.3};
 /* ---------- personaje con piel: el modelo está en 10-personaje-robot.js ---------- */
 const tpCache={};
 function tpGun(w){if(!tpCache[w])tpCache[w]=buildGun(w);return tpCache[w].clone();}
@@ -3564,7 +3613,7 @@ function lockerInit(){
 // zoom de la vista previa: z=1 cuerpo entero, z=.36 primer plano de la cabeza y el pecho; la cámara sube hacia la cara al acercarse
 const LZ_MIN=.36,LZ_MAX=1.15;
 function lockZoom(v){if(lock)lock.zt=Math.max(LZ_MIN,Math.min(LZ_MAX,v));}
-function lockCam(){const z=lock.z,ty=Math.max(.95,Math.min(1.62,1.05+(1-z)*.9));lock.cam.position.set(0,ty+.3*z,4.4*z);lock.cam.lookAt(0,ty,0);}
+function lockCam(){const z=lock.z,w=Math.max(0,Math.min(1,(1-z)/.5)),ty=1.0*(1-w)+(lock.ty||1)*w;lock.cam.position.set(0,ty+.3*z,4.4*z);lock.cam.lookAt(0,ty,0);}
 function rebuildLockModel(){if(!lock||!lock.r)return;if(lock.model)lock.sc.remove(lock.model.g);lock.model=buildPlayer(S.skin,S.name,true);lock.sc.add(lock.model.g);}
 // girar al personaje arrastrando (mouse o dedo) o con las flechas; la vuelta sola se pausa un rato
 (function(){
@@ -3585,13 +3634,13 @@ function rebuildLockModel(){if(!lock||!lock.r)return;if(lock.model)lock.sc.remov
   c.addEventListener('keydown',e=>{if(!lock)return;if(e.key==='+'||e.key==='='){e.preventDefault();lockZoom(lock.zt*.82);}else if(e.key==='-'||e.key==='_'){e.preventDefault();lockZoom(lock.zt/.82);}else if(e.key==='0'){e.preventDefault();lockZoom(1);}});
   c.addEventListener('keydown',e=>{if(!lock)return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();lock.rot+=(e.key==='ArrowLeft'?-1:1)*.35;lock.hold=3;}});
 })();
-function renderLocker(dt){if(!lock||!lock.r||$('lockerPanel').hidden||$('menu').hidden)return;lock.hold=(lock.hold||0)-dt;if(lock.hold<=0)lock.rot+=dt*.8;lock.model.g.rotation.y=lock.rot;rbPose(lock.model,1,-.05,0,RB_POSE_TAQ);lock.z+=(lock.zt-lock.z)*Math.min(1,dt*10);lockCam();lock.r.render(lock.sc,lock.cam);}
-function syncLocker(){
+function renderLocker(dt){if(!lock||!lock.r||$('lockerPanel').hidden||$('menu').hidden)return;lock.hold=(lock.hold||0)-dt;if(lock.hold<=0)lock.rot+=dt*.8;lock.model.g.rotation.y=lock.rot;rbPose(lock.model,1,-.05,0,RB_POSE_TAQ);lock.z+=(lock.zt-lock.z)*Math.min(1,dt*10);lock.ty=(lock.ty||1)+((lock.tyt||1)-(lock.ty||1))*Math.min(1,dt*8);lockCam();lock.r.render(lock.sc,lock.cam);}
+function syncLocker(){syncLockerTabs();
   [...$('swBody').querySelectorAll('button')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===S.skin.c)));
   [...$('swVisor').querySelectorAll('button')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===S.skin.v)));
   [...$('segAcc').children].forEach((b,i)=>b.setAttribute('aria-pressed',String(i===S.skin.a)));
   const P=skinParts(S.skin);
-  [['swBody2','c2'],['swBody3','c3'],['swPecho','cp'],['swBrazos','cb'],['swPiernas','cl']].forEach(([id,k])=>{
+  [['swPecho','cp'],['swBrazos','cb'],['swPiernas','cl'],['swBody3','c3']].forEach(([id,k])=>{
     [...$(id).querySelectorAll('button[data-c]')].forEach(b=>b.setAttribute('aria-pressed',String(!!S.skin[k]&&b.dataset.c===S.skin[k])));
     const au=$(id).querySelector('.auto');if(au)au.setAttribute('aria-pressed',String(!S.skin[k]));
     const ci=$(id).querySelector('input[type=color]');if(ci)ci.value=P[k];
@@ -3623,7 +3672,7 @@ function setSkin(p){for(const k in p){if(p[k]==null)delete S.skin[k];else S.skin
   const mk=(host,cols,key)=>{cols.forEach(c=>{const b=document.createElement('button');b.type='button';b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label','Color '+c);b.addEventListener('click',()=>setSkin({[key]:c}));host.appendChild(b);});};
   mk($('swBody'),BODY_COLS,'c');mk($('swVisor'),VISOR_COLS,'v');
   // zonas nuevas: cada una con colores, uno a elección y "Auto" (vuelve al color derivado de la armadura)
-  [['swBody2','c2'],['swBody3','c3'],['swPecho','cp'],['swBrazos','cb'],['swPiernas','cl']].forEach(([id,k])=>{
+  [['swPecho','cp'],['swBrazos','cb'],['swPiernas','cl'],['swBody3','c3']].forEach(([id,k])=>{
     const host=$(id);mk(host,BODY_COLS,k);
     const au=document.createElement('button');au.type='button';au.className='auto';au.textContent='Auto';au.style.cssText='width:auto;padding:0 8px;font-size:12px';au.setAttribute('aria-label','Color automático');au.addEventListener('click',()=>setSkin({[k]:null}));host.appendChild(au);
     const ic=document.createElement('input');ic.type='color';ic.setAttribute('aria-label','Color personalizado');ic.addEventListener('input',e=>setSkin({[k]:e.target.value}));host.appendChild(ic);
@@ -3631,7 +3680,43 @@ function setSkin(p){for(const k in p){if(p[k]==null)delete S.skin[k];else S.skin
   const ci=document.createElement('input');ci.type='color';ci.id='swBodyCustom';ci.setAttribute('aria-label','Color personalizado');ci.addEventListener('input',e=>setSkin({c:e.target.value}));$('swBody').appendChild(ci);
   C.ACCESSORIES.forEach((n,i)=>{const b=document.createElement('button');b.type='button';b.textContent=n;b.addEventListener('click',()=>setSkin({a:i}));$('segAcc').appendChild(b);});
 })();
-
+// ---------- Taquilla v2: pestañas por parte (la cámara se acerca sola), looks listos, aleatorio y restablecer ----------
+const LK_FOCO={casco:[.42,1.74],pecho:[.5,1.45],brazos:[.62,1.36],piernas:[.62,.6],detalles:[.85,1.05]};
+function lockTab(n,foco){
+  [...$('lkTabs').children].forEach(b=>{const on=b.dataset.tab===n;b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1;});
+  ['casco','pecho','brazos','piernas','detalles'].forEach(k=>$('lkP-'+k).hidden=k!==n);
+  if(foco&&lock&&LK_FOCO[n]){lockZoom(LK_FOCO[n][0]);lock.tyt=LK_FOCO[n][1];lock.hold=3;}
+}
+const LK_LOOKS=[
+  {n:'Fuego',c:'#e8542a',cp:'#e8542a',cb:'#e8542a',cl:'#e8542a',c3:'#ffcc33',v:'#2be6ff'},
+  {n:'Hielo',c:'#3fa7ff',cp:'#3fa7ff',cb:'#f2efe6',cl:'#7a8cff',c3:'#38d6c4',v:'#2be6ff'},
+  {n:'Selva',c:'#9ccc3c',cp:'#9ccc3c',cb:'#ffcc33',cl:'#9ccc3c',c3:'#ff8f1f',v:'#3aff9c'},
+  {n:'Nocturno',c:'#2a2a2e',cp:'#2a2a2e',cb:'#2a2a2e',cl:'#2a2a2e',c3:'#ff8f1f',v:'#2be6ff'},
+  {n:'Tormenta',c:'#c45cff',cp:'#ff5c8a',cb:'#c45cff',cl:'#38d6c4',c3:'#b8ff3a',v:'#ff3fd2'},
+  {n:'Brasa',c:'#ffcc33',cp:'#e8542a',cb:'#ffcc33',cl:'#2a2a2e',c3:'#b8ff3a',v:'#ffcf3a'}];
+(function(){
+  const bar=$('lkLooks');
+  LK_LOOKS.forEach(L=>{
+    const b=document.createElement('button');b.type='button';b.className='lklook';b.setAttribute('aria-label','Look '+L.n);
+    b.innerHTML='<span class="bars"><i style="background:'+L.cp+'"></i><i style="background:'+L.cb+'"></i><i style="background:'+L.cl+'"></i></span>'+L.n;
+    b.addEventListener('click',()=>{setSkin({c:L.c,cp:L.cp,cb:L.cb,cl:L.cl,c2:null,c3:L.c3,v:L.v});});
+    bar.appendChild(b);
+  });
+  const tabs=$('lkTabs');
+  tabs.addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b){lockTab(b.dataset.tab,true);SFX.ui();}});
+  tabs.addEventListener('keydown',e=>{
+    if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;e.preventDefault();
+    const bs=[...tabs.children],i=bs.findIndex(b=>b.getAttribute('aria-selected')==='true'),n=bs[(i+(e.key==='ArrowRight'?1:bs.length-1))%bs.length];
+    lockTab(n.dataset.tab,true);n.focus();
+  });
+  const alAzar=a=>a[Math.random()*a.length|0];
+  $('lkRand').addEventListener('click',()=>{const c=alAzar(BODY_COLS);setSkin({c,cp:alAzar(BODY_COLS),cb:alAzar(BODY_COLS),cl:alAzar(BODY_COLS),c2:null,c3:alAzar(BODY_COLS),v:alAzar(VISOR_COLS.filter(x=>x!=='#111111'))});});
+  $('lkReset').addEventListener('click',()=>setSkin({c:C.COLORS[0],cp:null,cb:null,cl:null,c2:null,c3:null,v:'#2be6ff',a:0}));
+})();
+function syncLockerTabs(){
+  const P=skinParts(S.skin),col={casco:P.c,pecho:P.cp,brazos:P.cb,piernas:P.cl,detalles:P.c3};
+  [...$('lkTabs').children].forEach(b=>b.querySelector('i').style.setProperty('--c',col[b.dataset.tab]));
+}
 /* =================== ENTRADA =================== */
 // movimiento crudo del mouse (sin la aceleración de Windows/macOS) cuando el navegador lo permite; si no, el bloqueo común
 let rawOK=true;

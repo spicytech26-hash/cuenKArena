@@ -388,7 +388,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 #menu .mrow .btn::after{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:#7c6a62;text-shadow:none;transition:color .15s}
 #bOnline::after{content:"Partida con otros jugadores"}
 #bOffline::after{content:"Vos contra los bots"}
-#bLocker::after{content:"Armadura, visor y accesorios"}
+#bLocker::after{content:"Customizá tu armadura"}
 #bSet::after{content:"Controles · video · audio · mira · juego"}
 #bLeave::after{content:"Volver al inicio"}
 #menu .mrow .btn:hover:not(:disabled),#menu .mrow .btn:focus-visible,#menu .mrow .btn[aria-expanded="true"]{background-size:100% 100%;transform:translateX(12px);color:#fff}
@@ -555,3 +555,35 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 .lockzoom button{width:26px;height:26px;padding:0;font:700 15px/1 var(--mono);color:#e6d9b8;background:linear-gradient(#4a4e56,#2a2c31);border:1px solid #000;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 2px 0 #000;cursor:pointer}
 .lockzoom button:hover,.lockzoom button:focus-visible{color:#fff;background:linear-gradient(#6a2018,#3a1010);outline:none}
 .lockzoom button:active{transform:translateY(1px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+
+/* taquilla v2: looks, pestañas por parte y una sola paleta a la vez */
+.lkhead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.lktitle{font-family:var(--display);font-size:24px;letter-spacing:.06em;color:var(--bone);text-transform:uppercase;line-height:1.05}
+.lktitle small{display:block;margin-top:5px;font-family:var(--mono);font-size:12px;letter-spacing:.04em;text-transform:none;color:var(--muted)}
+.lkacts{display:flex;gap:8px}
+#menu .lkacts .btn{padding:6px 12px;font-size:13px}
+#menu .lockopts .lkcap{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+#menu .lockopts .lkcap::before{content:"";width:14px;height:2px;background:var(--blood)}
+.lklooks{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:6px}
+.lklook{position:relative;display:flex;flex-direction:column;gap:5px;padding:5px 5px 4px;background:#0c0709;border:2px solid #000;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);cursor:pointer;color:var(--muted);font-family:var(--display);font-size:11px;letter-spacing:.04em;text-transform:uppercase;transition:transform .12s,color .12s,background .12s}
+.lklook:hover,.lklook:focus-visible{transform:translateY(-3px);color:#fff;background:#2a0c10;outline:none}
+.lklook:active{transform:translateY(0)}
+.lklook .bars{display:grid;grid-template-columns:1.3fr 1fr 1fr;height:20px;border:1px solid #000}
+.lklook .bars i{display:block}
+.lktabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;margin-top:4px;border-bottom:2px solid #000}
+.lktabs button{position:relative;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 4px 9px;font-family:var(--display);font-size:13px;letter-spacing:.06em;text-transform:uppercase;background:#0c0709;color:#8c7f74;border:2px solid #000;border-bottom:none;margin-right:-2px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);transition:color .12s,background .12s}
+.lktabs button i{width:13px;height:13px;background:var(--c,#888);border:1px solid #000;box-shadow:0 0 0 1px rgba(255,255,255,.25);transform:rotate(45deg);transition:transform .2s}
+.lktabs button:hover{color:#fff;background:#1a0b10}
+.lktabs button[aria-selected="true"]{background:linear-gradient(#3a1015,#1a0a0d);color:#fff;box-shadow:inset 0 3px 0 var(--blood)}
+.lktabs button[aria-selected="true"] i{transform:rotate(45deg) scale(1.25)}
+.lkpane{display:flex;flex-direction:column;gap:10px;padding:14px;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.01));border:2px solid #000;border-top:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);animation:lkIn .22s ease-out}
+.lkpane[hidden]{display:none}
+@keyframes lkIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+#menu .lkpane .sw-row{gap:8px}
+#menu .lkpane .sw-row button[data-c]{width:40px;height:40px}
+#menu .lkpane .sw-row button[data-c][aria-pressed="true"]{outline:3px solid #fff;outline-offset:2px;box-shadow:inset 0 0 0 2px #000,0 0 14px rgba(255,255,255,.25)}
+#menu .lkpane .sw-row .auto{height:40px}
+#menu .lkpane .sw-row input[type=color]{width:46px;height:40px}
+.lkfoot{margin:0}
+@media (prefers-reduced-motion:reduce){.lkpane{animation:none}.lklook,.lktabs button i{transition:none}}
+@media (max-width:620px){.lktabs button{padding:9px 3px 8px;font-size:11px}.lktabs button i{display:none}}

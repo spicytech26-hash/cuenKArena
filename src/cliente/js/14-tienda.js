@@ -60,7 +60,7 @@ function lockerInit(){
 // zoom de la vista previa: z=1 cuerpo entero, z=.36 primer plano de la cabeza y el pecho; la cámara sube hacia la cara al acercarse
 const LZ_MIN=.36,LZ_MAX=1.15;
 function lockZoom(v){if(lock)lock.zt=Math.max(LZ_MIN,Math.min(LZ_MAX,v));}
-function lockCam(){const z=lock.z,ty=Math.max(.95,Math.min(1.62,1.05+(1-z)*.9));lock.cam.position.set(0,ty+.3*z,4.4*z);lock.cam.lookAt(0,ty,0);}
+function lockCam(){const z=lock.z,w=Math.max(0,Math.min(1,(1-z)/.5)),ty=1.0*(1-w)+(lock.ty||1)*w;lock.cam.position.set(0,ty+.3*z,4.4*z);lock.cam.lookAt(0,ty,0);}
 function rebuildLockModel(){if(!lock||!lock.r)return;if(lock.model)lock.sc.remove(lock.model.g);lock.model=buildPlayer(S.skin,S.name,true);lock.sc.add(lock.model.g);}
 // girar al personaje arrastrando (mouse o dedo) o con las flechas; la vuelta sola se pausa un rato
 (function(){
@@ -81,13 +81,13 @@ function rebuildLockModel(){if(!lock||!lock.r)return;if(lock.model)lock.sc.remov
   c.addEventListener('keydown',e=>{if(!lock)return;if(e.key==='+'||e.key==='='){e.preventDefault();lockZoom(lock.zt*.82);}else if(e.key==='-'||e.key==='_'){e.preventDefault();lockZoom(lock.zt/.82);}else if(e.key==='0'){e.preventDefault();lockZoom(1);}});
   c.addEventListener('keydown',e=>{if(!lock)return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();lock.rot+=(e.key==='ArrowLeft'?-1:1)*.35;lock.hold=3;}});
 })();
-function renderLocker(dt){if(!lock||!lock.r||$('lockerPanel').hidden||$('menu').hidden)return;lock.hold=(lock.hold||0)-dt;if(lock.hold<=0)lock.rot+=dt*.8;lock.model.g.rotation.y=lock.rot;rbPose(lock.model,1,-.05,0,RB_POSE_TAQ);lock.z+=(lock.zt-lock.z)*Math.min(1,dt*10);lockCam();lock.r.render(lock.sc,lock.cam);}
-function syncLocker(){
+function renderLocker(dt){if(!lock||!lock.r||$('lockerPanel').hidden||$('menu').hidden)return;lock.hold=(lock.hold||0)-dt;if(lock.hold<=0)lock.rot+=dt*.8;lock.model.g.rotation.y=lock.rot;rbPose(lock.model,1,-.05,0,RB_POSE_TAQ);lock.z+=(lock.zt-lock.z)*Math.min(1,dt*10);lock.ty=(lock.ty||1)+((lock.tyt||1)-(lock.ty||1))*Math.min(1,dt*8);lockCam();lock.r.render(lock.sc,lock.cam);}
+function syncLocker(){syncLockerTabs();
   [...$('swBody').querySelectorAll('button')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===S.skin.c)));
   [...$('swVisor').querySelectorAll('button')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===S.skin.v)));
   [...$('segAcc').children].forEach((b,i)=>b.setAttribute('aria-pressed',String(i===S.skin.a)));
   const P=skinParts(S.skin);
-  [['swBody2','c2'],['swBody3','c3'],['swPecho','cp'],['swBrazos','cb'],['swPiernas','cl']].forEach(([id,k])=>{
+  [['swPecho','cp'],['swBrazos','cb'],['swPiernas','cl'],['swBody3','c3']].forEach(([id,k])=>{
     [...$(id).querySelectorAll('button[data-c]')].forEach(b=>b.setAttribute('aria-pressed',String(!!S.skin[k]&&b.dataset.c===S.skin[k])));
     const au=$(id).querySelector('.auto');if(au)au.setAttribute('aria-pressed',String(!S.skin[k]));
     const ci=$(id).querySelector('input[type=color]');if(ci)ci.value=P[k];
@@ -119,7 +119,7 @@ function setSkin(p){for(const k in p){if(p[k]==null)delete S.skin[k];else S.skin
   const mk=(host,cols,key)=>{cols.forEach(c=>{const b=document.createElement('button');b.type='button';b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label','Color '+c);b.addEventListener('click',()=>setSkin({[key]:c}));host.appendChild(b);});};
   mk($('swBody'),BODY_COLS,'c');mk($('swVisor'),VISOR_COLS,'v');
   // zonas nuevas: cada una con colores, uno a elección y "Auto" (vuelve al color derivado de la armadura)
-  [['swBody2','c2'],['swBody3','c3'],['swPecho','cp'],['swBrazos','cb'],['swPiernas','cl']].forEach(([id,k])=>{
+  [['swPecho','cp'],['swBrazos','cb'],['swPiernas','cl'],['swBody3','c3']].forEach(([id,k])=>{
     const host=$(id);mk(host,BODY_COLS,k);
     const au=document.createElement('button');au.type='button';au.className='auto';au.textContent='Auto';au.style.cssText='width:auto;padding:0 8px;font-size:12px';au.setAttribute('aria-label','Color automático');au.addEventListener('click',()=>setSkin({[k]:null}));host.appendChild(au);
     const ic=document.createElement('input');ic.type='color';ic.setAttribute('aria-label','Color personalizado');ic.addEventListener('input',e=>setSkin({[k]:e.target.value}));host.appendChild(ic);
@@ -127,4 +127,40 @@ function setSkin(p){for(const k in p){if(p[k]==null)delete S.skin[k];else S.skin
   const ci=document.createElement('input');ci.type='color';ci.id='swBodyCustom';ci.setAttribute('aria-label','Color personalizado');ci.addEventListener('input',e=>setSkin({c:e.target.value}));$('swBody').appendChild(ci);
   C.ACCESSORIES.forEach((n,i)=>{const b=document.createElement('button');b.type='button';b.textContent=n;b.addEventListener('click',()=>setSkin({a:i}));$('segAcc').appendChild(b);});
 })();
-
+// ---------- Taquilla v2: pestañas por parte (la cámara se acerca sola), looks listos, aleatorio y restablecer ----------
+const LK_FOCO={casco:[.42,1.74],pecho:[.5,1.45],brazos:[.62,1.36],piernas:[.62,.6],detalles:[.85,1.05]};
+function lockTab(n,foco){
+  [...$('lkTabs').children].forEach(b=>{const on=b.dataset.tab===n;b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1;});
+  ['casco','pecho','brazos','piernas','detalles'].forEach(k=>$('lkP-'+k).hidden=k!==n);
+  if(foco&&lock&&LK_FOCO[n]){lockZoom(LK_FOCO[n][0]);lock.tyt=LK_FOCO[n][1];lock.hold=3;}
+}
+const LK_LOOKS=[
+  {n:'Fuego',c:'#e8542a',cp:'#e8542a',cb:'#e8542a',cl:'#e8542a',c3:'#ffcc33',v:'#2be6ff'},
+  {n:'Hielo',c:'#3fa7ff',cp:'#3fa7ff',cb:'#f2efe6',cl:'#7a8cff',c3:'#38d6c4',v:'#2be6ff'},
+  {n:'Selva',c:'#9ccc3c',cp:'#9ccc3c',cb:'#ffcc33',cl:'#9ccc3c',c3:'#ff8f1f',v:'#3aff9c'},
+  {n:'Nocturno',c:'#2a2a2e',cp:'#2a2a2e',cb:'#2a2a2e',cl:'#2a2a2e',c3:'#ff8f1f',v:'#2be6ff'},
+  {n:'Tormenta',c:'#c45cff',cp:'#ff5c8a',cb:'#c45cff',cl:'#38d6c4',c3:'#b8ff3a',v:'#ff3fd2'},
+  {n:'Brasa',c:'#ffcc33',cp:'#e8542a',cb:'#ffcc33',cl:'#2a2a2e',c3:'#b8ff3a',v:'#ffcf3a'}];
+(function(){
+  const bar=$('lkLooks');
+  LK_LOOKS.forEach(L=>{
+    const b=document.createElement('button');b.type='button';b.className='lklook';b.setAttribute('aria-label','Look '+L.n);
+    b.innerHTML='<span class="bars"><i style="background:'+L.cp+'"></i><i style="background:'+L.cb+'"></i><i style="background:'+L.cl+'"></i></span>'+L.n;
+    b.addEventListener('click',()=>{setSkin({c:L.c,cp:L.cp,cb:L.cb,cl:L.cl,c2:null,c3:L.c3,v:L.v});});
+    bar.appendChild(b);
+  });
+  const tabs=$('lkTabs');
+  tabs.addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b){lockTab(b.dataset.tab,true);SFX.ui();}});
+  tabs.addEventListener('keydown',e=>{
+    if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;e.preventDefault();
+    const bs=[...tabs.children],i=bs.findIndex(b=>b.getAttribute('aria-selected')==='true'),n=bs[(i+(e.key==='ArrowRight'?1:bs.length-1))%bs.length];
+    lockTab(n.dataset.tab,true);n.focus();
+  });
+  const alAzar=a=>a[Math.random()*a.length|0];
+  $('lkRand').addEventListener('click',()=>{const c=alAzar(BODY_COLS);setSkin({c,cp:alAzar(BODY_COLS),cb:alAzar(BODY_COLS),cl:alAzar(BODY_COLS),c2:null,c3:alAzar(BODY_COLS),v:alAzar(VISOR_COLS.filter(x=>x!=='#111111'))});});
+  $('lkReset').addEventListener('click',()=>setSkin({c:C.COLORS[0],cp:null,cb:null,cl:null,c2:null,c3:null,v:'#2be6ff',a:0}));
+})();
+function syncLockerTabs(){
+  const P=skinParts(S.skin),col={casco:P.c,pecho:P.cp,brazos:P.cb,piernas:P.cl,detalles:P.c3};
+  [...$('lkTabs').children].forEach(b=>b.querySelector('i').style.setProperty('--c',col[b.dataset.tab]));
+}

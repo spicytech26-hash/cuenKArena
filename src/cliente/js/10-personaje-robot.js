@@ -205,7 +205,7 @@ function rbAccesorios(){
   return A;
 }
 // torso: UNA sola superficie continua (cadera → cintura → pecho → cuello) para que el cuerpo tenga forma anatómica y no se vea cuadrado
-const RB_TORSO=[[.84,.06,.06,0,0,2.2],[.89,.12,.085,0,0,2.2],[.95,.152,.103,0,0,2.3],[1.01,.16,.108,0,0,2.3],[1.07,.142,.098,0,.002,2.3],[1.14,.128,.088,0,.004,2.2],[1.22,.132,.088,0,.006,2.2],[1.3,.162,.102,0,.004,2.3],[1.38,.205,.118,0,.006,2.4],[1.46,.222,.126,0,.008,2.5],[1.52,.216,.12,0,.004,2.5],[1.56,.19,.1,0,-.004,2.4],[1.585,.09,.06,0,-.01,2.2],[1.6,.045,.04,0,-.01,2]];
+const RB_TORSO=[[.84,.06,.06,0,0,2.2],[.89,.12,.085,0,0,2.2],[.95,.152,.103,0,0,2.3],[1.01,.16,.108,0,0,2.3],[1.07,.142,.098,0,.002,2.3],[1.14,.128,.088,0,.004,2.2],[1.22,.132,.088,0,.006,2.2],[1.3,.158,.1,0,.004,2.4],[1.36,.2,.114,0,.006,2.6],[1.43,.222,.124,0,.01,2.8],[1.5,.218,.12,0,.006,2.8],[1.55,.196,.102,0,-.002,2.5],[1.575,.12,.07,0,-.01,2.2],[1.6,.05,.04,0,-.01,2]];
 function rbGeos(){
   if(rbGeos.c)return rbGeos.c;
   const R={};
@@ -221,21 +221,11 @@ function rbGeos(){
   t.banda('K',1.055,.172,.122,.06,0,2.5);                                                                                                             // cinturón de 4 cm
   [[.075,.13,.1],[-.075,.13,-.1],[.15,.08,.9],[-.15,.08,-.9],[.085,-.12,3.0],[-.085,-.12,-3.0]].forEach(p=>{t.caja('C',.058,.062,.04,.013,1,p[0],1.04,p[1],0,p[2],0);t.caja('B',.05,.008,.034,.003,1,p[0],1.063,p[1],0,p[2],0);});   // bolsitas con tapa
   t.caja('C',.045,.03,.03,.01,1,0,1.05,.136);t.caja('K',.04,.028,.012,.006,1,0,1.05,.153);t.caja('V',.016,.012,.004,.002,1,0,1.05,.16);                // bolsita del medio, hebilla y su luz
-  // cintura flexible (anillos oscuros) entre el pecho y la cadera
-  const flex=[];for(let k=0;k<6;k++){const y=1.13+k*.026,p=rbPerfil(RB_TORSO,y),r=k%2?.013:.005;flex.push([y,p[1]+r,p[2]+r,p[3],p[4],2.2]);}
-  t.loft('B',flex,14,1);
+  junta(1.165,.012);junta(1.245,.012);                                                                                                              // juntas finas de la cintura
   for(let f=0;f<3;f++)for(const sx of [-1,1])t.caja('A',.07,.04,.02,.012,1,sx*.043,1.1+f*.05,.098);                                                   // placas de los abdominales
-  junta(1.3,.012);junta(1.35,.012);junta(1.535,.012,.006);                                                                                            // juntas entre placas
-  t.caja('B',.007,.2,.01,.003,1,0,1.18,.099);                                                                                                         // surco del medio
-  for(const sx of [-1,1]){
-    t.caja('A',.07,.022,.15,.008,1,sx*.088,1.59,0,0,0,-sx*.32);                                                                                       // tira del arnés sobre el hombro
-    t.caja('B',.01,.12,.014,.004,1,sx*.075,1.5,.118,0,0,-sx*.1);                                                                                      // costura del arnés
-    t.esf('A',.1,sx*.105,1.435,.1,1.15,.6,.3,10,6,0,0,-sx*.1);                                                                                        // pectoral plano (no redondo)
-    t.caja('V',.013,.1,.012,.005,1,sx*.17,1.44,.1,0,-sx*.6,0);                                                                                        // luces de los costados del pecho
-    t.caja('V',.012,.09,.01,.004,1,sx*.15,1.23,.088,0,-sx*.4,0);                                                                                      // luces del abdomen
-    for(let i=0;i<3;i++)t.caja('K',.04,.007,.014,.003,1,sx*.2,1.34+i*.018,.04,0,-sx*1.2,0);                                                          // rejillas del costado
-  }
-  t.caja('A',.30,.04,.03,.016,1,0,1.385,.114);t.caja('B',.008,.09,.01,.003,1,0,1.365,.133);                                                           // repisa bajo el emblema y surco del esternón
+  t.banda('A',1.345,rbPerfil(RB_TORSO,1.345)[1]+.004,rbPerfil(RB_TORSO,1.345)[2]+.004,.014,rbPerfil(RB_TORSO,1.345)[4],2.6);                           // borde inferior de la placa del pecho (pieza única, mismo color)
+  t.caja('B',.007,.2,.01,.003,1,0,1.18,.099);                                                                                                         // surco del medio del abdomen
+  for(const sx of [-1,1])t.caja('A',.065,.02,.13,.008,1,sx*.088,1.588,0,0,0,-sx*.32);                                                                 // lengüetas sobre los hombros (como en la lámina)
   t.loft('B',[[1.54,.034],[1.56,.042],[1.58,.034],[1.6,.042],[1.62,.034],[1.66,.04]],10,1);                                                           // cuello con ranuras
   [-1,1].forEach(q=>t.cil('K',.007,.007,.1,6,q*.046,1.6,-.01));                                                                                       // cables del cuello
   t.loft('A',[[1.34,.13,.03,0,-.105,2.6],[1.45,.16,.042,0,-.122,2.6],[1.55,.12,.03,0,-.108,2.6]],12,1);                                               // placa de la espalda
@@ -258,7 +248,7 @@ function rbGeos(){
   R.head=t.fin();Object.keys(R.head).forEach(k=>R.head[k].scale(.78,.78,.78));
   R.legL=rbPierna(-1);R.legR=rbPierna(1);
   const bl=rbBrazo(-1),br=rbBrazo(1);R.armLu=bl.U;R.armLf=bl.F;R.armRu=br.U;R.armRf=br.F;
-  R.acc=rbAccesorios();R.acc.decal=new THREE.PlaneGeometry(.11,.11);
+  R.acc=rbAccesorios();R.acc.decal=new THREE.PlaneGeometry(.075,.075);
   return rbGeos.c=R;
 }
 // ---------- materiales: pintura lustrosa con reflejos y desgaste ----------
@@ -295,7 +285,9 @@ function rbMat(color,rug,met,esp){
   const b=rbDesgaste();
   return new THREE.MeshStandardMaterial({color,roughness:rug,metalness:met,envMap:rbEnv(),envMapIntensity:esp||.75,bumpMap:b,bumpScale:.003,map:rbMapT});
 }
-// ancla blanca sobre fondo transparente (se tiñe con el color de detalles)
+// ancla negra sobre el pecho (clara si el pecho es oscuro, para que siempre se lea)
+function rbTintaAncla(hex){const c=new THREE.Color(hex),l=.299*c.r+.587*c.g+.114*c.b;return l>.3?0x14181c:0xf2efe6;}
+// ancla blanca sobre fondo transparente (se tiñe con la tinta de arriba)
 let rbAncla=null;
 function rbAnclaTex(){
   if(rbAncla)return rbAncla;
@@ -346,7 +338,7 @@ function rbPose(m,w,aimX,swing,pose){
 }
 function buildPlayer(skin,name,noTag){
   const G=rbGeos(),P=skinParts(skin);
-  const mA=rbMat(P.c,.38,.35),mP=P.cp===P.c?mA:rbMat(P.cp,.38,.35),mBr=P.cb===P.c?mA:rbMat(P.cb,.38,.35),mL=P.cl===P.c?mA:rbMat(P.cl,.38,.35);
+  const mA=rbMat(P.c,.38,.35),mP=rbMat(P.cp,.58,.08,.4),mBr=P.cb===P.c?mA:rbMat(P.cb,.38,.35),mL=P.cl===P.c?mA:rbMat(P.cl,.38,.35);
   const mB=rbMat(P.c2,.32,.65),mC=rbMat(P.c3,.4,.45),mK=rbMat(0x2b3036,.3,.85,.9);
   const mV=new THREE.MeshBasicMaterial({color:P.v});
   const mats=(a)=>({A:a,B:mB,C:mC,V:mV,K:mK});
@@ -356,8 +348,8 @@ function buildPlayer(skin,name,noTag){
   // imagen del pecho (o el ancla de origen): un plano cuadrado pegado unos 3 mm adelante de la placa
   const hasImg=!!(skin.img&&(noTag||S.showImg));
   const dm=hasImg?new THREE.MeshBasicMaterial({map:chestTex(skin.img),polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})
-                 :new THREE.MeshBasicMaterial({map:rbAnclaTex(),color:P.c3,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
-  const dec=new THREE.Mesh(G.acc.decal,dm);dec.position.set(0,1.47,.137);b.add(dec);
+                 :new THREE.MeshBasicMaterial({map:rbAnclaTex(),color:rbTintaAncla(P.cp),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+  const dec=new THREE.Mesh(G.acc.decal,dm);dec.position.set(0,1.47,.137);if(hasImg)dec.scale.setScalar(1.6);b.add(dec);   // el ancla es chica; una foto propia va más grande
   const legs=[-1,1].map(side=>{const l=parte(side<0?G.legL:G.legR,new THREE.Group(),mL);l.position.set(side*.108,.93,0);b.add(l);return l;});
   const head=parte(G.head,new THREE.Group(),mA);head.position.y=1.76;b.add(head);
   const a=skin.a|0,A=G.acc;
@@ -380,4 +372,4 @@ function buildPlayer(skin,name,noTag){
   return modelo;
 }
 // pose de la Taquilla (como en la referencia): la escopeta cruzada sobre el pecho, apuntando hacia el lado izquierdo del personaje
-const RB_POSE_TAQ={p:[-.08,1.36,.17],yaw:1.3};
+const RB_POSE_TAQ={p:[-.08,1.25,.19],yaw:1.3};

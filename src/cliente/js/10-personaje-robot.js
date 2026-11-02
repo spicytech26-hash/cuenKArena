@@ -369,6 +369,7 @@ function rbPose(m,w,aimX,swing,pose,ex){
 const RB_PM=.465*RB_KYP,RB_PC=.41*RB_KYP,RB_HF=.055*RB_KYP,RB_HIP=.93*RB_KYP;   // muslo, canilla, alto del pie y altura de la cadera
 const rbCl=(v,a,b)=>v<a?a:v>b?b:v,rbLe=(a,b,t)=>a+(b-a)*t,rbSm=t=>t*t*(3-2*t);
 const RB_TPDZ={0:.1,1:.07,2:.07,3:.08,4:.08,5:.06,6:.07,7:.08,8:.04,9:.04,10:.06};   // cuánto se adelanta cada arma en la vista propia en tercera persona (las largas casi nada: la mano no llega)
+const RB_THR=.85;   // segundos que dura el lanzamiento de la molotov
 const RB_RETRO={0:.05,1:.17,2:.22,3:.035,4:.13,5:.22,6:.045,7:0,8:.2,9:.13,10:0};   // cuánto patea cada arma al disparar
 const rbE=new THREE.Euler(),rbV=new THREE.Vector3();
 // gira un grupo alrededor de un punto (px,py,pz) y lo deja en (bx,by,bz) más el desplazamiento que corresponde al pivote
@@ -398,6 +399,8 @@ function rbAnimar(m,p,dt,pose){
   a.mov+=(rbCl(spd/6,0,1)-a.mov)*Math.min(1,dt*9);
   // ---- disparo, daño y cambio de arma ----
   const fire=p.fire||0;if(fire>0&&a.lastFire<=0)a.fireK=1;a.lastFire=fire;a.fireK*=Math.exp(-dt*13);
+  if(fire>0&&p.w===10&&!(a.thr>0))a.thr=.001;                                                                                 // molotov: arranca el lanzamiento (carga, tira, agarra otra)
+  if(a.thr>0){a.thr+=dt/RB_THR;if(a.thr>=1||p.w!==10)a.thr=0;}
   if((p.pain||0)>0&&a.flinch<.5){a.flinch=1;a.fdir=Math.random()<.5?-1:1;}a.flinch=Math.max(0,a.flinch-dt/.32);
   if(p.w!==a.lastW){if(a.lastW>=0)a.swap=1;a.lastW=p.w;}a.swap=Math.max(0,a.swap-dt/.42);
   // ---- marcha / carrera ----
@@ -441,8 +444,16 @@ function rbAnimar(m,p,dt,pose){
   const rt=RB_RETRO[p.w]||0,sw=a.swap*a.swap;
   const tpx=p.tp?-.05:0,tpy=p.tp?.06:0,tpz=p.tp?(RB_TPDZ[p.w]!=null?RB_TPDZ[p.w]:.1):0;   // tercera persona propia: el arma sale hacia adelante y al costado del cuerpo para que se vea desde atrás
   const ex={dx:.012*Math.sin(a.ph)*w+tpx,dy:.014*Math.abs(Math.sin(a.ph))*w*(.5+run)*-1+.004*Math.sin(t*1.6)*idle-.3*sw-.05*a.cro+tpy,dz:-rt*.45*a.fireK-.03*run*w+tpz,yaw:.03*Math.sin(a.ph)*w+.35*sw*.0,roll:.05*Math.sin(a.ph)*w+.4*sw};
-  const aimX=-(p.pitch||0)*.8-rt*1.3*a.fireK-.12*rise+.1*fall+.5*sw;
+  let aimX=-(p.pitch||0)*.8-rt*1.3*a.fireK-.12*rise+.1*fall+.5*sw;
+  if(a.thr>0){   // molotov: 0–.28 la mano va atrás y arriba · .28–.45 brazo hacia adelante y suelta la botella · .45–.6 mano vacía · .6–1 saca otra y la sube
+    const q=a.thr,cg=rbSm(rbCl(q/.28,0,1)),th=rbSm(rbCl((q-.28)/.17,0,1)),rc=rbSm(rbCl((q-.6)/.4,0,1));
+    const k=cg*(1-th);                                                       // cuánto está cargado hacia atrás
+    ex.dz+=-.3*k+.34*th*(1-rc);ex.dy+=.2*k-.1*th*(1-rc)-.3*(q>.45&&q<1?1-rc:0)*th;ex.dx+=.05*k;
+    aimX+=-1.1*k+.9*th*(1-rc);
+    m.thrHide=q>.4&&q<.62;
+  }else m.thrHide=false;
   rbPose(m,p.w,aimX,Math.sin(a.ph)*.8*w-.6*a.air,pose,ex);
+  m.gun.visible=!m.thrHide;   // en el lanzamiento de la molotov, la botella desaparece de la mano al soltarla y vuelve cuando saca otra
 }
 // nivel de detalle: lejos de la cámara no se dibujan los pistones, remaches ni luces chicas (ahorra unas 18 llamadas de dibujo por personaje)
 function rbLod(m,lejos){if(m.lod===lejos)return;m.lod=lejos;m.fino.forEach(x=>{x.visible=!lejos;});}

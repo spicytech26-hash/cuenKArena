@@ -53,21 +53,21 @@ function lockerInit(){
     const sc=new THREE.Scene();sc.add(new THREE.AmbientLight(0xffffff,.55));const dl=new THREE.DirectionalLight(0xffe2c0,.9);dl.position.set(1.5,3,2);sc.add(dl);
     const rim=new THREE.DirectionalLight(0x2bd6ff,1.1);rim.position.set(-2,1.5,-2);sc.add(rim);const fill=new THREE.DirectionalLight(0xffffff,.45);fill.position.set(-2.5,1.2,3);sc.add(fill);
     const cam=new THREE.PerspectiveCamera(32,440/520,.1,20);cam.position.set(0,1.35,4.4);cam.lookAt(0,1.05,0);
-    lock={r,sc,cam,model:null,rot:.6,z:1,zt:1};
+    lock={r,sc,cam,model:null,rot:.6,z:1,zt:1,ty:1.3,tyt:1.3};
   }catch(e){lock={r:null};}
   rebuildLockModel();
 }
 // zoom de la vista previa: z=1 cuerpo entero, z=.36 primer plano de la cabeza y el pecho; la cámara sube hacia la cara al acercarse
 const LZ_MIN=.36,LZ_MAX=1.15;
 function lockZoom(v){if(lock)lock.zt=Math.max(LZ_MIN,Math.min(LZ_MAX,v));}
-function lockCam(){const z=lock.z,w=Math.max(0,Math.min(1,(1-z)/.5)),ty=1.0*(1-w)+(lock.ty||1)*w;lock.cam.position.set(0,ty+.3*z,4.4*z);lock.cam.lookAt(0,ty,0);}
+function lockCam(){const z=lock.z,w=Math.max(0,Math.min(1,(1-z)/.3)),ty=1.0*(1-w)+(lock.ty||1)*w;lock.cam.position.set(0,ty+.3*z,4.4*z);lock.cam.lookAt(0,ty,0);}
 function rebuildLockModel(){if(!lock||!lock.r)return;if(lock.model)lock.sc.remove(lock.model.g);lock.model=buildPlayer(S.skin,S.name,true);lock.sc.add(lock.model.g);}
 // girar al personaje arrastrando (mouse o dedo) o con las flechas; la vuelta sola se pausa un rato
 (function(){
-  const c=$('lockPrev');let drag=false,lx=0;
-  c.style.touchAction='none';c.style.cursor='grab';c.tabIndex=0;c.setAttribute('aria-label','Vista de tu personaje: arrastrá o usá las flechas para girarlo; rueda, pellizco o + y - para acercar');
-  c.addEventListener('pointerdown',e=>{if(!lock)return;drag=true;lx=e.clientX;c.setPointerCapture(e.pointerId);c.style.cursor='grabbing';lock.hold=3;});
-  c.addEventListener('pointermove',e=>{if(!drag||!lock)return;lock.rot+=(e.clientX-lx)*.014;lx=e.clientX;lock.hold=3;});
+  const c=$('lockPrev');let drag=false,lx=0,ly=0;
+  c.style.touchAction='none';c.style.cursor='grab';c.tabIndex=0;c.setAttribute('aria-label','Vista de tu personaje: arrastrá para girarlo y mirar más arriba o abajo; flechas, rueda, pellizco o + y - para mover y acercar');
+  c.addEventListener('pointerdown',e=>{if(!lock)return;drag=true;lx=e.clientX;ly=e.clientY;c.setPointerCapture(e.pointerId);c.style.cursor='grabbing';lock.hold=3;});
+  c.addEventListener('pointermove',e=>{if(!drag||!lock)return;lock.rot+=(e.clientX-lx)*.014;lx=e.clientX;lock.tyt=Math.max(.25,Math.min(1.85,(lock.tyt||1.3)+(ly-e.clientY)*.0045*Math.max(.35,lock.z)));ly=e.clientY;lock.hold=3;});   // izquierda/derecha gira; arriba/abajo sube o baja la cámara
   const up=()=>{drag=false;c.style.cursor='grab';};c.addEventListener('pointerup',up);c.addEventListener('pointercancel',up);
   // zoom: rueda del mouse, pellizco con dos dedos, doble clic, botones y teclas + / - / 0
   const pts=new Map();let d0=0,z0=1;
@@ -77,22 +77,27 @@ function rebuildLockModel(){if(!lock||!lock.r)return;if(lock.model)lock.sc.remov
   const soltar=e=>pts.delete(e.pointerId);c.addEventListener('pointerup',soltar);c.addEventListener('pointercancel',soltar);
   c.addEventListener('dblclick',()=>{if(lock)lockZoom(lock.zt>.8?LZ_MIN+.1:1);});
   const zb=(id,fn)=>{const b=$(id);if(b)b.addEventListener('click',fn);};
-  zb('lzIn',()=>lockZoom((lock?lock.zt:1)*.78));zb('lzOut',()=>lockZoom((lock?lock.zt:1)/.78));zb('lzReset',()=>lockZoom(1));
+  zb('lzIn',()=>lockZoom((lock?lock.zt:1)*.78));zb('lzOut',()=>lockZoom((lock?lock.zt:1)/.78));zb('lzReset',()=>{lockZoom(1);if(lock)lock.tyt=1.3;});
   c.addEventListener('keydown',e=>{if(!lock)return;if(e.key==='+'||e.key==='='){e.preventDefault();lockZoom(lock.zt*.82);}else if(e.key==='-'||e.key==='_'){e.preventDefault();lockZoom(lock.zt/.82);}else if(e.key==='0'){e.preventDefault();lockZoom(1);}});
-  c.addEventListener('keydown',e=>{if(!lock)return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();lock.rot+=(e.key==='ArrowLeft'?-1:1)*.35;lock.hold=3;}});
+  c.addEventListener('keydown',e=>{if(!lock)return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();lock.rot+=(e.key==='ArrowLeft'?-1:1)*.35;lock.hold=3;}else if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();lock.tyt=Math.max(.25,Math.min(1.85,(lock.tyt||1.3)+(e.key==='ArrowUp'?.1:-.1)));lock.hold=3;}});
 })();
 function renderLocker(dt){if(!lock||!lock.r||$('lockerPanel').hidden||$('menu').hidden)return;lock.hold=(lock.hold||0)-dt;if(lock.hold<=0)lock.rot+=dt*.8;lock.model.g.rotation.y=lock.rot;rbPose(lock.model,1,-.05,0,RB_POSE_TAQ);lock.z+=(lock.zt-lock.z)*Math.min(1,dt*10);lock.ty=(lock.ty||1)+((lock.tyt||1)-(lock.ty||1))*Math.min(1,dt*8);lockCam();lock.r.render(lock.sc,lock.cam);}
 function syncLocker(){syncLockerTabs();
-  [...$('swBody').querySelectorAll('button')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===S.skin.c)));
   [...$('swVisor').querySelectorAll('button')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===S.skin.v)));
   [...$('segAcc').children].forEach((b,i)=>b.setAttribute('aria-pressed',String(i===S.skin.a)));
   const P=skinParts(S.skin);
-  [['swPecho','cp'],['swBrazos','cb'],['swPiernas','cl'],['swBody3','c3']].forEach(([id,k])=>{
+  [['swBody','ck'],['swPecho','cp'],['swBrazos','cb'],['swPiernas','cl'],['swBody3','c3'],['swEmb','ce']].forEach(([id,k])=>{
     [...$(id).querySelectorAll('button[data-c]')].forEach(b=>b.setAttribute('aria-pressed',String(!!S.skin[k]&&b.dataset.c===S.skin[k])));
     const au=$(id).querySelector('.auto');if(au)au.setAttribute('aria-pressed',String(!S.skin[k]));
     const ci=$(id).querySelector('input[type=color]');if(ci)ci.value=P[k];
   });
-  const ci=$('swBodyCustom');if(ci)ci.value=S.skin.c;
+  // cuerpo entero: marcado solo si todas las partes valen lo mismo
+  const todo=P.ck===P.c&&P.cp===P.c&&P.cb===P.c&&P.cl===P.c;
+  [...$('swCuerpo').querySelectorAll('button[data-c]')].forEach(b=>b.setAttribute('aria-pressed',String(todo&&b.dataset.c.toLowerCase()===P.c.toLowerCase())));
+  const cc=$('swCuerpo').querySelector('input[type=color]');if(cc)cc.value=P.c;
+  // emblema elegido (si hay foto propia, ninguno)
+  const em=S.skin.em||'ancla';[...$('emGrid').children].forEach(b=>b.setAttribute('aria-pressed',String(!S.skin.img&&b.dataset.em===em)));
+  $('lockPlate').textContent=S.name||'Jugador';
 }
 // la foto se recorta cuadrada al centro, se achica a 96×96 y se pasa a JPEG liviano para mandarla por la red
 function loadChest(file){
@@ -117,38 +122,34 @@ function syncChest(){const has=!!S.skin.img;$('chestPrev').hidden=!has;$('chestD
 function setSkin(p){for(const k in p){if(p[k]==null)delete S.skin[k];else S.skin[k]=p[k];}saveS();syncLocker();syncChest();rebuildLockModel();acctSave();if(net&&inGame)net.send({t:'skin',s:S.skin});SFX.ui();}
 (function(){
   const mk=(host,cols,key)=>{cols.forEach(c=>{const b=document.createElement('button');b.type='button';b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label','Color '+c);b.addEventListener('click',()=>setSkin({[key]:c}));host.appendChild(b);});};
-  mk($('swBody'),BODY_COLS,'c');mk($('swVisor'),VISOR_COLS,'v');
-  // zonas nuevas: cada una con colores, uno a elección y "Auto" (vuelve al color derivado de la armadura)
-  [['swPecho','cp'],['swBrazos','cb'],['swPiernas','cl'],['swBody3','c3']].forEach(([id,k])=>{
+  mk($('swVisor'),VISOR_COLS,'v');
+  // cada zona: colores, uno a elección y "Auto" (vuelve al color del cuerpo; en el emblema, negro o claro según el pecho)
+  [['swBody','ck'],['swPecho','cp'],['swBrazos','cb'],['swPiernas','cl'],['swBody3','c3'],['swEmb','ce']].forEach(([id,k])=>{
     const host=$(id);mk(host,BODY_COLS,k);
     const au=document.createElement('button');au.type='button';au.className='auto';au.textContent='Auto';au.style.cssText='width:auto;padding:0 8px;font-size:12px';au.setAttribute('aria-label','Color automático');au.addEventListener('click',()=>setSkin({[k]:null}));host.appendChild(au);
     const ic=document.createElement('input');ic.type='color';ic.setAttribute('aria-label','Color personalizado');ic.addEventListener('input',e=>setSkin({[k]:e.target.value}));host.appendChild(ic);
   });
-  const ci=document.createElement('input');ci.type='color';ci.id='swBodyCustom';ci.setAttribute('aria-label','Color personalizado');ci.addEventListener('input',e=>setSkin({c:e.target.value}));$('swBody').appendChild(ci);
+  // cuerpo entero: un solo color para casco, pecho, brazos y piernas (los detalles y el visor no cambian)
+  const cuerpo=c=>setSkin({c,ck:null,cp:null,cb:null,cl:null});
+  BODY_COLS.forEach(c=>{const b=document.createElement('button');b.type='button';b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label','Cuerpo '+c);b.addEventListener('click',()=>cuerpo(c));$('swCuerpo').appendChild(b);});
+  const ci=document.createElement('input');ci.type='color';ci.setAttribute('aria-label','Color personalizado del cuerpo');ci.addEventListener('input',e=>cuerpo(e.target.value));$('swCuerpo').appendChild(ci);
   C.ACCESSORIES.forEach((n,i)=>{const b=document.createElement('button');b.type='button';b.textContent=n;b.addEventListener('click',()=>setSkin({a:i}));$('segAcc').appendChild(b);});
+  // emblemas del pecho
+  const NOM={ancla:'Ancla',flecha:'Flecha',corazon:'Corazón',estrella:'Estrella',calavera:'Calavera',rayo:'Rayo',mira:'Mira',corona:'Corona',escudo:'Escudo',alas:'Alas',espada:'Espada',ninguno:'Sin emblema'};
+  C.EMBLEMS.forEach(id=>{
+    const b=document.createElement('button');b.type='button';b.dataset.em=id;b.title=NOM[id];b.setAttribute('aria-label','Emblema '+NOM[id]);
+    if(id==='ninguno')b.textContent='✕';else{const cvs=document.createElement('canvas');cvs.width=cvs.height=64;cvs.getContext('2d').drawImage(rbEmblemaTex(id).image,0,0,64,64);b.appendChild(cvs);}
+    b.addEventListener('click',()=>setSkin({em:id,img:null}));$('emGrid').appendChild(b);
+  });
 })();
 // ---------- Taquilla v2: pestañas por parte (la cámara se acerca sola), looks listos, aleatorio y restablecer ----------
-const LK_FOCO={casco:[.42,1.74],pecho:[.5,1.45],brazos:[.62,1.36],piernas:[.62,.6],detalles:[.85,1.05]};
+const LK_FOCO={cuerpo:[1,1.0],casco:[.42,1.74],pecho:[.5,1.45],brazos:[.62,1.36],piernas:[.62,.6],detalles:[.85,1.05]};
 function lockTab(n,foco){
   [...$('lkTabs').children].forEach(b=>{const on=b.dataset.tab===n;b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1;});
-  ['casco','pecho','brazos','piernas','detalles'].forEach(k=>$('lkP-'+k).hidden=k!==n);
+  ['cuerpo','casco','pecho','brazos','piernas','detalles'].forEach(k=>$('lkP-'+k).hidden=k!==n);
   if(foco&&lock&&LK_FOCO[n]){lockZoom(LK_FOCO[n][0]);lock.tyt=LK_FOCO[n][1];lock.hold=3;}
 }
-const LK_LOOKS=[
-  {n:'Fuego',c:'#e8542a',cp:'#e8542a',cb:'#e8542a',cl:'#e8542a',c3:'#ffcc33',v:'#2be6ff'},
-  {n:'Hielo',c:'#3fa7ff',cp:'#3fa7ff',cb:'#f2efe6',cl:'#7a8cff',c3:'#38d6c4',v:'#2be6ff'},
-  {n:'Selva',c:'#9ccc3c',cp:'#9ccc3c',cb:'#ffcc33',cl:'#9ccc3c',c3:'#ff8f1f',v:'#3aff9c'},
-  {n:'Nocturno',c:'#2a2a2e',cp:'#2a2a2e',cb:'#2a2a2e',cl:'#2a2a2e',c3:'#ff8f1f',v:'#2be6ff'},
-  {n:'Tormenta',c:'#c45cff',cp:'#ff5c8a',cb:'#c45cff',cl:'#38d6c4',c3:'#b8ff3a',v:'#ff3fd2'},
-  {n:'Brasa',c:'#ffcc33',cp:'#e8542a',cb:'#ffcc33',cl:'#2a2a2e',c3:'#b8ff3a',v:'#ffcf3a'}];
 (function(){
-  const bar=$('lkLooks');
-  LK_LOOKS.forEach(L=>{
-    const b=document.createElement('button');b.type='button';b.className='lklook';b.setAttribute('aria-label','Look '+L.n);
-    b.innerHTML='<span class="bars"><i style="background:'+L.cp+'"></i><i style="background:'+L.cb+'"></i><i style="background:'+L.cl+'"></i></span>'+L.n;
-    b.addEventListener('click',()=>{setSkin({c:L.c,cp:L.cp,cb:L.cb,cl:L.cl,c2:null,c3:L.c3,v:L.v});});
-    bar.appendChild(b);
-  });
   const tabs=$('lkTabs');
   tabs.addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b){lockTab(b.dataset.tab,true);SFX.ui();}});
   tabs.addEventListener('keydown',e=>{
@@ -157,10 +158,48 @@ const LK_LOOKS=[
     lockTab(n.dataset.tab,true);n.focus();
   });
   const alAzar=a=>a[Math.random()*a.length|0];
-  $('lkRand').addEventListener('click',()=>{const c=alAzar(BODY_COLS);setSkin({c,cp:alAzar(BODY_COLS),cb:alAzar(BODY_COLS),cl:alAzar(BODY_COLS),c2:null,c3:alAzar(BODY_COLS),v:alAzar(VISOR_COLS.filter(x=>x!=='#111111'))});});
-  $('lkReset').addEventListener('click',()=>setSkin({c:C.COLORS[0],cp:null,cb:null,cl:null,c2:null,c3:null,v:'#2be6ff',a:0}));
+  $('lkRand').addEventListener('click',()=>{const c=alAzar(BODY_COLS);setSkin({c,ck:alAzar(BODY_COLS),cp:alAzar(BODY_COLS),cb:alAzar(BODY_COLS),cl:alAzar(BODY_COLS),c2:null,c3:alAzar(BODY_COLS),v:alAzar(VISOR_COLS.filter(x=>x!=='#111111')),em:alAzar(C.EMBLEMS.filter(x=>x!=='ninguno')),ce:null,img:null});});
+  $('lkReset').addEventListener('click',()=>setSkin({c:C.COLORS[0],ck:null,cp:null,cb:null,cl:null,c2:null,c3:null,ce:null,v:'#2be6ff',a:0,em:null}));
 })();
 function syncLockerTabs(){
-  const P=skinParts(S.skin),col={casco:P.c,pecho:P.cp,brazos:P.cb,piernas:P.cl,detalles:P.c3};
+  const P=skinParts(S.skin),col={cuerpo:P.c,casco:P.ck,pecho:P.cp,brazos:P.cb,piernas:P.cl,detalles:P.c3};
   [...$('lkTabs').children].forEach(b=>b.querySelector('i').style.setProperty('--c',col[b.dataset.tab]));
+}
+// ---------- Mis combinaciones: solo con sesión iniciada; se guardan en este navegador, una lista por cuenta (máximo 8) ----------
+const LK_CAMPOS=['c','ck','cp','cb','cl','c3','v','a','em','ce','img'];
+let lkAdding=false;
+function comboKey(){return ACC?'cuenk_combos_'+(ACC.cid||ACC.nombre):null;}
+function comboLeer(){try{const a=JSON.parse(localStorage.getItem(comboKey())||'[]');return Array.isArray(a)?a.slice(0,8):[];}catch(e){return [];}}
+function comboGuardar(a){try{localStorage.setItem(comboKey(),JSON.stringify(a));return true;}catch(e){return false;}}
+function renderCombos(){
+  const box=$('lkCombos');if(!box)return;box.textContent='';
+  if(!ACC||!ACCTOK){
+    const g=document.createElement('div');g.className='lkgate';
+    g.innerHTML='<span>Iniciá sesión con Google para guardar tus combinaciones.</span>';
+    const b=document.createElement('button');b.type='button';b.className='btn';b.textContent='Iniciar sesión';
+    b.addEventListener('click',()=>{const a=$('acctBox');a.scrollIntoView({behavior:'smooth',block:'center'});a.classList.remove('lkpulse');void a.offsetWidth;a.classList.add('lkpulse');});
+    g.appendChild(b);box.appendChild(g);return;
+  }
+  const lista=comboLeer();
+  lista.forEach((cb,i)=>{
+    const s=cb.s||{},P=skinParts(s),chip=document.createElement('div');chip.className='lkchip';chip.tabIndex=0;chip.setAttribute('role','button');chip.setAttribute('aria-label','Usar la combinación '+cb.n);chip.title='Usar esta combinación';
+    chip.innerHTML='<span class="bars"><i style="background:'+P.cp+'"></i><i style="background:'+P.cb+'"></i><i style="background:'+P.cl+'"></i></span>';
+    const nm=document.createElement('span');nm.textContent=cb.n;chip.appendChild(nm);
+    const usar=()=>{const p={};LK_CAMPOS.forEach(k=>{p[k]=s[k]==null?null:s[k];});if(p.v==null)p.v='#2be6ff';if(p.a==null)p.a=0;p.c2=null;setSkin(p);};
+    chip.addEventListener('click',usar);chip.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();usar();}});
+    const x=document.createElement('button');x.type='button';x.className='x';x.textContent='×';x.title='Borrar';x.setAttribute('aria-label','Borrar la combinación '+cb.n);
+    x.addEventListener('click',e=>{e.stopPropagation();const a=comboLeer();a.splice(i,1);comboGuardar(a);renderCombos();});chip.appendChild(x);
+    box.appendChild(chip);
+  });
+  if(lkAdding){
+    const f=document.createElement('form');f.className='lkadd';
+    const inp=document.createElement('input');inp.maxLength=14;inp.placeholder='Nombre';inp.value='Combinación '+(lista.length+1);inp.setAttribute('aria-label','Nombre de la combinación');
+    const ok=document.createElement('button');ok.type='submit';ok.className='btn';ok.textContent='Guardar';
+    const no=document.createElement('button');no.type='button';no.className='btn';no.textContent='Cancelar';no.addEventListener('click',()=>{lkAdding=false;renderCombos();});
+    f.addEventListener('submit',e=>{e.preventDefault();const n=inp.value.replace(/[<>]/g,'').trim().slice(0,14)||'Combinación '+(lista.length+1),s={};LK_CAMPOS.forEach(k=>{if(S.skin[k]!=null)s[k]=S.skin[k];});
+      const a=comboLeer();a.push({n,s});if(!comboGuardar(a)){delete s.img;comboGuardar(a);}lkAdding=false;renderCombos();SFX.ui();});
+    f.append(inp,ok,no);box.appendChild(f);setTimeout(()=>{inp.focus();inp.select();},0);
+  }else if(lista.length<8){
+    const b=document.createElement('button');b.type='button';b.className='btn';b.textContent='+ Guardar esta combinación';b.addEventListener('click',()=>{lkAdding=true;renderCombos();});box.appendChild(b);
+  }else{const n=document.createElement('span');n.className='note';n.textContent='Máximo 8: borrá una para guardar otra.';box.appendChild(n);}
 }

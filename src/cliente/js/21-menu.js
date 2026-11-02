@@ -92,9 +92,9 @@ $('bOffline').addEventListener('click',()=>{openModePicker(false);});
 $('bLeave').addEventListener('click',()=>{leaveGame();$('mKick').textContent='Arena · Gungame · Team Deathmatch · Captura la bandera';$('bOnline').textContent='Jugar online';$('bOnline').disabled=!serverOK;$('bOffline').textContent='Práctica con bots';});
 function togglePanel(btn,id){const p=$(id),open=p.hidden;['settings','lockerPanel','modePanel'].forEach(x=>$(x).hidden=true);['bSet','bLocker'].forEach(x=>$(x).setAttribute('aria-expanded','false'));p.hidden=!open;$(btn).setAttribute('aria-expanded',String(open));}
 $('bSet').addEventListener('click',()=>togglePanel('bSet','settings'));
-$('bLocker').addEventListener('click',()=>{togglePanel('bLocker','lockerPanel');lockerInit();syncLocker();});
+$('bLocker').addEventListener('click',()=>{togglePanel('bLocker','lockerPanel');lockerInit();syncLocker();lkAdding=false;renderCombos();});
 function saveName(){const n=$('pName').value.trim().slice(0,16);if(n&&n!==S.name){S.name=n;saveS();rebuildLockModel();acctSave();}}
-$('pName').addEventListener('change',saveName);
+$('pName').addEventListener('change',saveName);$('pName').addEventListener('input',()=>{const pl=$('lockPlate');if(pl)pl.textContent=$('pName').value.trim().slice(0,16)||'Jugador';});
 $('pName').addEventListener('keydown',e=>{if(e.key==='Enter'){saveName();e.target.blur();}});
 function syncSettings(){
   $('pName').value=S.name;

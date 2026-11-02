@@ -24,7 +24,7 @@ function ensurePlayer(id,name,color,bot,skin,team){
   if(rebuild&&p.model){scene.remove(p.model.g);p.model=null;}
   if(!p.model&&id!==myId){
     // en equipos la armadura toma el color del equipo; visor y accesorio siguen siendo los tuyos
-    p.model=buildPlayer(teams?Object.assign({},p.skin,{c:p.color}):p.skin,p.name);p.model.g.visible=false;scene.add(p.model.g);
+    p.model=buildPlayer(teams?Object.assign({},p.skin,{c:p.color,ck:null,cp:null,cb:null,cl:null}):p.skin,p.name);p.model.g.visible=false;scene.add(p.model.g);
     if(teams&&p.team===myTeam&&p.model.tag){p.model.tag.material.depthTest=false;p.model.tag.renderOrder=10;}
   }
   return p;

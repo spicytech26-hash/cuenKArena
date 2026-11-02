@@ -145,7 +145,7 @@ function cleanMira(m) {
 const cleanName = n => censor(String(n || '').replace(/[\u0000-\u001f<>]/g, '')).replace(/\*+/g, '').replace(/\s+/g, ' ').trim().slice(0, 16) || 'Jugador';
 function profile(row) {
   const L = levelInfo(row.xp);
-  return { nombre: row.nombre, skin: row.skin, mira: row.mira, xp: row.xp, nivel: L.level, en: L.into, falta: L.need, kills: row.kills, partidas: row.partidas, victorias: row.victorias };
+  return { cid: crypto.createHash('sha256').update('cid:' + String(row.sub)).digest('hex').slice(0, 16), nombre: row.nombre, skin: row.skin, mira: row.mira, xp: row.xp, nivel: L.level, en: L.into, falta: L.need, kills: row.kills, partidas: row.partidas, victorias: row.victorias };
 }
 
 /* ---------- API ---------- */

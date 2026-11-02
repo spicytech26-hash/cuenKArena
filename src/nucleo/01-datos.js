@@ -137,5 +137,6 @@ const MEDALS = [
 ];
 const medalOf = L => MEDALS.reduce((a, m) => L >= m.from ? m : a, MEDALS[0]);
 const ACCESSORIES = ['Ninguno', 'Cresta', 'Antena', 'Cuernos', 'Gorra'];
+const EMBLEMS = ['ancla', 'flecha', 'corazon', 'estrella', 'calavera', 'rayo', 'mira', 'corona', 'escudo', 'alas', 'espada', 'ninguno'];   // emblemas del pecho (el dibujo está en el cliente)
 const BOT_NAMES = ['Yacaré', 'Carpincho', 'Surubí', 'Tatú', 'Coatí', 'Aguará', 'Yaguareté', 'Pacú', 'Dorado', 'Tero', 'Hornero', 'Mbiguá', 'Urutaú', 'Tucán', 'Zorro', 'Lobito'];
 

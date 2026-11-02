@@ -187,7 +187,7 @@
               <div class="vents" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
               <canvas id="lockPrev" width="440" height="520"></canvas>
               <div class="lockzoom" role="group" aria-label="Zoom de la Taquilla"><button type="button" id="lzIn" aria-label="Acercar">+</button><button type="button" id="lzOut" aria-label="Alejar">−</button><button type="button" id="lzReset" aria-label="Vista completa">⤢</button></div>
-              <div class="lockplate" aria-hidden="true">Taquilla Nº <b>07</b></div>
+              <div class="lockplate" id="lockPlate" aria-hidden="true"></div>
             </div>
             <div class="lockopts">
               <div class="lkhead">
@@ -197,30 +197,37 @@
                   <button type="button" class="btn" id="lkReset" title="Volver a los colores de fábrica">Restablecer</button>
                 </div>
               </div>
-              <div class="lkcap">Looks listos</div>
-              <div class="lklooks" id="lkLooks" role="group" aria-label="Looks listos"></div>
+              <div class="lkcap">Mis combinaciones</div>
+              <div class="lkcombos" id="lkCombos"></div>
               <div class="lktabs" id="lkTabs" role="tablist" aria-label="Partes de la armadura">
-                <button type="button" role="tab" id="lkT-casco" data-tab="casco" aria-selected="true" aria-controls="lkP-casco"><i></i>Casco</button>
+                <button type="button" role="tab" id="lkT-cuerpo" data-tab="cuerpo" aria-selected="true" aria-controls="lkP-cuerpo"><i></i>Cuerpo</button>
+                <button type="button" role="tab" id="lkT-casco" data-tab="casco" aria-selected="false" aria-controls="lkP-casco" tabindex="-1"><i></i>Casco</button>
                 <button type="button" role="tab" id="lkT-pecho" data-tab="pecho" aria-selected="false" aria-controls="lkP-pecho" tabindex="-1"><i></i>Pecho</button>
                 <button type="button" role="tab" id="lkT-brazos" data-tab="brazos" aria-selected="false" aria-controls="lkP-brazos" tabindex="-1"><i></i>Brazos</button>
                 <button type="button" role="tab" id="lkT-piernas" data-tab="piernas" aria-selected="false" aria-controls="lkP-piernas" tabindex="-1"><i></i>Piernas</button>
                 <button type="button" role="tab" id="lkT-detalles" data-tab="detalles" aria-selected="false" aria-controls="lkP-detalles" tabindex="-1"><i></i>Detalles</button>
               </div>
-              <div class="lkpane" id="lkP-casco" role="tabpanel" aria-labelledby="lkT-casco">
+              <div class="lkpane" id="lkP-cuerpo" role="tabpanel" aria-labelledby="lkT-cuerpo">
+                <div class="lkcap">Color de todo el cuerpo</div><div class="sw-row" id="swCuerpo"></div>
+                <p class="note" style="margin:0">Pinta casco, pecho, brazos y piernas del mismo color. Después podés cambiar cada parte por separado en las otras pestañas.</p>
+              </div>
+              <div class="lkpane" id="lkP-casco" role="tabpanel" aria-labelledby="lkT-casco" hidden>
                 <div class="lkcap">Color del casco</div><div class="sw-row" id="swBody"></div>
                 <div class="lkcap">Visor</div><div class="sw-row" id="swVisor"></div>
                 <div class="lkcap">Accesorio</div><div class="seg" id="segAcc" role="group" aria-label="Accesorio"></div>
               </div>
               <div class="lkpane" id="lkP-pecho" role="tabpanel" aria-labelledby="lkT-pecho" hidden>
                 <div class="lkcap">Color del pecho</div><div class="sw-row" id="swPecho"></div>
-                <div class="lkcap">Emblema</div>
+                <div class="lkcap">Emblema</div><div class="emgrid" id="emGrid" role="group" aria-label="Emblema del pecho"></div>
+                <div class="lkcap">Color del emblema</div><div class="sw-row" id="swEmb"></div>
+                <div class="lkcap">O tu propia imagen</div>
                 <div class="chestrow">
                   <img id="chestPrev" alt="Imagen del pecho" width="56" height="56" style="width:56px;height:56px;border:1px solid #000;background:#2e2a26;object-fit:cover" hidden>
                   <label class="btn" for="chestFile" style="cursor:pointer">Elegir foto…</label>
                   <input type="file" id="chestFile" accept="image/png,image/jpeg,image/webp" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
                   <button type="button" class="btn" id="chestDel" hidden>Quitar</button>
                 </div>
-                <p class="note" id="chestNote" style="margin:0">PNG o JPG. Se recorta cuadrada al centro y va en el pecho; sin foto lleva el ancla.</p>
+                <p class="note" id="chestNote" style="margin:0">PNG o JPG. Se recorta cuadrada al centro y reemplaza al emblema.</p>
               </div>
               <div class="lkpane" id="lkP-brazos" role="tabpanel" aria-labelledby="lkT-brazos" hidden>
                 <div class="lkcap">Color de brazos y manos</div><div class="sw-row" id="swBrazos"></div>

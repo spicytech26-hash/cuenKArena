@@ -149,6 +149,7 @@ const MEDALS = [
 ];
 const medalOf = L => MEDALS.reduce((a, m) => L >= m.from ? m : a, MEDALS[0]);
 const ACCESSORIES = ['Ninguno', 'Cresta', 'Antena', 'Cuernos', 'Gorra'];
+const EMBLEMS = ['ancla', 'flecha', 'corazon', 'estrella', 'calavera', 'rayo', 'mira', 'corona', 'escudo', 'alas', 'espada', 'ninguno'];   // emblemas del pecho (el dibujo está en el cliente)
 const BOT_NAMES = ['Yacaré', 'Carpincho', 'Surubí', 'Tatú', 'Coatí', 'Aguará', 'Yaguareté', 'Pacú', 'Dorado', 'Tero', 'Hornero', 'Mbiguá', 'Urutaú', 'Tucán', 'Zorro', 'Lobito'];
 
 /* =====================================================================
@@ -2364,6 +2365,9 @@ function cleanSkin(k, fallback) {
   if (HEX.test(k.cp)) out.cp = k.cp;   // pecho (opcional: si falta, vale c)
   if (HEX.test(k.cb)) out.cb = k.cb;   // brazos y manos (opcional)
   if (HEX.test(k.cl)) out.cl = k.cl;   // pelvis y piernas (opcional)
+  if (HEX.test(k.ck)) out.ck = k.ck;   // casco (opcional: si falta, vale c)
+  if (HEX.test(k.ce)) out.ce = k.ce;   // color del emblema del pecho (opcional: si falta, se elige claro u oscuro)
+  if (EMBLEMS.includes(k.em)) out.em = k.em;   // emblema del pecho (si falta, el ancla)
   if (okChestImg(k.img)) out.img = k.img;
   return out;
 }
@@ -3486,5 +3490,5 @@ class Game {
   }
 }
 
-return { PRIMARY, primaryOf, censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, SKILL, topAt, pmove, inZeroG, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
+return { PRIMARY, primaryOf, censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, EMBLEMS, SKILL, topAt, pmove, inZeroG, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
 });

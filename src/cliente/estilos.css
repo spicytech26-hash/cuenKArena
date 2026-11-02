@@ -570,9 +570,9 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 .lklook:active{transform:translateY(0)}
 .lklook .bars{display:grid;grid-template-columns:1.3fr 1fr 1fr;height:20px;border:1px solid #000}
 .lklook .bars i{display:block}
-.lktabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;margin-top:4px;border-bottom:2px solid #000}
-.lktabs button{position:relative;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 4px 9px;font-family:var(--display);font-size:13px;letter-spacing:.06em;text-transform:uppercase;background:#0c0709;color:#8c7f74;border:2px solid #000;border-bottom:none;margin-right:-2px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);transition:color .12s,background .12s}
-.lktabs button i{width:13px;height:13px;background:var(--c,#888);border:1px solid #000;box-shadow:0 0 0 1px rgba(255,255,255,.25);transform:rotate(45deg);transition:transform .2s}
+.lktabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;margin-top:4px;border-bottom:2px solid #000}
+.lktabs button{position:relative;display:flex;align-items:center;justify-content:center;gap:5px;padding:10px 2px 9px;font-family:var(--display);font-size:12px;letter-spacing:.03em;text-transform:uppercase;background:#0c0709;color:#8c7f74;border:2px solid #000;border-bottom:none;margin-right:-2px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);transition:color .12s,background .12s}
+.lktabs button i{width:10px;height:10px;background:var(--c,#888);border:1px solid #000;box-shadow:0 0 0 1px rgba(255,255,255,.25);transform:rotate(45deg);transition:transform .2s}
 .lktabs button:hover{color:#fff;background:#1a0b10}
 .lktabs button[aria-selected="true"]{background:linear-gradient(#3a1015,#1a0a0d);color:#fff;box-shadow:inset 0 3px 0 var(--blood)}
 .lktabs button[aria-selected="true"] i{transform:rotate(45deg) scale(1.25)}
@@ -587,3 +587,25 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 .lkfoot{margin:0}
 @media (prefers-reduced-motion:reduce){.lkpane{animation:none}.lklook,.lktabs button i{transition:none}}
 @media (max-width:620px){.lktabs button{padding:9px 3px 8px;font-size:11px}.lktabs button i{display:none}}
+
+/* taquilla: combinaciones guardadas, emblemas y chapa con el nombre */
+.lkcombos{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;min-height:44px}
+.lkgate{display:flex;align-items:center;gap:12px;flex-wrap:wrap;width:100%;padding:9px 12px;background:rgba(255,255,255,.03);border:2px dashed #3a1a1f;color:var(--muted);font-size:12px;letter-spacing:.03em}
+#menu .lkgate .btn,#menu .lkcombos .btn{padding:6px 12px;font-size:13px}
+.lkchip{position:relative;display:flex;align-items:center;gap:8px;padding:5px 24px 5px 6px;background:#0c0709;border:2px solid #000;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);cursor:pointer;color:var(--bone);font-family:var(--display);font-size:12px;letter-spacing:.05em;text-transform:uppercase;transition:transform .12s,background .12s}
+.lkchip:hover{transform:translateY(-2px);background:#2a0c10}
+.lkchip .bars{display:grid;grid-template-columns:1.3fr 1fr 1fr;width:34px;height:20px;border:1px solid #000}
+.lkchip .bars i{display:block}
+.lkchip .x{position:absolute;right:0;top:0;bottom:0;width:22px;display:grid;place-items:center;background:none;border:none;border-left:1px solid #000;color:#8c7f74;cursor:pointer;font:700 14px/1 var(--mono)}
+.lkchip .x:hover{color:#fff;background:var(--blood)}
+.lkadd{display:flex;gap:6px;align-items:center}
+.lkadd input{width:150px;padding:6px 8px;background:#0c0709;border:2px solid #000;color:var(--ink);font-family:var(--mono);font-size:13px;-webkit-user-select:text;user-select:text}
+.lkpulse{animation:lkPulse 1s ease-out 2}
+@keyframes lkPulse{0%{box-shadow:0 0 0 0 rgba(232,84,42,.8)}100%{box-shadow:0 0 0 18px rgba(232,84,42,0)}}
+.emgrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.emgrid button{aspect-ratio:1;display:grid;place-items:center;padding:0;background:#0c0709;border:2px solid #000;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);cursor:pointer;color:var(--muted);font:700 11px/1 var(--mono);transition:transform .12s,background .12s}
+.emgrid button canvas{width:70%;height:70%;display:block}
+.emgrid button:hover{transform:translateY(-3px);background:#2a0c10}
+.emgrid button[aria-pressed="true"]{background:#3a1015;outline:3px solid #fff;outline-offset:2px}
+.lockplate{max-width:calc(100% - 44px);overflow:hidden;text-overflow:ellipsis;font-family:var(--display);font-size:13px;letter-spacing:.14em;padding:3px 12px}
+@media (prefers-reduced-motion:reduce){.lkpulse{animation:none}}

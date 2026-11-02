@@ -1,10 +1,10 @@
 /* ---------- personaje robot humanoide (hoja CUE-87, versión 3) ----------
    Se arma con primitivas y superficies suaves ("lofts"), UNA sola vez: cada parte que se mueve es una malla por zona de color.
    Zonas de color (la piel guarda hexadecimales; los campos nuevos se derivan de los viejos si faltan):
-     A armadura → cabeza: skin.c · pecho/abdomen: skin.cp · pelvis y piernas: skin.cl · brazos y manos: skin.cb   (cp, cb y cl valen skin.c si no están)
+     A armadura → casco: skin.ck · pecho y abdomen: skin.cp · pelvis y piernas: skin.cl · brazos y manos: skin.cb   (ck, cp, cb y cl valen skin.c si no están: c es el color de todo el cuerpo)
      B articulaciones y partes secundarias → skin.c2 (si falta: el color de armadura más oscuro)
      C detalles (cuerno, hebilla, bolsitas, rodilleras, muñequeras) → skin.c3 (si falta: el color de armadura más claro)
-     V visor y luces → skin.v (si falta: cian)          K metal oscuro (pistones, cinturón, suelas) → fijo
+     V visor y luces → skin.v (si falta: cian)      emblema del pecho: skin.em (ancla, flecha, corazón…) y su color skin.ce; o una foto propia skin.img          K metal oscuro (pistones, cinturón, suelas) → fijo
    Las geometrías se comparten entre todos los jugadores y bots; lo único que cambia por jugador son los materiales (colores).
    Medidas de la lámina: ~1,88 m, hombros de 52 cm, pecho de 44 cm, cinturón de 4 cm.
    La hitbox y la física las decide el servidor (K en src/nucleo/01-datos.js), esto es solo visual. */
@@ -14,8 +14,9 @@ function skinParts(skin){
   const c=new THREE.Color(RB_HEX.test(skin.c)?skin.c:'#e8542a');
   const dc=k=>RB_HEX.test(skin[k])?new THREE.Color(skin[k]):null;
   const c2=dc('c2')||c.clone().multiplyScalar(.5),c3=dc('c3')||c.clone().lerp(new THREE.Color(1,1,1),.45);
-  const cp=dc('cp')||c.clone(),cb=dc('cb')||c.clone(),cl=dc('cl')||c.clone(),h=q=>'#'+q.getHexString();
-  return {c:h(c),c2:h(c2),c3:h(c3),cp:h(cp),cb:h(cb),cl:h(cl),v:RB_HEX.test(skin.v)?skin.v:'#2be6ff'};
+  const cp=dc('cp')||c.clone(),cb=dc('cb')||c.clone(),cl=dc('cl')||c.clone(),ck=dc('ck')||c.clone(),h=q=>'#'+q.getHexString();
+  const ce=dc('ce')||new THREE.Color(rbTintaAncla(h(cp)));   // emblema: el elegido, o negro/claro según el pecho
+  return {c:h(c),ck:h(ck),c2:h(c2),c3:h(c3),cp:h(cp),cb:h(cb),cl:h(cl),ce:h(ce),v:RB_HEX.test(skin.v)?skin.v:'#2be6ff'};
 }
 // caja biselada: caja subdividida cuyos vértices se empujan hacia afuera del núcleo; las normales quedan suaves
 function rbCaja(w,h,d,r,seg){
@@ -248,7 +249,7 @@ function rbGeos(){
   R.head=t.fin();Object.keys(R.head).forEach(k=>R.head[k].scale(.78,.78,.78));
   R.legL=rbPierna(-1);R.legR=rbPierna(1);
   const bl=rbBrazo(-1),br=rbBrazo(1);R.armLu=bl.U;R.armLf=bl.F;R.armRu=br.U;R.armRf=br.F;
-  R.acc=rbAccesorios();R.acc.decal=new THREE.PlaneGeometry(.075,.075);
+  R.acc=rbAccesorios();R.acc.decal=new THREE.PlaneGeometry(.09,.09);
   return rbGeos.c=R;
 }
 // ---------- materiales: pintura lustrosa con reflejos y desgaste ----------
@@ -285,21 +286,31 @@ function rbMat(color,rug,met,esp){
   const b=rbDesgaste();
   return new THREE.MeshStandardMaterial({color,roughness:rug,metalness:met,envMap:rbEnv(),envMapIntensity:esp||.75,bumpMap:b,bumpScale:.003,map:rbMapT});
 }
-// ancla negra sobre el pecho (clara si el pecho es oscuro, para que siempre se lea)
-function rbTintaAncla(hex){const c=new THREE.Color(hex),l=.299*c.r+.587*c.g+.114*c.b;return l>.3?0x14181c:0xf2efe6;}
-// ancla blanca sobre fondo transparente (se tiñe con la tinta de arriba)
-let rbAncla=null;
-function rbAnclaTex(){
-  if(rbAncla)return rbAncla;
-  rbAncla=new THREE.CanvasTexture(cv(128,128,g=>{
-    g.strokeStyle='#fff';g.fillStyle='#fff';g.lineCap='round';g.lineWidth=9;
-    g.beginPath();g.arc(64,26,12,0,Math.PI*2);g.stroke();
-    g.beginPath();g.moveTo(64,38);g.lineTo(64,104);g.moveTo(44,54);g.lineTo(84,54);g.stroke();
-    g.beginPath();g.arc(64,72,36,Math.PI*.1,Math.PI*.9);g.stroke();
-    g.beginPath();g.moveTo(24,84);g.lineTo(22,66);g.lineTo(42,76);g.fill();
-    g.beginPath();g.moveTo(104,84);g.lineTo(106,66);g.lineTo(86,76);g.fill();
-  }));
-  return rbAncla;
+// emblemas del pecho: dibujos blancos sobre fondo transparente (se tiñen con el color del emblema). El servidor solo guarda el nombre (EMBLEMS).
+function rbTintaAncla(hex){const c=new THREE.Color(hex),l=.299*c.r+.587*c.g+.114*c.b;return l>.3?0x14181c:0xf2efe6;}   // negro sobre pechos claros, claro sobre pechos oscuros
+const RB_EMBLEMAS={
+  ancla:g=>{g.beginPath();g.arc(64,26,12,0,Math.PI*2);g.stroke();g.beginPath();g.moveTo(64,38);g.lineTo(64,104);g.moveTo(44,54);g.lineTo(84,54);g.stroke();
+    g.beginPath();g.arc(64,72,36,Math.PI*.1,Math.PI*.9);g.stroke();g.beginPath();g.moveTo(24,84);g.lineTo(22,66);g.lineTo(42,76);g.fill();g.beginPath();g.moveTo(104,84);g.lineTo(106,66);g.lineTo(86,76);g.fill();},
+  flecha:g=>{g.lineWidth=11;g.beginPath();g.moveTo(64,114);g.lineTo(64,26);g.stroke();g.beginPath();g.moveTo(32,60);g.lineTo(64,22);g.lineTo(96,60);g.stroke();},
+  corazon:g=>{g.beginPath();g.moveTo(64,110);g.bezierCurveTo(64,110,14,82,14,48);g.bezierCurveTo(14,30,28,18,44,18);g.bezierCurveTo(54,18,62,24,64,32);g.bezierCurveTo(66,24,74,18,84,18);g.bezierCurveTo(100,18,114,30,114,48);g.bezierCurveTo(114,82,64,110,64,110);g.fill();},
+  estrella:g=>{g.beginPath();for(let i=0;i<16;i++){const a=i*Math.PI/8-Math.PI/2,r=i%2?17:(i%4?36:56);g.lineTo(64+Math.cos(a)*r,64+Math.sin(a)*r);}g.closePath();g.fill();},
+  calavera:g=>{g.beginPath();g.arc(64,54,40,0,Math.PI*2);g.fill();g.fillRect(40,70,48,40);
+    g.globalCompositeOperation='destination-out';g.beginPath();g.arc(48,56,11,0,6.3);g.arc(80,56,11,0,6.3);g.fill();g.beginPath();g.moveTo(64,66);g.lineTo(57,82);g.lineTo(71,82);g.fill();
+    for(let i=0;i<4;i++)g.fillRect(49+i*10,96,4,14);g.globalCompositeOperation='source-over';},
+  rayo:g=>{g.beginPath();[[78,6],[30,70],[58,70],[44,122],[100,50],[70,50]].forEach(q=>g.lineTo(q[0],q[1]));g.closePath();g.fill();},
+  mira:g=>{g.beginPath();g.arc(64,64,38,0,Math.PI*2);g.stroke();g.beginPath();g.arc(64,64,10,0,6.3);g.fill();[[64,10,64,36],[64,92,64,118],[10,64,36,64],[92,64,118,64]].forEach(l=>{g.beginPath();g.moveTo(l[0],l[1]);g.lineTo(l[2],l[3]);g.stroke();});},
+  corona:g=>{g.beginPath();[[16,98],[16,46],[42,72],[64,30],[86,72],[112,46],[112,98]].forEach(q=>g.lineTo(q[0],q[1]));g.closePath();g.fill();g.fillRect(16,102,96,12);[[16,40],[64,24],[112,40]].forEach(q=>{g.beginPath();g.arc(q[0],q[1],7,0,6.3);g.fill();});},
+  escudo:g=>{g.beginPath();g.moveTo(64,8);g.lineTo(110,24);g.lineTo(110,62);g.bezierCurveTo(110,92,88,112,64,122);g.bezierCurveTo(40,112,18,92,18,62);g.lineTo(18,24);g.closePath();g.fill();
+    g.globalCompositeOperation='destination-out';g.fillRect(61,24,6,84);g.fillRect(34,50,60,6);g.globalCompositeOperation='source-over';},
+  alas:g=>{for(const sd of [-1,1])for(let i=0;i<5;i++){const a=-.7+i*.3,L=58-i*6;g.beginPath();g.moveTo(64+sd*8,72);g.lineTo(64+sd*(8+Math.cos(a)*L),72+Math.sin(a)*L);g.stroke();}g.beginPath();g.arc(64,72,9,0,6.3);g.fill();},
+  espada:g=>{g.beginPath();[[64,4],[75,26],[75,86],[53,86],[53,26]].forEach(q=>g.lineTo(q[0],q[1]));g.closePath();g.fill();g.fillRect(30,86,68,10);g.fillRect(59,96,10,18);g.beginPath();g.arc(64,119,7,0,6.3);g.fill();},
+  ninguno:()=>{}
+};
+const rbEmbTex={};
+function rbEmblemaTex(id){
+  id=RB_EMBLEMAS[id]?id:'ancla';
+  if(!rbEmbTex[id])rbEmbTex[id]=new THREE.CanvasTexture(cv(128,128,g=>{g.fillStyle=g.strokeStyle='#fff';g.lineCap=g.lineJoin='round';g.lineWidth=9;RB_EMBLEMAS[id](g);}));
+  return rbEmbTex[id];
 }
 // ---------- agarre del arma con las dos manos ----------
 // Cada brazo es un IK de dos huesos: la mano derecha va a la empuñadura y la izquierda al guardamano de ESA arma (medidos sobre los modelos).
@@ -338,7 +349,7 @@ function rbPose(m,w,aimX,swing,pose){
 }
 function buildPlayer(skin,name,noTag){
   const G=rbGeos(),P=skinParts(skin);
-  const mA=rbMat(P.c,.38,.35),mP=rbMat(P.cp,.58,.08,.4),mBr=P.cb===P.c?mA:rbMat(P.cb,.38,.35),mL=P.cl===P.c?mA:rbMat(P.cl,.38,.35);
+  const mA=rbMat(P.ck,.38,.35),mP=rbMat(P.cp,.58,.08,.4),mBr=P.cb===P.c?mA:rbMat(P.cb,.38,.35),mL=P.cl===P.c?mA:rbMat(P.cl,.38,.35);
   const mB=rbMat(P.c2,.32,.65),mC=rbMat(P.c3,.4,.45),mK=rbMat(0x2b3036,.3,.85,.9);
   const mV=new THREE.MeshBasicMaterial({color:P.v});
   const mats=(a)=>({A:a,B:mB,C:mC,V:mV,K:mK});
@@ -346,10 +357,11 @@ function buildPlayer(skin,name,noTag){
   const g=new THREE.Group(),b=new THREE.Group();g.add(b);
   parte(G.torso,b,mP);parte(G.pelvis,b,mL);
   // imagen del pecho (o el ancla de origen): un plano cuadrado pegado unos 3 mm adelante de la placa
-  const hasImg=!!(skin.img&&(noTag||S.showImg));
+  const hasImg=!!(skin.img&&(noTag||S.showImg)),em=RB_EMBLEMAS[skin.em]?skin.em:'ancla';
   const dm=hasImg?new THREE.MeshBasicMaterial({map:chestTex(skin.img),polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})
-                 :new THREE.MeshBasicMaterial({map:rbAnclaTex(),color:rbTintaAncla(P.cp),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
-  const dec=new THREE.Mesh(G.acc.decal,dm);dec.position.set(0,1.47,.137);if(hasImg)dec.scale.setScalar(1.6);b.add(dec);   // el ancla es chica; una foto propia va más grande
+                 :new THREE.MeshBasicMaterial({map:rbEmblemaTex(em),color:P.ce,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+  const dec=new THREE.Mesh(G.acc.decal,dm);dec.position.set(0,1.47,.137);if(hasImg)dec.scale.setScalar(1.6);
+  if(hasImg||em!=='ninguno')b.add(dec);   // el emblema es chico; una foto propia va más grande
   const legs=[-1,1].map(side=>{const l=parte(side<0?G.legL:G.legR,new THREE.Group(),mL);l.position.set(side*.108,.93,0);b.add(l);return l;});
   const head=parte(G.head,new THREE.Group(),mA);head.position.y=1.76;b.add(head);
   const a=skin.a|0,A=G.acc;
@@ -366,7 +378,7 @@ function buildPlayer(skin,name,noTag){
   const gun=new THREE.Group();gun.position.set(0,0,.3);gun.rotation.y=Math.PI;gun.scale.setScalar(.72);aim.add(gun);
   if(noTag){gun.add(tpGun(1));gun.userData.w=1;}
   let tag=null;if(!noTag){tag=nameSprite(name,P.c);g.add(tag);}
-  const bas=[mV];if(hasImg)bas.push(dm);   // materiales que brillan solos (de noche se apagan, ver 18-noche.js)
+  const bas=[mV];if(hasImg||em!=='ninguno')bas.push(dm);   // materiales que brillan solos (de noche se apagan, ver 18-noche.js)
   const modelo={g,b,legs,armL,armR,aim,head,gun,tag,mats:[mA,mP,mBr,mL,mB,mC,mK],bas};
   rbPose(modelo,noTag?1:0,-.05,0,noTag?RB_POSE_TAQ:null);
   return modelo;

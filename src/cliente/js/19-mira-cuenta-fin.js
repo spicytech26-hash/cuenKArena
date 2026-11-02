@@ -110,7 +110,7 @@ function medalSVG(L,size){
     '<circle r="13.5" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="1"/>'+
     '<text y="'+(L>99?4.2:5)+'" text-anchor="middle" font-family="Black Ops One, Impact, sans-serif" font-size="'+(L>99?11:14)+'" fill="#1a1208" stroke="rgba(255,255,255,.35)" stroke-width=".5">'+L+'</text></svg>';
 }
-function renderAcct(){
+function renderAcct(){if(typeof renderCombos==='function'){lkAdding=false;renderCombos();}
   const box=$('acctBox');
   if(!GCID){box.hidden=true;return;}
   box.hidden=false;

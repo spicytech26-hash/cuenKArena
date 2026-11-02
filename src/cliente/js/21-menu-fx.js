@@ -1,11 +1,5 @@
 /* =================== MENÚ · FONDO ANIMADO (brasas, murciélagos, relámpagos, lluvia de sangre y ojos en la oscuridad) =================== */
 // Se dibuja solo mientras el menú está abierto: al cerrarlo el bucle se corta solo y showMenu() lo vuelve a arrancar.
-// Paralaje: el mouse mueve apenas la luna y el logo (variables --mx / --my del menú).
-(function(){
-  const m=$('menu');let raf=0,tx=0,ty=0;
-  addEventListener('mousemove',e=>{if(m.hidden||raf)return;tx=e.clientX/innerWidth*2-1;ty=e.clientY/innerHeight*2-1;
-    raf=requestAnimationFrame(()=>{raf=0;m.style.setProperty('--mx',tx.toFixed(3));m.style.setProperty('--my',ty.toFixed(3));});},{passive:true});
-})();
 let mFxOn=false;
 function mFxGo(){
   const cv=$('mFx');

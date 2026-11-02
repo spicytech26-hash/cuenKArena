@@ -349,12 +349,12 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 /* ---------- menú de inicio · edición Halloween (placas de metal, sangre, nada de cajitas redondeadas) ---------- */
 #menu{--blood:#d4120f;--blood2:#7d0508;--pump:#ff7a1a;--pump2:#ffb347;--bone:#eadfc8;--slime:#8dff3a;--witch:#9b4dff;--haz:#e8b020;
   --noise:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  --mx:0;--my:0;position:fixed;inset:0;display:flex;overflow-y:auto;overflow-x:hidden;
+  position:fixed;inset:0;display:flex;overflow-y:auto;overflow-x:hidden;
   padding:clamp(14px,3vh,34px) max(16px,env(safe-area-inset-right,0px)) clamp(14px,3vh,34px) max(16px,env(safe-area-inset-left,0px));
   background:radial-gradient(ellipse 70% 55% at 84% 6%,rgba(255,90,20,.22),transparent 60%),radial-gradient(ellipse 90% 70% at 8% 100%,rgba(130,10,20,.30),transparent 65%),linear-gradient(rgba(9,3,12,.80),rgba(5,2,8,.93))}
 #menu::after{content:"";position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 1px,transparent 1px 3px),radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.6) 100%)}
 #mFx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
-.mmoon{position:fixed;right:6vw;top:5vh;width:clamp(90px,15vw,200px);aspect-ratio:1;border-radius:50%;pointer-events:none;opacity:.5;transform:translate(calc(var(--mx)*-22px),calc(var(--my)*-14px));
+.mmoon{position:fixed;right:6vw;top:5vh;width:clamp(90px,15vw,200px);aspect-ratio:1;border-radius:50%;pointer-events:none;opacity:.5;
   background:radial-gradient(circle at 62% 38%,rgba(120,10,0,.35) 0 7%,transparent 8%),radial-gradient(circle at 30% 60%,rgba(120,10,0,.3) 0 10%,transparent 11%),radial-gradient(circle at 35% 32%,#ffd9b0,#ff6a30 55%,#8a1606);
   box-shadow:0 0 90px 24px rgba(255,70,30,.34);animation:moonP 7s ease-in-out infinite}
 .mfog{position:fixed;inset:0;pointer-events:none;opacity:.55;background:radial-gradient(ellipse 40% 18% at 20% 88%,rgba(200,120,150,.20),transparent),radial-gradient(ellipse 45% 16% at 75% 94%,rgba(160,255,160,.12),transparent),radial-gradient(ellipse 35% 14% at 50% 78%,rgba(200,150,190,.12),transparent);background-size:140% 100%;animation:fogD 30s ease-in-out infinite alternate}
@@ -362,7 +362,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 #menu.go .mflash{animation:flashIn .9s ease-out .35s}
 #menu.zap .mglow{opacity:1;filter:brightness(1.8)}
 .mbox{position:relative;z-index:1;margin:auto;max-width:1180px;width:100%;display:flex;flex-direction:column;gap:clamp(14px,3vh,26px)}
-.mhead{position:relative;transform:perspective(1100px) rotateY(calc(var(--mx)*5deg)) rotateX(calc(var(--my)*-3.5deg));transition:transform .18s ease-out}
+.mhead{position:relative}
 .mglow{position:absolute;left:-4%;right:-4%;top:-10%;height:120%;pointer-events:none;background:radial-gradient(ellipse 55% 50% at 50% 55%,rgba(210,20,15,.42),transparent 70%);opacity:.7;animation:glowP 3.6s ease-in-out infinite;transition:opacity .1s,filter .1s}
 .mlogo{position:relative;min-width:0}
 #menu.go .mlogo{animation:slam 1s cubic-bezier(.2,1.3,.35,1) .1s backwards}
@@ -372,12 +372,13 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 .lgBase{display:block;width:100%;height:auto;overflow:visible}
 .lgDrips{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none}
 .dr{transform-box:fill-box;transform-origin:50% 0;animation:drip var(--t) ease-in-out var(--d) infinite alternate;filter:drop-shadow(0 0 3px rgba(255,20,10,.6))}
-#mTitle small{display:block;font-family:var(--mono);font-size:clamp(11px,1.5vw,16px);letter-spacing:.42em;color:#ff4a3a;margin:2px 0 0 6px;text-shadow:0 0 12px rgba(255,40,20,.6)}
+.dp{animation:dropFall var(--t) ease-in var(--d) infinite}
+#mTitle small{display:block;margin-top:-6px;font-family:var(--mono);font-size:clamp(11px,1.5vw,16px);letter-spacing:.42em;color:#ff4a3a;margin:2px 0 0 6px;text-shadow:0 0 12px rgba(255,40,20,.6)}
 #mTitle small i{color:var(--pump2);font-style:normal}
 .mmain{display:grid;grid-template-columns:minmax(270px,360px) minmax(0,1fr);gap:clamp(16px,2.4vw,30px);align-items:start}
 .mnav{display:flex;flex-direction:column;gap:14px;min-width:0}
 .mpane{display:flex;flex-direction:column;gap:14px;min-width:0}
-#menu .idrow{display:flex;flex-direction:column;align-items:stretch;gap:3px;transform:translateX(calc(var(--mx)*4px))}
+#menu .idrow{display:flex;flex-direction:column;align-items:stretch;gap:3px}
 #menu .idrow label{font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:#7c6a62}
 #menu #pName{width:100%;font-family:var(--display);font-size:26px;letter-spacing:.05em;background:rgba(0,0,0,.45);color:var(--bone);border:0;border-bottom:3px solid var(--blood);padding:6px 10px;border-radius:0}
 /* menú principal: texto pelado estilo Quake, sin cajas; la barra roja rota aparece con el mouse */
@@ -541,6 +542,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 @keyframes btnIn{from{transform:translateX(-90px) skewX(-14deg);opacity:0}}
 @keyframes panIn{from{transform:translateY(14px) scale(.97);opacity:0}}
 @keyframes flashIn{0%{opacity:.9}100%{opacity:0}}
+@keyframes dropFall{0%{transform:translateY(0);opacity:0}12%{opacity:1}100%{transform:translateY(70px);opacity:0}}
 @keyframes drip{from{transform:scaleY(.3)}to{transform:scaleY(1)}}
 @keyframes kflick{0%,100%{opacity:1}91%{opacity:.35}93%{opacity:1}96%{opacity:.5}97%{opacity:1}}
 @keyframes glowP{0%,100%{opacity:.5}50%{opacity:.85}}

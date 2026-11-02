@@ -113,16 +113,18 @@ function fire(){
   me.inspT=9;
   me.fireT=0;me.fireW=w;vOnFire(w);
   me.cool=W_.rate;me.kick=w===2?1.5:w===6||w===9?1.4:w===3?.4:1;me.flash=w===6||W_.melee?0:.06;
-  const ex=me.s.x,ey=me.s.y+(me.s.crouch?K.EYEC:K.EYE),ez=me.s.z,d=C.dirFromAngles(me.yaw,me.pitch);
+  const ex=me.s.x,ey=me.s.y+(me.s.crouch?K.EYEC:K.EYE),ez=me.s.z,d=tpApunte(ex,ey,ez)||C.dirFromAngles(me.yaw,me.pitch);
+  TP.fireT=W_.melee?.2:.1;
   camera.updateMatrixWorld();rgtV.set(1,0,0).applyQuaternion(camera.quaternion);upV.set(0,1,0).applyQuaternion(camera.quaternion);
   muzzleWorld.position.set(ex+d[0],ey+d[1],ez+d[2]);
+  if(TP.blend>.5&&!W_.melee){const mz=tpMuzzle();muzzleWorld.position.set(mz[0],mz[1],mz[2]);for(let j=0;j<5;j++)emit(sparks,mz[0],mz[1],mz[2],d[0]*5+R(1.5),d[1]*5+R(1.5),d[2]*5+R(1.5),.1,1,.8,.4,0);}
   SFX[w](1);if(me.q>0)SFX.quadfire();SFX.body(w);
   // retroceso: la mira sube un poco y vuelve, sacudida chica y un golpe de campo de visión según el arma
   const RC=[.014,.04,.05,.008,.022,.026,.024,0,.055,.06,0][w]||0,SH=[0,.07,.09,0,.04,.05,.03,0,.06,.07,0][w]||0;
   me.recP=(me.recP||0)+RC*(.85+Math.random()*.3);me.recY=(me.recY||0)+(Math.random()-.5)*RC*.6;shake=Math.max(shake,SH);me.fovPunch=Math.max(me.fovPunch||0,RC*55);
   if(RC){wMuz.intensity=Math.max(wMuz.intensity,2.2+RC*30);}
   if(W_.type==='proj'){
-    let o=[ex+d[0]*.5+rgtV.x*.15-upV.x*.12,ey+d[1]*.5+rgtV.y*.15-upV.y*.12,ez+d[2]*.5+rgtV.z*.15-upV.z*.12];
+    let o=TP.blend>.5?tpMuzzle():[ex+d[0]*.5+rgtV.x*.15-upV.x*.12,ey+d[1]*.5+rgtV.y*.15-upV.y*.12,ez+d[2]*.5+rgtV.z*.15-upV.z*.12];   // en tercera persona sale de la boca del arma
     if(!C.los(W,ex,ey,ez,o[0],o[1],o[2]))o=[ex,ey,ez];
     spawnProjVis(W_.proj,o,C.projLaunch(w,d),true,0,myId);
     net.send({t:'fire',w,o:r3(o),d:r3(d),sc:me.scope?1:0});
@@ -161,6 +163,6 @@ function fire(){
   updateHUD();
 }
 const r3=a=>a.map(v=>Math.round(v*1000)/1000);
-function vmWorldTip(){const d=C.dirFromAngles(me.yaw,me.pitch);return [me.s.x+d[0]*.6+rgtV.x*.2-upV.x*.15,me.s.y+K.EYE+d[1]*.6+rgtV.y*.2-upV.y*.15,me.s.z+d[2]*.6+rgtV.z*.2-upV.z*.15];}
+function vmWorldTip(){if(TP.blend>.5)return tpMuzzle();const d=C.dirFromAngles(me.yaw,me.pitch);return [me.s.x+d[0]*.6+rgtV.x*.2-upV.x*.15,me.s.y+K.EYE+d[1]*.6+rgtV.y*.2-upV.y*.15,me.s.z+d[2]*.6+rgtV.z*.2-upV.z*.15];}
 function gunTip(p){const d=C.dirFromAngles(p.yaw,p.pitch),rx=Math.cos(p.yaw),rz=-Math.sin(p.yaw);return [p.x+d[0]*.9+rx*.42,p.y+1.35+d[1]*.9,p.z+d[2]*.9+rz*.42];}
 

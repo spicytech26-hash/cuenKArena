@@ -27,8 +27,12 @@ const mPoly=new THREE.MeshPhongMaterial({color:0x1d1e20,shininess:15,flatShading
 const mGripT=new THREE.MeshPhongMaterial({map:new THREE.CanvasTexture(cv(16,32,(g)=>{g.fillStyle='#202124';g.fillRect(0,0,16,32);for(let i=0;i<90;i++){g.fillStyle=Math.random()<.5?'#2c2d31':'#141517';g.fillRect(Math.random()*16|0,Math.random()*32|0,1,1);}})),shininess:6});
 const mODrab=new THREE.MeshPhongMaterial({map:new THREE.CanvasTexture(cv(64,64,(g)=>{g.fillStyle='#565e36';g.fillRect(0,0,64,64);for(let i=0;i<220;i++){const v=Math.random();g.fillStyle=v<.5?'rgba(30,34,16,.18)':'rgba(170,175,120,.12)';g.fillRect(Math.random()*64|0,Math.random()*64|0,1+Math.random()*3|0,1);}g.fillStyle='rgba(20,22,10,.55)';g.fillRect(0,21,64,1);g.fillRect(0,43,64,1);g.fillRect(31,0,1,64);g.fillStyle='rgba(210,210,170,.25)';g.fillRect(0,0,64,1);})),shininess:22,specular:0x3a3a28,flatShading:true});
 const mODdark=new THREE.MeshPhongMaterial({color:0x353b22,flatShading:true,shininess:16});
-const mGlove=new THREE.MeshPhongMaterial({color:0x2a2420,flatShading:true,shininess:10});
-const mSleeve=new THREE.MeshPhongMaterial({color:0x3a4433,flatShading:true,shininess:4});
+// manos y brazos en primera persona: mismo estilo que el personaje (se pintan con los colores elegidos en la Taquilla, ver vmSync en 10-personaje-robot.js)
+const mGlove=new THREE.MeshStandardMaterial({color:0xe8542a,roughness:.4,metalness:.35});
+const mSleeve=new THREE.MeshStandardMaterial({color:0xe8542a,roughness:.4,metalness:.35});
+const mArmB=new THREE.MeshStandardMaterial({color:0x7a2a12,roughness:.35,metalness:.65});     // articulaciones
+const mArmC=new THREE.MeshStandardMaterial({color:0xffcc33,roughness:.4,metalness:.45});      // muñequera de color
+const mArmV=new THREE.MeshBasicMaterial({color:0x2be6ff});                                    // luz del antebrazo
 /* ===== armas con más definición (inspiradas en TF2 y Quake): piezas redondeadas, partes que se mueven y manos de verdad =====
    Cada arma es un grupo; las piezas móviles son subgrupos con nombre (pump, mag, bolt, slide, drum, cell, brl, cock, rh).
    Todo lo que no se mueve se fusiona en una sola malla por material, así un arma con 80 piezas cuesta unas pocas llamadas de dibujo. */

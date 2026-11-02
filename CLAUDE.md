@@ -54,6 +54,7 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `js/07-armas/NN-arma.js` | **un archivo por arma**: modelo `VMOD[i]` + animación `vRigs[i]` |
 | `js/08-armas-ensamble.js` | `buildGun`, posiciones del arma en pantalla, `vms` |
 | `js/09-armas-animacion.js` | manos, ayudas de animación (`VEV`, `H`, `VPR`, `VYAW`, `RH`), aplicar rigs, cuchillo, luces del arma |
+| `js/10-personaje-robot.js` | **personaje robot CUE-87** (hecho en código): `buildPlayer`, colores por parte (`c`, `ck`, `cp`, `cb`, `cl`, `c2`, `c3`, `v`, `em`, `ce`, `img`), esqueleto con cadera, columna, rodillas y pies, agarre del arma con dos manos (IK), animaciones (`rbAnimar`, `rbMuerte`), nivel de detalle (`rbLod`) y colores de las manos en primera persona (`vmSync`) |
 | `js/10-personajes-items.js` | modelo del jugador con piel, modelos de ítems (`buildItem`), sifón |
 | `js/11-estado-red.js` | estado del jugador `me`, `LocalNet` (práctica) y red online |
 | `js/12-mensajes.js` | mensajes del servidor (`onMsg`), chat, eventos |
@@ -64,6 +65,7 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `js/17-hud.js` | HUD |
 | `js/18-camara.js` | cámara, arma en mano y jugadores remotos (`updRemote`) |
 | `js/18-noche.js` | **modo noche** (mapas con `theme.noche`, hoy solo Skatenight; la linterna se prende con **G**, la T es el chat. Pyramid NO es de noche: su música y ambiente van por `theme.ambiente:'piramide'` en `pyramidAmbient`): linterna del arma, haces y focos de los rivales, visores apagados (`updNight`, `nightRemote`) |
+| `js/18-tercera-persona.js` | **vista en tercera persona** (H alterna, J cambia de hombro; Ajustes → Video): cámara sobre el hombro con choque contra paredes, modelo propio animado (`updMiModelo`), apuntado hacia el punto de la mira (`tpApunte`) y boca del arma (`tpMuzzle`). El estado va en `TP` y en `S.view`, `S.shoulder`, `S.tpd` |
 | `js/18-espectador.js` | **espectador** al estar muerto: clic izquierdo = mirar a otro jugador vivo, Espacio = cámara orbital; arma en mano del que mirás (`povGun`) |
 | `js/19-mira-cuenta-fin.js` | mira personalizable, cuentas de Google, pantalla de fin de partida |
 | `js/20-modelos-glb.js` | carga de modelos `.glb` |

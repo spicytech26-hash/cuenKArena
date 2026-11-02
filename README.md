@@ -381,3 +381,7 @@ El **cuchillo** ahora barre en horizontal y deja una **ráfaga** blanca en forma
 ## Al morir
 
 Como en TF2, después de un instante ves **en primera persona lo que ve el que te mató**: su posición, a dónde apunta y el arma que tiene en la mano, con el cartel "Viendo a NOMBRE" y la cuenta para reaparecer. Si no hubo culpable (lava, caída, tu propia explosión) o el otro murió, la cámara gira sobre tu cuerpo como antes.
+
+## Vista en tercera persona
+
+Con **H** (o en Ajustes → Video) pasás de primera a tercera persona: la cámara va sobre el hombro, con la mira en el centro. **J** cambia de hombro. Con el francotirador volvés a primera persona para mirar por la mira. Los disparos van a donde marca la mira.

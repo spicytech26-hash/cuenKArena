@@ -269,6 +269,9 @@
               </div>
               <div class="sec" data-sec="vid" hidden>
                 <div class="srow"><label for="sFov">Campo de visión</label><input type="range" id="sFov" min="70" max="120" step="1"><output id="oFov"></output></div>
+                <div class="srow"><label>Vista de cámara<small>H para cambiar en partida</small></label><div class="seg" id="sView" role="group" aria-label="Vista de cámara"><button type="button" data-v="fp">Primera persona</button><button type="button" data-v="tp">Tercera persona</button></div></div>
+                <div class="srow"><label>Hombro de la cámara<small>J para cambiar · solo en tercera persona</small></label><div class="seg" id="sShoulder" role="group" aria-label="Hombro de la cámara"><button type="button" data-v="1">Derecho</button><button type="button" data-v="-1">Izquierdo</button></div></div>
+                <div class="srow"><label>Distancia de la cámara<small>Tercera persona</small></label><div class="seg" id="sTpd" role="group" aria-label="Distancia de la cámara"><button type="button" data-v="0.8">Cerca</button><button type="button" data-v="1">Normal</button><button type="button" data-v="1.3">Lejos</button></div></div>
                 <div class="srow"><span>Calidad gráfica</span><div class="seg" id="sQ" role="group" aria-label="Calidad"><button type="button" data-v="1">Alta</button><button type="button" data-v="0">Liviana</button></div></div>
                 <div class="srow"><span>Sombras</span><div class="seg" id="sSh" role="group" aria-label="Sombras"><button type="button" data-v="1">Sí</button><button type="button" data-v="0">No</button></div></div>
                 <div class="srow"><label for="sFps">Mostrar FPS<small>Cuadros por segundo, arriba en pantalla</small></label><input type="checkbox" id="sFps"></div>
@@ -301,6 +304,7 @@
           <kbd>Click</kbd><span>disparar (click derecho: mira del francotirador)</span><kbd>1 · 2 · 3 · 4</kbd><span>arma principal · pistola · cuchillo · molotov · Q arma anterior · E agarrar arma del piso · F inspeccionar · R recargar</span>
           <kbd>Ctrl · C</kbd><span>agacharse (saltá y agachate para pasar por ventanas)</span>
           <kbd>B</kbd><span>tienda</span><kbd>Tab</kbd><span>tabla de frags</span>
+          <kbd>H</kbd><span>vista en primera / tercera persona</span><kbd>J</kbd><span>cambiar de hombro (tercera persona)</span>
           <kbd>T · Enter</kbd><span>chat</span><kbd>Esc</kbd><span>menú</span>
         </div>
       </section>

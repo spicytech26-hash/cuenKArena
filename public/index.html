@@ -879,6 +879,9 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
               </div>
               <div class="sec" data-sec="vid" hidden>
                 <div class="srow"><label for="sFov">Campo de visión</label><input type="range" id="sFov" min="70" max="120" step="1"><output id="oFov"></output></div>
+                <div class="srow"><label>Vista de cámara<small>H para cambiar en partida</small></label><div class="seg" id="sView" role="group" aria-label="Vista de cámara"><button type="button" data-v="fp">Primera persona</button><button type="button" data-v="tp">Tercera persona</button></div></div>
+                <div class="srow"><label>Hombro de la cámara<small>J para cambiar · solo en tercera persona</small></label><div class="seg" id="sShoulder" role="group" aria-label="Hombro de la cámara"><button type="button" data-v="1">Derecho</button><button type="button" data-v="-1">Izquierdo</button></div></div>
+                <div class="srow"><label>Distancia de la cámara<small>Tercera persona</small></label><div class="seg" id="sTpd" role="group" aria-label="Distancia de la cámara"><button type="button" data-v="0.8">Cerca</button><button type="button" data-v="1">Normal</button><button type="button" data-v="1.3">Lejos</button></div></div>
                 <div class="srow"><span>Calidad gráfica</span><div class="seg" id="sQ" role="group" aria-label="Calidad"><button type="button" data-v="1">Alta</button><button type="button" data-v="0">Liviana</button></div></div>
                 <div class="srow"><span>Sombras</span><div class="seg" id="sSh" role="group" aria-label="Sombras"><button type="button" data-v="1">Sí</button><button type="button" data-v="0">No</button></div></div>
                 <div class="srow"><label for="sFps">Mostrar FPS<small>Cuadros por segundo, arriba en pantalla</small></label><input type="checkbox" id="sFps"></div>
@@ -911,6 +914,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
           <kbd>Click</kbd><span>disparar (click derecho: mira del francotirador)</span><kbd>1 · 2 · 3 · 4</kbd><span>arma principal · pistola · cuchillo · molotov · Q arma anterior · E agarrar arma del piso · F inspeccionar · R recargar</span>
           <kbd>Ctrl · C</kbd><span>agacharse (saltá y agachate para pasar por ventanas)</span>
           <kbd>B</kbd><span>tienda</span><kbd>Tab</kbd><span>tabla de frags</span>
+          <kbd>H</kbd><span>vista en primera / tercera persona</span><kbd>J</kbd><span>cambiar de hombro (tercera persona)</span>
           <kbd>T · Enter</kbd><span>chat</span><kbd>Esc</kbd><span>menú</span>
         </div>
       </section>
@@ -936,7 +940,7 @@ const liveState=()=>matchState==='play'||matchState==='lobby'||matchState==='cou
 const GG=C.GG,TEAMS=C.TEAMS;
 
 /* =================== AJUSTES =================== */
-const S={sens:1,sensZ:1,fov:95,vol:.5,music:.45,invY:false,hop:true,name:'',skin:{c:C.COLORS[0],v:'#2be6ff',a:0},bots:5,skill:1,fl:20,map:'represa',q:1,mode:'arena',tdmLimit:50,fs:true,showImg:true,mira:{s:'cruz',c:'#ffffff',z:1}};
+const S={view:'fp',shoulder:1,tpd:1,sens:1,sensZ:1,fov:95,vol:.5,music:.45,invY:false,hop:true,name:'',skin:{c:C.COLORS[0],v:'#2be6ff',a:0},bots:5,skill:1,fl:20,map:'represa',q:1,mode:'arena',tdmLimit:50,fs:true,showImg:true,mira:{s:'cruz',c:'#ffffff',z:1}};
 try{const saved=JSON.parse(localStorage.getItem('cuenk_settings')||'{}');if(saved.color&&!saved.skin)saved.skin={c:saved.color,v:'#ffffff',a:0};Object.assign(S,saved);}catch(e){}
 if(S.map==='sagrado'||S.map==='salvaje')S.map='panymanteca';
 // mapa del editor: se juega solo en esta pestaña; si el mapa guardado ya no existe se vuelve a La Represa
@@ -2005,8 +2009,12 @@ const mPoly=new THREE.MeshPhongMaterial({color:0x1d1e20,shininess:15,flatShading
 const mGripT=new THREE.MeshPhongMaterial({map:new THREE.CanvasTexture(cv(16,32,(g)=>{g.fillStyle='#202124';g.fillRect(0,0,16,32);for(let i=0;i<90;i++){g.fillStyle=Math.random()<.5?'#2c2d31':'#141517';g.fillRect(Math.random()*16|0,Math.random()*32|0,1,1);}})),shininess:6});
 const mODrab=new THREE.MeshPhongMaterial({map:new THREE.CanvasTexture(cv(64,64,(g)=>{g.fillStyle='#565e36';g.fillRect(0,0,64,64);for(let i=0;i<220;i++){const v=Math.random();g.fillStyle=v<.5?'rgba(30,34,16,.18)':'rgba(170,175,120,.12)';g.fillRect(Math.random()*64|0,Math.random()*64|0,1+Math.random()*3|0,1);}g.fillStyle='rgba(20,22,10,.55)';g.fillRect(0,21,64,1);g.fillRect(0,43,64,1);g.fillRect(31,0,1,64);g.fillStyle='rgba(210,210,170,.25)';g.fillRect(0,0,64,1);})),shininess:22,specular:0x3a3a28,flatShading:true});
 const mODdark=new THREE.MeshPhongMaterial({color:0x353b22,flatShading:true,shininess:16});
-const mGlove=new THREE.MeshPhongMaterial({color:0x2a2420,flatShading:true,shininess:10});
-const mSleeve=new THREE.MeshPhongMaterial({color:0x3a4433,flatShading:true,shininess:4});
+// manos y brazos en primera persona: mismo estilo que el personaje (se pintan con los colores elegidos en la Taquilla, ver vmSync en 10-personaje-robot.js)
+const mGlove=new THREE.MeshStandardMaterial({color:0xe8542a,roughness:.4,metalness:.35});
+const mSleeve=new THREE.MeshStandardMaterial({color:0xe8542a,roughness:.4,metalness:.35});
+const mArmB=new THREE.MeshStandardMaterial({color:0x7a2a12,roughness:.35,metalness:.65});     // articulaciones
+const mArmC=new THREE.MeshStandardMaterial({color:0xffcc33,roughness:.4,metalness:.45});      // muñequera de color
+const mArmV=new THREE.MeshBasicMaterial({color:0x2be6ff});                                    // luz del antebrazo
 /* ===== armas con más definición (inspiradas en TF2 y Quake): piezas redondeadas, partes que se mueven y manos de verdad =====
    Cada arma es un grupo; las piezas móviles son subgrupos con nombre (pump, mag, bolt, slide, drum, cell, brl, cock, rh).
    Todo lo que no se mueve se fusiona en una sola malla por material, así un arma con 80 piezas cuesta unas pocas llamadas de dibujo. */
@@ -2471,16 +2479,27 @@ const vms=WEAPONS.map((_,i)=>{const g=buildGun(i);g.visible=false;wScene.add(g);
    Cada arma tiene un "rig": según el tiempo desde el último tiro (f) y el avance de la recarga (u, de 0 a 1) mueve sus piezas
    (bombeo, cargador, cerrojo, tambor, celda), mueve el arma entera y dice dónde va la mano izquierda (en coordenadas del arma)
    y qué lleva en la mano (un cartucho, un cohete, una granada). La mano derecha va fija en la empuñadura. */
-function vHand(m,r){   // mano que envuelve un caño de radio r a lo largo de z: palma del lado -x, dedos por abajo y puntas del otro lado
+function vHand(m,r){   // mano robótica que envuelve un caño de radio r a lo largo de z: palma del lado -x, dedos por abajo y puntas del otro lado; nudillos y muñeca oscuros
   const h=new THREE.Group();r=r||.028;
   h.add(vRB(.024,.07,.088,.01,m,-r-.012,-.006,0));
   for(let k=0;k<4;k++){const z=-.031+k*.0205,l=.0185;
     h.add(vRB(.019,.026,l,.007,m,-r-.002,-r*.8-.006,z,0,0,.5));
     h.add(vRB(.03,.018,l,.007,m,0,-r-.011,z));
-    h.add(vRB(.018,.024,l*.95,.007,m,r*.75+.004,-r*.55,z,0,0,-.8));}
+    h.add(vRB(.018,.024,l*.95,.007,m,r*.75+.004,-r*.55,z,0,0,-.8));
+    h.add(vRB(.013,.013,l*.62,.004,mArmB,-r-.01,-r*.5-.004,z,0,0,.5),vRB(.013,.013,l*.62,.004,mArmB,r*.28,-r-.012,z));}   // articulaciones de los dedos
   h.add(vRB(.018,.019,.052,.008,m,-r*.45,r*.85,-.016,0,.3,0),vRB(.036,.052,.042,.012,m,-r-.018,-.014,.058));
+  h.add(vRB(.044,.062,.012,.005,mArmB,-r-.018,-.014,.084));   // aro de la muñeca
   return vMerge(h);}
-const vArmGeo=(()=>{const g=new THREE.CylinderGeometry(.04,.032,1,10);g.rotateX(Math.PI/2);g.translate(0,0,.5);return g;})();
+const vArmGeo=(()=>{const g=new THREE.CylinderGeometry(.04,.032,1,12);g.rotateX(Math.PI/2);g.translate(0,0,.5);return g;})();
+// antebrazo del personaje: caño (largo variable, ver vArmLen) con anillo de muñeca, muñequera de color y tira de luz
+function vMkArm(){
+  const g=new THREE.Group(),sh=new THREE.Mesh(vArmGeo,mSleeve);g.add(sh);g.userData.shaft=sh;
+  const ring=(r,h,z,m)=>{const c=new THREE.CylinderGeometry(r,r,h,14);c.rotateX(Math.PI/2);c.translate(0,0,z);return new THREE.Mesh(c,m);};
+  g.add(ring(.047,.016,.04,mArmB),ring(.05,.05,.1,mArmC),ring(.046,.012,.16,mArmB));
+  const l=new THREE.Mesh(new THREE.BoxGeometry(.01,.006,.09),mArmV);l.position.set(0,.044,.21);g.add(l);
+  return g;
+}
+function vArmLen(a,len){a.userData.shaft.scale.z=len;}
 // mano derecha fija en la empuñadura de cada arma: posición, inclinación de la empuñadura y hacia dónde sale el brazo
 const RH={0:[0,-.068,.044,1.27,.02],1:[0,-.048,.215,.25,.024],2:[0,-.046,.175,.25,.024],3:[0,-.078,.072,1.2,.02],4:[0,-.085,.068,1.25,.02],
   5:[0,-.125,.0,1.38,.02],6:[0,-.1,.065,1.23,.02],8:[0,-.075,.1,1.25,.02],9:[0,-.062,.13,1.2,.02]};
@@ -2488,11 +2507,11 @@ function vAddHands(i,g){const R_=RH[i];if(!R_)return;
   const rh=vGrp('rh');const hd=vHand(mGlove,R_[4]);
   // mano derecha = la izquierda en espejo, girada para envolver la empuñadura con la palma del lado derecho
   hd.scale.x=-1;hd.rotation.set(R_[3],0,0);rh.add(hd);
-  const arm=new THREE.Mesh(vArmGeo,mSleeve);arm.position.set(.03,-.03,.05);arm.lookAt(.2,-.5,.45);arm.scale.set(1,1,.75);rh.add(arm);
+  const arm=vMkArm();arm.position.set(.03,-.03,.05);arm.lookAt(.2,-.5,.45);vArmLen(arm,.75);rh.add(arm);
   rh.position.set(R_[0],R_[1],R_[2]);g.add(rh);g.userData.rh=rh;g.userData.rh0=rh.position.clone();}
 // mano izquierda: una sola, que el rig lleva a donde haga falta; con los objetos que puede llevar
 const lhG=new THREE.Group(),lhHand=vHand(mGlove,.028);lhG.add(lhHand);
-const lhArm=new THREE.Mesh(vArmGeo,mSleeve);
+const lhArm=vMkArm();
 const lhHold={shell:vShellM(),shell2:vGrp('',vShellM(),vShellM()),rocket:vRocketM(),nade:vNadeM(),brass:vGrp(''),round:vGrp('',vT(.006,.006,.045,vBrass,0,0,.0,8),vCone(.0055,.016,vBrass,0,0,-.03,8))};
 lhHold.shell2.children[0].position.x=-.012;lhHold.shell2.children[1].position.x=.014;
 lhHold.rocket.position.set(0,.0,-.03);lhHold.rocket.scale.setScalar(1.25);lhHold.nade.position.set(.0,.0,-.0);
@@ -2533,7 +2552,7 @@ function vPlaceHand(g){
   for(const k in lhHold)lhHold[k].visible=k===H.hold;
   lhG.visible=true;lhG.updateMatrixWorld(true);
   lhW.set(-.046,-.018,.075).applyMatrix4(lhG.matrixWorld);
-  lhArm.position.copy(lhW);lhArm.lookAt(lhAnchor);lhArm.scale.set(1,1,Math.max(.05,lhW.distanceTo(lhAnchor)+.12));lhArm.visible=true;}
+  lhArm.position.copy(lhW);lhArm.lookAt(lhAnchor);vArmLen(lhArm,Math.max(.05,lhW.distanceTo(lhAnchor)+.12));lhArm.visible=true;}
 
 // piezas móviles por nombre y mano derecha en cada arma nueva
 vms.forEach((g,i)=>{const P={};let n=0;g.traverse(o=>{if(o.name){P[o.name]=o;n++;}});P.__ok=n>0;g.userData.parts=P;vAddHands(i,g);});
@@ -2567,8 +2586,7 @@ vms.forEach((g,i)=>{const P={};let n=0;g.traverse(o=>{if(o.name){P[o.name]=o;n++
   const arm=(x,y,z,rx,ry,len)=>{const a=new THREE.Mesh(new THREE.BoxGeometry(.06,.06,len),mSleeve);a.geometry.translate(0,0,len/2);a.position.set(x,y,z);a.rotation.set(rx,ry,0,'YXZ');return a;};
 })();
 // antebrazo del cuchillo: va desde abajo a la derecha de la pantalla hasta la mano y la sigue en cada movimiento
-const knArm=new THREE.Group(),knArmM=new THREE.Mesh(new THREE.BoxGeometry(.05,.05,1),mSleeve);knArmM.geometry.translate(0,0,.5);knArm.add(knArmM);
-const knCuff=new THREE.Mesh(new THREE.BoxGeometry(.085,.085,.05),mGlove);knArm.visible=false;wScene.add(knArm);
+const knArm=vMkArm();knArm.visible=false;wScene.add(knArm);
 const knHand=new THREE.Vector3(),knAnchor=new THREE.Vector3(.34,-.62,.05);
 /* ráfaga del tajo: una media luna blanca que barre delante de la cámara y se desvanece (como el barrido de Minecraft) */
 const sweepTex=(()=>{const c=document.createElement('canvas');c.width=256;c.height=128;const g=c.getContext('2d');
@@ -2583,7 +2601,7 @@ function updSweep(dt){sweepT+=dt;const k=sweepT/.2;if(k>=1){sweep.material.opaci
   sweep.material.opacity=Math.sin(k*Math.PI)*.85;sweep.rotation.set(0,0,sweepD*(.5-k)*.9);sweep.scale.set(.85+k*.35,.85+k*.35,1);}
 function updKnifeArm(){const g=vms[7];if(!g.visible){knArm.visible=false;return;}g.updateMatrixWorld(true);
   knHand.set(-.004,-.008,.11).applyMatrix4(g.matrixWorld);knArm.position.copy(knHand);knArm.lookAt(knAnchor);
-  knArm.scale.set(1,1,Math.max(.05,knHand.distanceTo(knAnchor)+.15));knArm.visible=true;}
+  vArmLen(knArm,Math.max(.05,knHand.distanceTo(knAnchor)+.15));knArm.visible=true;}
 wScene.add(new THREE.AmbientLight(0x8a7a66,.75));
 const wDir=new THREE.DirectionalLight(0xffe2c0,.85);wDir.position.set(1,2,1.5);wScene.add(wDir);
 const wMuz=new THREE.PointLight(0xffaa44,0,2.5);wScene.add(wMuz);
@@ -3054,7 +3072,18 @@ function rbMuerte(m,p){
   m.armR.rotation.set(-.3-.9*fl,0,-.4-.6*fl);m.armR.fore.rotation.set(-.5,0,0);m.armL.rotation.set(-.2+.5*fl,0,.5+.6*fl);m.armL.fore.rotation.set(-.4,0,0);
   m.aim.position.set(-.1,1.46-.5*fl,.1+.2*fl);m.aim.rotation.set(1.0*fl,0,.5*fl);m.gun.position.set(0,0,.3);m.gun.visible=t<1.4;
 }
-function buildPlayer(skin,name,noTag){
+// manos y antebrazos en primera persona: toman los colores de brazos (cb), articulaciones (c2), detalles (c3) y visor (v) del jugador; en equipos, el color del equipo
+let vmClave='';
+function vmSync(){
+  const eq=teamsMode()&&myTeam>=0,sk=eq?Object.assign({},S.skin,{c:colorOf(myId),ck:null,cp:null,cb:null,cl:null}):S.skin;
+  const k=[sk.c,sk.cb,sk.c2,sk.c3,sk.v].join('|');if(k===vmClave)return;vmClave=k;
+  const P=skinParts(sk);
+  [[mGlove,P.cb],[mSleeve,P.cb],[mArmB,P.c2],[mArmC,P.c3]].forEach(([m,c])=>{m.color.set(c);
+    if(!m.envMap){m.envMap=rbEnv();rbDesgaste();m.map=rbMapT;m.bumpMap=rbBumpT;m.bumpScale=.003;m.envMapIntensity=.7;m.needsUpdate=true;}});
+  mArmV.color.set(P.v);
+}
+// propio = el modelo del propio jugador en tercera persona (se anima como cualquier otro, no como la Taquilla)
+function buildPlayer(skin,name,noTag,propio){
   const G=rbGeos(),P=skinParts(skin);
   const mA=rbMat(P.ck,.55,.1,.45),mP=rbMat(P.cp,.58,.08,.4),mBr=P.cb===P.c?mA:rbMat(P.cb,.38,.35),mL=P.cl===P.c?mA:rbMat(P.cl,.38,.35);
   const mB=rbMat(P.c2,.32,.65),mC=rbMat(P.c3,.4,.45),mK=rbMat(0x2b3036,.3,.85,.9);
@@ -3098,9 +3127,9 @@ function buildPlayer(skin,name,noTag){
   let tag=null;if(!noTag){tag=nameSprite(name,P.c);g.add(tag);}
   const bas=[mV];if(hasImg||em!=='ninguno')bas.push(dm);   // materiales que brillan solos (de noche se apagan, ver 18-noche.js)
   const modelo={g,b,pelv,up,legs,armL,armR,aim,head,gun,tag,mats:[mA,mP,mBr,mL,mB,mC,mK],bas,an:rbAnInit(),fino,lod:false};
-  if(noTag){modelo.pose=RB_POSE_TAQ;modelo.pT={vxs:0,vzs:0,yaw:0,onG:true,crouch:false,pitch:0,fire:0,pain:0,w:1,vy:0,alive:true};}   // la Taquilla respira y se acomoda sola
-  rbPose(modelo,noTag?1:0,-.05,0,noTag?RB_POSE_TAQ:null);
-  rbAnimar(modelo,noTag?modelo.pT:{vxs:0,vzs:0,yaw:0,onG:true,crouch:false,pitch:0,fire:0,pain:0,w:0,vy:0},.016,modelo.pose);
+  if(noTag&&!propio){modelo.pose=RB_POSE_TAQ;modelo.pT={vxs:0,vzs:0,yaw:0,onG:true,crouch:false,pitch:0,fire:0,pain:0,w:1,vy:0,alive:true};}   // la Taquilla respira y se acomoda sola
+  rbPose(modelo,noTag?1:0,-.05,0,noTag&&!propio?RB_POSE_TAQ:null);
+  rbAnimar(modelo,modelo.pT||{vxs:0,vzs:0,yaw:0,onG:true,crouch:false,pitch:0,fire:0,pain:0,w:0,vy:0},.016,modelo.pose);
   return modelo;
 }
 // pose de la Taquilla (como en la referencia): la escopeta cruzada sobre el pecho, apuntando hacia el lado izquierdo del personaje
@@ -3444,6 +3473,7 @@ function onEvent(m){
       fxExplosion(m.p[0],m.p[1],m.p[2]);break;
     }
     case 'dmg':
+      TP.painT=.12;
       G.hurt=Math.min(1,G.hurt+m.n/40+.15);me.roll=(Math.random()<.5?-1:1)*Math.min(.1,m.n/200);
       if(m.k){me.s.vx+=m.k[0];me.s.vy+=m.k[1];me.s.vz+=m.k[2];if(m.k[1]>0)me.s.on=false;}
       if(m.from){G.dmgT=1;G.dmgAng=Math.atan2(-(m.from[0]-me.s.x),-(m.from[2]-me.s.z));}
@@ -3663,16 +3693,18 @@ function fire(){
   me.inspT=9;
   me.fireT=0;me.fireW=w;vOnFire(w);
   me.cool=W_.rate;me.kick=w===2?1.5:w===6||w===9?1.4:w===3?.4:1;me.flash=w===6||W_.melee?0:.06;
-  const ex=me.s.x,ey=me.s.y+(me.s.crouch?K.EYEC:K.EYE),ez=me.s.z,d=C.dirFromAngles(me.yaw,me.pitch);
+  const ex=me.s.x,ey=me.s.y+(me.s.crouch?K.EYEC:K.EYE),ez=me.s.z,d=tpApunte(ex,ey,ez)||C.dirFromAngles(me.yaw,me.pitch);
+  TP.fireT=W_.melee?.2:.1;
   camera.updateMatrixWorld();rgtV.set(1,0,0).applyQuaternion(camera.quaternion);upV.set(0,1,0).applyQuaternion(camera.quaternion);
   muzzleWorld.position.set(ex+d[0],ey+d[1],ez+d[2]);
+  if(TP.blend>.5&&!W_.melee){const mz=tpMuzzle();muzzleWorld.position.set(mz[0],mz[1],mz[2]);for(let j=0;j<5;j++)emit(sparks,mz[0],mz[1],mz[2],d[0]*5+R(1.5),d[1]*5+R(1.5),d[2]*5+R(1.5),.1,1,.8,.4,0);}
   SFX[w](1);if(me.q>0)SFX.quadfire();SFX.body(w);
   // retroceso: la mira sube un poco y vuelve, sacudida chica y un golpe de campo de visión según el arma
   const RC=[.014,.04,.05,.008,.022,.026,.024,0,.055,.06,0][w]||0,SH=[0,.07,.09,0,.04,.05,.03,0,.06,.07,0][w]||0;
   me.recP=(me.recP||0)+RC*(.85+Math.random()*.3);me.recY=(me.recY||0)+(Math.random()-.5)*RC*.6;shake=Math.max(shake,SH);me.fovPunch=Math.max(me.fovPunch||0,RC*55);
   if(RC){wMuz.intensity=Math.max(wMuz.intensity,2.2+RC*30);}
   if(W_.type==='proj'){
-    let o=[ex+d[0]*.5+rgtV.x*.15-upV.x*.12,ey+d[1]*.5+rgtV.y*.15-upV.y*.12,ez+d[2]*.5+rgtV.z*.15-upV.z*.12];
+    let o=TP.blend>.5?tpMuzzle():[ex+d[0]*.5+rgtV.x*.15-upV.x*.12,ey+d[1]*.5+rgtV.y*.15-upV.y*.12,ez+d[2]*.5+rgtV.z*.15-upV.z*.12];   // en tercera persona sale de la boca del arma
     if(!C.los(W,ex,ey,ez,o[0],o[1],o[2]))o=[ex,ey,ez];
     spawnProjVis(W_.proj,o,C.projLaunch(w,d),true,0,myId);
     net.send({t:'fire',w,o:r3(o),d:r3(d),sc:me.scope?1:0});
@@ -3711,7 +3743,7 @@ function fire(){
   updateHUD();
 }
 const r3=a=>a.map(v=>Math.round(v*1000)/1000);
-function vmWorldTip(){const d=C.dirFromAngles(me.yaw,me.pitch);return [me.s.x+d[0]*.6+rgtV.x*.2-upV.x*.15,me.s.y+K.EYE+d[1]*.6+rgtV.y*.2-upV.y*.15,me.s.z+d[2]*.6+rgtV.z*.2-upV.z*.15];}
+function vmWorldTip(){if(TP.blend>.5)return tpMuzzle();const d=C.dirFromAngles(me.yaw,me.pitch);return [me.s.x+d[0]*.6+rgtV.x*.2-upV.x*.15,me.s.y+K.EYE+d[1]*.6+rgtV.y*.2-upV.y*.15,me.s.z+d[2]*.6+rgtV.z*.2-upV.z*.15];}
 function gunTip(p){const d=C.dirFromAngles(p.yaw,p.pitch),rx=Math.cos(p.yaw),rz=-Math.sin(p.yaw);return [p.x+d[0]*.9+rx*.42,p.y+1.35+d[1]*.9,p.z+d[2]*.9+rz*.42];}
 
 /* =================== TIENDA =================== */
@@ -4042,6 +4074,8 @@ addEventListener('keydown',e=>{
   else if(e.code==='KeyY'&&!e.repeat&&online){e.preventDefault();openKick();}
   if(e.code==='KeyQ')quickSwitch();
   if(e.code==='KeyF'&&!e.repeat)inspect();
+  if(e.code==='KeyH'&&!e.repeat)tpAlternar();   // vista en primera / tercera persona
+  if(e.code==='KeyJ'&&!e.repeat)tpHombro();       // cambiar de hombro (tercera persona)
   if(e.code==='KeyB'&&!e.repeat){e.preventDefault();openShop();}
   if(e.code==='KeyG'&&NIGHT){e.preventDefault();if(!e.repeat)nightToggle();}   // en los mapas con linterna (hoy solo Skatenight) la G prende y apaga la linterna; la T vuelve a abrir el chat
   if(e.code==='KeyT'||e.code==='Enter'){e.preventDefault();openChat();}
@@ -4173,6 +4207,7 @@ function updRemote(dt){
         if(m.g.visible&&placeBlob(nb,p.x,p.y,p.z,Math.max(0,1-p.deadT/5)))nb++;}
     }
   }
+  if(TP.blend>.02&&me.alive&&placeBlob(nb,me.s.x,me.s.y,me.s.z,TP.blend))nb++;   // sombra propia en tercera persona
   for(let i=nb;i<blobs.length;i++)blobs[i].visible=false;
 }
 function updMovers(){
@@ -4274,6 +4309,7 @@ function updCamera(dt){
   const st=G.time*38;camera.position.set(me.s.x+Math.sin(st)*sh*.22,me.s.y+eye+Math.sin(st*1.31+1.7)*sh*.22,me.s.z+Math.sin(st*.87+3.1)*sh*.22);
   me.recP=(me.recP||0)*Math.exp(-dt*11);me.recY=(me.recY||0)*Math.exp(-dt*11);me.fovPunch=(me.fovPunch||0)*Math.exp(-dt*12);
   camera.rotation.set(me.pitch-me.kick*.025+me.recP,me.yaw+me.recY,me.tilt+me.roll+(me.alive?0:Math.min(.5,me.deadT*.6)));
+  tpCamara(dt);   // en tercera persona la cámara se corre atrás y al costado (ver 18-tercera-persona.js)
   const scoped=me.scope&&me.alive&&WEAPONS[me.w].scope,zoom=WEAPONS[me.w].zoom||22;
   const fov=(scoped?zoom:S.fov+Math.min(12,Math.max(0,Math.hypot(me.s.vx,me.s.vz)-11)*.8))+(me.fovPunch||0)*(scoped?.2:1);
   if(Math.abs(camera.fov-fov)>.05){camera.fov+=(fov-camera.fov)*Math.min(1,dt*(scoped?14:6));camera.updateProjectionMatrix();}
@@ -4282,6 +4318,7 @@ function updCamera(dt){
   sky.position.copy(camera.position);
 }
 function updViewmodel(dt){
+  vmSync();
   const i=me.w,g=vms[i],b=vmBase[i];
   me.kick=Math.max(0,me.kick-dt*(i===3?14:i===0?10:i===7?4:5));me.raise=Math.max(0,me.raise-dt*4);
   const hs=Math.hypot(me.s.vx,me.s.vz),mv=me.s.on?Math.min(1,hs/10):.3;
@@ -4784,6 +4821,81 @@ function updNight(dt){
     s.intensity=Math.min(s.userData.i0,s.intensity+dt*5);
   }
 }
+/* =================== TERCERA PERSONA (estilo Deadlock y Marvel Rivals) ===================
+   Cámara sobre el hombro: detrás y al costado de la cabeza, con la mira en el centro de la pantalla y el personaje a un costado.
+   - Se alterna con H (o en Ajustes → Video); J cambia de hombro.
+   - La cámara se acomoda sola: se aleja un poco al correr, se queda un poco atrás al esquivar de costado, baja al agacharse y se acerca
+     si hay una pared detrás (nunca queda adentro de una pared). Con el francotirador volvés a primera persona para mirar por la mira.
+   - Lo que dispara apunta al punto que marca la mira (primero se busca a qué pega la cámara y desde el ojo se apunta ahí), así no hay que
+     "apuntar al costado del enemigo" como pasa en otros juegos de tercera persona.
+   - El personaje propio se anima igual que los demás (marcha, salto, agachado, retroceso, golpes, cambio de arma, muerte). */
+const TP={blend:0,k:1,dist:3,lag:0,back:0,fireT:0,painT:0,model:null,clave:'',tips:{},f:new THREE.Vector3(),r:new THREE.Vector3(),u:new THREE.Vector3(),des:new THREE.Vector3(),piv:new THREE.Vector3(),mz:new THREE.Vector3(),
+  p:{vxs:0,vzs:0,yaw:0,pitch:0,onG:true,crouch:false,fire:0,pain:0,w:1,vy:0,rel:false,deadT:0}};
+const tpQuiere=()=>S.view==='tp'&&me.alive&&!(me.scope&&WEAPONS[me.w].scope);
+// el modelo propio se arma de nuevo si cambian los colores, el emblema o el nombre (o el color de equipo)
+function tpModelo(){
+  const eq=teamsMode()&&myTeam>=0,sk=eq?Object.assign({},S.skin,{c:colorOf(myId),ck:null,cp:null,cb:null,cl:null}):S.skin;
+  const k=[sk.c,sk.ck,sk.cp,sk.cb,sk.cl,sk.c2,sk.c3,sk.v,sk.a,sk.em,sk.ce,sk.img?sk.img.length:0].join('|');
+  if(!TP.model||TP.clave!==k){if(TP.model)scene.remove(TP.model.g);TP.model=buildPlayer(sk,S.name,true,true);TP.model.g.visible=false;scene.add(TP.model.g);TP.clave=k;}
+  return TP.model;
+}
+function updMiModelo(dt){
+  if(S.view!=='tp'){TP.blend+=(0-TP.blend)*Math.min(1,dt*9);if(TP.model)TP.model.g.visible=false;return;}
+  const want=tpQuiere()?1:0;TP.blend+=(want-TP.blend)*Math.min(1,dt*(want?6:9));if(Math.abs(TP.blend-want)<.003)TP.blend=want;
+  const m=tpModelo(),P=TP.p;
+  if(me.alive){
+    TP.fireT=Math.max(0,TP.fireT-dt);TP.painT=Math.max(0,TP.painT-dt);
+    P.vxs=me.s.vx;P.vzs=me.s.vz;P.vy=me.s.vy;P.yaw=me.yaw;P.pitch=me.pitch;P.onG=me.s.on;P.crouch=!!me.s.crouch;P.fire=TP.fireT;P.pain=TP.painT;P.w=me.w;P.rel=me.rel>0&&me.relW===me.w;
+    if(m.gun.userData.w!==me.w){m.gun.clear();m.gun.add(tpGun(me.w));m.gun.userData.w=me.w;}
+    m.g.position.set(me.s.x,me.s.y,me.s.z);m.g.rotation.y=me.yaw+Math.PI;
+    rbLod(m,false);rbAnimar(m,P,dt);
+    const em=TP.painT>0?0x803020:me.q>0?0x5020a0:0;m.mats.forEach(mm=>mm.emissive.setHex(em));
+    m.g.visible=TP.blend>.02&&TP.dist>.85;   // si la cámara queda pegada a una pared, no se dibuja el cuerpo
+  }else{
+    // el cuerpo propio cae y queda en el piso mientras la cámara de muerte hace lo suyo
+    const d=me.deathPos||[me.s.x,me.s.y,me.s.z];P.deadT=me.deadT;rbMuerte(m,P);
+    m.g.position.set(d[0],d[1],d[2]);m.g.rotation.y=me.yaw+Math.PI;m.g.visible=!G.pov&&me.deadT<5;
+  }
+  m.g.updateMatrixWorld(true);
+}
+// posición de la cámara (se llama desde updCamera, con la rotación ya puesta)
+function tpCamara(dt){
+  if(TP.blend<=.001)return;
+  const q=camera.quaternion,f=TP.f.set(0,0,-1).applyQuaternion(q),r=TP.r.set(1,0,0).applyQuaternion(q),u=TP.u.set(0,1,0).applyQuaternion(q),piv=TP.piv,des=TP.des;
+  const hs=Math.hypot(me.s.vx,me.s.vz),sh=S.shoulder||1;
+  TP.back+=(Math.min(.28,hs*.022)-TP.back)*Math.min(1,dt*3);                                   // al correr, la cámara se aleja un poco
+  const vr=me.s.vx*r.x+me.s.vz*r.z;TP.lag+=(Math.max(-.14,Math.min(.14,-vr*.012))-TP.lag)*Math.min(1,dt*5);   // al esquivar de costado se queda un poco atrás
+  piv.set(me.s.x,me.s.y+me.eyeC+.02,me.s.z);
+  const dist=2.05*(S.tpd||1)+TP.back-Math.min(.08,(me.kick||0)*.05);                            // el disparo la empuja un poquito hacia adelante
+  des.copy(piv).addScaledVector(f,-dist).addScaledVector(r,.82*sh+TP.lag).addScaledVector(u,.3);
+  // choque con las paredes: tres rayos desde la cabeza; la cámara se acerca hasta antes de la pared y vuelve despacio
+  let k=1;const L=des.distanceTo(piv);
+  for(const o of [[0,0,0],[r.x*.3*sh,r.y*.3*sh,r.z*.3*sh],[u.x*.25,u.y*.25,u.z*.25]]){
+    const ox=piv.x+o[0],oy=piv.y+o[1],oz=piv.z+o[2],vx=des.x-ox,vy=des.y-oy,vz=des.z-oz,vl=Math.hypot(vx,vy,vz)||1,h=C.raycast(W,ox,oy,oz,vx/vl,vy/vl,vz/vl,vl);
+    if(h)k=Math.min(k,Math.max(.1,(h.t-.3)/vl*(vl/L)));}
+  TP.k+=(k-TP.k)*Math.min(1,dt*(k<TP.k?30:5));TP.dist=L*TP.k;
+  const e=TP.blend*TP.blend*(3-2*TP.blend);
+  camera.position.x+=(piv.x+(des.x-piv.x)*TP.k-camera.position.x)*e;camera.position.y+=(piv.y+(des.y-piv.y)*TP.k-camera.position.y)*e;camera.position.z+=(piv.z+(des.z-piv.z)*TP.k-camera.position.z)*e;
+}
+// hacia dónde hay que disparar desde el ojo para pegarle a lo que marca la mira (la cámara está corrida y atrás del ojo)
+function tpApunte(ex,ey,ez){
+  if(TP.blend<.9)return null;
+  const f=TP.f.set(0,0,-1).applyQuaternion(camera.quaternion),cx=camera.position.x,cy=camera.position.y,cz=camera.position.z;
+  let tm=150;const w=C.raycast(W,cx,cy,cz,f.x,f.y,f.z,tm);if(w)tm=w.t;
+  const t0=(ex-cx)*f.x+(ey-cy)*f.y+(ez-cz)*f.z+.4;   // lo que esté entre la cámara y el ojo no cuenta
+  for(const q of players.values()){if(!q.alive||!q.model||!q.model.g.visible||(teamsMode()&&q.team===myTeam))continue;
+    const h=C.rayPlayer(q.x,q.y,q.z,cx,cy,cz,f.x,f.y,f.z,q.crouch);if(h&&h.t<tm&&h.t>t0)tm=h.t;}
+  if(tm<=t0)return null;
+  const dx=cx+f.x*tm-ex,dy=cy+f.y*tm-ey,dz=cz+f.z*tm-ez,l=Math.hypot(dx,dy,dz)||1;return [dx/l,dy/l,dz/l];
+}
+// boca del arma en el mundo (para los trazos, las chispas y los proyectiles)
+function tpMuzzle(){
+  const m=TP.model;if(!m)return [me.s.x,me.s.y+K.EYE,me.s.z];
+  let t=TP.tips[me.w];if(!t){const g=tpGun(me.w);t=TP.tips[me.w]=g.userData.tip||{x:0,y:0,z:-.5};}
+  m.gun.localToWorld(TP.mz.set(t.x,t.y,t.z));return [TP.mz.x,TP.mz.y,TP.mz.z];
+}
+function tpAlternar(){S.view=S.view==='tp'?'fp':'tp';saveS();syncSettings();announce('',S.view==='tp'?'Vista en tercera persona':'Vista en primera persona');}
+function tpHombro(){S.shoulder=-(S.shoulder||1);saveS();syncSettings();if(S.view==='tp')announce('','Cámara sobre el hombro '+(S.shoulder>0?'derecho':'izquierdo'));}
 /* =================== MIRA PERSONALIZABLE =================== */
 const XH_STYLES=['cruz','cruzgap','cruzpunto','punto','circulo','circulopunto','anillo','fina','t','mas','x','cortes'];
 const XH_NAMES={cruz:'Cruz',cruzgap:'Cruz chica',cruzpunto:'Cruz con punto',punto:'Punto',circulo:'Círculo',circulopunto:'Círculo con punto',anillo:'Anillo punteado',fina:'Horizontal',t:'T',mas:'Cruz hueca',x:'Equis',cortes:'Paréntesis'};
@@ -5188,6 +5300,7 @@ function syncSettings(){
   [...$('sFl').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.fl)));
   [...$('sMap').children].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===S.map)));
   [...$('sQ').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.q)));
+  [...$('sView').children].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===S.view)));[...$('sShoulder').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===(S.shoulder||1))));[...$('sTpd').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===(S.tpd||1))));
   [...$('sSh').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===(S.sh===0?0:1))));
 }
 // sensibilidad: control deslizante + valor exacto, y aparte la de la mira con zoom (S.sensZ, 1 = igual que sin mira)
@@ -5249,6 +5362,9 @@ $('sSkill').addEventListener('click',e=>{const v=e.target.dataset&&e.target.data
 $('sFl').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.fl=+v;saveS();syncSettings();if(net&&!online)net.send({t:'cfg',fl:S.fl});});
 $('sMap').addEventListener('click',e=>{const b=e.target.closest('button'),v=b&&b.dataset.v;if(!v)return;S.map=v;saveS();syncSettings();if(net&&!online)net.send({t:'cfg',map:v});else if(!inGame)loadMap(v);});
 $('sSh').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.sh=+v;saveS();syncSettings();if(level&&level.sun){level.sun.castShadow=!!S.sh;renderer.shadowMap.needsUpdate=true;}scene.traverse(o=>{if(o.material)o.material.needsUpdate=true;});SFX.ui();});
+$('sView').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.view=v;saveS();syncSettings();});
+$('sShoulder').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.shoulder=+v;saveS();syncSettings();});
+$('sTpd').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.tpd=+v;saveS();syncSettings();});
 $('sQ').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.q=+v;saveS();syncSettings();resize();});
 syncSettings();probeServer();loadMap(S.map);initAccounts();syncChest();
 
@@ -5268,7 +5384,7 @@ function frame(now){
   if(net)net.update(dt);
   updMovers();
   if(inGame&&!paused){
-    updMe(dt);updProjs(dt);updFires(dt);updRemote(dt);updCamera(dt);updViewmodel(dt);updNight(dt);
+    updMe(dt);updProjs(dt);updFires(dt);updRemote(dt);updMiModelo(dt);updCamera(dt);updViewmodel(dt);updNight(dt);
     G.pingT-=dt;if(online&&G.pingT<=0&&net){G.pingT=2;net.send({t:'ping',c:performance.now(),r:ping});}
     if(Math.floor(G.time*2)!==Math.floor((G.time-dt)*2))updateHUD();
   }else if(!inGame){attract(dt);vms.forEach(v=>v.visible=false);flashMesh.visible=false;}
@@ -5277,7 +5393,7 @@ function frame(now){
   updLightSlots(dt);
   renderer.clear();renderer.render(scene,camera);
   if(inGame&&!me.alive&&G.pov)povGun(paused?0:dt);   // arma del que te mató (o del que mirás) en primera persona
-  if(inGame&&(me.alive||G.pov)){renderer.clearDepth();renderer.render(wScene,wCam);}
+  if(inGame&&(me.alive||G.pov)&&TP.blend<.5){renderer.clearDepth();renderer.render(wScene,wCam);}   // en tercera persona no hay arma ni manos en pantalla
 }
 requestAnimationFrame(frame);
 })();

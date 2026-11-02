@@ -117,6 +117,7 @@ function updRemote(dt){
         if(m.g.visible&&placeBlob(nb,p.x,p.y,p.z,Math.max(0,1-p.deadT/5)))nb++;}
     }
   }
+  if(TP.blend>.02&&me.alive&&placeBlob(nb,me.s.x,me.s.y,me.s.z,TP.blend))nb++;   // sombra propia en tercera persona
   for(let i=nb;i<blobs.length;i++)blobs[i].visible=false;
 }
 function updMovers(){

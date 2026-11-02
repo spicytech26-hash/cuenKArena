@@ -39,6 +39,7 @@ function updCamera(dt){
   const st=G.time*38;camera.position.set(me.s.x+Math.sin(st)*sh*.22,me.s.y+eye+Math.sin(st*1.31+1.7)*sh*.22,me.s.z+Math.sin(st*.87+3.1)*sh*.22);
   me.recP=(me.recP||0)*Math.exp(-dt*11);me.recY=(me.recY||0)*Math.exp(-dt*11);me.fovPunch=(me.fovPunch||0)*Math.exp(-dt*12);
   camera.rotation.set(me.pitch-me.kick*.025+me.recP,me.yaw+me.recY,me.tilt+me.roll+(me.alive?0:Math.min(.5,me.deadT*.6)));
+  tpCamara(dt);   // en tercera persona la cámara se corre atrás y al costado (ver 18-tercera-persona.js)
   const scoped=me.scope&&me.alive&&WEAPONS[me.w].scope,zoom=WEAPONS[me.w].zoom||22;
   const fov=(scoped?zoom:S.fov+Math.min(12,Math.max(0,Math.hypot(me.s.vx,me.s.vz)-11)*.8))+(me.fovPunch||0)*(scoped?.2:1);
   if(Math.abs(camera.fov-fov)>.05){camera.fov+=(fov-camera.fov)*Math.min(1,dt*(scoped?14:6));camera.updateProjectionMatrix();}
@@ -47,6 +48,7 @@ function updCamera(dt){
   sky.position.copy(camera.position);
 }
 function updViewmodel(dt){
+  vmSync();
   const i=me.w,g=vms[i],b=vmBase[i];
   me.kick=Math.max(0,me.kick-dt*(i===3?14:i===0?10:i===7?4:5));me.raise=Math.max(0,me.raise-dt*4);
   const hs=Math.hypot(me.s.vx,me.s.vz),mv=me.s.on?Math.min(1,hs/10):.3;

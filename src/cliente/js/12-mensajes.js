@@ -144,6 +144,7 @@ function onEvent(m){
       fxExplosion(m.p[0],m.p[1],m.p[2]);break;
     }
     case 'dmg':
+      TP.painT=.12;
       G.hurt=Math.min(1,G.hurt+m.n/40+.15);me.roll=(Math.random()<.5?-1:1)*Math.min(.1,m.n/200);
       if(m.k){me.s.vx+=m.k[0];me.s.vy+=m.k[1];me.s.vz+=m.k[2];if(m.k[1]>0)me.s.on=false;}
       if(m.from){G.dmgT=1;G.dmgAng=Math.atan2(-(m.from[0]-me.s.x),-(m.from[2]-me.s.z));}

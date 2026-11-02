@@ -456,7 +456,18 @@ function rbMuerte(m,p){
   m.armR.rotation.set(-.3-.9*fl,0,-.4-.6*fl);m.armR.fore.rotation.set(-.5,0,0);m.armL.rotation.set(-.2+.5*fl,0,.5+.6*fl);m.armL.fore.rotation.set(-.4,0,0);
   m.aim.position.set(-.1,1.46-.5*fl,.1+.2*fl);m.aim.rotation.set(1.0*fl,0,.5*fl);m.gun.position.set(0,0,.3);m.gun.visible=t<1.4;
 }
-function buildPlayer(skin,name,noTag){
+// manos y antebrazos en primera persona: toman los colores de brazos (cb), articulaciones (c2), detalles (c3) y visor (v) del jugador; en equipos, el color del equipo
+let vmClave='';
+function vmSync(){
+  const eq=teamsMode()&&myTeam>=0,sk=eq?Object.assign({},S.skin,{c:colorOf(myId),ck:null,cp:null,cb:null,cl:null}):S.skin;
+  const k=[sk.c,sk.cb,sk.c2,sk.c3,sk.v].join('|');if(k===vmClave)return;vmClave=k;
+  const P=skinParts(sk);
+  [[mGlove,P.cb],[mSleeve,P.cb],[mArmB,P.c2],[mArmC,P.c3]].forEach(([m,c])=>{m.color.set(c);
+    if(!m.envMap){m.envMap=rbEnv();rbDesgaste();m.map=rbMapT;m.bumpMap=rbBumpT;m.bumpScale=.003;m.envMapIntensity=.7;m.needsUpdate=true;}});
+  mArmV.color.set(P.v);
+}
+// propio = el modelo del propio jugador en tercera persona (se anima como cualquier otro, no como la Taquilla)
+function buildPlayer(skin,name,noTag,propio){
   const G=rbGeos(),P=skinParts(skin);
   const mA=rbMat(P.ck,.55,.1,.45),mP=rbMat(P.cp,.58,.08,.4),mBr=P.cb===P.c?mA:rbMat(P.cb,.38,.35),mL=P.cl===P.c?mA:rbMat(P.cl,.38,.35);
   const mB=rbMat(P.c2,.32,.65),mC=rbMat(P.c3,.4,.45),mK=rbMat(0x2b3036,.3,.85,.9);
@@ -500,9 +511,9 @@ function buildPlayer(skin,name,noTag){
   let tag=null;if(!noTag){tag=nameSprite(name,P.c);g.add(tag);}
   const bas=[mV];if(hasImg||em!=='ninguno')bas.push(dm);   // materiales que brillan solos (de noche se apagan, ver 18-noche.js)
   const modelo={g,b,pelv,up,legs,armL,armR,aim,head,gun,tag,mats:[mA,mP,mBr,mL,mB,mC,mK],bas,an:rbAnInit(),fino,lod:false};
-  if(noTag){modelo.pose=RB_POSE_TAQ;modelo.pT={vxs:0,vzs:0,yaw:0,onG:true,crouch:false,pitch:0,fire:0,pain:0,w:1,vy:0,alive:true};}   // la Taquilla respira y se acomoda sola
-  rbPose(modelo,noTag?1:0,-.05,0,noTag?RB_POSE_TAQ:null);
-  rbAnimar(modelo,noTag?modelo.pT:{vxs:0,vzs:0,yaw:0,onG:true,crouch:false,pitch:0,fire:0,pain:0,w:0,vy:0},.016,modelo.pose);
+  if(noTag&&!propio){modelo.pose=RB_POSE_TAQ;modelo.pT={vxs:0,vzs:0,yaw:0,onG:true,crouch:false,pitch:0,fire:0,pain:0,w:1,vy:0,alive:true};}   // la Taquilla respira y se acomoda sola
+  rbPose(modelo,noTag?1:0,-.05,0,noTag&&!propio?RB_POSE_TAQ:null);
+  rbAnimar(modelo,modelo.pT||{vxs:0,vzs:0,yaw:0,onG:true,crouch:false,pitch:0,fire:0,pain:0,w:0,vy:0},.016,modelo.pose);
   return modelo;
 }
 // pose de la Taquilla (como en la referencia): la escopeta cruzada sobre el pecho, apuntando hacia el lado izquierdo del personaje

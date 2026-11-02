@@ -121,6 +121,8 @@ addEventListener('keydown',e=>{
   else if(e.code==='KeyY'&&!e.repeat&&online){e.preventDefault();openKick();}
   if(e.code==='KeyQ')quickSwitch();
   if(e.code==='KeyF'&&!e.repeat)inspect();
+  if(e.code==='KeyH'&&!e.repeat)tpAlternar();   // vista en primera / tercera persona
+  if(e.code==='KeyJ'&&!e.repeat)tpHombro();       // cambiar de hombro (tercera persona)
   if(e.code==='KeyB'&&!e.repeat){e.preventDefault();openShop();}
   if(e.code==='KeyG'&&NIGHT){e.preventDefault();if(!e.repeat)nightToggle();}   // en los mapas con linterna (hoy solo Skatenight) la G prende y apaga la linterna; la T vuelve a abrir el chat
   if(e.code==='KeyT'||e.code==='Enter'){e.preventDefault();openChat();}

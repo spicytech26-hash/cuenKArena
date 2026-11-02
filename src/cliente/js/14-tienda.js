@@ -1,46 +1,97 @@
-/* =================== TIENDA =================== */
-let iconCache=null;
-function shopIcons(){
-  if(iconCache)return iconCache;
+/* =================== TIENDA ===================
+   El Mercader del Umbral (SVG liviano, sin segundo contexto WebGL). Las tarjetas se arman una sola vez; renderShop() solo actualiza
+   estados (créditos, equipada, comprada, sin plata), así abrir la tienda o recibir un 'you' no vuelve a decodificar los íconos.
+   Mientras está abierta no se dibuja la escena 3D (la tienda la tapa) y la resolución dinámica no mide esos cuadros. */
+let iconCache=null,iconR=null,iconSc=null,iconCam=null,iconI=0;
+function iconInit(){
+  if(iconCache)return;
   iconCache={};
   try{
-    const r=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true});r.setSize(256,112,false);
-    const sc=new THREE.Scene();sc.add(new THREE.AmbientLight(0xffffff,.65));const dl=new THREE.DirectionalLight(0xffffff,.9);dl.position.set(1,2,2);sc.add(dl);
-    const cam=new THREE.OrthographicCamera(-.6,.6,.26,-.26,.01,10);cam.position.set(-3,.4,0);cam.lookAt(0,0,0);
-    for(let i=0;i<WEAPONS.length;i++){const g=buildGun(i);const bb=new THREE.Box3().setFromObject(g),c=bb.getCenter(new THREE.Vector3()),sz=bb.getSize(new THREE.Vector3());const s=1/Math.max(sz.z,sz.y*2.2,.01);g.scale.setScalar(s);g.position.set(-c.x*s,-c.y*s,-c.z*s);sc.add(g);r.clear();r.render(sc,cam);const u=r.domElement.toDataURL();if(typeof u==='string'&&u.startsWith('data:'))iconCache['w'+i]=u;sc.remove(g);}
-    r.dispose();
-  }catch(e){}
+    iconR=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true});iconR.setSize(256,112,false);
+    iconSc=new THREE.Scene();iconSc.add(new THREE.AmbientLight(0xffffff,.65));const dl=new THREE.DirectionalLight(0xffffff,.9);dl.position.set(1,2,2);iconSc.add(dl);
+    iconCam=new THREE.OrthographicCamera(-.6,.6,.26,-.26,.01,10);iconCam.position.set(-3,.4,0);iconCam.lookAt(0,0,0);
+  }catch(e){iconR=null;iconI=WEAPONS.length;}
   const draw=(fn)=>cv(256,112,fn).toDataURL();
   const shield=(g,col,n)=>{g.translate(128,56);for(let k=0;k<n;k++){g.save();g.translate((k-(n-1)/2)*44,0);g.fillStyle=col;g.beginPath();g.moveTo(0,-40);g.lineTo(32,-28);g.lineTo(28,12);g.lineTo(0,42);g.lineTo(-28,12);g.lineTo(-32,-28);g.closePath();g.fill();g.strokeStyle='#0b0907';g.lineWidth=4;g.stroke();g.restore();}};
   iconCache.a1=draw(g=>shield(g,'#cfd8c8',1));iconCache.a2=draw(g=>shield(g,'#ffb06a',2));
   iconCache.am=draw(g=>{g.fillStyle='#c9a227';for(let k=0;k<6;k++){g.fillRect(60+k*24,36,14,48);g.beginPath();g.arc(67+k*24,36,7,Math.PI,0);g.fill();}});
   iconCache.rf=draw(g=>{g.strokeStyle='#cfd8c8';g.lineWidth=8;g.beginPath();g.arc(128,56,32,.3,5.6);g.stroke();g.fillStyle='#cfd8c8';g.beginPath();g.moveTo(160,22);g.lineTo(172,50);g.lineTo(144,46);g.fill();});
-  return iconCache;
+}
+// un ícono de arma por vuelta (así no hay un tirón largo); devuelve true si quedan
+function iconStep(){
+  iconInit();
+  if(!iconR||iconI>=WEAPONS.length){if(iconR){iconR.dispose();if(iconR.forceContextLoss)iconR.forceContextLoss();iconR=null;}return false;}
+  try{
+    const g=buildGun(iconI),bb=new THREE.Box3().setFromObject(g),c=bb.getCenter(new THREE.Vector3()),sz=bb.getSize(new THREE.Vector3());
+    const k=1/Math.max(sz.z,sz.y*2.2,.01);g.scale.setScalar(k);g.position.set(-c.x*k,-c.y*k,-c.z*k);iconSc.add(g);iconR.clear();iconR.render(iconSc,iconCam);
+    const u=iconR.domElement.toDataURL();if(typeof u==='string'&&u.startsWith('data:'))iconCache['w'+iconI]=u;iconSc.remove(g);
+  }catch(e){}
+  iconI++;return true;
+}
+function shopIcons(){while(iconStep());return iconCache;}
+// se llama en el primer spawn: genera los íconos de a uno, en ratos libres, para que B no tenga que hacerlo
+function warmIcons(){if(!iconStep())return;setTimeout(warmIcons,70);}
+const VEND={
+  open:['¿Qué buscás, forastero?','Las monedas hablan. Los muertos escuchan.','Elegí rápido: algo te está mirando.','Pasá, pasá. No muerdo… casi nunca.'],
+  buy:['Una elección sabia… para quien todavía respira.','El precio ya está pagado. La deuda, no.','Que te sirva antes de que te alcance.','Hmm. Tus manos tiemblan. Tu puntería también.'],
+  eq:['Esa ya es tuya. Empuñala.','Cambiá de juguete cuando quieras. El filo no se queja.'],
+  poor:['Tus bolsillos están más vacíos que el vacío.','Volvé con más ¤, mortal.','Eso cuesta más que tu alma.'],
+  bye:['Volverás. Siempre volvés.','Cuidá la espalda…']
+};
+let vendLast='';
+function vendSay(k){const a=VEND[k];let t;do{t=a[Math.random()*a.length|0];}while(t===vendLast&&a.length>1);vendLast=t;const e=$('vendSay');e.textContent=t;e.classList.remove('say');void e.offsetWidth;e.classList.add('say');}
+let shopEls=null;
+function buildShop(){
+  if(shopEls)return;shopEls={};
+  const ic=shopIcons(),cats=[];C.SHOP.forEach(it=>{if(!cats.includes(it.cat))cats.push(it.cat);});
+  const host=$('shopGrid');host.textContent='';
+  cats.forEach(cat=>{
+    C.SHOP.filter(it=>it.cat===cat).forEach(it=>{
+      const b=document.createElement('button');b.type='button';b.className='card';b.dataset.id=it.id;
+      const ct=document.createElement('span');ct.className='cat';ct.textContent=cat;
+      const im=document.createElement('img');im.alt='';im.src=ic[it.id]||ic['w'+it.w]||'';
+      const nm=document.createElement('span');nm.className='nm';nm.textContent=it.name;
+      const pr=document.createElement('span');pr.className='pr';
+      const ds=document.createElement('span');ds.className='ds';ds.textContent=it.desc;
+      b.append(ct,im,nm,pr,ds);host.appendChild(b);shopEls[it.id]={b,pr};
+    });
+  });
 }
 function openShop(){
   if(!inGame||!liveState())return;
   if(MODE==='gungame'){announce('SIN TIENDA','En Gungame cada baja te da el arma siguiente');SFX.deny();return;}
   if(!C.MODES[MODE].shop){announce('SIN TIENDA','En '+C.MODES[MODE].name+' se juega con lo que hay');SFX.deny();return;}
-  closeWheel(false);$('shop').hidden=false;mouseDown=false;for(const k in keys)keys[k]=false;
+  closeWheel(false);buildShop();
+  $('shop').hidden=false;G.shopOn=true;DR.acc=DR.n=0;mouseDown=false;for(const k in keys)keys[k]=false;
   selfUnlock();
-  shopMsg('');renderShop();SFX.ui();
+  shopMsg('');renderShop();vendSay('open');SFX.ui();
 }
-function closeShop(silent){if($('shop').hidden)return;$('shop').hidden=true;if(!silent&&inGame){lockPointer();SFX.ui();}}
+function closeShop(silent){if($('shop').hidden)return;$('shop').hidden=true;G.shopOn=false;DR.acc=DR.n=0;if(!silent&&inGame){lockPointer();SFX.ui();}}
 function shopMsg(t,cls){const e=$('shopMsg');e.textContent=t;e.className=cls||'';}
 function renderShop(){
-  const ic=shopIcons();
-  $('shopCr').textContent='¤ '+me.cr.toLocaleString('es-AR');
-  const cats=[];C.SHOP.forEach(it=>{if(!cats.includes(it.cat))cats.push(it.cat);});
-  const owned=it=>(it.w!=null&&C.PRIMARY.includes(it.w))?C.primaryOf(me.ow)===it.w:it.free||(it.w!=null&&!it.once&&me.unl[it.w])||(it.armor&&me.perk.ar>=it.armor)||(it.id==='am'&&me.perk.am);
-  $('shopGrid').innerHTML=cats.map(cat=>'<div class="scol"><h3>'+cat+'</h3>'+C.SHOP.filter(it=>it.cat===cat).map(it=>{
-    const own=owned(it),poor=!own&&me.cr<it.price;
-    return '<button type="button" class="card'+(own?' own':'')+(poor?' poor':'')+'" data-id="'+it.id+'"'+(own?' disabled':'')+'>'+
-      '<img alt="" src="'+(ic[it.id]||ic['w'+it.w]||'')+'"><span class="nm">'+it.name+'</span>'+
-      '<span class="pr">'+(own?'TUYA':'¤ '+it.price.toLocaleString('es-AR'))+'</span><span class="ds">'+it.desc+'</span></button>';
-  }).join('')+'</div>').join('');
+  if(!shopEls)return;
+  setTxt('shopCr','¤ '+me.cr.toLocaleString('es-AR'));
+  const prim=C.primaryOf(me.ow);
+  C.SHOP.forEach(it=>{
+    const E=shopEls[it.id];if(!E)return;
+    const isP=it.w!=null&&C.PRIMARY.includes(it.w);
+    // principal: "en manos" si la llevás, "equipar" si ya es tuya; el resto: comprado o precio
+    const inHand=isP&&prim===it.w,mine=isP&&!inHand&&(it.free||me.unl[it.w]);
+    const own=inHand||(!isP&&(it.free||(it.w!=null&&!it.once&&me.unl[it.w])||(it.armor&&me.perk.ar>=it.armor)||(it.id==='am'&&me.perk.am)));
+    const poor=!own&&!mine&&me.cr<it.price;
+    const st=inHand?'EN MANOS':mine?'EQUIPAR':own?(it.free?'TUYA':'COMPRADO'):'¤ '+it.price.toLocaleString('es-AR');
+    if(E.st!==st){E.st=st;E.pr.textContent=st;}
+    const cls='card'+(own?' own':'')+(mine?' mine':'')+(poor?' poor':'');
+    if(E.cls!==cls){E.cls=cls;E.b.className=cls;}
+    E.b.disabled=own;
+  });
+  // inventario: lo que hay en la ruleta (E)
+  const inv=wheelList();
+  const html=inv.map(w=>'<span class="'+(w===prim?'on':'')+'" title="'+esc(WEAPONS[w].name)+'"><img alt="" src="'+(shopIcons()['w'+w]||'')+'"></span>').join('');
+  const iv=$('shopInv');if(iv._h!==html){iv._h=html;iv.innerHTML=html;}
 }
 $('shopGrid').addEventListener('click',e=>{const b=e.target.closest('.card');if(!b||b.disabled||!net)return;net.send({t:'buy',id:b.dataset.id});});
-$('shop').addEventListener('click',e=>{if(e.target===$('shop'))closeShop();});
+$('shop').addEventListener('click',e=>{if(e.target===$('shop')||e.target.classList.contains('shopbox'))closeShop();});
 
 /* =================== TAQUILLA =================== */
 const BODY_COLS=['#e8542a','#3fa7ff','#9ccc3c','#ffcc33','#c45cff','#ff5c8a','#38d6c4','#f2efe6','#ff8f1f','#7a8cff','#2a2a2e','#b8ff3a'];

@@ -144,7 +144,7 @@ function updEffects(dt){
   setOp('hitm',G.hitT>0?1:0);
   setOp('dmgdir',G.dmgT);if(G.dmgT>0)$('dmgdir').style.transform='rotate('+(-(G.dmgAng-me.yaw)).toFixed(3)+'rad)';
   const sp=Math.round(Math.hypot(me.s.vx,me.s.vz)*32);setTxt('spdV',String(sp));{const st=me.s.stam===undefined?1:me.s.stam,e=$('stam');if(e._v!==st){e._v=st;e.firstChild.style.transform='scaleX('+st.toFixed(3)+')';e.classList.toggle('low',st<.5);e.classList.toggle('full',st>=.999);}}$('speed').className=sp>500?'vfast':sp>360?'fast':'';
-  $('xh').hidden=!me.alive;
+  $('xh').hidden=!me.alive;xhUpdate(dt);
   if(level){
     for(const o of level.items){if(!o.g.visible)continue;o.ph+=dt;o.g.rotation.y+=dt*1.6;o.g.position.y=o.it.y+.6+Math.sin(o.ph*2.2)*.12;}
     if(shards.size)updShards(dt);

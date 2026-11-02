@@ -14,7 +14,7 @@ Al tocar **Jugar online** (o **Práctica con bots**) elegís el modo. Cada modo 
 
 ## Armas
 
-Como en Counter-Strike llevás **una sola arma principal** (ranura 1): arrancás con la escopeta, y si comprás otra, la reemplaza (aparecés con la comprada hasta que termina la partida; la escopeta se puede volver a elegir gratis en la tienda). Las armas tiradas en el mapa se levantan solas si todavía tenés la escopeta de base; si ya compraste otra, parate al lado y apretá **E** para cambiarla. Todos arrancan con pistola (automática, 60 balas que comparte con la ametralladora; se recargan juntando cajas de balas), escopeta y cuchillo. En Gungame la munición es infinita. Las demás se juntan del mapa o se compran.
+En las manos llevás **tres cosas**: una arma principal (ranura 1), la pistola (2) y el cuchillo (3; la molotov va en el 4 o la G). Lo que comprás en la tienda se suma a tu **inventario** y se queda toda la partida: **mantené E** para abrir la ruleta de armas (como en Doom Eternal), movés el mouse hacia el arma que querés y soltás E; la principal cambia por esa y la pistola y el cuchillo no se tocan. Arrancás con la escopeta y la ruleta crece a medida que comprás. Las armas tiradas en el mapa se levantan solas si todavía tenés la escopeta de base; si ya compraste otra, parate al lado y tocá **E** para cambiarla (un arma agarrada del piso no queda en el inventario). Todos arrancan con pistola (automática, 60 balas que comparte con la ametralladora; se recargan juntando cajas de balas), escopeta y cuchillo. En Gungame la munición es infinita. Las demás se juntan del mapa o se compran.
 
 | Arma | Daño | Tiros para matar (100 de vida / con blindaje 100) |
 |---|---|---|
@@ -40,6 +40,7 @@ Se elige al escoger el modo (y en práctica también desde Ajustes, en plena par
 
 - **Espectador**: cuando te eliminan, primero ves al que te mató. Con **clic izquierdo** pasás a mirar por los ojos de otro jugador o bot vivo (otro clic, al siguiente), y con **Espacio** la cámara gira alrededor del jugador que mirás (el mouse la mueve, como en Counter-Strike o TF2); otro Espacio vuelve a la primera persona. Al terminar el tiempo de reaparición volvés a jugar.
 - Al terminar una partida se ve el ganador, el próximo mapa y la cuenta regresiva (25 s), con **Seguir jugando** y **Volver al menú**.
+- **Movimiento:** **Ctrl** corriendo = deslizamiento (cuesta un poco de stamina); **Espacio** en el aire = doble salto (cuesta la mitad de la barra y no hay triple); **Espacio** pegado a una pared = salto de pared (gratis). La barra de stamina está bajo el medidor de velocidad y se recupera sola. La mira se abre al moverte, saltar y disparar, y se cierra quieto y agachado.
 - Agacharse con **Ctrl** necesita pantalla completa: el juego la pide al empezar (se desactiva en Ajustes). Sin pantalla completa, Ctrl+W cierra la pestaña en el navegador, así que usá **C**; igual el juego pide confirmación antes de cerrar.
 - El rifle de caza se apunta con sus miras de hierro (click derecho), sin mira telescópica.
 - En La Represa, si caés al pozo de lava del centro hay dos salidas: el **géiser de magma** del medio, que burbujea para avisar y cada 3,6 s erupciona y te tira afuera (justo sobre el saltador que lleva al balcón), y **cuatro piedras de basalto** que suben y bajan por turnos: abajo quedan a ras de la lava, te subís caminando y desde arriba saltás al borde.
@@ -54,7 +55,7 @@ Se elige al escoger el modo (y en práctica también desde Ajustes, en plena par
 
 ## Créditos y tienda
 
-Cada frag da ¤ 200 (¤ 100 extra si cortás una racha de 3 y ¤ 100 extra con pistola). Arrancás con ¤ 300. Con **B** se abre la tienda: pistola y escopeta vienen gratis; el resto de las armas, el blindaje y la cartuchera doble se desbloquean y quedan tuyos hasta que termina la partida (aparecés con eso cada vez). Los precios están en `SHOP` dentro de `public/game.js`.
+Cada frag da ¤ 200 (¤ 100 extra si cortás una racha de 3 y ¤ 100 extra con pistola). Arrancás con ¤ 300. Con **B** se abre la tienda (El Mercader del Umbral): pistola y escopeta vienen gratis; el resto de las armas, el blindaje y la cartuchera doble se desbloquean y quedan tuyos hasta que termina la partida (aparecés con todo eso cada vez, con la principal que hayas dejado equipada). Los precios están en `SHOP` dentro de `public/game.js`.
 
 ## Taquilla
 

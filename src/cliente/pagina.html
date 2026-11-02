@@ -93,10 +93,41 @@
 <div id="wheel" hidden></div>
 <div id="shop" hidden>
   <div class="shopbox">
-    <div class="shophead"><h2>TIENDA</h2><div class="wallet"><small>Tus créditos</small><span id="shopCr">¤ 0</span></div></div>
-    <div id="shopMsg"></div>
-    <div class="shopgrid" id="shopGrid"></div>
-    <div class="shopfoot">Ganás ¤ 200 por frag, ¤ 100 extra si cortás una racha de 3 y ¤ 100 extra con pistola. Como en Counter-Strike llevás una sola <b>arma principal</b> (tecla 1): la que comprás reemplaza a la anterior y aparecés con ella hasta que termina la partida. Pistola en el 2, cuchillo en el 3 y molotov en el 4. Con <b>E</b> cambiás tu principal por un arma tirada en el piso. <b>B</b> o <b>Esc</b> para cerrar.</div>
+    <aside class="vend" aria-label="El Mercader del Umbral">
+      <svg viewBox="0 0 300 440" role="img" aria-label="Un mercader encapuchado con muchos ojos y tentáculos">
+        <defs>
+          <radialGradient id="vGlow" cx="50%" cy="36%" r="62%"><stop offset="0" stop-color="#2f6b52" stop-opacity=".6"/><stop offset="1" stop-color="#0a1210" stop-opacity="0"/></radialGradient>
+          <linearGradient id="vCloak" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22362f"/><stop offset=".6" stop-color="#0d1613"/><stop offset="1" stop-color="#050807"/></linearGradient>
+          <radialGradient id="vLamp" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffd27a" stop-opacity=".95"/><stop offset=".5" stop-color="#ff9a3a" stop-opacity=".35"/><stop offset="1" stop-color="#ff7a1a" stop-opacity="0"/></radialGradient>
+        </defs>
+        <rect width="300" height="440" fill="url(#vGlow)"/>
+        <path d="M24 440V176Q24 34 150 22Q276 34 276 176V440" fill="none" stroke="#3b5a4d" stroke-width="3" opacity=".55"/>
+        <path d="M44 440V180Q44 62 150 50Q256 62 256 180V440" fill="none" stroke="#2a4036" stroke-width="1.5" opacity=".6"/>
+        <g stroke="#4f7a68" stroke-width="1.6" fill="none" opacity=".5" stroke-linecap="round"><path d="M150 30l-8 10h16z"/><circle cx="150" cy="40" r="2.5"/><path d="M62 96l10 16M72 96l-10 16M228 96l10 16M238 96l-10 16"/></g>
+        <g class="vTent l" fill="none" stroke="#1d3029" stroke-linecap="round"><path d="M96 150C40 168 26 232 56 276S88 340 66 392" stroke-width="13"/><path d="M104 176C70 214 62 262 84 304" stroke-width="8"/><path d="M84 160C48 150 30 112 48 80" stroke-width="7"/></g>
+        <g class="vTent r" fill="none" stroke="#1d3029" stroke-linecap="round"><path d="M204 150C260 168 274 232 244 276S212 340 234 392" stroke-width="13"/><path d="M196 176C230 214 238 262 216 304" stroke-width="8"/><path d="M216 160C252 150 270 112 252 80" stroke-width="7"/></g>
+        <g class="vBody"><path d="M150 58C102 58 80 108 78 160C74 232 50 304 38 440H262C250 304 226 232 222 160C220 108 198 58 150 58Z" fill="url(#vCloak)" stroke="#3b5a4d" stroke-width="1.5"/>
+          <path d="M120 230C128 290 126 360 118 440M180 230C172 290 174 360 182 440M150 200V440" stroke="#0a110e" stroke-width="2" fill="none" opacity=".7"/>
+          <path d="M150 70C116 70 102 100 104 136C106 168 126 180 150 180C174 180 194 168 196 136C198 100 184 70 150 70Z" fill="#020403"/>
+          <g class="vEyes" fill="#8dff3a"><ellipse cx="131" cy="122" rx="8" ry="4.5"/><ellipse cx="169" cy="122" rx="8" ry="4.5"/><circle cx="150" cy="102" r="4"/><circle cx="122" cy="148" r="2.8"/><circle cx="178" cy="148" r="2.8"/><circle cx="150" cy="144" r="2.2"/></g>
+          <g class="vEyes dark" fill="#031006"><ellipse cx="131" cy="122" rx="1.6" ry="4"/><ellipse cx="169" cy="122" rx="1.6" ry="4"/><circle cx="150" cy="102" r="1.4"/></g>
+          <g class="vBeard" fill="none" stroke="#2c4a3d" stroke-linecap="round" stroke-width="5"><path d="M134 170q-6 18 2 30t-2 28"/><path d="M146 174q-3 20 3 34t-1 30"/><path d="M158 174q3 20-3 34t1 30"/><path d="M168 170q6 18-2 30t2 28"/></g>
+        </g>
+        <rect x="0" y="352" width="300" height="88" fill="#0f0b09"/><rect x="0" y="352" width="300" height="5" fill="#2b1f16"/>
+        <g stroke="#3a2a1d" stroke-width="1.4" fill="none" opacity=".9"><path d="M24 380h40M110 380h40M196 380h40M24 404h60M130 404h60M216 404h50"/><circle cx="150" cy="412" r="10"/><path d="M144 412l12 0M150 406v12"/></g>
+        <g class="vHand" fill="#16241f" stroke="#3b5a4d" stroke-width="1.2"><path d="M96 352c4-20 8-34 16-40 6-4 10 2 8 8l-4 18 22-4c4 6-2 12-10 14l-30 8z"/><path d="M204 352c-4-20-8-34-16-40-6-4-10 2-8 8l4 18-22-4c-4 6 2 12 10 14l30 8z"/></g>
+        <g class="vLamp"><circle class="glow" cx="244" cy="330" r="44" fill="url(#vLamp)"/><rect x="236" y="318" width="16" height="30" rx="3" fill="#2a1d12" stroke="#6b4a2a"/><path d="M240 322h8v22h-8z" fill="#ffc46a" opacity=".85"/><path d="M236 318l8-10 8 10" fill="none" stroke="#6b4a2a" stroke-width="2"/></g>
+        <g><rect x="30" y="334" width="44" height="18" rx="2" fill="#2b1d28" stroke="#6b4a8a"/><path d="M36 343h32" stroke="#9b4dff" stroke-width="1.5" opacity=".7"/></g>
+      </svg>
+      <div class="vsay"><b>El Mercader del Umbral</b><p id="vendSay" class="say"></p></div>
+    </aside>
+    <section class="stall">
+      <header class="shophead"><div class="ttl"><small>Bazar de lo innombrable</small><h2>La Tienda</h2></div><div class="wallet"><small>Tus créditos</small><span id="shopCr">¤ 0</span></div></header>
+      <div id="shopMsg"></div>
+      <div class="shopgrid" id="shopGrid"></div>
+      <div class="shopinvbox"><small>Tu inventario · mantené <kbd>E</kbd> para elegir principal</small><div id="shopInv"></div><small class="fixd">Pistola y cuchillo siempre en las manos</small></div>
+      <div class="shopfoot">Ganás ¤ 200 por frag, ¤ 100 extra si cortás una racha de 3 y ¤ 100 extra con pistola. Lo que comprás se queda en tu inventario toda la partida: en las manos llevás una <b>principal</b> (1), la pistola (2) y el cuchillo (3), más la molotov en el 4 o la G. Con <b>E</b> tocada agarrás un arma del piso. <b>B</b> o <b>Esc</b> para cerrar.</div>
+    </section>
   </div>
 </div>
 <div id="menu" class="go">

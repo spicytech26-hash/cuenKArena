@@ -108,6 +108,7 @@ function fire(){
   if(W_.mag){if(me.rel>0&&me.relW===w)return;if(!(me.mag[w]>0)){startReload(w);return;}}
   if(W_.ammo&&MODE!=='gungame')me.am[W_.ammo]-=W_.cost;
   if(W_.mag){me.mag[w]--;}
+  me.bloom=Math.min(8,(me.bloom||0)+(W_.melee?0:2.2));   // la mira se abre con cada disparo
   if(W_.melee){me.mt=0;me.mdir=-me.mdir;sweepFx(me.mdir);}
   if(w===10)me.throwT=0;
   me.inspT=9;

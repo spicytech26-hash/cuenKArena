@@ -124,11 +124,11 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 #hitm.kill::before,#hitm.kill::after{background:var(--blood)}
 #dmgdir{position:fixed;left:50%;top:50%;width:180px;height:180px;margin:-90px 0 0 -90px;opacity:0}
 #dmgdir::before{content:"";position:absolute;left:50%;top:0;width:44px;height:16px;margin-left:-22px;background:var(--blood);clip-path:polygon(50% 0,100% 100%,0 100%);filter:drop-shadow(0 0 4px #000)}
-#speed{position:fixed;left:50%;top:calc(50% + 34px);transform:translateX(-50%);font-size:13px;letter-spacing:.12em;color:var(--muted);text-shadow:0 1px 0 #000;font-variant-numeric:tabular-nums}
+#speed{position:fixed;left:50%;top:calc(50% + 44px);transform:translateX(-50%);font-size:13px;letter-spacing:.12em;color:var(--muted);text-shadow:0 1px 0 #000;font-variant-numeric:tabular-nums}
 #speed b{font-weight:400;color:var(--ink)}
 #speed.fast b{color:var(--amber)}
 #speed.vfast b{color:var(--quad)}
-#stam{position:fixed;left:50%;top:calc(50% + 56px);transform:translateX(-50%);width:84px;height:5px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.18);box-shadow:0 1px 0 #000;overflow:hidden}
+#stam{position:fixed;left:50%;top:calc(50% + 66px);transform:translateX(-50%);width:84px;height:5px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.18);box-shadow:0 1px 0 #000;overflow:hidden}
 #stam i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#2bd6ff,#7af0ff);transform-origin:left;transition:background .15s}
 #stam b{position:absolute;left:50%;top:0;width:1px;height:100%;background:rgba(0,0,0,.7)}   /* marca de la mitad: lo que cuesta el doble salto */
 #stam.low i{background:linear-gradient(90deg,#ff5a3a,#ff9a5a)}
@@ -236,29 +236,6 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(
 #board tr.me td{color:var(--amber)}
 #board .tag{font-size:11px;color:var(--muted);margin-left:6px}
 /* ---------- tienda ---------- */
-#shop{position:fixed;inset:0;display:grid;place-items:center;background:rgba(6,5,8,.78);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px;overflow-y:auto}
-.shopbox{width:min(1120px,100%);display:flex;flex-direction:column;gap:12px}
-.shophead{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
-.shophead h2{margin:0;font-family:var(--display);font-weight:400;font-size:clamp(28px,4vw,40px);color:var(--ink);letter-spacing:.04em}
-.shophead .wallet{margin-left:auto;font-family:var(--display);font-size:30px;color:var(--cash);text-shadow:0 0 16px rgba(127,224,160,.35)}
-.shophead .wallet small{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-right:8px}
-#shopMsg{font-size:13px;color:var(--muted);min-height:18px}
-#shopMsg.bad{color:var(--blood)}#shopMsg.ok{color:var(--cash)}
-.shopgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;align-items:start}
-.scol{display:flex;flex-direction:column;gap:6px;min-width:0}
-.scol h3{margin:0;font-family:var(--mono);font-weight:400;font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:#0b0907;background:#7fae8f;padding:4px 8px}
-.card{position:relative;display:flex;flex-direction:column;gap:4px;padding:8px;background:rgba(40,36,34,.9);border:1px solid rgba(255,255,255,.08);color:var(--ink);font-family:var(--mono);text-align:left;cursor:pointer}
-.card:hover:not(:disabled){border-color:var(--cash);background:rgba(52,60,54,.95)}
-.card:disabled{cursor:default}
-.card img{width:100%;height:64px;object-fit:contain;filter:drop-shadow(0 2px 0 rgba(0,0,0,.6))}
-.card .nm{font-size:14px}
-.card .pr{font-size:13px;color:var(--cash);font-variant-numeric:tabular-nums}
-.card .ds{font-size:11px;line-height:1.35;color:var(--muted)}
-.card.own{border-color:#7fae8f;background:rgba(48,62,52,.9)}
-.card.own .pr{color:#0b0907;background:#7fae8f;align-self:flex-start;padding:0 6px}
-.card.poor .pr{color:var(--blood)}
-.card.poor img{opacity:.45}
-.shopfoot{font-size:12px;color:var(--muted);letter-spacing:.06em}
 /* ---------- menú ---------- */
 .kicker{font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--rust)}
 #mSub{margin:0;font-size:16px;line-height:1.5;color:var(--ink);max-width:54ch}
@@ -631,3 +608,83 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 #wheel .wslot.sel{transform:scale(1.14);border-color:#8dff3a;background:linear-gradient(rgba(40,64,44,.97),rgba(16,30,20,.97));box-shadow:0 0 18px rgba(141,255,58,.3)}
 #wheel .wfix{position:absolute;left:-150px;top:176px;width:300px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted)}
 #wheel .wfix b{font-weight:400;color:var(--bone)}
+
+/* ---------- tienda: El Mercader del Umbral ---------- */
+#shop{position:fixed;inset:0;display:grid;place-items:center;overflow-y:auto;padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));
+  background:radial-gradient(120% 90% at 22% 40%,#14231e 0,#0a1210 48%,#050807 100%);z-index:20}
+#shop::before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 120%,rgba(155,77,255,.12),transparent 55%),radial-gradient(ellipse at 50% -10%,rgba(141,255,58,.07),transparent 50%)}
+.shopbox{position:relative;width:min(1180px,100%);display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:22px;align-items:start}
+.vend{position:sticky;top:0;display:flex;flex-direction:column;gap:10px;min-width:0}
+.vend svg{width:100%;height:auto;max-height:62vh;border:1px solid rgba(127,174,143,.28);background:#070d0b;box-shadow:0 0 0 4px rgba(0,0,0,.4),0 0 38px rgba(47,107,82,.25) inset}
+.vsay{padding:10px 12px;border:1px solid rgba(127,174,143,.3);background:rgba(8,14,12,.9);font-family:Georgia,'Palatino Linotype',serif}
+.vsay b{display:block;font-weight:400;font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:#7fae8f;margin-bottom:4px}
+.vsay p{margin:0;min-height:44px;font-size:15px;font-style:italic;line-height:1.35;color:var(--bone)}
+.vsay p.say{animation:vSay .5s ease-out}
+@keyframes vSay{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.vEyes{transform-box:fill-box;transform-origin:center;animation:vBlink 6s infinite;filter:drop-shadow(0 0 5px #8dff3a)}
+.vEyes.dark{filter:none}
+@keyframes vBlink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
+.vTent{transform-box:fill-box;animation:vSway 6.5s ease-in-out infinite alternate}
+.vTent.l{transform-origin:100% 0}.vTent.r{transform-origin:0 0;animation-delay:-3s}
+@keyframes vSway{from{transform:rotate(-2.6deg)}to{transform:rotate(2.6deg)}}
+.vBeard{transform-box:fill-box;transform-origin:50% 0;animation:vSway 4.5s ease-in-out infinite alternate}
+.vBody{transform-box:fill-box;transform-origin:50% 100%;animation:vBreathe 5s ease-in-out infinite}
+@keyframes vBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.012,1.008)}}
+.vLamp .glow{animation:vFlick 2.6s steps(1) infinite}
+@keyframes vFlick{0%{opacity:1}12%{opacity:.78}20%{opacity:.95}41%{opacity:.7}55%{opacity:1}78%{opacity:.85}100%{opacity:1}}
+.stall{min-width:0;display:flex;flex-direction:column;gap:12px}
+.shophead{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid rgba(127,174,143,.35)}
+.shophead .ttl small{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:#7fae8f}
+.shophead h2{margin:2px 0 0;font-family:Georgia,'Palatino Linotype',serif;font-weight:400;font-size:clamp(30px,4.4vw,46px);letter-spacing:.12em;text-transform:uppercase;color:var(--bone);text-shadow:0 0 22px rgba(141,255,58,.25)}
+.shophead .wallet{margin-left:auto;text-align:right;font-family:var(--display);font-size:30px;color:var(--cash);text-shadow:0 0 16px rgba(127,224,160,.35)}
+.shophead .wallet small{display:block;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.22em;text-transform:uppercase}
+#shopMsg{font-family:var(--mono);font-size:13px;color:var(--muted);min-height:18px}
+#shopMsg.bad{color:var(--blood)}#shopMsg.ok{color:var(--cash)}
+.shopgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:8px;align-items:stretch}
+.shopgrid h3{grid-column:1/-1;margin:8px 0 0;font-family:var(--mono);font-weight:400;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:#7fae8f;display:flex;align-items:center;gap:10px}
+.shopgrid h3::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(127,174,143,.5),transparent)}
+.card{position:relative;display:flex;flex-direction:column;gap:4px;padding:9px 9px 8px;background:linear-gradient(rgba(24,36,31,.95),rgba(11,17,15,.95));border:1px solid rgba(127,174,143,.22);color:var(--ink);font-family:var(--mono);text-align:left;cursor:pointer;transition:border-color .12s,transform .12s,box-shadow .12s}
+.card::before,.card::after{content:"";position:absolute;width:8px;height:8px;border:1px solid #7fae8f;opacity:.55}
+.card::before{left:3px;top:3px;border-right:0;border-bottom:0}.card::after{right:3px;bottom:3px;border-left:0;border-top:0}
+.card:hover:not(:disabled){border-color:#8dff3a;transform:translateY(-1px);box-shadow:0 0 16px rgba(141,255,58,.18)}
+.card:focus-visible{outline:2px solid #8dff3a;outline-offset:1px}
+.card:disabled{cursor:default}
+.card img{width:100%;height:62px;object-fit:contain;filter:drop-shadow(0 2px 0 rgba(0,0,0,.7))}
+.card .nm{font-size:14px;color:var(--bone)}
+.card .pr{font-size:13px;color:var(--cash);font-variant-numeric:tabular-nums}
+.card .ds{font-size:11px;line-height:1.35;color:var(--muted)}
+.card.own{border-color:#7fae8f;background:linear-gradient(rgba(34,56,44,.95),rgba(14,26,20,.95))}
+.card.own .pr{color:#0b0907;background:#7fae8f;align-self:flex-start;padding:0 6px}
+.card.mine{border-color:var(--amber)}
+.card.mine .pr{color:#0b0907;background:var(--amber);align-self:flex-start;padding:0 6px}
+.card.poor .pr{color:var(--blood)}
+.card.poor img{opacity:.4}
+.shopinvbox{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 10px;border:1px dashed rgba(127,174,143,.35);background:rgba(8,14,12,.6)}
+.shopinvbox small{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--muted)}
+.shopinvbox kbd{font-family:var(--mono);padding:0 5px;border:1px solid #7fae8f;color:var(--bone)}
+.shopinvbox .fixd{margin-left:auto}
+#shopInv{display:flex;gap:6px;flex-wrap:wrap}
+#shopInv span{width:64px;height:30px;display:grid;place-items:center;border:1px solid rgba(127,174,143,.3);background:rgba(0,0,0,.35)}
+#shopInv span.on{border-color:var(--amber);box-shadow:0 0 10px rgba(255,177,43,.25)}
+#shopInv img{max-width:100%;max-height:100%;object-fit:contain}
+.shopfoot{font-family:var(--mono);font-size:12px;line-height:1.5;color:var(--muted);letter-spacing:.04em}
+.shopfoot b{font-weight:400;color:var(--bone)}
+@media (max-width:760px){.shopbox{grid-template-columns:1fr}.vend{position:static;flex-direction:row;align-items:center}.vend svg{width:38%;max-height:200px}.vsay{flex:1}}
+@media (prefers-reduced-motion:reduce){.vEyes,.vTent,.vBeard,.vBody,.vLamp .glow{animation:none}}
+
+/* ---------- menú de pausa (Esc): aparece enseguida ---------- */
+@keyframes btnFast{from{transform:translateX(-26px);opacity:0}}
+@keyframes menuFade{from{opacity:0}}
+#menu.fast{animation:menuFade .12s ease-out}
+#menu.fast.go .mrow .btn{animation:btnFast .16s ease-out backwards;animation-delay:calc(var(--i,0)*22ms)}
+#menu.fast.go .mrow .btn.primary{animation:btnFast .16s ease-out backwards,primP 2.4s ease-in-out .2s infinite}
+#menu.fast .keys{animation:panIn .18s ease-out backwards}
+@media (prefers-reduced-motion:reduce){#menu.fast{animation:none}}
+
+/* tienda compacta: una sola grilla, la categoría va como etiqueta de cada tarjeta */
+.shopgrid{grid-template-columns:repeat(auto-fill,minmax(146px,1fr))}
+.card{padding:7px 8px 7px;gap:3px}
+.card .cat{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:#7fae8f;opacity:.8}
+.card img{height:44px}
+.card .nm{font-size:13px}
+.card .ds{font-size:10.5px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}

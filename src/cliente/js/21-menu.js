@@ -2,7 +2,8 @@
 // botones de mapa en Ajustes: salen solos de los mapas de la Arena (un mapa nuevo aparece sin tocar el HTML)
 // cada mapa con su foto (si hay maps/id.jpg; si no, queda solo el nombre)
 $('sMap').innerHTML=C.MODES.arena.maps.map(id=>'<button type="button" data-v="'+id+'"><img src="maps/'+id+'.jpg" alt="" loading="lazy" onerror="this.remove()"><span>'+esc(C.MAPS[id].name.split(' · ').pop())+'</span></button>').join('');
-function showMenu(){const m=$('menu');m.hidden=false;if(!inGame){m.classList.remove('go');void m.offsetWidth;m.classList.add('go');}mFxGo();$('hud').hidden=true;if(document.pointerLockElement)document.exitPointerLock();}
+function showMenu(){const m=$('menu');m.hidden=false;m.classList.toggle('fast',!!inGame);   // en pausa el menú aparece al toque (sin la entrada lenta del inicio)
+  if(!inGame){m.classList.remove('go');void m.offsetWidth;m.classList.add('go');}mFxGo();$('hud').hidden=true;if(document.pointerLockElement)document.exitPointerLock();}
 function hideMenu(){$('menu').hidden=true;$('hud').hidden=false;['settings','lockerPanel','modePanel','limitPanel'].forEach(id=>$(id).hidden=true);['bSet','bLocker'].forEach(id=>$(id).setAttribute('aria-expanded','false'));updateHUD();}
 function openPause(){
   if(!inGame)return;

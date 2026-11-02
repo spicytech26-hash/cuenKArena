@@ -23,6 +23,7 @@ function onMsg(m){
       me.mag=fullMags();me.rel=0;me.scope=false;me.inspT=9;me.lastW=me.w===0?C.primaryOf(m.ow||me.ow):0;
       if(MODE==='gungame'&&m.w!=null)me.w=m.w;
       else{me.w=[6,5,3,2,4,1].find(i=>me.ow[i]&&hasAmmo(i));if(me.w==null)me.w=0;}
+      if(!G.warm){G.warm=1;setTimeout(warmIcons,2500);}
       spEnd();
       $('deathBox').hidden=true;showWeapon();SFX.respawn(1);updateHUD();
       break;
@@ -163,8 +164,8 @@ function onEvent(m){
     }
     case 'buy': {
       const it=C.SHOP.find(s=>s.id===m.id);
-      if(m.ok){SFX.buy();shopMsg((it?it.name:'')+(m.eq?' equipada':' comprado'),'ok');}
-      else{SFX.deny();shopMsg(m.why||'No se pudo comprar','bad');}
+      if(m.ok){SFX.buy();shopMsg((it?it.name:'')+(m.eq?' equipada':' comprado'),'ok');vendSay(m.eq?'eq':'buy');}
+      else{SFX.deny();shopMsg(m.why||'No se pudo comprar','bad');vendSay(/faltan/i.test(m.why||'')?'poor':'eq');}
       break;
     }
     case 'shard': for(const s of m.l)addShard(s[0],s[1],s[2],s[3],s[4],s[5],s[6]);break;

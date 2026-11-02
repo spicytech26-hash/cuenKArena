@@ -4,26 +4,47 @@ const XH_NAMES={cruz:'Cruz',cruzgap:'Cruz chica',cruzpunto:'Cruz con punto',punt
 const XH_COLS=['#ffffff','#00ff66','#ffe14a','#ff3b3b','#3fd2ff','#ff4fd8','#ff9a1f','#111111'];
 function xhSVG(st,col,z){
   // cada forma se dibuja dos veces: un borde oscuro para que se vea sobre cualquier fondo y el color encima
+  // los brazos van en grupos .xa (con su dirección) para separarlos al moverte; las formas redondas son .xs y crecen enteras
   const L=(x1,y1,x2,y2)=>'<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'"/>',dot='<circle r="1.6" stroke="none" fill="C"/>';
+  const A=(dx,dy,l)=>'<g class="xa" data-d="'+dx+','+dy+'">'+l+'</g>',S4=(a,b)=>A(-1,0,L(-b,0,-a,0))+A(1,0,L(a,0,b,0))+A(0,-1,L(0,-b,0,-a))+A(0,1,L(0,a,0,b));
+  const XS=q=>'<g class="xs">'+q+'</g>';
   let p='',w=2;
   switch(st){
-    case 'cruz':p=L(-9,0,-3,0)+L(3,0,9,0)+L(0,-9,0,-3)+L(0,3,0,9);break;
-    case 'cruzgap':p=L(-7,0,-3.5,0)+L(3.5,0,7,0)+L(0,-7,0,-3.5)+L(0,3.5,0,7);w=1.6;break;
-    case 'cruzpunto':p=L(-9,0,-4,0)+L(4,0,9,0)+L(0,-9,0,-4)+L(0,4,0,9)+dot;break;
+    case 'cruz':p=S4(3,9);break;
+    case 'cruzgap':p=S4(3.5,7);w=1.6;break;
+    case 'cruzpunto':p=S4(4,9)+dot;break;
     case 'punto':p='<circle r="2.2" stroke="none" fill="C"/>';break;
-    case 'circulo':p='<circle r="6" fill="none"/>';w=1.6;break;
-    case 'circulopunto':p='<circle r="7" fill="none"/>'+dot;w=1.4;break;
-    case 'anillo':p='<circle r="7.5" fill="none" stroke-dasharray="3.1 2.8"/>';w=1.6;break;
-    case 'fina':p=L(-12,0,-3,0)+L(3,0,12,0)+L(0,3,0,6);w=1.3;break;
-    case 't':p=L(-9,0,-3,0)+L(3,0,9,0)+L(0,3,0,9);break;
-    case 'mas':p='<path d="M-2.5 -9 H2.5 V-2.5 H9 V2.5 H2.5 V9 H-2.5 V2.5 H-9 V-2.5 H-2.5Z" fill="none" stroke-linejoin="round"/>';w=1.4;break;
-    case 'x':p=L(-7,-7,7,7)+L(-7,7,7,-7);w=1.8;break;
-    case 'cortes':p='<path d="M-5 -6 Q-9 0 -5 6" fill="none"/><path d="M5 -6 Q9 0 5 6" fill="none"/>'+dot;w=1.6;break;
+    case 'circulo':p=XS('<circle r="6" fill="none"/>');w=1.6;break;
+    case 'circulopunto':p=XS('<circle r="7" fill="none"/>')+dot;w=1.4;break;
+    case 'anillo':p=XS('<circle r="7.5" fill="none" stroke-dasharray="3.1 2.8"/>');w=1.6;break;
+    case 'fina':p=A(-1,0,L(-12,0,-3,0))+A(1,0,L(3,0,12,0))+A(0,1,L(0,3,0,6));w=1.3;break;
+    case 't':p=A(-1,0,L(-9,0,-3,0))+A(1,0,L(3,0,9,0))+A(0,1,L(0,3,0,9));break;
+    case 'mas':p=XS('<path d="M-2.5 -9 H2.5 V-2.5 H9 V2.5 H2.5 V9 H-2.5 V2.5 H-9 V-2.5 H-2.5Z" fill="none" stroke-linejoin="round"/>');w=1.4;break;
+    case 'x':p=A(-.7,-.7,L(-7,-7,-2,-2))+A(.7,-.7,L(2,-2,7,-7))+A(-.7,.7,L(-7,7,-2,2))+A(.7,.7,L(2,2,7,7));w=1.8;break;
+    case 'cortes':p=A(-1,0,'<path d="M-5 -6 Q-9 0 -5 6" fill="none"/>')+A(1,0,'<path d="M5 -6 Q9 0 5 6" fill="none"/>')+dot;w=1.6;break;
   }
   const g=(c,ww,o)=>'<g stroke="'+c+'" stroke-width="'+ww+'" stroke-linecap="round" opacity="'+o+'">'+p.replace(/fill="C"/g,'fill="'+c+'"')+'</g>';
   return '<svg viewBox="-16 -16 32 32" aria-hidden="true"><g transform="scale('+z+')">'+g('#000',w+2,.55)+g(col,w,1)+'</g></svg>';
 }
-function applyCrosshair(){const m=S.mira;$('xh').innerHTML=xhSVG(m.s,m.c,m.z);$('xhPrevIn').innerHTML=xhSVG(m.s,m.c,m.z);
+/* Mira dinámica (como Counter-Strike): se abre al moverte, saltar y disparar; se cierra quieto y más todavía agachado.
+   Hoy es solo visual: no cambia la dispersión real de las armas. */
+const XH={sp:0,last:99,arms:[],sc:[]};
+function xhBind(){const sv=$('xh').firstChild;XH.arms=sv?[...sv.querySelectorAll('.xa')].map(e=>{const d=e.getAttribute('data-d').split(',');return [e,+d[0],+d[1]];}):[];XH.sc=sv?[...sv.querySelectorAll('.xs')]:[];XH.last=99;xhApply();}
+function xhApply(){const k=XH.sp;if(Math.abs(k-XH.last)<.03)return;XH.last=k;
+  for(const a of XH.arms)a[0].setAttribute('transform','translate('+(a[1]*k).toFixed(2)+' '+(a[2]*k).toFixed(2)+')');
+  const sc=(1+k*.07).toFixed(3);for(const e of XH.sc)e.setAttribute('transform','scale('+sc+')');}
+function xhUpdate(dt){
+  if(!me.alive)return;
+  const s=me.s,hs=Math.hypot(s.vx,s.vz);
+  let t=Math.min(1.5,hs/10)*5.5;      // corriendo: abierta
+  if(!s.on)t+=6;                      // en el aire: más abierta todavía
+  t+=me.bloom||0;                     // cada disparo la abre un poco
+  if(s.crouch)t=t*.5-1.4;             // agachado: más cerrada que parado y quieto
+  me.bloom=Math.max(0,(me.bloom||0)-dt*14);
+  XH.sp+=(t-XH.sp)*Math.min(1,dt*(t>XH.sp?20:9));   // se abre rápido y se cierra con calma
+  xhApply();
+}
+function applyCrosshair(){const m=S.mira;$('xh').innerHTML=xhSVG(m.s,m.c,m.z);$('xhPrevIn').innerHTML=xhSVG(m.s,m.c,m.z);xhBind();
   [...$('xhGrid').children].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.s===m.s)));
   [...$('xhCols').querySelectorAll('button')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===m.c)));
   $('sXz').value=m.z;$('oXz').textContent=Math.round(m.z*100)+'%';const ci=$('xhColC');if(ci)ci.value=m.c;}

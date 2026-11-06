@@ -126,15 +126,15 @@ const CARD_FX = {
   BLAST_R: 5.5, BLAST_DMG: 85              // carga mortal: 85 en el centro, 42 en el borde
 };
 const CARDS = [
-  { id: 'vampiro',     name: 'Vampirismo',       desc: 'Te curás con el 30% del daño que hacés',            c: '#d4120f', ic: 'gota' },
-  { id: 'cohetero',    name: 'Cohetero',         desc: 'Tus explosiones no te lastiman: rocket jump gratis', c: '#ff7a1a', ic: 'cohete' },
-  { id: 'bomba',       name: 'Carga mortal',     desc: 'Al morir explotás y te llevás al que esté cerca',    c: '#ffb347', ic: 'bomba' },
-  { id: 'igneo',       name: 'Toque ígneo',      desc: 'Al que golpeás lo dejás prendido fuego 3 s',         c: '#ff4a1a', ic: 'llama' },
-  { id: 'carnicero',   name: 'Carnicero',        desc: '+15% de daño con todas las armas',                   c: '#8dff3a', ic: 'colmillo' },
-  { id: 'coraza',      name: 'Coraza',           desc: 'Aguantás un 15% más: recibís menos daño',            c: '#9b4dff', ic: 'escudo' },
-  { id: 'botin',       name: 'Botín de guerra',  desc: '+60% de créditos por cada baja',                     c: '#7fe0a0', ic: 'moneda' },
-  { id: 'trofeo',      name: 'Trofeo',           desc: 'Cada baja te suma 25 de blindaje',                   c: '#38d6c4', ic: 'placa' },
-  { id: 'sanguijuela', name: 'Hambre de sangre', desc: 'Cada baja te cura 40 de vida',                       c: '#ff5c8a', ic: 'corazon' }
+  { id: 'vampiro',     name: 'Vampirismo',       desc: 'Te curás con el 30% del daño que hacés',            c: '#d4120f', ic: 'gota',     stat: '30% del daño hecho · tope 100 de vida' },
+  { id: 'cohetero',    name: 'Cohetero',         desc: 'Tus explosiones no te lastiman: rocket jump gratis', c: '#ff7a1a', ic: 'cohete',   stat: 'autodaño 0 (antes 28% del cohete)' },
+  { id: 'bomba',       name: 'Carga mortal',     desc: 'Al morir explotás y te llevás al que esté cerca',    c: '#ffb347', ic: 'bomba',    stat: '85 en el centro · 42 al borde · 5,5 m' },
+  { id: 'igneo',       name: 'Toque ígneo',      desc: 'Al que golpeás lo dejás prendido fuego 3 s',         c: '#ff4a1a', ic: 'llama',    stat: '4 de daño cada 0,5 s durante 3 s' },
+  { id: 'carnicero',   name: 'Carnicero',        desc: 'Pegás más fuerte con todas las armas',               c: '#8dff3a', ic: 'colmillo', stat: '×1,15 de daño' },
+  { id: 'coraza',      name: 'Coraza',           desc: 'Aguantás más: todo lo que te pega hace menos',       c: '#9b4dff', ic: 'escudo',   stat: '×0,85 de daño recibido' },
+  { id: 'botin',       name: 'Botín de guerra',  desc: 'Cada baja te deja más plata para la tienda',         c: '#7fe0a0', ic: 'moneda',   stat: '×1,6 de créditos por baja' },
+  { id: 'trofeo',      name: 'Trofeo',           desc: 'Cada baja te suma blindaje al toque',                c: '#38d6c4', ic: 'placa',    stat: '+25 de blindaje · tope 100' },
+  { id: 'sanguijuela', name: 'Hambre de sangre', desc: 'Cada baja te devuelve vida al instante',             c: '#ff5c8a', ic: 'corazon',  stat: '+40 de vida · tope 100' }
 ];
 const CARD_BY = {}; for (const c of CARDS) CARD_BY[c.id] = c;
 const hasCard = (p, id) => !!(p && p.cards && p.cards.indexOf(id) >= 0);

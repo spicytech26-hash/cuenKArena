@@ -23,7 +23,7 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | Archivo | Qué tiene |
 |---|---|
 | `src/nucleo/00-encabezado.js` | apertura del módulo (UMD) |
-| `src/nucleo/01-datos.js` | física `K`, **`WEAPONS` (daño, cadencia, cargador)**, `ITEMS` (respawn), munición, `SHOP` (tienda y precios), `ECON`, **`MODES`** (modos y qué mapas usan; `cards` prende las cartas), **`CARDS`/`CARD_FX`** (cartas de mejora), gungame, equipos, XP, niveles y medallas |
+| `src/nucleo/01-datos.js` | física `K`, **`WEAPONS` (daño, cadencia, cargador)**, `ITEMS` (respawn), munición, `SHOP` (tienda y precios), `ECON`, **`MODES`** (modos y qué mapas usan; `cards` prende las cartas), **`CARDS`/`CARD_FX`** (cartas de mejora; cada carta lleva `stat` con sus números para el grimorio), gungame, equipos, XP, niveles y medallas |
 | `src/nucleo/02-kit-mapas.js` | `mapKit()` (`add`, `ramp`, `wall`, `stairs`, `mover`, `I`, `finish`), `MAPDEFS` y `mapFromData()` (mapas del editor) |
 | `src/nucleo/02-mapas/N-id.js` | **un archivo por mapa**: 1 represa, 2 humita (el id interno sigue siendo `panymanteca`, no cambiarlo: lo usan los ajustes guardados, la votación y `public/maps/panymanteca.jpg`), 3 lacuenca, 4 puente (CTF), 5 fuertes (francotiradores), 6 cuartotramo, 7 skatenight (de noche, con linternas), 8 pyramid (noche lovecraftiana sin linterna, 5 niveles con pozo de **gravedad cero**: `zerog` en el mapa + `inZeroG`/`ZG` en `04-fisica.js`; usa `navMaxY` para que los bots naveguen por encima de 12,5 m y `theme.ambiente:'piramide'` para su sonido). Cada uno termina con `MAPDEFS.id = función;` (el `id`, no el nombre del archivo) |
 | `src/nucleo/03-registro-mapas.js` | arma `MAPS`, apariciones seguras, alias de mapas viejos, plataformas móviles, mapa de prueba del editor |
@@ -64,7 +64,7 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `js/14b-cartas.js` | **cartas de mejora**: la mano del jugador las reparte abajo a la derecha, subiendo desde el borde (`openCards`; el guante es SVG armado en `svgMano` con los colores de `skinParts`), mazo de abajo a la izquierda, chispas del fuego |
 | `js/15-entrada.js` | teclado, mouse, menú de echar (Y) |
 | `js/16-simulacion.js` | movimiento propio e interpolación de los demás |
-| `js/17-hud.js` | HUD, fila de líderes por bajas (`renderKillRow`, solo Arena y Gungame) |
+| `js/17-hud.js` | HUD, fila de líderes por bajas (`renderKillRow`, solo Arena y Gungame) y **El Grimorio del Umbral** (`renderGrimorio`): la grilla de cartas abajo del tablero (Tab) |
 | `js/18-camara.js` | cámara, arma en mano y jugadores remotos (`updRemote`) |
 | `js/18-noche.js` | **modo noche** (mapas con `theme.noche`, hoy solo Skatenight; la linterna se prende con **G**, la T es el chat. Pyramid NO es de noche: su música y ambiente van por `theme.ambiente:'piramide'` en `pyramidAmbient`): linterna del arma, haces y focos de los rivales, visores apagados (`updNight`, `nightRemote`) |
 | `js/18-tercera-persona.js` | **vista en tercera persona** (H alterna, J cambia de hombro; Ajustes → Video): cámara sobre el hombro con choque contra paredes, modelo propio animado (`updMiModelo`), apuntado hacia el punto de la mira (`tpApunte`) y boca del arma (`tpMuzzle`). El estado va en `TP` y en `S.view`, `S.shoulder`, `S.tpd` |

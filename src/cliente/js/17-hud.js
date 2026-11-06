@@ -55,11 +55,33 @@ function renderBoard(){
     '<td>'+(s[5]||!online?'–':s[4]||'–')+'</td></tr>';
   if(tm)$('bBody').innerHTML=[0,1].map(t=>'<tr class="team"><td></td><td colspan="5" style="color:'+TEAMS[t].c+'">Equipo '+TEAMS[t].name+' · '+TS[t]+'</td></tr>'+scores.filter(s=>s[9]===t).map(row).join('')).join('');
   else $('bBody').innerHTML=scores.map(row).join('');
+  renderGrimorio();
+}
+/* ---- El Grimorio del Umbral: la chuleta de cartas que va abajo del tablero (Tab) ---- */
+let grimCache='';
+function renderGrimorio(){
+  const box=$('grimorio'),on=!!(C.MODES[MODE]&&C.MODES[MODE].cards);
+  $('board').classList.toggle('congrim',on);
+  if(!on){if(!box.hidden){box.hidden=true;box.innerHTML='';}grimCache='';return;}
+  box.hidden=false;
+  const mias=me.cards||[],falta=C.CARD_AT[mias.length],clave=mias.join(',')+'|'+(falta==null?'-':Math.max(0,falta-(me.kills||0)));
+  if(clave===grimCache)return;grimCache=clave;
+  const cuando=C.CARD_AT.map((n,i)=>'<i'+(i<mias.length?' class="ya"':'')+'>'+n+'</i>').join('<s>·</s>');
+  box.innerHTML='<div class="grhead"><b>El Grimorio del Umbral</b>'+
+    '<span class="grwhen">Surtido a las '+cuando+' bajas</span>'+
+    '<span class="grnote">Tres al azar, te quedás con una · máximo '+C.CARD_MAX+' por partida · duran hasta que termina</span>'+
+    '<span class="grnext">'+(falta==null?'mazo completo':'próxima en '+Math.max(0,falta-(me.kills||0))+' baja'+(Math.max(0,falta-(me.kills||0))===1?'':'s'))+'</span></div>'+
+    '<div class="grgrid">'+C.CARDS.map(c=>{
+      const tengo=mias.indexOf(c.id)>=0;
+      return '<div class="grc'+(tengo?' mia':'')+'" style="--cc:'+c.c+'">'+(tengo?'<em>en mano</em>':'')+
+        '<span class="gric">'+cardIcon(c.ic)+'</span><b>'+esc(c.name)+'</b>'+
+        '<u>'+esc(c.stat||'')+'</u><p>'+esc(c.desc)+'</p></div>';
+    }).join('')+'</div>';
 }
 function applyMode(){
   const gg=MODE==='gungame',tm=teamsMode();
   $('tCrBox').hidden=!C.MODES[MODE].shop;$('shopHint').hidden=!C.MODES[MODE].shop;$('kickHint').hidden=!online;$('mapHint').hidden=C.MODES[MODE].maps.length<2;$('tLvlBox').hidden=!gg;$('tNextBox').hidden=!gg;
   $('ctfBox').hidden=!tm;$('carry').hidden=true;$('tRank').parentElement.hidden=tm;$('lobbyBox').hidden=true;
-  $('slots').innerHTML='';krCache.v='';renderMyCards();updateHUD();
+  $('slots').innerHTML='';krCache.v='';grimCache='';renderMyCards();updateHUD();
 }
 

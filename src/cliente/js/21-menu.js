@@ -109,7 +109,6 @@ function syncSettings(){
   $('sMerc').checked=S.merc!==false;$('sMred').checked=!!S.mred;$('oBots').textContent=S.bots;
   [...$('sSkill').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.skill)));
   [...$('mSkill').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.skill)));
-  [...$('sFl').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.fl)));
   [...$('sMap').children].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===S.map)));
   [...$('sQ').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.q)));
   [...$('sView').children].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===S.view)));[...$('sShoulder').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===(S.shoulder||1))));[...$('sTpd').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===(S.tpd||1))));
@@ -173,7 +172,6 @@ function goFullscreen(){
 addEventListener('beforeunload',e=>{if(inGame){e.preventDefault();e.returnValue='';}});
 $('bMinus').addEventListener('click',()=>changeBots(-1));$('bPlus').addEventListener('click',()=>changeBots(1));
 $('sSkill').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.skill=+v;saveS();syncSettings();if(net&&!online)net.send({t:'cfg',skill:S.skill});});
-$('sFl').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.fl=+v;saveS();syncSettings();if(net&&!online)net.send({t:'cfg',fl:S.fl});});
 $('sMap').addEventListener('click',e=>{const b=e.target.closest('button'),v=b&&b.dataset.v;if(!v)return;S.map=v;saveS();syncSettings();if(net&&!online)net.send({t:'cfg',map:v});else if(!inGame)loadMap(v);});
 $('sSh').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.sh=+v;saveS();syncSettings();if(level&&level.sun){level.sun.castShadow=!!S.sh;renderer.shadowMap.needsUpdate=true;}scene.traverse(o=>{if(o.material)o.material.needsUpdate=true;});SFX.ui();});
 $('sView').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.view=v;saveS();syncSettings();});

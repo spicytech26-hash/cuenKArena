@@ -3155,7 +3155,9 @@ class Game {
       this.bcast({ t: 'ev', e: 'sys', m: att.name + ' hizo una racha de 6 bajas: ¡desbloqueó la escopeta doble!' });
     }
     this.sendScores();
-    if (won || (scoring && !this.mode.gg && !this.mode.teams && att && att !== v && att.frags >= this.o.fraglimit)) this.endMatch();
+    // Arena termina siempre por tiempo: el límite de frags no aportaba nada (5 minutos, casi nunca se llegaba).
+    // Queda detrás de `fragLimit` por si algún modo lo quiere de vuelta; los modos por equipos usan `teamLimit`.
+    if (won || (scoring && this.mode.fragLimit && !this.mode.gg && !this.mode.teams && att && att !== v && att.frags >= this.o.fraglimit)) this.endMatch();
     if (scoring && hasCard(v, 'bomba')) this.deathBlast(v);   // carta Carga mortal: explota al morir
   }
   /* ---- gungame: subir y bajar de nivel ---- */

@@ -33,7 +33,7 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `src/nucleo/07-partida/1-base.js` | clase `Game`: constructor, conexiones, mensajes de los clientes, votación para echar |
 | `src/nucleo/07-partida/2-aparicion-tienda.js` | aparecer, equipo inicial, tienda, créditos |
 | `src/nucleo/07-partida/3-disparos.js` | disparos, proyectiles, **explosiones (daño de área)**, fuego de molotov |
-| `src/nucleo/07-partida/4-danio.js` | daño, blindaje, muertes, rachas, gungame |
+| `src/nucleo/07-partida/4-danio.js` | daño, blindaje, muertes, rachas, gungame. **Arena termina siempre por tiempo**: el corte por frags quedó detrás de la bandera `fragLimit` del modo (hoy ningún modo la prende); los modos por equipos usan `teamLimit` |
 | `src/nucleo/07-partida/5-banderas-items.js` | captura la bandera, **`give()` (qué da cada ítem)**, sifón, recoger ítems |
 | `src/nucleo/07-partida/6-ciclo.js` | puntajes, fin de partida, votación de mapa, bots de relleno, `tick`, snapshot |
 | `src/nucleo/07-partida/6b-cartas.js` | **cartas de mejora** (roguelike): reparto a las 3, 7 y 12 bajas (`CARD_AT`), elección, fuego del toque ígneo y explosión al morir |

@@ -1359,7 +1359,6 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
                 <div class="srow"><span>Mapa</span><div class="seg mapseg" id="sMap" role="group" aria-label="Mapa"><button type="button" data-v="represa">La Represa</button><button type="button" data-v="panymanteca">Humita</button><button type="button" data-v="lacuenca">La Cuenca</button></div></div>
                 <div class="srow"><span>Bots en la arena</span><div class="stepper"><button type="button" id="bMinus" aria-label="Sacar un bot">−</button><output id="oBots"></output><button type="button" id="bPlus" aria-label="Agregar un bot">+</button></div></div>
                 <div class="srow"><span>Dificultad</span><div class="seg" id="sSkill" role="group" aria-label="Dificultad"><button type="button" data-v="0">Fácil</button><button type="button" data-v="1">Normal</button><button type="button" data-v="2">Difícil</button><button type="button" data-v="3">Pesadilla</button></div></div>
-                <div class="srow"><span>Límite de frags</span><div class="seg" id="sFl" role="group" aria-label="Límite de frags"><button type="button" data-v="10">10</button><button type="button" data-v="20">20</button><button type="button" data-v="30">30</button><button type="button" data-v="50">50</button></div></div>
                 <p class="note">El mapa vale para Arena, Gungame y Team Deathmatch; Captura la bandera se juega en El Puente. En la práctica, los bots se agregan o sacan al instante con <b>+</b> y <b>−</b>. Online, desde el chat: <b>/bots 6</b>, <b>/skill 2</b>, <b>/fraglimit 30</b>, <b>/caplimit 3</b>, <b>/map pan</b>.</p>
               </div>
             </div>
@@ -5218,7 +5217,7 @@ function renderKillRow(){
 function renderBoard(){
   const tl=Math.max(0,timeLeft),gg=MODE==='gungame',ctf=MODE==='ctf',tm=teamsMode();
   $('bTitle').textContent=C.MODES[MODE].name+' · '+W.name;
-  const goal=ctf?'primero a '+capLimit+' capturas':MODE==='tdm'?'primer equipo a '+fragLimit+' bajas'+(matchState==='play'?'':' · esperando jugadores'):gg?'primero en completar '+GG.length+' niveles':'primero a '+fragLimit+' frags';
+  const goal=ctf?'primero a '+capLimit+' capturas':MODE==='tdm'?'primer equipo a '+fragLimit+' bajas'+(matchState==='play'?'':' · esperando jugadores'):gg?'primero en completar '+GG.length+' niveles':'gana el que más frags haga';
   $('bMeta').textContent=(online?'Online':'Práctica')+' · '+goal+' · quedan '+Math.floor(tl/60)+':'+String(tl%60).padStart(2,'0');
   $('thX').textContent=gg?'Nivel':ctf?'Capturas':'Créditos';
   const row=(s,i)=>'<tr class="'+(s[0]===myId?'me':'')+'"><td>'+(i+1)+'</td><td>'+(s[11]>0?medalSVG(s[11],20):'')+'<span class="sw" style="background:'+esc(s[6])+'"></span>'+esc(s[1])+(s[5]?'<span class="tag">bot</span>':'')+'</td><td>'+s[2]+'</td><td>'+s[3]+'</td>'+
@@ -6312,7 +6311,6 @@ function syncSettings(){
   $('sMerc').checked=S.merc!==false;$('sMred').checked=!!S.mred;$('oBots').textContent=S.bots;
   [...$('sSkill').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.skill)));
   [...$('mSkill').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.skill)));
-  [...$('sFl').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.fl)));
   [...$('sMap').children].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===S.map)));
   [...$('sQ').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.q)));
   [...$('sView').children].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===S.view)));[...$('sShoulder').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===(S.shoulder||1))));[...$('sTpd').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===(S.tpd||1))));
@@ -6376,7 +6374,6 @@ function goFullscreen(){
 addEventListener('beforeunload',e=>{if(inGame){e.preventDefault();e.returnValue='';}});
 $('bMinus').addEventListener('click',()=>changeBots(-1));$('bPlus').addEventListener('click',()=>changeBots(1));
 $('sSkill').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.skill=+v;saveS();syncSettings();if(net&&!online)net.send({t:'cfg',skill:S.skill});});
-$('sFl').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.fl=+v;saveS();syncSettings();if(net&&!online)net.send({t:'cfg',fl:S.fl});});
 $('sMap').addEventListener('click',e=>{const b=e.target.closest('button'),v=b&&b.dataset.v;if(!v)return;S.map=v;saveS();syncSettings();if(net&&!online)net.send({t:'cfg',map:v});else if(!inGame)loadMap(v);});
 $('sSh').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.sh=+v;saveS();syncSettings();if(level&&level.sun){level.sun.castShadow=!!S.sh;renderer.shadowMap.needsUpdate=true;}scene.traverse(o=>{if(o.material)o.material.needsUpdate=true;});SFX.ui();});
 $('sView').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.view=v;saveS();syncSettings();});

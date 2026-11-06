@@ -396,9 +396,9 @@ Con **H** (o en Ajustes → Video) pasás de primera a tercera persona: la cáma
 
 En **Arena**, **Team Deathmatch** y **Captura la bandera** cada partida te arma un personaje distinto. A las **3, 7 y 10 bajas** te aparecen **abajo a la derecha tres cartas al azar** (de nueve) y te quedás con una: **máximo 3 por partida**. Cada ronda cuesta más que la anterior. Duran hasta que termina la partida y se borran en la siguiente. En Gungame y Francotiradores no hay cartas.
 
-Las cartas son de **papel viejo con tinta sepia**, al estilo del Mercader del Umbral: salen desde abajo de la pantalla y te las sostiene **tu propio robot con las manos** (el antebrazo y los dedos se dibujan con los colores de tu skin: guante, brazo y visor), montadas en abanico y con un vaivén suave. Mientras las tenés abiertas, las ranuras de armas y los carteles de teclas se corren de la vista.
+Las cartas son de **papel viejo con tinta sepia**, al estilo del Mercader del Umbral, y **las sostiene tu propio robot en 3D**: la mano y el antebrazo son los mismos que ves en primera persona, con los colores de tu skin, y suben desde abajo a la derecha con las tres cartas abiertas en abanico y un vaivén suave. No se toca el arma ni la cámara: seguís corriendo, apuntando y disparando mientras elegís. Si estás muerto, de espectador o en tercera persona, se muestran planas en el HUD. Mientras elegís, las ranuras de armas y los carteles de teclas se corren de la vista.
 
-- Se elige con **1 · 2 · 3** (o con un clic, si tenés el mouse libre). La mano **no te traba nada**: el arma en pantalla sigue como estaba y podés correr, apuntar y disparar mientras decidís.
+- Se elige con **1 · 2 · 3** (cada carta lleva su número estampado en la esquina). La mano **no te traba nada**: el arma en pantalla sigue como estaba y podés correr, apuntar y disparar mientras decidís.
 - Si dejás pasar los **12 segundos** (la barra naranja de abajo), te quedás con la primera.
 - Los **bots** también reciben cartas, al azar y al instante, así no quedan en desventaja.
 - Las que ya tenés quedan de muestra **abajo a la izquierda** (debajo del chat), con el cartel de cuántas bajas te faltan para la próxima.

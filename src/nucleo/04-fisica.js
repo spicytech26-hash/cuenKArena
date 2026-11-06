@@ -115,10 +115,11 @@ const ZG = { DRIFT: -4.5, VSPEED: 9.5, HSPEED: .7 };
 /* Movimiento avanzado (solo lo usa el cliente humano con cmd.mech; los bots siguen con el movimiento de siempre).
    Stamina 0..1: deslizar gasta un poco, el doble salto gasta la mitad; el salto de pared es gratis. */
 const MV = {
-  SL_MIN: 6, SL_BOOST: 3, SL_MAX: 16, SL_END: 3.4, SL_FRIC: .9, SL_STEER: .6,   // deslizamiento: velocidad mínima para arrancar, empujón, tope, velocidad a la que se corta, fricción, control
-  SL_START: .06, SL_DRAIN: .12,                                                      // costo de stamina: al arrancar y por segundo
-  DJ_COST: .25, DJ_JUMP: 1.15,                                                       // doble salto: un cuarto de la barra, y sube más que antes
-  WJ_UP: 1.05, WJ_OUT: 6.5, WJ_CD: .3, WJ_REACH: .14,                                // salto de pared: impulso arriba y hacia afuera, espera entre saltos, distancia a la pared
+  SL_MIN: 5, SL_BOOST: 5.5, SL_MAX: 19, SL_END: 3, SL_FRIC: .65, SL_STEER: .7,    // deslizamiento (estilo Deadlock): velocidad mínima para arrancar, empujón, tope, velocidad a la que se corta, fricción, control
+  SL_START: 0, SL_DRAIN: 0,                                                      // el deslizamiento no gasta stamina
+  DJ_COST: .25, DJ_JUMP: 1.3,                                                    // doble salto: un cuarto de la barra, altura fija (siempre la misma)
+  WJ_UP: 1.1, WJ_OUT: 7, WJ_CD: .25, WJ_REACH: .14,                              // salto de pared: impulso arriba y hacia afuera, espera entre saltos, distancia a la pared
+  WJ_COST: .12, WJ_FAT: 1.25, WJ_LOSS: .18, WJ_MINUP: .6,                        // el primero es gratis; los siguientes dentro de 1,25 s gastan stamina y suben menos (fatiga)
   REGEN: .22, REGEN_DELAY: .7, COYOTE: .09
 };
 // ¿hay una pared pegada al cuerpo? devuelve la normal (hacia afuera de la pared) o null
@@ -150,15 +151,15 @@ function pmove(W, s, cmd, dt) {
   let mech = false;
   if (cmd.mech) {
     mech = true;
-    if (s.stam === undefined) { s.stam = 1; s.stT = 0; s.dj = false; s.slide = false; s.wjT = 0; s.offT = 0; s.didJump = false; s.upPrev = false; s.crPrev = false; }
+    if (s.stam === undefined) { s.stam = 1; s.stT = 0; s.dj = false; s.slide = false; s.wjT = 0; s.offT = 0; s.didJump = false; s.upPrev = false; s.crPrev = false; s.wjN = 0; s.wjF = 0; }
     const press = !!cmd.up && !s.upPrev, crPress = !!cmd.crouch && !s.crPrev;
     s.upPrev = !!cmd.up; s.crPrev = !!cmd.crouch;
-    s.wjT = Math.max(0, s.wjT - dt); s.stT = Math.max(0, s.stT - dt);
+    s.wjT = Math.max(0, s.wjT - dt); s.wjF = Math.max(0, (s.wjF || 0) - dt); if (s.wjF <= 0) s.wjN = 0; s.stT = Math.max(0, s.stT - dt);
     if (s.on) { s.dj = false; s.didJump = false; s.offT = 0; } else s.offT += dt;
     const zg = W.zerog && inZeroG(W, s);
     // deslizamiento: Ctrl en el piso yendo rápido (solo arranca al apretar, no al llegar corriendo con Ctrl ya apretado)
     if (!cmd.crouch || !s.on || zg) s.slide = false;
-    else if (crPress && !s.slide && s.stam > MV.SL_START && Math.hypot(s.vx, s.vz) >= MV.SL_MIN) {
+    else if (crPress && !s.slide && Math.hypot(s.vx, s.vz) >= MV.SL_MIN) {
       s.slide = true; s.stam = Math.max(0, s.stam - MV.SL_START); s.stT = MV.REGEN_DELAY;
       const sp = Math.hypot(s.vx, s.vz), k = Math.min(MV.SL_MAX, sp + MV.SL_BOOST) / sp; s.vx *= k; s.vz *= k;
     }
@@ -169,7 +170,9 @@ function pmove(W, s, cmd, dt) {
       if (wn) {   // salto de pared: gratis; te empuja hacia afuera y conserva lo que llevabas a lo largo de la pared
         const along = s.vx * -wn.z + s.vz * wn.x;
         s.vx = wn.x * MV.WJ_OUT + -wn.z * along; s.vz = wn.z * MV.WJ_OUT + wn.x * along;
-        s.vy = K.JUMP * MV.WJ_UP; s.wjT = MV.WJ_CD; s.didJump = true; out.wj = true;
+        const n = s.wjN || 0, fat = Math.max(MV.WJ_MINUP, 1 - MV.WJ_LOSS * n);   // fatiga: cada salto seguido sube menos
+        if (n > 0) { s.stam = Math.max(0, s.stam - MV.WJ_COST); s.stT = MV.REGEN_DELAY; }   // sin stamina igual salta (sirve para escapar), pero con fatiga
+        s.vy = K.JUMP * MV.WJ_UP * fat; s.wjN = n + 1; s.wjF = MV.WJ_FAT; s.wjT = MV.WJ_CD; s.didJump = true; out.wj = n + 1;
       } else if (!s.didJump && s.offT < MV.COYOTE) {   // recién te caíste del borde: cuenta como salto normal
         s.vy = K.JUMP; s.didJump = true; out.jumped = true;
       } else if (!s.dj && s.stam >= MV.DJ_COST - 1e-6) {   // doble salto: uno solo por vuelo (hasta tocar el piso), cuesta un cuarto de la barra

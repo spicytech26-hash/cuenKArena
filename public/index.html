@@ -4597,9 +4597,9 @@ function updMe(dt){
   if(r.zerog&&!me.zg)SFX.zero(1);me.zg=r.zerog;
   me.jumpHeld=jumpKey;
   if(r.jumped)SFX.jump();
-  if(r.dj){SFX.dj();fxAire(me.s.x,me.s.y,me.s.z,.55,.8,1);}   // doble salto: gasta la mitad de la barra
-  if(r.wj){SFX.wj();fxAire(me.s.x,me.s.y+.9,me.s.z,.9,.7,.5);}   // salto de pared: gratis
-  if(r.slide&&!me.sliding)SFX.slide();me.sliding=r.slide;
+  if(r.dj){SFX.dj();fxAire(me.s.x,me.s.y,me.s.z,.55,.8,1);me.fovPunch=(me.fovPunch||0)+3;}   // doble salto: gasta un cuarto de la barra
+  if(r.wj){SFX.wj();fxAire(me.s.x,me.s.y+.9,me.s.z,.9,.7,.5);me.fovPunch=(me.fovPunch||0)+(r.wj>1?1.5:3);}   // salto de pared: el primero es gratis, los seguidos cansan
+  if(r.slide&&!me.sliding){SFX.slide();me.fovPunch=(me.fovPunch||0)+5;}me.sliding=r.slide;
   if(r.slide&&Math.random()<dt*40)emit(sparks,me.s.x+R(.3),me.s.y+.05,me.s.z+R(.3),R(1.5),.8+Math.random(),R(1.5),.25,.9,.8,.6,3);
   if(r.landed<-9){me.dip=Math.min(.25,-r.landed*.015);SFX.land(Math.min(1,-r.landed/20));}
   me.padT-=dt;

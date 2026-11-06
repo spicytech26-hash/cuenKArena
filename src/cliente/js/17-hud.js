@@ -57,7 +57,7 @@ function renderBoard(){
   else $('bBody').innerHTML=scores.map(row).join('');
   renderGrimorio();
 }
-/* ---- El Grimorio del Umbral: la chuleta de cartas que va abajo del tablero (Tab) ---- */
+/* ---- El Grimorio del Umbral: las cartas que tenés, abajo del tablero (Tab) ---- */
 let grimCache='';
 function renderGrimorio(){
   const box=$('grimorio'),on=!!(C.MODES[MODE]&&C.MODES[MODE].cards);
@@ -67,16 +67,19 @@ function renderGrimorio(){
   const mias=me.cards||[],falta=C.CARD_AT[mias.length],clave=mias.join(',')+'|'+(falta==null?'-':Math.max(0,falta-(me.kills||0)));
   if(clave===grimCache)return;grimCache=clave;
   const cuando=C.CARD_AT.map((n,i)=>'<i'+(i<mias.length?' class="ya"':'')+'>'+n+'</i>').join('<s>·</s>');
+  const ROMG=['I','II','III'];
+  const fichas=mias.map((id,i)=>{
+    const c=C.CARD_BY[id];if(!c)return '';
+    return '<div class="grc" style="--cc:'+c.c+'"><em>'+(ROMG[i]||i+1)+'</em>'+
+      '<span class="gric">'+cardIcon(c.ic)+'</span><b>'+esc(c.name)+'</b>'+
+      '<u>'+esc(c.stat||'')+'</u><p>'+esc(c.desc)+'</p></div>';
+  }).join('');
   box.innerHTML='<div class="grhead"><b>El Grimorio del Umbral</b>'+
     '<span class="grwhen">Surtido a las '+cuando+' bajas</span>'+
     '<span class="grnote">Tres al azar, te quedás con una · máximo '+C.CARD_MAX+' por partida · duran hasta que termina</span>'+
     '<span class="grnext">'+(falta==null?'mazo completo':'próxima en '+Math.max(0,falta-(me.kills||0))+' baja'+(Math.max(0,falta-(me.kills||0))===1?'':'s'))+'</span></div>'+
-    '<div class="grgrid">'+C.CARDS.map(c=>{
-      const tengo=mias.indexOf(c.id)>=0;
-      return '<div class="grc'+(tengo?' mia':'')+'" style="--cc:'+c.c+'">'+(tengo?'<em>en mano</em>':'')+
-        '<span class="gric">'+cardIcon(c.ic)+'</span><b>'+esc(c.name)+'</b>'+
-        '<u>'+esc(c.stat||'')+'</u><p>'+esc(c.desc)+'</p></div>';
-    }).join('')+'</div>';
+    (fichas?'<div class="grgrid">'+fichas+'</div>'
+          :'<div class="grvacio">Todavía no tenés ninguna. La primera te la reparten a las <b>'+C.CARD_AT[0]+'</b> bajas.</div>');
 }
 function applyMode(){
   const gg=MODE==='gungame',tm=teamsMode();

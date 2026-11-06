@@ -978,10 +978,10 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 @media (prefers-reduced-motion:reduce){#cards .ccard,#cards .dmer,#cards .dsay,#cards .dHand,#cards.in,#myCards .mcard.nueva{animation:none}}
 
 /* =====================================================================
-   EL GRIMORIO DEL UMBRAL · la chuleta de cartas abajo del tablero (Tab)
-   Grilla de fichas al estilo del menú de Deadlock, con la paleta del Mercader.
+   EL GRIMORIO DEL UMBRAL · las cartas que tenés en la mano, abajo del tablero (Tab)
+   Fichas al estilo del menú de Deadlock, con la paleta del Mercader.
    ===================================================================== */
-#board.congrim{width:min(940px,calc(100vw - 32px));max-height:calc(100vh - 36px);overflow-y:auto}
+#board.congrim{max-height:calc(100vh - 36px);overflow-y:auto}
 #board.congrim::-webkit-scrollbar{width:8px}
 #board.congrim::-webkit-scrollbar-thumb{background:rgba(127,174,143,.35)}
 #grimorio{margin-top:14px;padding-top:12px;border-top:1px solid rgba(127,174,143,.3)}
@@ -995,7 +995,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 #grimorio .grwhen s{text-decoration:none;color:#4e6b5c;margin:0 2px}
 #grimorio .grnote{font-size:11px;color:#8e9c91;letter-spacing:.04em}
 #grimorio .grnext{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--pump2)}
-#grimorio .grgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(166px,1fr));gap:7px}
+#grimorio .grgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:7px}
 #grimorio .grc{position:relative;padding:9px 10px 10px;min-width:0;
   background:linear-gradient(162deg,rgba(28,46,38,.92),rgba(9,17,14,.96));
   border:1px solid rgba(127,174,143,.22);border-top:2px solid var(--cc)}
@@ -1006,10 +1006,11 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
   text-transform:uppercase;color:#e6d8b8;line-height:1.15}
 #grimorio .grc u{display:block;margin-top:3px;text-decoration:none;font-family:var(--mono);font-size:10px;letter-spacing:.03em;color:var(--cc)}
 #grimorio .grc p{margin:5px 0 0;font-family:Georgia,'Palatino Linotype',serif;font-style:italic;font-size:11.5px;line-height:1.28;color:#9bab9f}
-#grimorio .grc.mia{border-color:rgba(255,122,26,.5);background:linear-gradient(162deg,rgba(54,32,14,.94),rgba(16,10,6,.96))}
-#grimorio .grc.mia b{color:#f1e3c2}
-#grimorio .grc em{position:absolute;right:0;top:0;font-style:normal;font-family:var(--mono);font-size:8.5px;letter-spacing:.18em;
-  text-transform:uppercase;color:#0f0a06;background:var(--pump2);padding:2px 6px 1px}
+#grimorio .grc em{position:absolute;right:0;top:0;font-style:normal;font-family:var(--display);font-size:10px;letter-spacing:.1em;
+  color:#0f0a06;background:var(--cc);padding:2px 7px 1px;opacity:.85}
+#grimorio .grvacio{font-family:Georgia,'Palatino Linotype',serif;font-style:italic;font-size:13px;color:#8e9c91;
+  padding:10px 12px;background:linear-gradient(135deg,transparent 9px,rgba(12,24,19,.8) 9.5px);border-left:3px solid rgba(127,174,143,.4)}
+#grimorio .grvacio b{font-weight:400;font-style:normal;font-family:var(--display);color:var(--pump2)}
 @media (max-width:700px){#grimorio .grc p{display:none}#grimorio .grnote{display:none}}
 </style>
 
@@ -5046,7 +5047,7 @@ function renderBoard(){
   else $('bBody').innerHTML=scores.map(row).join('');
   renderGrimorio();
 }
-/* ---- El Grimorio del Umbral: la chuleta de cartas que va abajo del tablero (Tab) ---- */
+/* ---- El Grimorio del Umbral: las cartas que tenés, abajo del tablero (Tab) ---- */
 let grimCache='';
 function renderGrimorio(){
   const box=$('grimorio'),on=!!(C.MODES[MODE]&&C.MODES[MODE].cards);
@@ -5056,16 +5057,19 @@ function renderGrimorio(){
   const mias=me.cards||[],falta=C.CARD_AT[mias.length],clave=mias.join(',')+'|'+(falta==null?'-':Math.max(0,falta-(me.kills||0)));
   if(clave===grimCache)return;grimCache=clave;
   const cuando=C.CARD_AT.map((n,i)=>'<i'+(i<mias.length?' class="ya"':'')+'>'+n+'</i>').join('<s>·</s>');
+  const ROMG=['I','II','III'];
+  const fichas=mias.map((id,i)=>{
+    const c=C.CARD_BY[id];if(!c)return '';
+    return '<div class="grc" style="--cc:'+c.c+'"><em>'+(ROMG[i]||i+1)+'</em>'+
+      '<span class="gric">'+cardIcon(c.ic)+'</span><b>'+esc(c.name)+'</b>'+
+      '<u>'+esc(c.stat||'')+'</u><p>'+esc(c.desc)+'</p></div>';
+  }).join('');
   box.innerHTML='<div class="grhead"><b>El Grimorio del Umbral</b>'+
     '<span class="grwhen">Surtido a las '+cuando+' bajas</span>'+
     '<span class="grnote">Tres al azar, te quedás con una · máximo '+C.CARD_MAX+' por partida · duran hasta que termina</span>'+
     '<span class="grnext">'+(falta==null?'mazo completo':'próxima en '+Math.max(0,falta-(me.kills||0))+' baja'+(Math.max(0,falta-(me.kills||0))===1?'':'s'))+'</span></div>'+
-    '<div class="grgrid">'+C.CARDS.map(c=>{
-      const tengo=mias.indexOf(c.id)>=0;
-      return '<div class="grc'+(tengo?' mia':'')+'" style="--cc:'+c.c+'">'+(tengo?'<em>en mano</em>':'')+
-        '<span class="gric">'+cardIcon(c.ic)+'</span><b>'+esc(c.name)+'</b>'+
-        '<u>'+esc(c.stat||'')+'</u><p>'+esc(c.desc)+'</p></div>';
-    }).join('')+'</div>';
+    (fichas?'<div class="grgrid">'+fichas+'</div>'
+          :'<div class="grvacio">Todavía no tenés ninguna. La primera te la reparten a las <b>'+C.CARD_AT[0]+'</b> bajas.</div>');
 }
 function applyMode(){
   const gg=MODE==='gungame',tm=teamsMode();

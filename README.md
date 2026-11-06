@@ -198,7 +198,7 @@ Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 
 | Y | abre la lista de mapas del modo para pedir un **cambio de mapa**: se abre una votación de 30 s y cambia solo si votan *sí* todas las personas (si estás solo, cambia al instante). Si hay una votación en la que no votaste, Y es *sí* |
 | N | votar *no* en una votación (echar o cambiar de mapa) |
 | B | tienda |
-| Tab | tabla de frags y, abajo, **El Grimorio del Umbral** con todas las cartas y sus números (solo en los modos con cartas) |
+| Tab | tabla de frags y, abajo, **El Grimorio del Umbral** con las cartas que tenés y sus números (solo en los modos con cartas) |
 | T o Enter | chat |
 | G | linterna (solo en Skatenight) |
 | + / − | agregar o sacar bots (solo en práctica) |
@@ -402,7 +402,7 @@ El reparto se ve **abajo a la derecha**: **tu propia mano** sube desde el borde 
 - Si dejás pasar los **12 segundos** (la barra naranja de abajo), te quedás con la primera.
 - Los **bots** también reciben cartas, al azar y al instante, así no quedan en desventaja.
 - Las que ya tenés quedan de muestra **abajo a la izquierda** (debajo del chat), con el cartel de cuántas bajas te faltan para la próxima.
-- Con **Tab**, abajo del tablero, se abre **El Grimorio del Umbral**: la grilla con las nueve cartas, lo que hace cada una y sus números exactos, a las cuántas bajas sale cada surtido y cuántas te faltan para la próxima. Las que tenés en la mano quedan marcadas.
+- Con **Tab**, abajo del tablero, se abre **El Grimorio del Umbral**: las cartas que tenés en ese momento, en el orden en que las agarraste, con lo que hace cada una y sus números exactos. Arriba dice a las cuántas bajas sale cada surtido (tachando las que ya pasaron) y cuántas te faltan para la próxima.
 - Las tres que te toca elegir salen **siempre al azar** entre las que todavía no tenés, así que nunca te repite una.
 
 | Carta | Qué hace |

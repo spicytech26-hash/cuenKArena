@@ -64,7 +64,7 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `js/14b-cartas.js` | **cartas de mejora**: la mano del jugador las reparte abajo a la derecha, subiendo desde el borde (`openCards`; el guante es SVG armado en `svgMano` con los colores de `skinParts`), mazo de abajo a la izquierda, chispas del fuego |
 | `js/15-entrada.js` | teclado, mouse, menú de echar (Y) |
 | `js/16-simulacion.js` | movimiento propio e interpolación de los demás |
-| `js/17-hud.js` | HUD, fila de líderes por bajas (`renderKillRow`, solo Arena y Gungame) y **El Grimorio del Umbral** (`renderGrimorio`): la grilla de cartas abajo del tablero (Tab) |
+| `js/17-hud.js` | HUD, fila de líderes por bajas (`renderKillRow`, solo Arena y Gungame) y **El Grimorio del Umbral** (`renderGrimorio`): las cartas que tiene el jugador, abajo del tablero (Tab) |
 | `js/18-camara.js` | cámara, arma en mano y jugadores remotos (`updRemote`) |
 | `js/18-noche.js` | **modo noche** (mapas con `theme.noche`, hoy solo Skatenight; la linterna se prende con **G**, la T es el chat. Pyramid NO es de noche: su música y ambiente van por `theme.ambiente:'piramide'` en `pyramidAmbient`): linterna del arma, haces y focos de los rivales, visores apagados (`updNight`, `nightRemote`) |
 | `js/18-tercera-persona.js` | **vista en tercera persona** (H alterna, J cambia de hombro; Ajustes → Video): cámara sobre el hombro con choque contra paredes, modelo propio animado (`updMiModelo`), apuntado hacia el punto de la mira (`tpApunte`) y boca del arma (`tpMuzzle`). El estado va en `TP` y en `S.view`, `S.shoulder`, `S.tpd` |

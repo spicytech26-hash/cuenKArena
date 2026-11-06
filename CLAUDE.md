@@ -61,7 +61,8 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `js/12-mensajes.js` | mensajes del servidor (`onMsg`), chat, eventos |
 | `js/13-disparos.js` | proyectiles del lado del cliente, rocket jump, disparar |
 | `js/14-tienda.js` | tienda (B) y taquilla |
-| `js/14b-cartas.js` | **cartas de mejora**: la mano del jugador las reparte abajo a la derecha, subiendo desde el borde (`openCards`; el guante es SVG armado en `svgMano` con los colores de `skinParts`), mazo de abajo a la izquierda, chispas del fuego |
+| `js/14b-cartas.js` | **cartas de mejora**: el texto de las cartas en HTML por encima de la escena del mercader (`openCards`/`pickCard`), frases del mercader, mazo de abajo a la izquierda, chispas del fuego |
+| `js/14c-mercader.js` | **El Mercader del Umbral en 3D**: escena aparte dibujada encima del juego (`drawMerc` al final de `frame`), hecho con primitivas (manto, capucha, seis ojos, barba de tentáculos, manos, farol con luz, neblina). Tiempos y posiciones en la constante `MERC`; se apaga con `S.merc`, se calma con `S.mred` y no existe en calidad Liviana (`S.q`) |
 | `js/15-entrada.js` | teclado, mouse, menú de echar (Y) |
 | `js/16-simulacion.js` | movimiento propio e interpolación de los demás |
 | `js/17-hud.js` | HUD, fila de líderes por bajas (`renderKillRow`, solo Arena y Gungame) y **El Grimorio del Umbral** (`renderGrimorio`): las cartas que tiene el jugador, abajo del tablero (Tab) |

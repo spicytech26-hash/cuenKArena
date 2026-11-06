@@ -396,9 +396,13 @@ Con **H** (o en Ajustes → Video) pasás de primera a tercera persona: la cáma
 
 En **Arena**, **Team Deathmatch** y **Captura la bandera** cada partida te arma un personaje distinto. A las **3, 7 y 12 bajas** te aparecen **abajo a la derecha tres cartas al azar** (de nueve) y te quedás con una: **máximo 3 por partida**. Cada ronda cuesta más que la anterior. Duran hasta que termina la partida y se borran en la siguiente. En Gungame y Francotiradores no hay cartas.
 
-El reparto se ve **abajo a la derecha**: **tu propia mano** sube desde el borde de abajo (el guante del robot, con los colores de tu skin), suelta las tres cartas de un manotazo y se retira enseguida. Las cartas son de **papel viejo con tinta sepia** y quedan grandes, así que se lee bien qué hace cada una. No traba nada: seguís corriendo, apuntando y disparando mientras elegís. Mientras están abiertas, las ranuras de armas y los carteles de teclas se corren de la vista para despejar ese rincón. Si elegís, la mano vuelve a buscar las dos que no quisiste.
+Quien te las ofrece es **el Mercader del Umbral en 3D**: se materializa entre la neblina en el **tercio derecho** de la pantalla, con su capucha, sus seis ojos verdes, la barba de tentáculos y el farol titilando, y despliega las tres cartas una tras otra. Mientras esperás que elijas se queda vivo (los tentáculos se mecen, los ojos parpadean, las cartas flotan) y te va tirando frases. Al elegir, la carta se resalta, vuela al mazo del HUD y el mercader se desvanece en la neblina.
 
-- Se elige con **1 · 2 · 3** (cada carta lleva su número estampado en la esquina) o con un clic si tenés el mouse libre.
+Las cartas son de **papel viejo con tinta sepia**, con el ícono, el nombre, qué hace y sus números exactos, en texto nítido por encima de la escena. **El juego no se frena ni un segundo**: no hay pausa, la cámara no se mueve, el mouse y los clics siguen siendo del juego y podés correr, apuntar y disparar mientras elegís. Ni la mira ni el HUD de salud, munición y blindaje quedan tapados; las ranuras de armas y los carteles de teclas se corren de la vista mientras dura.
+
+En **Ajustes → Video** podés apagar la animación del mercader o activar "Reducir movimiento"; en calidad **Liviana** se muestran solo las cartas, sin el mercader.
+
+- Se elige con **1 · 2 · 3** (cada carta lleva su número estampado en la esquina). No se elige con el mouse a propósito: el cartel no se queda con ningún clic, para no robarle un disparo al juego.
 - Si dejás pasar los **12 segundos** (la barra naranja de abajo), te quedás con la primera.
 - Los **bots** también reciben cartas, al azar y al instante, así no quedan en desventaja.
 - Las que ya tenés quedan de muestra **abajo a la izquierda** (debajo del chat), con el cartel de cuántas bajas te faltan para la próxima.

@@ -28,6 +28,7 @@ function frame(now){
   renderer.clear();renderer.render(scene,camera);
   if(inGame&&!me.alive&&G.pov)povGun(paused?0:dt);   // arma del que te mató (o del que mirás) en primera persona
   if(inGame&&(me.alive||G.pov)&&TP.blend<.5){renderer.clearDepth();renderer.render(wScene,wCam);}   // en tercera persona no hay arma ni manos en pantalla
+  drawMerc();   // el Mercader del Umbral, cuando te está ofreciendo cartas
 }
 requestAnimationFrame(frame);
 setTimeout(warmIcons,2500);   // los íconos de la tienda se arman mientras estás en el menú

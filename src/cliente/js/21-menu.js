@@ -105,7 +105,8 @@ function syncSettings(){
   $('sFov').value=S.fov;$('oFov').textContent=S.fov+'°';
   $('sVol').value=S.vol;$('oVol').textContent=Math.round(S.vol*100)+'%';
   $('sMus').value=S.music;$('oMus').textContent=Math.round(S.music*100)+'%';
-  $('sInv').checked=S.invY;$('sHop').checked=S.hop;$('sFs').checked=S.fs;$('sImg').checked=S.showImg!==false;$('sFps').checked=!!S.fpsOn;$('oBots').textContent=S.bots;
+  $('sInv').checked=S.invY;$('sHop').checked=S.hop;$('sFs').checked=S.fs;$('sImg').checked=S.showImg!==false;$('sFps').checked=!!S.fpsOn;
+  $('sMerc').checked=S.merc!==false;$('sMred').checked=!!S.mred;$('oBots').textContent=S.bots;
   [...$('sSkill').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.skill)));
   [...$('mSkill').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.skill)));
   [...$('sFl').children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===S.fl)));
@@ -156,6 +157,8 @@ $('sInv').addEventListener('change',e=>{S.invY=e.target.checked;saveS();});
 $('sHop').addEventListener('change',e=>{S.hop=e.target.checked;saveS();});
 $('sFs').addEventListener('change',e=>{S.fs=e.target.checked;saveS();});
 $('sFps').addEventListener('change',e=>{S.fpsOn=e.target.checked;saveS();if(!S.fpsOn)$('fpsBox').hidden=true;});
+$('sMerc').addEventListener('change',e=>{S.merc=e.target.checked;saveS();if(!mercVa())mercClose();$('cards').classList.toggle('sinmerc',!mercVa());});
+$('sMred').addEventListener('change',e=>{S.mred=e.target.checked;saveS();});
 $('sImg').addEventListener('change',e=>{S.showImg=e.target.checked;saveS();for(const p of players.values())if(p.model){scene.remove(p.model.g);p.model=null;ensurePlayer(p.id);}});
 // pantalla completa + bloqueo de teclado: así Ctrl+W agacha y avanza en vez de cerrar la pestaña
 // teclas que se bloquean en pantalla completa (Esc no saca de la pantalla completa, abre el menú; Ctrl+W no cierra la pestaña).

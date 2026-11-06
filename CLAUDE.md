@@ -61,7 +61,7 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `js/12-mensajes.js` | mensajes del servidor (`onMsg`), chat, eventos |
 | `js/13-disparos.js` | proyectiles del lado del cliente, rocket jump, disparar |
 | `js/14-tienda.js` | tienda (B) y taquilla |
-| `js/14b-cartas.js` | **cartas de mejora**: la mano del robot en 3D sostiene las cartas en la escena del arma (`cdInit`/`updCard3D`, usa `vHand`/`vMkArm`/`mGlove` de `09-armas-animacion.js`; la cara de cada carta es un canvas, `cardCanvas`). Respaldo plano en el HUD si no se dibuja esa escena, mazo de abajo a la izquierda, chispas del fuego |
+| `js/14b-cartas.js` | **cartas de mejora**: el Mercader del Umbral las reparte arriba a la izquierda (`openCards`; el busto del mercader es SVG fijo en `pagina.html`, dentro de `#cards`), mazo de abajo a la izquierda, chispas del fuego |
 | `js/15-entrada.js` | teclado, mouse, menú de echar (Y) |
 | `js/16-simulacion.js` | movimiento propio e interpolación de los demás |
 | `js/17-hud.js` | HUD, fila de líderes por bajas (`renderKillRow`, solo Arena y Gungame) |

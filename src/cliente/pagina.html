@@ -60,7 +60,31 @@
   <div id="mapHint">Y · CAMBIAR MAPA</div>
   <div id="shopHint">B · TIENDA · mantené E: armas</div>
   <div id="killRow" hidden></div>
-  <div id="cards" hidden></div>
+  <div id="cards" hidden>
+    <div class="dmer">
+      <svg viewBox="36 44 228 322" role="img" aria-label="El Mercader del Umbral te alcanza unas cartas">
+        <defs>
+          <radialGradient id="dGlow" cx="50%" cy="36%" r="62%"><stop offset="0" stop-color="#2f6b52" stop-opacity=".55"/><stop offset="1" stop-color="#0a1210" stop-opacity="0"/></radialGradient>
+          <linearGradient id="dCloak" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22362f"/><stop offset=".6" stop-color="#0d1613"/><stop offset="1" stop-color="#050807"/></linearGradient>
+        </defs>
+        <rect x="36" y="44" width="228" height="322" fill="url(#dGlow)"/>
+        <path d="M44 440V180Q44 62 150 50Q256 62 256 180V440" fill="none" stroke="#2a4036" stroke-width="1.5" opacity=".6"/>
+        <g stroke="#4f7a68" stroke-width="1.6" fill="none" opacity=".5" stroke-linecap="round"><path d="M150 30l-8 10h16z"/><circle cx="150" cy="40" r="2.5"/><path d="M62 96l10 16M72 96l-10 16M228 96l10 16M238 96l-10 16"/></g>
+        <g class="vTent l" fill="none" stroke="#1d3029" stroke-linecap="round"><path d="M96 150C40 168 26 232 56 276S88 340 66 392" stroke-width="13"/><path d="M104 176C70 214 62 262 84 304" stroke-width="8"/><path d="M84 160C48 150 30 112 48 80" stroke-width="7"/></g>
+        <g class="vTent r" fill="none" stroke="#1d3029" stroke-linecap="round"><path d="M204 150C260 168 274 232 244 276S212 340 234 392" stroke-width="13"/><path d="M196 176C230 214 238 262 216 304" stroke-width="8"/><path d="M216 160C252 150 270 112 252 80" stroke-width="7"/></g>
+        <g class="vBody"><path d="M150 58C102 58 80 108 78 160C74 232 50 304 38 440H262C250 304 226 232 222 160C220 108 198 58 150 58Z" fill="url(#dCloak)" stroke="#3b5a4d" stroke-width="1.5"/>
+          <path d="M120 230C128 290 126 360 118 440M180 230C172 290 174 360 182 440M150 200V440" stroke="#0a110e" stroke-width="2" fill="none" opacity=".7"/>
+          <path d="M150 70C116 70 102 100 104 136C106 168 126 180 150 180C174 180 194 168 196 136C198 100 184 70 150 70Z" fill="#020403"/>
+          <g class="vEyes" fill="#8dff3a"><ellipse cx="131" cy="122" rx="8" ry="4.5"/><ellipse cx="169" cy="122" rx="8" ry="4.5"/><circle cx="150" cy="102" r="4"/><circle cx="122" cy="148" r="2.8"/><circle cx="178" cy="148" r="2.8"/><circle cx="150" cy="144" r="2.2"/></g>
+          <g class="vEyes dark" fill="#031006"><ellipse cx="131" cy="122" rx="1.6" ry="4"/><ellipse cx="169" cy="122" rx="1.6" ry="4"/><circle cx="150" cy="102" r="1.4"/></g>
+          <g class="vBeard" fill="none" stroke="#2c4a3d" stroke-linecap="round" stroke-width="5"><path d="M134 170q-6 18 2 30t-2 28"/><path d="M146 174q-3 20 3 34t-1 30"/><path d="M158 174q3 20-3 34t1 30"/><path d="M168 170q6 18-2 30t2 28"/></g>
+        </g>
+        <g class="dHand" fill="#16241f" stroke="#3b5a4d" stroke-width="1.2"><path d="M96 352c4-20 8-34 16-40 6-4 10 2 8 8l-4 18 22-4c4 6-2 12-10 14l-30 8z"/><path d="M204 352c-4-20-8-34-16-40-6-4-10 2-8 8l4 18-22-4c-4 6 2 12 10 14l30 8z"/></g>
+      </svg>
+      <i>El Mercader del Umbral</i>
+    </div>
+    <div id="cardsBody"></div>
+  </div>
   <div id="myCards" hidden></div>
   <div id="slots"></div>
   <div id="voteBox" hidden role="status" aria-live="polite"></div>

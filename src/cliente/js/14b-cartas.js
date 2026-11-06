@@ -30,157 +30,45 @@ const cardIcon = ic => '<svg viewBox="0 0 24 24" aria-hidden="true" fill="curren
 const cardsOpen = () => CU.open;
 function resetCards() { me.cards = []; me.kills = 0; CU.list = []; closeCards(); BURN.clear(); renderMyCards(); }
 
-/* ---- la mano en 3D: el robot del jugador saca las cartas y las sostiene ----
-   Va en la escena del arma (`wScene`), con la misma mano robótica y los mismos materiales que las
-   manos de primera persona (`vHand`, `vMkArm`, `mGlove`), así que se ve igual que el resto del
-   personaje y queda bien en perspectiva. No toca el arma ni la cámara: se sigue disparando igual.
-   Si estás muerto o en tercera persona (no se dibuja esa escena), se cae a las cartas planas del HUD. */
+/* ---- el reparto: el Mercader del Umbral asoma a la izquierda y te tira las tres cartas ----
+   Va arriba a la izquierda, lejos del arma y de la mira, y las cartas quedan grandes para que se
+   lean las descripciones. No traba nada: se sigue corriendo y disparando mientras elegís. */
 const ROM = ['I', 'II', 'III'];
-const CD = { g: null, arm: null, cards: [], t: 0, out: 0, sel: -1, tex: [] };
-const CD_ANCLA = new THREE.Vector3(.40, -.52, .1);   // de dónde sale el antebrazo (abajo a la derecha)
-const CD_POS = new THREE.Vector3(.15, -.14, -.34), CD_BAJO = new THREE.Vector3(.2, -.48, -.32);
-
-/* ---- textura de cada carta: papel viejo dibujado en un canvas ---- */
-const hexRGB = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
-const hexA = (h, a) => { const [r, g, b] = hexRGB(h); return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')'; };
-const mezcla = (h1, h2, k) => { const a = hexRGB(h1), b = hexRGB(h2); return 'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(',') + ')'; };
-function cortar(g, txt, maxW) {
-  const ps = txt.split(' '), l = []; let cur = '';
-  for (const w of ps) { const t = cur ? cur + ' ' + w : w; if (g.measureText(t).width > maxW && cur) { l.push(cur); cur = w; } else cur = t; }
-  if (cur) l.push(cur);
-  return l;
-}
-function cardCanvas(id, i) {
-  const W = 256, H = 358, c = document.createElement('canvas'); c.width = W; c.height = H;
-  const g = c.getContext('2d'), card = C.CARD_BY[id];
-  if (!card) return null;
-  g.fillStyle = '#e2d1aa'; g.fillRect(0, 0, W, H);
-  const mancha = (x, y, r, col) => { const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, col); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, W, H); };
-  mancha(W * .22, H * .16, 155, 'rgba(120,94,52,.32)');
-  mancha(W * .85, H * .8, 165, 'rgba(96,70,36,.3)');
-  mancha(W * .62, H * .46, 125, 'rgba(146,118,70,.18)');
-  g.fillStyle = 'rgba(84,64,34,.15)';
-  for (let k = 0; k < 110; k++) { const x = Math.random() * W, y = Math.random() * H; g.beginPath(); g.arc(x, y, Math.random() * 1.7 + .4, 0, 6.283); g.fill(); }
-  g.strokeStyle = '#6d5733'; g.lineWidth = 5; g.strokeRect(2.5, 2.5, W - 5, H - 5);
-  g.strokeStyle = 'rgba(74,56,28,.5)'; g.lineWidth = 2; g.strokeRect(13, 13, W - 26, H - 26);
-  g.strokeStyle = 'rgba(74,56,28,.2)'; g.lineWidth = 1.5; g.strokeRect(19, 19, W - 38, H - 38);
-  // numeral estampado, torcido como un sello
-  g.save(); g.translate(36, 44); g.rotate(-.13);
-  g.strokeStyle = 'rgba(122,35,24,.6)'; g.lineWidth = 2.5; g.strokeRect(-15, -17, 30, 34);
-  g.fillStyle = '#7a2318'; g.font = 'bold 26px Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(i + 1), 0, 1);
-  g.restore();
-  // sigilo con el color de la carta
-  const cx = W / 2, cy = 132, R = 52;
-  const gr = g.createRadialGradient(cx, cy, 0, cx, cy, R); gr.addColorStop(0, hexA(card.c, .38)); gr.addColorStop(1, 'rgba(0,0,0,0)');
-  g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, R, 0, 6.283); g.fill();
-  g.strokeStyle = 'rgba(60,45,22,.55)'; g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, R, 0, 6.283); g.stroke();
-  g.strokeStyle = 'rgba(60,45,22,.16)'; g.lineWidth = 7; g.beginPath(); g.arc(cx, cy, R + 7, 0, 6.283); g.stroke();
-  g.save(); g.translate(cx - 31, cy - 31); g.scale(62 / 24, 62 / 24); g.fillStyle = mezcla(card.c, '#2b1d10', .42);
-  for (const [d, op] of (CARD_ICO[card.ic] || [])) { g.globalAlpha = op; g.fill(new Path2D(d), 'evenodd'); }
-  g.globalAlpha = 1; g.restore();
-  // nombre y descripción
-  g.textAlign = 'center'; g.fillStyle = '#3a2714'; g.font = '23px Georgia, serif';
-  try { g.letterSpacing = '2px'; } catch (e) { }
-  let y = 228;
-  const nl = cortar(g, card.name.toUpperCase(), W - 46);
-  for (const ln of nl) { g.fillText(ln, cx, y); y += 27; }
-  try { g.letterSpacing = '0px'; } catch (e) { }
-  g.strokeStyle = 'rgba(74,56,28,.45)'; g.lineWidth = 1.5;
-  g.beginPath(); g.moveTo(34, y - 12); g.lineTo(W - 34, y - 12); g.stroke();
-  g.fillStyle = '#51391f'; g.font = 'italic 16px Georgia, serif'; y += 12;
-  for (const ln of cortar(g, card.desc, W - 52)) { g.fillText(ln, cx, y); y += 20; }
-  const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t;
-}
-/* ---- armado de la mano (una sola vez) ---- */
-function cdInit() {
-  if (CD.g) return;
-  const g = new THREE.Group(); g.visible = false;
-  const mano = vHand(mGlove, .03); mano.rotation.set(0, Math.PI / 2, .12); mano.position.set(0, -.012, 0);
-  g.add(mano);
-  for (let i = 0; i < 3; i++) {
-    const pv = new THREE.Group();
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(.132, .185), new THREE.MeshBasicMaterial({ transparent: true, side: THREE.DoubleSide, depthWrite: false }));
-    m.position.set(0, .082, 0); m.renderOrder = 4;
-    pv.add(m); pv.rotation.set(-.05, 0, (i - 1) * .2); pv.position.set((i - 1) * .098, .004 - Math.abs(i - 1) * .010, i * .005);
-    g.add(pv); CD.cards.push({ pv, m });
-  }
-  CD.arm = vMkArm(); CD.arm.visible = false;
-  wScene.add(g, CD.arm);
-  CD.g = g;
-}
-function cdTexturas() {
-  CD.tex.forEach(t => t.dispose()); CD.tex = [];
-  CD.cards.forEach((c, i) => {
-    const id = CU.list[i];
-    c.pv.visible = !!id;
-    if (!id) return;
-    const t = cardCanvas(id, i);
-    if (!t) { c.pv.visible = false; return; }
-    CD.tex.push(t);
-    c.m.material.map = t; c.m.material.opacity = 1; c.m.material.needsUpdate = true;
-    c.m.scale.setScalar(1); c.m.position.set(0, .082, 0);
-  });
-}
-// ¿se puede mostrar la mano en 3D? (la escena del arma solo se dibuja estando vivo y en primera persona)
-const cd3D = () => inGame && me.alive && TP.blend < .5 && !G.shopOn;
-const cdPos = new THREE.Vector3(), cdTmp = new THREE.Vector3();
-function updCard3D(dt) {
-  if (!CD.g) return;
-  const quiere = CU.open && cd3D();
-  if (quiere) { CD.t = Math.min(1, CD.t + dt / .42); CD.out = 0; }
-  else if (CD.t > 0) { CD.out += dt; CD.t = Math.max(0, CD.t - dt / .36); }
-  if (CD.t <= 0 && !quiere) { CD.g.visible = false; CD.arm.visible = false; return; }
-  const k = CD.t < 1 ? 1 - Math.pow(1 - CD.t, 3) : 1, T = G.time;
-  CD.g.visible = true;
-  cdPos.copy(CD_BAJO).lerp(CD_POS, k);
-  CD.g.position.set(cdPos.x, cdPos.y + Math.sin(T * 1.5) * .006, cdPos.z);
-  CD.g.rotation.set(-.12 + (1 - k) * .7 + Math.sin(T * 1.1) * .018, -.26 + (1 - k) * .28, .05 + Math.sin(T * .9) * .025);
-  // la carta elegida sale hacia la cámara y las otras se apagan
-  if (CD.sel >= 0) {
-    const e = Math.min(1, CD.out / .4);
-    CD.cards.forEach((c, i) => {
-      if (i === CD.sel) { c.m.scale.setScalar(1 + e * .8); c.m.position.set(0, .082 + e * .05, e * .18); c.m.material.opacity = 1 - e * e; }
-      else c.m.material.opacity = Math.max(0, 1 - e * 1.8);
-    });
-  }
-  // antebrazo: va desde la mano hasta el borde de abajo a la derecha
-  CD.g.updateMatrixWorld(true);
-  cdTmp.set(0, -.02, .06).applyMatrix4(CD.g.matrixWorld);
-  CD.arm.position.copy(cdTmp); CD.arm.lookAt(CD_ANCLA);
-  vArmLen(CD.arm, Math.max(.05, cdTmp.distanceTo(CD_ANCLA) + .12));
-  CD.arm.visible = true;
-}
+const MER_DICE = ['Tomá una. Las otras no eran para vos.',
+  'El Umbral te debe un favor. Cobralo.',
+  'Elegí rápido, mortal: la mano se me cansa.',
+  'Tres destinos. Uno solo te va a seguir.',
+  'No preguntes de dónde las saqué.',
+  'Una nomás. Lo que sobra, vuelve conmigo.'];
+let merLast = '';
+function merDice() { let t; do { t = MER_DICE[Math.random() * MER_DICE.length | 0]; } while (t === merLast && MER_DICE.length > 1); merLast = t; return t; }
 
 function openCards(m) {
   CU.open = true; CU.list = m.l.slice(); CU.t = CU.max = m.d || 12; CU.n = m.n || 1; CU.of = m.of || 3;
-  const box = $('cards'), n = CU.list.length, mid = (n - 1) / 2;
-  cdInit(); CD.sel = -1; CD.out = 0; cdTexturas();
-  box.innerHTML = '<div class="chead"><div class="ctitle">Carta <b>' + (ROM[CU.n - 1] || CU.n) + '</b> de ' + (ROM[CU.of - 1] || CU.of) + ' · elegí una</div>' +
-    '<div class="cbar"><i></i></div><div class="chint">1 · 2 · 3 · seguís disparando igual</div></div>' +
-    '<div class="chand"><div class="crow">' + CU.list.map((id, i) => {
-      const c = C.CARD_BY[id], rot = ((i - mid) * 7).toFixed(1), dy = (Math.abs(i - mid) * 13).toFixed(0);
-      return '<div class="ccard" data-i="' + i + '" style="--cc:' + c.c + ';--rot:' + rot + 'deg;--dy:' + dy + 'px;z-index:' + (10 - Math.abs(i - mid)) + '">' +
-        '<div class="cin" style="animation-delay:' + (i * .1).toFixed(2) + 's">' +
+  const box = $('cards');
+  $('cardsBody').innerHTML =
+    '<div class="dsay"><b>' + esc(merDice()) + '</b><span>Carta ' + (ROM[CU.n - 1] || CU.n) + ' de ' + (ROM[CU.of - 1] || CU.of) + ' · 1 · 2 · 3 · seguís disparando igual</span></div>' +
+    '<div class="drow">' + CU.list.map((id, i) => {
+      const c = C.CARD_BY[id];
+      return '<div class="ccard" data-i="' + i + '" style="--cc:' + c.c + ';animation-delay:' + (.2 + i * .1).toFixed(2) + 's">' +
         '<i class="ck">' + (i + 1) + '</i><div class="cic">' + cardIcon(c.ic) + '</div>' +
-        '<div class="cn">' + esc(c.name) + '</div><div class="cd">' + esc(c.desc) + '</div></div></div>';
-    }).join('') + '</div></div>';
+        '<div class="cn">' + esc(c.name) + '</div><div class="cd">' + esc(c.desc) + '</div></div>';
+    }).join('') + '</div>' +
+    '<div class="cbar"><i></i></div>';
   box.hidden = false;
   box.classList.remove('in', 'sale'); void box.offsetWidth; box.classList.add('in');
-  $('hud').classList.add('cartas');   // mientras elegís, las ranuras y los carteles de teclas se corren de la vista
   [...box.querySelectorAll('.ccard')].forEach(e => e.addEventListener('click', () => pickCard(+e.dataset.i)));
-  announce('EL MAZO TE ELIGIÓ', 'Carta ' + (ROM[CU.n - 1] || CU.n) + ' de ' + (ROM[CU.of - 1] || CU.of) + ' · elegí con 1, 2 o 3');
   SFX.hunt();
 }
-function closeCards() { CU.open = false; $('cards').hidden = true; $('cards').classList.remove('in', 'sale'); $('hud').classList.remove('cartas'); }
+function closeCards() { CU.open = false; $('cards').hidden = true; $('cards').classList.remove('in', 'sale'); }
 function pickCard(i) {
   if (!CU.open || !CU.list[i]) return;
-  CU.open = false; CD.sel = i; CD.out = 0;
+  CU.open = false;
   const box = $('cards');
-  [...box.querySelectorAll('.ccard')].forEach((e, k) => e.classList.add(k === i ? 'taken' : 'gone'));
-  box.classList.add('sale');
-  const h = box.querySelector('.chead'); if (h) h.hidden = true;
-  $('hud').classList.remove('cartas');
-  setTimeout(() => { if (!CU.open) box.hidden = true; }, 620);
+  [...box.querySelectorAll('.ccard')].forEach((e, k) => { e.style.animationDelay = '0s'; e.classList.add(k === i ? 'taken' : 'gone'); });
+  box.classList.add('sale');          // el mercader se vuelve a meter en la sombra
+  const bar = box.querySelector('.cbar'); if (bar) bar.hidden = true;
+  setTimeout(() => { if (!CU.open) box.hidden = true; }, 600);
   if (net) net.send({ t: 'card', i });
   SFX.quad();
 }
@@ -209,9 +97,7 @@ function renderMyCards() {
 /* ---- fuego de la carta Toque ígneo: unas chispas naranjas sobre el que se quema ---- */
 function addBurn(id, d) { BURN.set(id, d); if (id === myId) SFX.sizzle && SFX.sizzle(); }
 function updCards(dt) {
-  updCard3D(dt);
   if (CU.open) {
-    $('cards').classList.toggle('solo3d', cd3D());   // con la mano en 3D, las cartas planas se esconden
     CU.t -= dt;
     const bar = document.querySelector('#cards .cbar i');
     if (bar) bar.style.transform = 'scaleX(' + Math.max(0, CU.t / CU.max).toFixed(3) + ')';

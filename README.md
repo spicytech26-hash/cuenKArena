@@ -396,7 +396,7 @@ Con **H** (o en Ajustes → Video) pasás de primera a tercera persona: la cáma
 
 En **Arena**, **Team Deathmatch** y **Captura la bandera** cada partida te arma un personaje distinto. A las **3, 7 y 10 bajas** te aparecen **abajo a la derecha tres cartas al azar** (de nueve) y te quedás con una: **máximo 3 por partida**. Cada ronda cuesta más que la anterior. Duran hasta que termina la partida y se borran en la siguiente. En Gungame y Francotiradores no hay cartas.
 
-Quien reparte es **el Mercader del Umbral**: asoma **arriba a la izquierda**, te tira las tres cartas de un manotazo y te dice algo distinto cada vez. Las cartas son de **papel viejo con tinta sepia** y quedan grandes, así que se lee bien qué hace cada una. Queda lejos del arma, de la mira y del chat: no tapa nada y no traba nada, seguís corriendo, apuntando y disparando mientras elegís. Si no elegís, las cartas se le vuelven a la mano.
+El reparto se ve **arriba a la izquierda**: entra **tu propia mano** desde el borde (el guante del robot, con los colores de tu skin), suelta las tres cartas de un manotazo y se retira enseguida. Las cartas son de **papel viejo con tinta sepia** y quedan grandes, así que se lee bien qué hace cada una. Queda lejos del arma, de la mira y del chat: no tapa nada y no traba nada, seguís corriendo, apuntando y disparando mientras elegís. Si elegís, la mano vuelve a buscar las dos que no quisiste.
 
 - Se elige con **1 · 2 · 3** (cada carta lleva su número estampado en la esquina) o con un clic si tenés el mouse libre.
 - Si dejás pasar los **12 segundos** (la barra naranja de abajo), te quedás con la primera.

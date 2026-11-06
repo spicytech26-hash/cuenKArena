@@ -30,27 +30,48 @@ const cardIcon = ic => '<svg viewBox="0 0 24 24" aria-hidden="true" fill="curren
 const cardsOpen = () => CU.open;
 function resetCards() { me.cards = []; me.kills = 0; CU.list = []; closeCards(); BURN.clear(); renderMyCards(); }
 
-/* ---- el reparto: el Mercader del Umbral asoma a la izquierda y te tira las tres cartas ----
-   Va arriba a la izquierda, lejos del arma y de la mira, y las cartas quedan grandes para que se
-   lean las descripciones. No traba nada: se sigue corriendo y disparando mientras elegís. */
+/* ---- el reparto: tu propia mano entra, abre las tres cartas y se retira ----
+   La mano se dibuja con los colores de tu skin (los mismos que usa el robot) y solo está en pantalla
+   el segundo del reparto: deja las cartas grandes y legibles arriba a la izquierda, lejos del arma,
+   de la mira y del chat. No traba nada: se sigue corriendo y disparando mientras elegís. */
 const ROM = ['I', 'II', 'III'];
-const MER_DICE = ['Tomá una. Las otras no eran para vos.',
-  'El Umbral te debe un favor. Cobralo.',
-  'Elegí rápido, mortal: la mano se me cansa.',
-  'Tres destinos. Uno solo te va a seguir.',
-  'No preguntes de dónde las saqué.',
-  'Una nomás. Lo que sobra, vuelve conmigo.'];
-let merLast = '';
-function merDice() { let t; do { t = MER_DICE[Math.random() * MER_DICE.length | 0]; } while (t === merLast && MER_DICE.length > 1); merLast = t; return t; }
+function manoColores() {
+  const sk = teamsMode() && myTeam >= 0 ? Object.assign({}, S.skin, { c: colorOf(myId), cb: null, c2: null, c3: null }) : S.skin;
+  return skinParts(sk);
+}
+// guante robótico visto desde atrás: antebrazo, dorso con tira de visor, cuatro dedos y el pulgar
+function svgMano(P) {
+  const rect = (x, y, w, h, r, fill, op) => '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="' + r +
+    '" fill="' + fill + '"' + (op ? ' opacity="' + op + '"' : ' stroke="rgba(0,0,0,.55)" stroke-width="2.5"') + '/>';
+  let dedos = '';
+  [[216, 50, 80, 26, -15], [222, 84, 88, 28, -5], [222, 118, 82, 27, 5], [216, 150, 70, 25, 14]].forEach(([x, y, w, h, rot]) => {
+    dedos += '<g transform="rotate(' + rot + ' ' + x + ' ' + (y + h / 2) + ')">' +
+      rect(x, y, w, h, h / 2, 'url(#mnGlove)') +
+      rect(x + w - 25, y + 5, 21, h - 10, (h - 10) / 2, P.c3) +
+      rect(x + 24, y + 4, 9, h - 8, 4, P.c3, '.4') + '</g>';
+  });
+  return '<svg class="dhand" viewBox="0 0 320 212" aria-hidden="true">' +
+    '<defs><linearGradient id="mnArm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + P.c3 + '"/><stop offset=".42" stop-color="' + P.c2 + '"/><stop offset="1" stop-color="#0b0906"/></linearGradient>' +
+    '<linearGradient id="mnGlove" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + P.c3 + '"/><stop offset=".38" stop-color="' + P.cb + '"/><stop offset="1" stop-color="#120d0a"/></linearGradient></defs>' +
+    rect(-24, 70, 152, 90, 20, 'url(#mnArm)') +
+    rect(4, 100, 88, 13, 6, P.v, '.5') +
+    rect(104, 64, 26, 102, 12, P.c3) +
+    rect(126, 48, 98, 130, 24, 'url(#mnGlove)') +
+    rect(144, 68, 62, 15, 7, P.v, '.5') +
+    rect(146, 136, 58, 10, 5, P.c3, '.35') +
+    dedos +
+    '<g transform="rotate(-40 178 178)">' + rect(152, 164, 88, 29, 14, 'url(#mnGlove)') + rect(216, 170, 20, 17, 8, P.c3) + '</g>' +
+    '</svg>';
+}
 
 function openCards(m) {
   CU.open = true; CU.list = m.l.slice(); CU.t = CU.max = m.d || 12; CU.n = m.n || 1; CU.of = m.of || 3;
   const box = $('cards');
-  $('cardsBody').innerHTML =
-    '<div class="dsay"><b>' + esc(merDice()) + '</b><span>Carta ' + (ROM[CU.n - 1] || CU.n) + ' de ' + (ROM[CU.of - 1] || CU.of) + ' · 1 · 2 · 3 · seguís disparando igual</span></div>' +
+  $('cardsBody').innerHTML = svgMano(manoColores()) +
+    '<div class="ctitle">Carta <b>' + (ROM[CU.n - 1] || CU.n) + '</b> de ' + (ROM[CU.of - 1] || CU.of) + ' · elegí una<span>1 · 2 · 3 · seguís disparando igual</span></div>' +
     '<div class="drow">' + CU.list.map((id, i) => {
       const c = C.CARD_BY[id];
-      return '<div class="ccard" data-i="' + i + '" style="--cc:' + c.c + ';animation-delay:' + (.2 + i * .1).toFixed(2) + 's">' +
+      return '<div class="ccard" data-i="' + i + '" style="--cc:' + c.c + ';animation-delay:' + (.16 + i * .09).toFixed(2) + 's">' +
         '<i class="ck">' + (i + 1) + '</i><div class="cic">' + cardIcon(c.ic) + '</div>' +
         '<div class="cn">' + esc(c.name) + '</div><div class="cd">' + esc(c.desc) + '</div></div>';
     }).join('') + '</div>' +
@@ -66,9 +87,9 @@ function pickCard(i) {
   CU.open = false;
   const box = $('cards');
   [...box.querySelectorAll('.ccard')].forEach((e, k) => { e.style.animationDelay = '0s'; e.classList.add(k === i ? 'taken' : 'gone'); });
-  box.classList.add('sale');          // el mercader se vuelve a meter en la sombra
+  box.classList.add('sale');          // la mano vuelve a buscar las que no elegiste
   const bar = box.querySelector('.cbar'); if (bar) bar.hidden = true;
-  setTimeout(() => { if (!CU.open) box.hidden = true; }, 600);
+  setTimeout(() => { if (!CU.open) box.hidden = true; }, 640);
   if (net) net.send({ t: 'card', i });
   SFX.quad();
 }

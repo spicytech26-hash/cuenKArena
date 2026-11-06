@@ -1,7 +1,7 @@
 
   /* =====================================================================
      CARTAS DE MEJORA (estilo roguelike) — Arena, Team Deathmatch y Captura la bandera
-     A las 3, 7 y 10 bajas le aparecen 3 cartas al azar (de 9) y elige una con 1-2-3.
+     A las 3, 7 y 12 bajas le aparecen 3 cartas al azar (de 9) y elige una con 1-2-3.
      Son del servidor: el cliente solo las dibuja. Máximo 3 por partida y duran hasta el final.
      ===================================================================== */
 

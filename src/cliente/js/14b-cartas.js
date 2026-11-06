@@ -1,5 +1,5 @@
 /* =================== CARTAS DE MEJORA (estilo roguelike) ===================
-   A las 3, 7 y 10 bajas el servidor manda 3 cartas (`cof`) y el jugador elige una con 1-2-3
+   A las 3, 7 y 12 bajas el servidor manda 3 cartas (`cof`) y el jugador elige una con 1-2-3
    (o con un clic, cuando el mouse está libre). Mientras elige puede seguir jugando: el cartel
    no traba el movimiento ni la mira, y si deja pasar los 12 s se queda con la primera.
    Las que ya tiene quedan de muestra abajo a la izquierda. El servidor es el que decide todo. */

@@ -121,9 +121,9 @@ const MODE_IDS = Object.keys(MODES);
 
 /* ---------- Cartas de mejora (estilo roguelike) ----------
    Solo en los modos con `cards` (Arena, Team Deathmatch y Captura la bandera).
-   A las 3, 7 y 10 bajas le aparecen 3 cartas al azar y se queda con una: máximo 3 por partida.
+   A las 3, 7 y 12 bajas le aparecen 3 cartas al azar y se queda con una: máximo 3 por partida.
    Duran toda la partida y se borran en `restart()`. Los bots eligen al azar y al toque. */
-const CARD_AT = [3, 7, 10];                // bajas que destraban cada carta (cada ronda cuesta más)
+const CARD_AT = [3, 7, 12];                // bajas que destraban cada carta (cada ronda cuesta más)
 const CARD_MAX = CARD_AT.length;           // cuántas lleva como máximo
 const CARD_PICK = 3;                       // cuántas se ofrecen por vez
 const CARD_TIME = 12;                      // si no elige en 12 s se queda con la primera
@@ -3462,7 +3462,7 @@ class Game {
 
   /* =====================================================================
      CARTAS DE MEJORA (estilo roguelike) — Arena, Team Deathmatch y Captura la bandera
-     A las 3, 7 y 10 bajas le aparecen 3 cartas al azar (de 9) y elige una con 1-2-3.
+     A las 3, 7 y 12 bajas le aparecen 3 cartas al azar (de 9) y elige una con 1-2-3.
      Son del servidor: el cliente solo las dibuja. Máximo 3 por partida y duran hasta el final.
      ===================================================================== */
 

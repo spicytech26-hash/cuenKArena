@@ -394,7 +394,7 @@ Con **H** (o en Ajustes → Video) pasás de primera a tercera persona: la cáma
 
 ## Cartas de mejora (estilo roguelike)
 
-En **Arena**, **Team Deathmatch** y **Captura la bandera** cada partida te arma un personaje distinto. A las **3, 7 y 10 bajas** te aparecen **abajo a la derecha tres cartas al azar** (de nueve) y te quedás con una: **máximo 3 por partida**. Cada ronda cuesta más que la anterior. Duran hasta que termina la partida y se borran en la siguiente. En Gungame y Francotiradores no hay cartas.
+En **Arena**, **Team Deathmatch** y **Captura la bandera** cada partida te arma un personaje distinto. A las **3, 7 y 12 bajas** te aparecen **abajo a la derecha tres cartas al azar** (de nueve) y te quedás con una: **máximo 3 por partida**. Cada ronda cuesta más que la anterior. Duran hasta que termina la partida y se borran en la siguiente. En Gungame y Francotiradores no hay cartas.
 
 El reparto se ve **abajo a la derecha**: **tu propia mano** sube desde el borde de abajo (el guante del robot, con los colores de tu skin), suelta las tres cartas de un manotazo y se retira enseguida. Las cartas son de **papel viejo con tinta sepia** y quedan grandes, así que se lee bien qué hace cada una. No traba nada: seguís corriendo, apuntando y disparando mientras elegís. Mientras están abiertas, las ranuras de armas y los carteles de teclas se corren de la vista para despejar ese rincón. Si elegís, la mano vuelve a buscar las dos que no quisiste.
 

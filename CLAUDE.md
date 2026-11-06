@@ -36,7 +36,7 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `src/nucleo/07-partida/4-danio.js` | daño, blindaje, muertes, rachas, gungame |
 | `src/nucleo/07-partida/5-banderas-items.js` | captura la bandera, **`give()` (qué da cada ítem)**, sifón, recoger ítems |
 | `src/nucleo/07-partida/6-ciclo.js` | puntajes, fin de partida, votación de mapa, bots de relleno, `tick`, snapshot |
-| `src/nucleo/07-partida/6b-cartas.js` | **cartas de mejora** (roguelike): reparto a las 3, 7 y 10 bajas (`CARD_AT`), elección, fuego del toque ígneo y explosión al morir |
+| `src/nucleo/07-partida/6b-cartas.js` | **cartas de mejora** (roguelike): reparto a las 3, 7 y 12 bajas (`CARD_AT`), elección, fuego del toque ígneo y explosión al morir |
 | `src/nucleo/07-partida/7-bots.js` | inteligencia de los bots |
 | `src/nucleo/99-exportar.js` | lo que el módulo exporta |
 

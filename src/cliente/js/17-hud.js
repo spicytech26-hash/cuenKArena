@@ -22,6 +22,7 @@ function updateHUD(){
     const carry=myTeam>=0&&FL[1-myTeam]&&FL[1-myTeam][0]===1&&FL[1-myTeam][1]===myId;
     $('carry').hidden=!(carry&&me.alive);if(carry)$('carry').style.background=TEAMS[1-myTeam].c;
   }
+  renderKillRow();
   const tl=Math.max(0,timeLeft);setTxt('tTime',Math.floor(tl/60)+':'+String(tl%60).padStart(2,'0'));
   setTxt('tPing',ping?ping+' ms':'–');
   $('quadChip').hidden=!(me.q>0&&me.alive);setTxt('quadT',String(me.q));
@@ -30,6 +31,18 @@ function updateHUD(){
   const prim=C.primaryOf(me.ow),ws=gg?[me.ow.findIndex((v,i)=>v&&i!==7),-1,7,-1]:[prim,0,7,10];
   ws.forEach((w,k)=>{const d=sl.children[k],W_=WEAPONS[w],has=w>=0&&!!me.ow[w];d.hidden=!has;if(!has)return;
     d.children[1].textContent=W_.name;d.classList.add('own');d.classList.toggle('on',w===me.w);d.lastChild.textContent=W_.ammo&&!gg?me.am[W_.ammo]:'∞';});
+}
+/* ---- fila chica de líderes por bajas: solo Arena y Gungame (el resto ya tiene marcador de equipos) ---- */
+const krCache={v:''};
+function renderKillRow(){
+  const box=$('killRow'),on=inGame&&(MODE==='arena'||MODE==='gungame')&&scores.length>1;
+  if(!on){if(!box.hidden){box.hidden=true;box.innerHTML='';krCache.v='';}return;}
+  const mio=scores.findIndex(s=>s[0]===myId),l=scores.slice(0,3).map((s,i)=>[s,i+1]);
+  if(mio>=3)l.push([scores[mio],mio+1]);                      // si no estás en el podio, vas al final
+  const v='<span class="krt">Bajas</span>'+l.map(([s,pos])=>
+    '<span class="kr'+(s[0]===myId?' me':'')+(pos===1?' lead':'')+'"><i>'+pos+'</i><b>'+esc(s[1])+'</b><u>'+s[2]+'</u></span>').join('');
+  if(v!==krCache.v){krCache.v=v;box.innerHTML=v;}
+  box.hidden=false;
 }
 function renderBoard(){
   const tl=Math.max(0,timeLeft),gg=MODE==='gungame',ctf=MODE==='ctf',tm=teamsMode();
@@ -47,6 +60,6 @@ function applyMode(){
   const gg=MODE==='gungame',tm=teamsMode();
   $('tCrBox').hidden=!C.MODES[MODE].shop;$('shopHint').hidden=!C.MODES[MODE].shop;$('kickHint').hidden=!online;$('mapHint').hidden=C.MODES[MODE].maps.length<2;$('tLvlBox').hidden=!gg;$('tNextBox').hidden=!gg;
   $('ctfBox').hidden=!tm;$('carry').hidden=true;$('tRank').parentElement.hidden=tm;$('lobbyBox').hidden=true;
-  $('slots').innerHTML='';renderMyCards();updateHUD();
+  $('slots').innerHTML='';krCache.v='';renderMyCards();updateHUD();
 }
 

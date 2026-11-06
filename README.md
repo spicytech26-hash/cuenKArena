@@ -394,12 +394,15 @@ Con **H** (o en Ajustes → Video) pasás de primera a tercera persona: la cáma
 
 ## Cartas de mejora (estilo roguelike)
 
-En **Arena**, **Team Deathmatch** y **Captura la bandera** cada partida te arma un personaje distinto. A las **3, 6 y 9 bajas** te aparecen abajo del centro **tres cartas al azar** (de nueve) y te quedás con una: **máximo 3 por partida**. Duran hasta que termina la partida y se borran en la siguiente. En Gungame y Francotiradores no hay cartas.
+En **Arena**, **Team Deathmatch** y **Captura la bandera** cada partida te arma un personaje distinto. A las **3, 7 y 10 bajas** te aparecen **abajo a la derecha tres cartas al azar** (de nueve) y te quedás con una: **máximo 3 por partida**. Cada ronda cuesta más que la anterior. Duran hasta que termina la partida y se borran en la siguiente. En Gungame y Francotiradores no hay cartas.
 
-- Se elige con **1 · 2 · 3** (o con un clic, si tenés el mouse libre). El cartel **no te traba**: podés seguir corriendo y disparando mientras decidís.
+Las cartas son de **papel viejo con tinta sepia**, al estilo del Mercader del Umbral: salen desde abajo de la pantalla como si las sacaras de la cintura y te quedan en la mano, montadas en abanico y con un vaivén suave. Mientras las tenés abiertas, las ranuras de armas y los carteles de teclas se corren de la vista.
+
+- Se elige con **1 · 2 · 3** (o con un clic, si tenés el mouse libre). La mano **no te traba**: podés seguir corriendo y disparando mientras decidís.
 - Si dejás pasar los **12 segundos** (la barra naranja de abajo), te quedás con la primera.
 - Los **bots** también reciben cartas, al azar y al instante, así no quedan en desventaja.
-- Las que ya tenés quedan de muestra **abajo a la izquierda**, con el cartel de cuántas bajas te faltan para la próxima.
+- Las que ya tenés quedan de muestra **abajo a la izquierda** (debajo del chat), con el cartel de cuántas bajas te faltan para la próxima.
+- Las tres que te toca elegir salen **siempre al azar** entre las que todavía no tenés, así que nunca te repite una.
 
 | Carta | Qué hace |
 |---|---|
@@ -414,3 +417,7 @@ En **Arena**, **Team Deathmatch** y **Captura la bandera** cada partida te arma 
 | **Hambre de sangre** | Cada baja te cura 40 de vida (hasta 100) |
 
 Todo lo decide el servidor: el daño, la curación, el fuego y la explosión al morir salen de `src/nucleo/`, el cliente solo dibuja las cartas.
+
+## Fila de líderes por bajas (Arena y Gungame)
+
+En **Arena** y **Gungame** aparece arriba del centro una fila chica con los **tres que más bajas tienen**, con el puesto, el nombre y el número. El primero queda marcado en naranja y vos en violeta; si no estás en el podio, tu puesto se agrega al final de la fila. En los modos por equipos no aparece, porque ya está el marcador de rojo contra azul.

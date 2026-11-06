@@ -36,7 +36,7 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `src/nucleo/07-partida/4-danio.js` | daño, blindaje, muertes, rachas, gungame |
 | `src/nucleo/07-partida/5-banderas-items.js` | captura la bandera, **`give()` (qué da cada ítem)**, sifón, recoger ítems |
 | `src/nucleo/07-partida/6-ciclo.js` | puntajes, fin de partida, votación de mapa, bots de relleno, `tick`, snapshot |
-| `src/nucleo/07-partida/6b-cartas.js` | **cartas de mejora** (roguelike): reparto cada 3 bajas, elección, fuego del toque ígneo y explosión al morir |
+| `src/nucleo/07-partida/6b-cartas.js` | **cartas de mejora** (roguelike): reparto a las 3, 7 y 10 bajas (`CARD_AT`), elección, fuego del toque ígneo y explosión al morir |
 | `src/nucleo/07-partida/7-bots.js` | inteligencia de los bots |
 | `src/nucleo/99-exportar.js` | lo que el módulo exporta |
 
@@ -61,10 +61,10 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `js/12-mensajes.js` | mensajes del servidor (`onMsg`), chat, eventos |
 | `js/13-disparos.js` | proyectiles del lado del cliente, rocket jump, disparar |
 | `js/14-tienda.js` | tienda (B) y taquilla |
-| `js/14b-cartas.js` | **cartas de mejora**: cartel de elección (1-2-3), mazo de abajo a la izquierda, chispas del fuego |
+| `js/14b-cartas.js` | **cartas de mejora**: mano de papel viejo abajo a la derecha (1-2-3), mazo de abajo a la izquierda, chispas del fuego |
 | `js/15-entrada.js` | teclado, mouse, menú de echar (Y) |
 | `js/16-simulacion.js` | movimiento propio e interpolación de los demás |
-| `js/17-hud.js` | HUD |
+| `js/17-hud.js` | HUD, fila de líderes por bajas (`renderKillRow`, solo Arena y Gungame) |
 | `js/18-camara.js` | cámara, arma en mano y jugadores remotos (`updRemote`) |
 | `js/18-noche.js` | **modo noche** (mapas con `theme.noche`, hoy solo Skatenight; la linterna se prende con **G**, la T es el chat. Pyramid NO es de noche: su música y ambiente van por `theme.ambiente:'piramide'` en `pyramidAmbient`): linterna del arma, haces y focos de los rivales, visores apagados (`updNight`, `nightRemote`) |
 | `js/18-tercera-persona.js` | **vista en tercera persona** (H alterna, J cambia de hombro; Ajustes → Video): cámara sobre el hombro con choque contra paredes, modelo propio animado (`updMiModelo`), apuntado hacia el punto de la mira (`tpApunte`) y boca del arma (`tpMuzzle`). El estado va en `TP` y en `S.view`, `S.shoulder`, `S.tpd` |

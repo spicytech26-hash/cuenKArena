@@ -1,5 +1,5 @@
 /* =================== CARTAS DE MEJORA (estilo roguelike) ===================
-   A las 3, 6 y 9 bajas el servidor manda 3 cartas (`cof`) y el jugador elige una con 1-2-3
+   A las 3, 7 y 10 bajas el servidor manda 3 cartas (`cof`) y el jugador elige una con 1-2-3
    (o con un clic, cuando el mouse está libre). Mientras elige puede seguir jugando: el cartel
    no traba el movimiento ni la mira, y si deja pasar los 12 s se queda con la primera.
    Las que ya tiene quedan de muestra abajo a la izquierda. El servidor es el que decide todo. */
@@ -20,33 +20,38 @@ const CARD_SVG = {
 };
 const cardIcon = ic => '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">' + (CARD_SVG[ic] || '') + '</svg>';
 const cardsOpen = () => CU.open;
-function resetCards() { me.cards = []; me.kills = 0; CU.open = false; CU.list = []; $('cards').hidden = true; BURN.clear(); renderMyCards(); }
+function resetCards() { me.cards = []; me.kills = 0; CU.list = []; closeCards(); BURN.clear(); renderMyCards(); }
 
-/* ---- el cartel de elección ---- */
+/* ---- la mano de cartas (abajo a la derecha) ---- */
+const ROM = ['I', 'II', 'III'];
 function openCards(m) {
   CU.open = true; CU.list = m.l.slice(); CU.t = CU.max = m.d || 12; CU.n = m.n || 1; CU.of = m.of || 3;
-  const box = $('cards');
-  box.innerHTML = '<div class="ctitle">CARTA <b>' + CU.n + '</b> DE ' + CU.of + ' · ELEGÍ UNA</div>' +
+  const box = $('cards'), n = CU.list.length, mid = (n - 1) / 2;
+  box.innerHTML = '<div class="ctitle">Carta <b>' + (ROM[CU.n - 1] || CU.n) + '</b> de ' + (ROM[CU.of - 1] || CU.of) + ' · elegí una</div>' +
     '<div class="crow">' + CU.list.map((id, i) => {
-      const c = C.CARD_BY[id];
-      return '<div class="ccard" data-i="' + i + '" style="--cc:' + c.c + ';animation-delay:' + (i * .09).toFixed(2) + 's">' +
+      const c = C.CARD_BY[id], rot = ((i - mid) * 7).toFixed(1), dy = (Math.abs(i - mid) * 13).toFixed(0);
+      return '<div class="ccard" data-i="' + i + '" style="--cc:' + c.c + ';--rot:' + rot + 'deg;--dy:' + dy + 'px;z-index:' + (10 - Math.abs(i - mid)) + '">' +
+        '<div class="cin" style="animation-delay:' + (i * .1).toFixed(2) + 's">' +
         '<i class="ck">' + (i + 1) + '</i><div class="cic">' + cardIcon(c.ic) + '</div>' +
-        '<div class="cn">' + esc(c.name) + '</div><div class="cd">' + esc(c.desc) + '</div></div>';
+        '<div class="cn">' + esc(c.name) + '</div><div class="cd">' + esc(c.desc) + '</div></div></div>';
     }).join('') + '</div>' +
     '<div class="cbar"><i></i></div><div class="chint">1 · 2 · 3 o clic · dura toda la partida</div>';
   box.hidden = false;
   box.classList.remove('in'); void box.offsetWidth; box.classList.add('in');
+  $('hud').classList.add('cartas');   // mientras elegís, las ranuras y los carteles de teclas se corren de la vista
   [...box.querySelectorAll('.ccard')].forEach(e => e.addEventListener('click', () => pickCard(+e.dataset.i)));
-  announce('¡CARTA NUEVA!', CU.n + ' de ' + CU.of + ' · elegí con 1, 2 o 3');
+  announce('EL MAZO TE ELIGIÓ', 'Carta ' + (ROM[CU.n - 1] || CU.n) + ' de ' + (ROM[CU.of - 1] || CU.of) + ' · elegí con 1, 2 o 3');
   SFX.hunt();
 }
+function closeCards() { CU.open = false; $('cards').hidden = true; $('hud').classList.remove('cartas'); }
 function pickCard(i) {
   if (!CU.open || !CU.list[i]) return;
   CU.open = false;
   const box = $('cards');
-  [...box.querySelectorAll('.ccard')].forEach((e, k) => { e.style.animationDelay = '0s'; e.classList.add(k === i ? 'taken' : 'gone'); });
+  [...box.querySelectorAll('.ccard')].forEach((e, k) => e.classList.add(k === i ? 'taken' : 'gone'));
   const bar = box.querySelector('.cbar'); if (bar) bar.hidden = true;
-  setTimeout(() => { if (!CU.open) box.hidden = true; }, 430);
+  $('hud').classList.remove('cartas');
+  setTimeout(() => { if (!CU.open) box.hidden = true; }, 560);
   if (net) net.send({ t: 'card', i });
   SFX.quad();
 }
@@ -79,7 +84,7 @@ function updCards(dt) {
     CU.t -= dt;
     const bar = document.querySelector('#cards .cbar i');
     if (bar) bar.style.transform = 'scaleX(' + Math.max(0, CU.t / CU.max).toFixed(3) + ')';
-    if (CU.t <= 0) { CU.open = false; $('cards').hidden = true; }   // el servidor ya se queda con la primera
+    if (CU.t <= 0) closeCards();   // el servidor ya se queda con la primera
   }
   if (!BURN.size) return;
   burnT -= dt;

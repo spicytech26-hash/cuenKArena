@@ -61,7 +61,7 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `js/12-mensajes.js` | mensajes del servidor (`onMsg`), chat, eventos |
 | `js/13-disparos.js` | proyectiles del lado del cliente, rocket jump, disparar |
 | `js/14-tienda.js` | tienda (B) y taquilla |
-| `js/14b-cartas.js` | **cartas de mejora**: mano de papel viejo abajo a la derecha (1-2-3), mazo de abajo a la izquierda, chispas del fuego |
+| `js/14b-cartas.js` | **cartas de mejora**: mano de papel viejo abajo a la derecha (1-2-3) con las manos del robot en SVG (`svgBrazo`/`svgDedos`, colores de `skinParts`), mazo de abajo a la izquierda, chispas del fuego |
 | `js/15-entrada.js` | teclado, mouse, menú de echar (Y) |
 | `js/16-simulacion.js` | movimiento propio e interpolación de los demás |
 | `js/17-hud.js` | HUD, fila de líderes por bajas (`renderKillRow`, solo Arena y Gungame) |

@@ -38,9 +38,9 @@ function renderKillRow(){
   const box=$('killRow'),on=inGame&&(MODE==='arena'||MODE==='gungame')&&scores.length>1;
   if(!on){if(!box.hidden){box.hidden=true;box.innerHTML='';krCache.v='';}return;}
   const mio=scores.findIndex(s=>s[0]===myId),l=scores.slice(0,3).map((s,i)=>[s,i+1]);
-  if(mio>=3)l.push([scores[mio],mio+1]);                      // si no estás en el podio, vas al final
-  const v='<span class="krt">Bajas</span>'+l.map(([s,pos])=>
-    '<span class="kr'+(s[0]===myId?' me':'')+(pos===1?' lead':'')+'"><i>'+pos+'</i><b>'+esc(s[1])+'</b><u>'+s[2]+'</u></span>').join('');
+  if(mio>=3)l.push([scores[mio],mio+1]);                      // si no estás en el podio, vas al final del renglón
+  const v='<span class="krt">Top<small>bajas</small></span>'+l.map(([s,pos])=>
+    '<span class="kr p'+Math.min(4,pos)+(s[0]===myId?' me':'')+'"><i>'+pos+'</i><b>'+esc(s[1])+'</b><u>'+s[2]+'</u></span>').join('');
   if(v!==krCache.v){krCache.v=v;box.innerHTML=v;}
   box.hidden=false;
 }

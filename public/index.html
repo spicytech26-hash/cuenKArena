@@ -885,13 +885,24 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
    y las sostuviera. Todo se anima con transform/opacity nomás, y las esquinas cortadas del
    HUD fijo siguen siendo degradados (nada de clip-path sobre el WebGL).
    ===================================================================== */
-#cards{position:fixed;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));
-  display:flex;flex-direction:column;align-items:flex-end;gap:7px;z-index:4;max-width:calc(100vw - 24px)}
+#cards{position:fixed;right:max(10px,env(safe-area-inset-right,0px));bottom:0;
+  display:flex;flex-direction:column;align-items:flex-end;gap:7px;z-index:4;max-width:calc(100vw - 20px)}
+#cards .chead{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+/* la mano: el antebrazo entra desde abajo a la derecha, las cartas en el medio y los dedos por delante */
+#cards .chand{position:relative;width:420px;height:286px}
+#cards .arm{position:absolute;right:-26px;bottom:-54px;width:286px;height:286px;z-index:1;filter:none;
+  animation:manoSube .55s cubic-bezier(.18,1.1,.32,1) backwards}
+#cards .fing{position:absolute;right:-4px;bottom:28px;width:352px;height:156px;z-index:30;pointer-events:none;
+  animation:manoSube .55s cubic-bezier(.18,1.1,.32,1) .06s backwards}
+#cards.sale .arm,#cards.sale .fing{animation:manoBaja .5s ease-in forwards}
+@keyframes manoSube{from{opacity:0;transform:translate(42px,180px) rotate(12deg)}to{opacity:1;transform:none}}
+@keyframes manoBaja{to{opacity:0;transform:translate(36px,200px) rotate(10deg)}}
 #cards .ctitle{font-family:Georgia,'Palatino Linotype',serif;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:#7fae8f;text-shadow:0 1px 0 #000,0 0 12px rgba(141,255,58,.25)}
 #cards .ctitle b{font-weight:400;font-style:italic;color:var(--bone)}
 #cards.in .ctitle{animation:cTitleIn .4s ease-out}
 /* la mano: tres cartas montadas una sobre la otra, con un vaivén suave */
-#cards .crow{display:flex;align-items:flex-end;animation:handSway 5.2s ease-in-out .7s infinite alternate}
+#cards .crow{position:absolute;left:0;bottom:62px;z-index:10;display:flex;align-items:flex-end}
+#cards .chand{animation:handSway 5.2s ease-in-out .7s infinite alternate;transform-origin:88% 100%}
 #cards .ccard{position:relative;width:150px;height:212px;margin:0 -15px;transform-origin:50% 135%;
   transform:rotate(var(--rot)) translateY(var(--dy))}
 #cards .cin{position:absolute;inset:0;padding:11px 9px 9px;text-align:center;pointer-events:auto;cursor:pointer;
@@ -947,21 +958,32 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 /* ---- fila de líderes por bajas (Arena y Gungame) ---- */
 #killRow{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%);display:flex;align-items:stretch;gap:3px;
   max-width:calc(100vw - 32px);font-family:Georgia,'Palatino Linotype',serif}
-#killRow .krt{display:flex;align-items:center;padding:3px 9px;font-family:var(--mono);font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:#7fae8f;
+#killRow .krt{display:flex;flex-direction:column;justify-content:center;padding:2px 10px 3px;font-family:var(--display);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#7fae8f;
   background:linear-gradient(135deg,transparent 7px,rgba(12,20,17,.86) 7.5px);text-shadow:0 1px 0 #000}
+#killRow .krt small{font-family:var(--mono);font-size:8px;letter-spacing:.24em;color:#5f7f6c;margin-top:-1px}
 #killRow .kr{display:flex;align-items:center;gap:6px;padding:3px 11px 3px 7px;background:rgba(16,12,10,.8);
   border-bottom:2px solid rgba(127,174,143,.28);text-shadow:0 1px 0 #000;max-width:168px}
-#killRow .kr i{font-style:normal;font-family:var(--mono);font-size:10px;color:#7b6a58;min-width:9px;text-align:center}
-#killRow .kr b{font-weight:400;font-size:12px;letter-spacing:.05em;color:#d8c9a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#killRow .kr u{text-decoration:none;font-family:var(--display);font-size:15px;line-height:1;color:var(--bone);font-variant-numeric:tabular-nums}
-#killRow .kr.lead{border-bottom-color:var(--pump);background:rgba(44,20,8,.84)}
-#killRow .kr.lead u{color:var(--pump2);text-shadow:0 1px 0 #000,0 0 12px rgba(255,122,26,.45)}
+#killRow .kr i{font-style:normal;font-family:var(--display);font-size:11px;line-height:1;color:#8e7a66;min-width:16px;text-align:center;
+  border:1px solid rgba(142,122,102,.4);padding:2px 0 1px}
+#killRow .kr b{font-weight:400;font-size:12px;letter-spacing:.05em;color:#c8b795;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#killRow .kr u{text-decoration:none;font-family:var(--display);font-size:14px;line-height:1;color:var(--bone);font-variant-numeric:tabular-nums}
+/* jerarquía: el puntero grande y encendido, el 2 y el 3 cada vez más apagados */
+#killRow .kr.p1{padding:4px 13px 4px 8px;border-bottom-color:var(--pump);background:rgba(48,22,8,.86)}
+#killRow .kr.p1 i{color:#0f0a06;background:var(--pump2);border-color:var(--pump2);font-size:12px}
+#killRow .kr.p1 b{font-size:14px;color:#f1e3c2}
+#killRow .kr.p1 u{font-size:19px;color:var(--pump2);text-shadow:0 1px 0 #000,0 0 12px rgba(255,122,26,.5)}
+#killRow .kr.p2{opacity:.92}#killRow .kr.p2 b{font-size:12.5px}#killRow .kr.p2 u{font-size:15px}
+#killRow .kr.p3{opacity:.78}#killRow .kr.p3 b{font-size:11.5px}#killRow .kr.p3 u{font-size:13px}
+#killRow .kr.p4{opacity:.9;margin-left:7px}
 #killRow .kr.me{border-bottom-color:var(--witch)}
 #killRow .kr.me b{color:#e6d8b8}
+#killRow .kr.me i{border-color:rgba(155,77,255,.6);color:#c9a6ff}
 @media (max-width:760px){#cards .ccard{width:112px;height:160px;margin:0 -11px}#cards .cin{padding:8px 6px}#cards .cd{display:none}
   #cards .cic{width:48px;height:48px;margin:10px auto 8px}#cards .cic svg{width:28px;height:28px}#cards .cn{font-size:11.5px}
-  #cards .cbar{width:230px}#myCards .mcard b{display:none}#killRow .kr{max-width:116px}#killRow .krt{display:none}}
-@media (prefers-reduced-motion:reduce){#cards .cin,#cards .crow,#cards.in .cic,#cards.in .ctitle,#myCards .mcard.nueva{animation:none}}
+  #cards .cbar{width:230px}#cards .chand{width:312px;height:216px}#cards .crow{bottom:46px}
+  #cards .arm{width:212px;height:212px;right:-20px;bottom:-40px}#cards .fing{width:262px;height:116px;bottom:20px}
+  #myCards .mcard b{display:none}#killRow .kr{max-width:116px}#killRow .krt small{display:none}}
+@media (prefers-reduced-motion:reduce){#cards .cin,#cards .chand,#cards .arm,#cards .fing,#cards.in .cic,#cards.in .ctitle,#myCards .mcard.nueva{animation:none}}
 </style>
 
 <canvas id="c"></canvas>
@@ -4516,36 +4538,70 @@ const cardIcon = ic => '<svg viewBox="0 0 24 24" aria-hidden="true" fill="curren
 const cardsOpen = () => CU.open;
 function resetCards() { me.cards = []; me.kills = 0; CU.list = []; closeCards(); BURN.clear(); renderMyCards(); }
 
-/* ---- la mano de cartas (abajo a la derecha) ---- */
+/* ---- la mano de cartas (abajo a la derecha) ----
+   Las manos son del robot del jugador, dibujadas en SVG con sus propios colores (guante, brazo y visor):
+   no hay nada en 3D ni se toca el arma en pantalla, así que podés seguir disparando mientras elegís. */
 const ROM = ['I', 'II', 'III'];
+function manoColores() {
+  const sk = teamsMode() && myTeam >= 0 ? Object.assign({}, S.skin, { c: colorOf(myId), cb: null, c2: null, c3: null }) : S.skin;
+  return skinParts(sk);
+}
+// antebrazo y dorso de la mano: van detrás de las cartas
+function svgBrazo(P) {
+  return '<svg class="arm" viewBox="0 0 300 300" aria-hidden="true"><g transform="rotate(-18 210 300)">' +
+    '<rect x="150" y="140" width="110" height="180" rx="16" fill="' + P.c2 + '"/>' +
+    '<rect x="150" y="140" width="110" height="16" rx="8" fill="' + P.c3 + '"/>' +
+    '<rect x="166" y="180" width="78" height="9" rx="4" fill="' + P.c3 + '" opacity=".5"/>' +
+    '<rect x="166" y="204" width="78" height="9" rx="4" fill="' + P.c3 + '" opacity=".32"/>' +
+    '<rect x="134" y="74" width="142" height="88" rx="20" fill="' + P.cb + '"/>' +
+    '<rect x="150" y="92" width="110" height="12" rx="6" fill="' + P.v + '" opacity=".6"/>' +
+    '<rect x="134" y="74" width="142" height="88" rx="20" fill="none" stroke="rgba(0,0,0,.5)" stroke-width="3"/>' +
+    '</g></svg>';
+}
+// dedos y pulgar: van por delante, agarrando el borde de abajo de las cartas
+function svgDedos(P) {
+  let d = '';
+  for (let i = 0; i < 4; i++) {
+    const y = 16 + i * 29, len = 152 - i * 15, x = 330 - len, rot = (-7 + i * 4.5).toFixed(1);
+    d += '<g transform="rotate(' + rot + ' 332 ' + (y + 13) + ')">' +
+      '<rect x="' + x + '" y="' + y + '" width="' + len + '" height="26" rx="13" fill="' + P.cb + '" stroke="rgba(0,0,0,.45)" stroke-width="3"/>' +
+      '<rect x="' + (x + 9) + '" y="' + (y + 7) + '" width="26" height="13" rx="6" fill="' + P.c3 + '" opacity=".7"/>' +
+      '<rect x="' + (x + 62) + '" y="' + (y + 3) + '" width="10" height="21" rx="5" fill="' + P.c3 + '" opacity=".45"/></g>';
+  }
+  d += '<g transform="rotate(-40 344 142)"><rect x="228" y="116" width="118" height="31" rx="15" fill="' + P.cb + '" stroke="rgba(0,0,0,.45)" stroke-width="3"/>' +
+    '<rect x="238" y="124" width="28" height="14" rx="7" fill="' + P.c3 + '" opacity=".7"/></g>';
+  return '<svg class="fing" viewBox="0 0 360 160" aria-hidden="true">' + d + '</svg>';
+}
 function openCards(m) {
   CU.open = true; CU.list = m.l.slice(); CU.t = CU.max = m.d || 12; CU.n = m.n || 1; CU.of = m.of || 3;
-  const box = $('cards'), n = CU.list.length, mid = (n - 1) / 2;
-  box.innerHTML = '<div class="ctitle">Carta <b>' + (ROM[CU.n - 1] || CU.n) + '</b> de ' + (ROM[CU.of - 1] || CU.of) + ' · elegí una</div>' +
+  const box = $('cards'), n = CU.list.length, mid = (n - 1) / 2, P = manoColores();
+  box.innerHTML = '<div class="chead"><div class="ctitle">Carta <b>' + (ROM[CU.n - 1] || CU.n) + '</b> de ' + (ROM[CU.of - 1] || CU.of) + ' · elegí una</div>' +
+    '<div class="cbar"><i></i></div><div class="chint">1 · 2 · 3 o clic · seguís disparando igual</div></div>' +
+    '<div class="chand">' + svgBrazo(P) +
     '<div class="crow">' + CU.list.map((id, i) => {
       const c = C.CARD_BY[id], rot = ((i - mid) * 7).toFixed(1), dy = (Math.abs(i - mid) * 13).toFixed(0);
       return '<div class="ccard" data-i="' + i + '" style="--cc:' + c.c + ';--rot:' + rot + 'deg;--dy:' + dy + 'px;z-index:' + (10 - Math.abs(i - mid)) + '">' +
         '<div class="cin" style="animation-delay:' + (i * .1).toFixed(2) + 's">' +
         '<i class="ck">' + (i + 1) + '</i><div class="cic">' + cardIcon(c.ic) + '</div>' +
         '<div class="cn">' + esc(c.name) + '</div><div class="cd">' + esc(c.desc) + '</div></div></div>';
-    }).join('') + '</div>' +
-    '<div class="cbar"><i></i></div><div class="chint">1 · 2 · 3 o clic · dura toda la partida</div>';
+    }).join('') + '</div>' + svgDedos(P) + '</div>';
   box.hidden = false;
-  box.classList.remove('in'); void box.offsetWidth; box.classList.add('in');
+  box.classList.remove('in', 'sale'); void box.offsetWidth; box.classList.add('in');
   $('hud').classList.add('cartas');   // mientras elegís, las ranuras y los carteles de teclas se corren de la vista
   [...box.querySelectorAll('.ccard')].forEach(e => e.addEventListener('click', () => pickCard(+e.dataset.i)));
   announce('EL MAZO TE ELIGIÓ', 'Carta ' + (ROM[CU.n - 1] || CU.n) + ' de ' + (ROM[CU.of - 1] || CU.of) + ' · elegí con 1, 2 o 3');
   SFX.hunt();
 }
-function closeCards() { CU.open = false; $('cards').hidden = true; $('hud').classList.remove('cartas'); }
+function closeCards() { CU.open = false; $('cards').hidden = true; $('cards').classList.remove('in', 'sale'); $('hud').classList.remove('cartas'); }
 function pickCard(i) {
   if (!CU.open || !CU.list[i]) return;
   CU.open = false;
   const box = $('cards');
   [...box.querySelectorAll('.ccard')].forEach((e, k) => e.classList.add(k === i ? 'taken' : 'gone'));
-  const bar = box.querySelector('.cbar'); if (bar) bar.hidden = true;
+  box.classList.add('sale');          // la mano baja y se va abajo de la pantalla
+  const h = box.querySelector('.chead'); if (h) h.hidden = true;
   $('hud').classList.remove('cartas');
-  setTimeout(() => { if (!CU.open) box.hidden = true; }, 560);
+  setTimeout(() => { if (!CU.open) box.hidden = true; }, 620);
   if (net) net.send({ t: 'card', i });
   SFX.quad();
 }
@@ -4937,9 +4993,9 @@ function renderKillRow(){
   const box=$('killRow'),on=inGame&&(MODE==='arena'||MODE==='gungame')&&scores.length>1;
   if(!on){if(!box.hidden){box.hidden=true;box.innerHTML='';krCache.v='';}return;}
   const mio=scores.findIndex(s=>s[0]===myId),l=scores.slice(0,3).map((s,i)=>[s,i+1]);
-  if(mio>=3)l.push([scores[mio],mio+1]);                      // si no estás en el podio, vas al final
-  const v='<span class="krt">Bajas</span>'+l.map(([s,pos])=>
-    '<span class="kr'+(s[0]===myId?' me':'')+(pos===1?' lead':'')+'"><i>'+pos+'</i><b>'+esc(s[1])+'</b><u>'+s[2]+'</u></span>').join('');
+  if(mio>=3)l.push([scores[mio],mio+1]);                      // si no estás en el podio, vas al final del renglón
+  const v='<span class="krt">Top<small>bajas</small></span>'+l.map(([s,pos])=>
+    '<span class="kr p'+Math.min(4,pos)+(s[0]===myId?' me':'')+'"><i>'+pos+'</i><b>'+esc(s[1])+'</b><u>'+s[2]+'</u></span>').join('');
   if(v!==krCache.v){krCache.v=v;box.innerHTML=v;}
   box.hidden=false;
 }

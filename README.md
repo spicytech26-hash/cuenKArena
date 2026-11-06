@@ -396,9 +396,9 @@ Con **H** (o en Ajustes → Video) pasás de primera a tercera persona: la cáma
 
 En **Arena**, **Team Deathmatch** y **Captura la bandera** cada partida te arma un personaje distinto. A las **3, 7 y 10 bajas** te aparecen **abajo a la derecha tres cartas al azar** (de nueve) y te quedás con una: **máximo 3 por partida**. Cada ronda cuesta más que la anterior. Duran hasta que termina la partida y se borran en la siguiente. En Gungame y Francotiradores no hay cartas.
 
-Las cartas son de **papel viejo con tinta sepia**, al estilo del Mercader del Umbral: salen desde abajo de la pantalla como si las sacaras de la cintura y te quedan en la mano, montadas en abanico y con un vaivén suave. Mientras las tenés abiertas, las ranuras de armas y los carteles de teclas se corren de la vista.
+Las cartas son de **papel viejo con tinta sepia**, al estilo del Mercader del Umbral: salen desde abajo de la pantalla y te las sostiene **tu propio robot con las manos** (el antebrazo y los dedos se dibujan con los colores de tu skin: guante, brazo y visor), montadas en abanico y con un vaivén suave. Mientras las tenés abiertas, las ranuras de armas y los carteles de teclas se corren de la vista.
 
-- Se elige con **1 · 2 · 3** (o con un clic, si tenés el mouse libre). La mano **no te traba**: podés seguir corriendo y disparando mientras decidís.
+- Se elige con **1 · 2 · 3** (o con un clic, si tenés el mouse libre). La mano **no te traba nada**: el arma en pantalla sigue como estaba y podés correr, apuntar y disparar mientras decidís.
 - Si dejás pasar los **12 segundos** (la barra naranja de abajo), te quedás con la primera.
 - Los **bots** también reciben cartas, al azar y al instante, así no quedan en desventaja.
 - Las que ya tenés quedan de muestra **abajo a la izquierda** (debajo del chat), con el cartel de cuántas bajas te faltan para la próxima.
@@ -420,4 +420,4 @@ Todo lo decide el servidor: el daño, la curación, el fuego y la explosión al 
 
 ## Fila de líderes por bajas (Arena y Gungame)
 
-En **Arena** y **Gungame** aparece arriba del centro una fila chica con los **tres que más bajas tienen**, con el puesto, el nombre y el número. El primero queda marcado en naranja y vos en violeta; si no estás en el podio, tu puesto se agrega al final de la fila. En los modos por equipos no aparece, porque ya está el marcador de rojo contra azul.
+En **Arena** y **Gungame** aparece arriba del centro una fila chica, ordenada por jerarquía, con los **tres que más bajas tienen**: arranca con el cartel **TOP** y sigue con el puesto, el nombre y las bajas de cada uno. El número 1 va más grande y en naranja, y el 2 y el 3 cada vez más apagados. Si no estás en el podio, tu puesto se agrega al final de la fila marcado en violeta. En los modos por equipos no aparece, porque ya está el marcador de rojo contra azul.

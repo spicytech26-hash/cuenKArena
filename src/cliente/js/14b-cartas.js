@@ -22,36 +22,70 @@ const cardIcon = ic => '<svg viewBox="0 0 24 24" aria-hidden="true" fill="curren
 const cardsOpen = () => CU.open;
 function resetCards() { me.cards = []; me.kills = 0; CU.list = []; closeCards(); BURN.clear(); renderMyCards(); }
 
-/* ---- la mano de cartas (abajo a la derecha) ---- */
+/* ---- la mano de cartas (abajo a la derecha) ----
+   Las manos son del robot del jugador, dibujadas en SVG con sus propios colores (guante, brazo y visor):
+   no hay nada en 3D ni se toca el arma en pantalla, así que podés seguir disparando mientras elegís. */
 const ROM = ['I', 'II', 'III'];
+function manoColores() {
+  const sk = teamsMode() && myTeam >= 0 ? Object.assign({}, S.skin, { c: colorOf(myId), cb: null, c2: null, c3: null }) : S.skin;
+  return skinParts(sk);
+}
+// antebrazo y dorso de la mano: van detrás de las cartas
+function svgBrazo(P) {
+  return '<svg class="arm" viewBox="0 0 300 300" aria-hidden="true"><g transform="rotate(-18 210 300)">' +
+    '<rect x="150" y="140" width="110" height="180" rx="16" fill="' + P.c2 + '"/>' +
+    '<rect x="150" y="140" width="110" height="16" rx="8" fill="' + P.c3 + '"/>' +
+    '<rect x="166" y="180" width="78" height="9" rx="4" fill="' + P.c3 + '" opacity=".5"/>' +
+    '<rect x="166" y="204" width="78" height="9" rx="4" fill="' + P.c3 + '" opacity=".32"/>' +
+    '<rect x="134" y="74" width="142" height="88" rx="20" fill="' + P.cb + '"/>' +
+    '<rect x="150" y="92" width="110" height="12" rx="6" fill="' + P.v + '" opacity=".6"/>' +
+    '<rect x="134" y="74" width="142" height="88" rx="20" fill="none" stroke="rgba(0,0,0,.5)" stroke-width="3"/>' +
+    '</g></svg>';
+}
+// dedos y pulgar: van por delante, agarrando el borde de abajo de las cartas
+function svgDedos(P) {
+  let d = '';
+  for (let i = 0; i < 4; i++) {
+    const y = 16 + i * 29, len = 152 - i * 15, x = 330 - len, rot = (-7 + i * 4.5).toFixed(1);
+    d += '<g transform="rotate(' + rot + ' 332 ' + (y + 13) + ')">' +
+      '<rect x="' + x + '" y="' + y + '" width="' + len + '" height="26" rx="13" fill="' + P.cb + '" stroke="rgba(0,0,0,.45)" stroke-width="3"/>' +
+      '<rect x="' + (x + 9) + '" y="' + (y + 7) + '" width="26" height="13" rx="6" fill="' + P.c3 + '" opacity=".7"/>' +
+      '<rect x="' + (x + 62) + '" y="' + (y + 3) + '" width="10" height="21" rx="5" fill="' + P.c3 + '" opacity=".45"/></g>';
+  }
+  d += '<g transform="rotate(-40 344 142)"><rect x="228" y="116" width="118" height="31" rx="15" fill="' + P.cb + '" stroke="rgba(0,0,0,.45)" stroke-width="3"/>' +
+    '<rect x="238" y="124" width="28" height="14" rx="7" fill="' + P.c3 + '" opacity=".7"/></g>';
+  return '<svg class="fing" viewBox="0 0 360 160" aria-hidden="true">' + d + '</svg>';
+}
 function openCards(m) {
   CU.open = true; CU.list = m.l.slice(); CU.t = CU.max = m.d || 12; CU.n = m.n || 1; CU.of = m.of || 3;
-  const box = $('cards'), n = CU.list.length, mid = (n - 1) / 2;
-  box.innerHTML = '<div class="ctitle">Carta <b>' + (ROM[CU.n - 1] || CU.n) + '</b> de ' + (ROM[CU.of - 1] || CU.of) + ' · elegí una</div>' +
+  const box = $('cards'), n = CU.list.length, mid = (n - 1) / 2, P = manoColores();
+  box.innerHTML = '<div class="chead"><div class="ctitle">Carta <b>' + (ROM[CU.n - 1] || CU.n) + '</b> de ' + (ROM[CU.of - 1] || CU.of) + ' · elegí una</div>' +
+    '<div class="cbar"><i></i></div><div class="chint">1 · 2 · 3 o clic · seguís disparando igual</div></div>' +
+    '<div class="chand">' + svgBrazo(P) +
     '<div class="crow">' + CU.list.map((id, i) => {
       const c = C.CARD_BY[id], rot = ((i - mid) * 7).toFixed(1), dy = (Math.abs(i - mid) * 13).toFixed(0);
       return '<div class="ccard" data-i="' + i + '" style="--cc:' + c.c + ';--rot:' + rot + 'deg;--dy:' + dy + 'px;z-index:' + (10 - Math.abs(i - mid)) + '">' +
         '<div class="cin" style="animation-delay:' + (i * .1).toFixed(2) + 's">' +
         '<i class="ck">' + (i + 1) + '</i><div class="cic">' + cardIcon(c.ic) + '</div>' +
         '<div class="cn">' + esc(c.name) + '</div><div class="cd">' + esc(c.desc) + '</div></div></div>';
-    }).join('') + '</div>' +
-    '<div class="cbar"><i></i></div><div class="chint">1 · 2 · 3 o clic · dura toda la partida</div>';
+    }).join('') + '</div>' + svgDedos(P) + '</div>';
   box.hidden = false;
-  box.classList.remove('in'); void box.offsetWidth; box.classList.add('in');
+  box.classList.remove('in', 'sale'); void box.offsetWidth; box.classList.add('in');
   $('hud').classList.add('cartas');   // mientras elegís, las ranuras y los carteles de teclas se corren de la vista
   [...box.querySelectorAll('.ccard')].forEach(e => e.addEventListener('click', () => pickCard(+e.dataset.i)));
   announce('EL MAZO TE ELIGIÓ', 'Carta ' + (ROM[CU.n - 1] || CU.n) + ' de ' + (ROM[CU.of - 1] || CU.of) + ' · elegí con 1, 2 o 3');
   SFX.hunt();
 }
-function closeCards() { CU.open = false; $('cards').hidden = true; $('hud').classList.remove('cartas'); }
+function closeCards() { CU.open = false; $('cards').hidden = true; $('cards').classList.remove('in', 'sale'); $('hud').classList.remove('cartas'); }
 function pickCard(i) {
   if (!CU.open || !CU.list[i]) return;
   CU.open = false;
   const box = $('cards');
   [...box.querySelectorAll('.ccard')].forEach((e, k) => e.classList.add(k === i ? 'taken' : 'gone'));
-  const bar = box.querySelector('.cbar'); if (bar) bar.hidden = true;
+  box.classList.add('sale');          // la mano baja y se va abajo de la pantalla
+  const h = box.querySelector('.chead'); if (h) h.hidden = true;
   $('hud').classList.remove('cartas');
-  setTimeout(() => { if (!CU.open) box.hidden = true; }, 560);
+  setTimeout(() => { if (!CU.open) box.hidden = true; }, 620);
   if (net) net.send({ t: 'card', i });
   SFX.quad();
 }

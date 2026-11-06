@@ -42,13 +42,13 @@ function buildNav(W) {
       if (m) {
         if (dx && dz && (!near(at(cx + dx, cz), n.y, .6) || !near(at(cx, cz + dz), n.y, .6))) continue;
         // todos los nodos vecinos a menos de un escalón (en las escaleras puede haber dos en la misma celda)
-        for (const q of at(cx + dx, cz + dz)) if (Math.abs(q.y - n.y) <= .6) n.l.push([q.id, dx && dz ? 1.414 : 1, 0]);
+        for (const q of at(cx + dx, cz + dz)) if (Math.abs(q.y - n.y) <= .6 && !solidAt(W, (n.x + q.x) / 2, Math.max(n.y, q.y) + K.STEP + .01, (n.z + q.z) / 2, .3, 1.75 - K.STEP)) n.l.push([q.id, dx && dz ? 1.414 : 1, 0]);   // y que no haya una valla o pared finita justo en el límite entre las dos celdas (si no, el bot queda empujando contra ella)
       } else if (!dx || !dz) {
         edge = true;
         let low = null;
         for (const q of at(cx + dx, cz + dz)) if (q.y < n.y - .6 && q.y > n.y - 14 && (!low || q.y > low.y)) low = q;
         // solo si el cuerpo entra en la columna de al lado a la altura de partida (no atravesar paredes sobre puertas)
-        if (low && !solidAt(W, low.x, n.y + .05, low.z, .3, 1.7)) n.l.push([low.id, 1.5, 1]);
+        if (low && !solidAt(W, low.x, n.y + .05, low.z, .3, 1.7) && !solidAt(W, (n.x + low.x) / 2, n.y + K.STEP + .01, (n.z + low.z) / 2, .3, 1.75 - K.STEP)) n.l.push([low.id, 1.5, 1]);   // sin baranda ni valla en el borde
       }
     }
     if (edge) edges.push(n);

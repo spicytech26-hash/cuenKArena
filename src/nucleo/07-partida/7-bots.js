@@ -67,7 +67,11 @@
         else if (it.type === 'health') v = p.hp < 40 ? 5 : p.hp < 80 ? 2 : 0;
         else if (it.type === 'armorH') v = p.ar < 120 ? 4 : 0;
         else if (it.type === 'armor') v = p.ar < 80 ? 2.5 : 0;
-        else if (info.weapon != null) v = !p.ow[info.weapon] ? 4 + info.weapon * .3 : p.am[info.ammo] < AMMO_MAX[info.ammo] * .4 ? 1 : 0;
+        else if (info.weapon != null) {
+          // un arma principal nueva solo se levanta si tenés la escopeta de base (ver give()); si no, el bot se quedaba parado encima para siempre
+          const fresh = !p.ow[info.weapon], cur = primaryOf(p.ow);
+          v = fresh ? (isPrimary(info.weapon) && !this.mode.gg && cur !== -1 && cur !== 1 ? 0 : 4 + info.weapon * .3) : p.am[info.ammo] < AMMO_MAX[info.ammo] * .4 ? 1 : 0;
+        }
         else if (info.ammo) { const owns = WEAPONS.some((W_, i) => W_.ammo === info.ammo && p.ow[i]); v = owns && p.am[info.ammo] < AMMO_MAX[info.ammo] * .5 ? 1.2 : 0; }
         if (!v) continue;
         const sc = v / (1 + dj.dist[n.id] / 25);

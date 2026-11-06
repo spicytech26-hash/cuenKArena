@@ -15,7 +15,7 @@ class Game {
   setMap(id) {
     this.W = MAPS[id]; this.nav = getNav(this.W); safeSpawns(this.W);
     // en gungame no hay armas ni munición tiradas: cada uno tiene la de su nivel
-    const off = t => !!this.mode.gg; // en gungame no hay nada tirado: cada arma se gana con bajas
+    const off = t => !!this.mode.gg && t !== 'health'; // en gungame no hay armas ni munición tiradas (cada arma se gana con bajas), pero sí botiquines
     this.items = this.W.items.map((it, i) => ({ i, type: it.type, base: it.type, x: it.x, y: it.y, z: it.z, off: off(it.type), up: !off(it.type), t: 0 }));
     this.projs.length = 0; this.fires = [];
     this.resetFlags();

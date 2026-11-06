@@ -2236,13 +2236,13 @@ function buildNav(W) {
       if (m) {
         if (dx && dz && (!near(at(cx + dx, cz), n.y, .6) || !near(at(cx, cz + dz), n.y, .6))) continue;
         // todos los nodos vecinos a menos de un escalón (en las escaleras puede haber dos en la misma celda)
-        for (const q of at(cx + dx, cz + dz)) if (Math.abs(q.y - n.y) <= .6) n.l.push([q.id, dx && dz ? 1.414 : 1, 0]);
+        for (const q of at(cx + dx, cz + dz)) if (Math.abs(q.y - n.y) <= .6 && !solidAt(W, (n.x + q.x) / 2, Math.max(n.y, q.y) + K.STEP + .01, (n.z + q.z) / 2, .3, 1.75 - K.STEP)) n.l.push([q.id, dx && dz ? 1.414 : 1, 0]);   // y que no haya una valla o pared finita justo en el límite entre las dos celdas (si no, el bot queda empujando contra ella)
       } else if (!dx || !dz) {
         edge = true;
         let low = null;
         for (const q of at(cx + dx, cz + dz)) if (q.y < n.y - .6 && q.y > n.y - 14 && (!low || q.y > low.y)) low = q;
         // solo si el cuerpo entra en la columna de al lado a la altura de partida (no atravesar paredes sobre puertas)
-        if (low && !solidAt(W, low.x, n.y + .05, low.z, .3, 1.7)) n.l.push([low.id, 1.5, 1]);
+        if (low && !solidAt(W, low.x, n.y + .05, low.z, .3, 1.7) && !solidAt(W, (n.x + low.x) / 2, n.y + K.STEP + .01, (n.z + low.z) / 2, .3, 1.75 - K.STEP)) n.l.push([low.id, 1.5, 1]);   // sin baranda ni valla en el borde
       }
     }
     if (edge) edges.push(n);
@@ -2454,7 +2454,7 @@ class Game {
   setMap(id) {
     this.W = MAPS[id]; this.nav = getNav(this.W); safeSpawns(this.W);
     // en gungame no hay armas ni munición tiradas: cada uno tiene la de su nivel
-    const off = t => !!this.mode.gg; // en gungame no hay nada tirado: cada arma se gana con bajas
+    const off = t => !!this.mode.gg && t !== 'health'; // en gungame no hay armas ni munición tiradas (cada arma se gana con bajas), pero sí botiquines
     this.items = this.W.items.map((it, i) => ({ i, type: it.type, base: it.type, x: it.x, y: it.y, z: it.z, off: off(it.type), up: !off(it.type), t: 0 }));
     this.projs.length = 0; this.fires = [];
     this.resetFlags();
@@ -3254,7 +3254,7 @@ class Game {
       .sort((a, b) => (gg ? b.lvl - a.lvl : 0) || (this.mode.teams ? b.caps - a.caps : 0) || b.frags - a.frags || a.deaths - b.deaths)
       .map(p => [p.id, p.name, p.frags, p.deaths, p.bot ? 0 : p.ping, p.bot ? 1 : 0, p.color, p.cr, p.lvl, p.team, p.caps, p.plvl, Math.round(p.dmg || 0)]);
   }
-  sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, st: this.state, map: this.W.id, mode: this.o.mode, ts: this.ts, fs: this.flagState(), cd: Math.ceil(this.countT), hn: this.humanCount(false), mp: this.mode.minPlayers || 0 }); }
+  sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, st: this.state, map: this.W.id, mode: this.o.mode, ts: this.ts, fs: this.flagState(), cd: Math.ceil(this.countT), hn: this.humanCount(false), mp: this.mode.minPlayers || 0, iu: this.items.map(it => it.up ? 1 : 0).join('') }); }   // iu: qué ítems están en pie; el cliente se resincroniza cada segundo, así un botiquín nunca queda "desaparecido" por un aviso perdido
   endMatch() {
     if (this.state !== 'play') return;
     this.state = 'inter'; this.interT = 25;
@@ -3480,7 +3480,11 @@ class Game {
         else if (it.type === 'health') v = p.hp < 40 ? 5 : p.hp < 80 ? 2 : 0;
         else if (it.type === 'armorH') v = p.ar < 120 ? 4 : 0;
         else if (it.type === 'armor') v = p.ar < 80 ? 2.5 : 0;
-        else if (info.weapon != null) v = !p.ow[info.weapon] ? 4 + info.weapon * .3 : p.am[info.ammo] < AMMO_MAX[info.ammo] * .4 ? 1 : 0;
+        else if (info.weapon != null) {
+          // un arma principal nueva solo se levanta si tenés la escopeta de base (ver give()); si no, el bot se quedaba parado encima para siempre
+          const fresh = !p.ow[info.weapon], cur = primaryOf(p.ow);
+          v = fresh ? (isPrimary(info.weapon) && !this.mode.gg && cur !== -1 && cur !== 1 ? 0 : 4 + info.weapon * .3) : p.am[info.ammo] < AMMO_MAX[info.ammo] * .4 ? 1 : 0;
+        }
         else if (info.ammo) { const owns = WEAPONS.some((W_, i) => W_.ammo === info.ammo && p.ow[i]); v = owns && p.am[info.ammo] < AMMO_MAX[info.ammo] * .5 ? 1.2 : 0; }
         if (!v) continue;
         const sc = v / (1 + dj.dist[n.id] / 25);

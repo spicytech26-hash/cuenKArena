@@ -8,8 +8,8 @@ function frame(now){
   // y al cambiar de estado (vivo/muerto, tienda, pausa, fin de partida) se vuelve a empezar la cuenta
   const drSt=(me.alive?1:0)|(G.shopOn?2:0)|(paused?4:0)|(matchState==='inter'?8:0);if(drSt!==DR.st){DR.st=drSt;DR.acc=DR.n=0;}
   if(inGame&&!paused&&raw<.1&&!G.shopOn){DR.acc+=raw;DR.n++;
-    if(DR.acc>=1.5){const avg=DR.acc/DR.n,t=performance.now();DR.fps=Math.round(1/avg);DR.acc=DR.n=0;
-      if(avg>1/50&&DR.s>.75){if(t-DR.upT<9000)DR.block=t+45000;DR.s=Math.max(.75,DR.s-.08);DR.good=0;resize();}
+    if(DR.acc>=1){const avg=DR.acc/DR.n,t=performance.now();DR.fps=Math.round(1/avg);DR.acc=DR.n=0;
+      if(avg>1/52&&DR.s>.6){if(t-DR.upT<9000)DR.block=t+45000;DR.s=Math.max(.6,DR.s-.1);DR.good=0;resize();}
       else if(avg<1/57&&DR.s<1&&t>DR.block){if(++DR.good>=3){DR.good=0;DR.s=Math.min(1,DR.s+.05);DR.upT=t;resize();}}
       else DR.good=0;
       if(S.fpsOn){const e=$('fpsBox');e.hidden=false;e.textContent=DR.fps+' FPS'+(DR.s<1?' · res '+Math.round(DR.s*100)+'%':'');}}}

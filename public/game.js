@@ -110,7 +110,7 @@ const MODES = {
              desc: 'Todos contra todos. Cada frag da créditos para la tienda (B).' },
   gungame: { name: 'Gungame', maps: ['represa', 'panymanteca', 'lacuenca', 'cuartotramo'], shop: false, gg: true,
              desc: 'Cada baja te da la siguiente arma de la lista. Munición infinita, sin tienda. Si te matan con cuchillo bajás un nivel. Gana el primero en hacer las 20 bajas; la última es con cuchillo.' },
-  tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca'], shop: true, teams: true, tdm: true, minPlayers: 4,
+  tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca', 'cuartotramo'], shop: true, teams: true, tdm: true, minPlayers: 4,
              desc: 'Rojo contra azul: cada baja suma para tu equipo hasta llegar al límite que elijan. Online arranca cuando hay 4 jugadores; mientras tanto, calentamiento.' },
   snipers: { name: 'Francotiradores', maps: ['fuertes'], shop: false, teams: true, tk: true, snipers: true, inf: true, timelimit: 360, teamLimit: 30,
              desc: 'Rojo contra azul con francotirador y cuchillo nomás: el francotirador mata de un tiro y con el cuchillo en la mano corrés más rápido. Racha de 6 bajas: escopeta doble. Sin tienda y sin mira hasta que apuntás.' },
@@ -1622,7 +1622,7 @@ function buildSkatenight() {
     }
     if (atras < 4 || libre < (d.t === 'graf' ? 4 : 2)) deco.splice(i, 1);
   }
-  return finish({ id: 'skatenight', name: 'Skatenight', bounds: { x0: -56, x1: 56, z0: -40, z1: 54 }, deco, modos: ['arena', 'gungame'],
+  return finish({ id: 'skatenight', name: 'Skatenight', bounds: { x0: -56, x1: 56, z0: -40, z1: 54 }, deco, modos: ['arena', 'gungame', 'tdm'],
     theme: { sky: 'night', tex: 'ruina', noche: true, skyDim: .035, fog: 0x020409, fogD: .06, amb: 0x1a2440, ambI: .004, hemi: [0x20345c, 0x01020a, .004], sun: true, sunC: 0x5a78c0, sunI: .01, sunPos: [34, 60, -46], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
 }
 MAPDEFS.skatenight = buildSkatenight;
@@ -1786,7 +1786,7 @@ function buildPyramid() {
   for (let k = 0; k <= 4; k++) { const o = S[k] * .55; lights.push({ x: o, y: Y[k] + 2.6, z: -o, c: LCOL[k], i: .6, d: 18 }, { x: -o, y: Y[k] + 2.6, z: o, c: LCOL[k], i: .6, d: 18 }); }
   lights.push({ x: 0, y: 4, z: 0, c: 0x40e0ff, i: .3, d: 12 }, { x: 0, y: 14, z: 0, c: 0x40e0ff, i: .3, d: 12 }, { x: 0, y: -8, z: 0, c: 0xb040ff, i: .9, d: 18 });
 
-  return finish({ id: 'pyramid', name: 'Pyramid', navMaxY: 24, zerog, bounds: { x0: -21, x1: 21, z0: -21, z1: 21 }, deco, modos: ['arena', 'gungame'],
+  return finish({ id: 'pyramid', name: 'Pyramid', navMaxY: 24, zerog, bounds: { x0: -21, x1: 21, z0: -21, z1: 21 }, deco, modos: ['arena', 'gungame', 'tdm'],
     theme: { sky: 'halloween', tex: 'ruina', ambiente: 'piramide', fog: 0x0c0818, fogD: .006, amb: 0x5a4a90, ambI: .48, hemi: [0x6a58a8, 0x3a2a58, .52], sun: true, sunC: 0x9a88c0, sunI: .4, sunPos: [0, 60, 50], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
 }
 MAPDEFS.pyramid = buildPyramid;
@@ -2595,8 +2595,12 @@ class Game {
       const info = ITEMS[it.type]; if (!it.up || it.off || !info || info.weapon == null || !isPrimary(info.weapon) || p.ow[info.weapon]) continue;
       const d = Math.hypot(p.s.x - it.x, p.s.z - it.z); if (d < bd && Math.abs(p.s.y - it.y) < 1.6) { bd = d; best = it; }
     }
-    if (!best) return;
+    if (!best) {   // nada para agarrar del piso: tocar E vuelve a la principal anterior (como el cambio rápido de CS)
+      if (this.mode.shop && p.prev != null && p.prev !== primaryOf(p.ow)) this.equip(p, p.prev, false);
+      return;
+    }
     const info = ITEMS[best.type], old = primaryOf(p.ow);
+    if (old >= 0 && old !== info.weapon) p.prev = old;
     setPrimary(p, info.weapon); p.am[info.ammo] = Math.min(AMMO_MAX[info.ammo], p.am[info.ammo] + info.n); p.dirty = true;
     // si tenías un arma principal (que no sea la escopeta de base), queda tirada en el lugar de la que agarraste
     if (old >= 0 && old !== 1 && ITEMS['w' + old]) {
@@ -2776,7 +2780,7 @@ class Game {
     let pr = 1;
     for (const it of SHOP) if (it.w != null && it.pack && !it.once && p.unl[it.w]) { if (isPrimary(it.w)) { if (p.bot) pr = it.w; } else p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n * mul); }
     if (!p.bot && p.eq != null && p.eq !== 1 && p.unl[p.eq]) pr = p.eq;
-    setPrimary(p, pr);
+    setPrimary(p, pr); p.prev = pr !== 1 ? 1 : null;   // E = volver a la escopeta de base si reaparecés con otra
     p.ar = p.perk.ar; this.fillMags(p);
   }
   fillMags(p) { p.mag = {}; p.relT = {}; WEAPONS.forEach((W_, i) => { if (W_.mag) p.mag[i] = W_.mag; }); }
@@ -2817,7 +2821,7 @@ class Game {
     else if (it.w != null && isPrimary(it.w)) {
       // se suma al inventario (ruleta de armas) y queda en las manos; al reaparecer volvés con la que tenías equipada
       p.unl[it.w] = 1; p.eq = it.w;
-      if (p.alive) { setPrimary(p, it.w); if (it.pack) { const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n); } else p.am.shells = Math.max(p.am.shells, 10); }
+      if (p.alive) { const old = primaryOf(p.ow); if (old >= 0 && old !== it.w) p.prev = old; setPrimary(p, it.w); if (it.pack) { const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n); } else p.am.shells = Math.max(p.am.shells, 10); }
     }
     else if (it.w != null) {
       p.unl[it.w] = 1;
@@ -2838,6 +2842,7 @@ class Game {
     if (!(w === 1 || p.unl[w]) || primaryOf(p.ow) === w) return;
     if (!free && (p.eqT || 0) > this.time) return;   // no se spamea el cambio
     p.eqT = this.time + .35;
+    const old = primaryOf(p.ow); if (old >= 0 && old !== w) p.prev = old;   // para volver con un toque de E
     setPrimary(p, w); p.eq = w; p.dirty = true;
     if (p.send) p.send({ t: 'ev', e: 'grab', w });
   }

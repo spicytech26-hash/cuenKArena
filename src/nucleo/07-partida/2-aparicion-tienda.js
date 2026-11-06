@@ -26,7 +26,7 @@
     let pr = 1;
     for (const it of SHOP) if (it.w != null && it.pack && !it.once && p.unl[it.w]) { if (isPrimary(it.w)) { if (p.bot) pr = it.w; } else p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n * mul); }
     if (!p.bot && p.eq != null && p.eq !== 1 && p.unl[p.eq]) pr = p.eq;
-    setPrimary(p, pr);
+    setPrimary(p, pr); p.prev = pr !== 1 ? 1 : null;   // E = volver a la escopeta de base si reaparecés con otra
     p.ar = p.perk.ar; this.fillMags(p);
   }
   fillMags(p) { p.mag = {}; p.relT = {}; WEAPONS.forEach((W_, i) => { if (W_.mag) p.mag[i] = W_.mag; }); }
@@ -67,7 +67,7 @@
     else if (it.w != null && isPrimary(it.w)) {
       // se suma al inventario (ruleta de armas) y queda en las manos; al reaparecer volvés con la que tenías equipada
       p.unl[it.w] = 1; p.eq = it.w;
-      if (p.alive) { setPrimary(p, it.w); if (it.pack) { const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n); } else p.am.shells = Math.max(p.am.shells, 10); }
+      if (p.alive) { const old = primaryOf(p.ow); if (old >= 0 && old !== it.w) p.prev = old; setPrimary(p, it.w); if (it.pack) { const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n); } else p.am.shells = Math.max(p.am.shells, 10); }
     }
     else if (it.w != null) {
       p.unl[it.w] = 1;
@@ -88,6 +88,7 @@
     if (!(w === 1 || p.unl[w]) || primaryOf(p.ow) === w) return;
     if (!free && (p.eqT || 0) > this.time) return;   // no se spamea el cambio
     p.eqT = this.time + .35;
+    const old = primaryOf(p.ow); if (old >= 0 && old !== w) p.prev = old;   // para volver con un toque de E
     setPrimary(p, w); p.eq = w; p.dirty = true;
     if (p.send) p.send({ t: 'ev', e: 'grab', w });
   }

@@ -341,7 +341,7 @@ function buildSkatenight() {
     }
     if (atras < 4 || libre < (d.t === 'graf' ? 4 : 2)) deco.splice(i, 1);
   }
-  return finish({ id: 'skatenight', name: 'Skatenight', bounds: { x0: -56, x1: 56, z0: -40, z1: 54 }, deco, modos: ['arena', 'gungame'],
+  return finish({ id: 'skatenight', name: 'Skatenight', bounds: { x0: -56, x1: 56, z0: -40, z1: 54 }, deco, modos: ['arena', 'gungame', 'tdm'],
     theme: { sky: 'night', tex: 'ruina', noche: true, skyDim: .035, fog: 0x020409, fogD: .06, amb: 0x1a2440, ambI: .004, hemi: [0x20345c, 0x01020a, .004], sun: true, sunC: 0x5a78c0, sunI: .01, sunPos: [34, 60, -46], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
 }
 MAPDEFS.skatenight = buildSkatenight;

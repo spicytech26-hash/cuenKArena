@@ -156,8 +156,12 @@ class Game {
       const info = ITEMS[it.type]; if (!it.up || it.off || !info || info.weapon == null || !isPrimary(info.weapon) || p.ow[info.weapon]) continue;
       const d = Math.hypot(p.s.x - it.x, p.s.z - it.z); if (d < bd && Math.abs(p.s.y - it.y) < 1.6) { bd = d; best = it; }
     }
-    if (!best) return;
+    if (!best) {   // nada para agarrar del piso: tocar E vuelve a la principal anterior (como el cambio rápido de CS)
+      if (this.mode.shop && p.prev != null && p.prev !== primaryOf(p.ow)) this.equip(p, p.prev, false);
+      return;
+    }
     const info = ITEMS[best.type], old = primaryOf(p.ow);
+    if (old >= 0 && old !== info.weapon) p.prev = old;
     setPrimary(p, info.weapon); p.am[info.ammo] = Math.min(AMMO_MAX[info.ammo], p.am[info.ammo] + info.n); p.dirty = true;
     // si tenías un arma principal (que no sea la escopeta de base), queda tirada en el lugar de la que agarraste
     if (old >= 0 && old !== 1 && ITEMS['w' + old]) {

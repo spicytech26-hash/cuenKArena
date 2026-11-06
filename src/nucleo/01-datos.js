@@ -98,7 +98,7 @@ const MODES = {
              desc: 'Todos contra todos. Cada frag da créditos para la tienda (B).' },
   gungame: { name: 'Gungame', maps: ['represa', 'panymanteca', 'lacuenca', 'cuartotramo'], shop: false, gg: true,
              desc: 'Cada baja te da la siguiente arma de la lista. Munición infinita, sin tienda. Si te matan con cuchillo bajás un nivel. Gana el primero en hacer las 20 bajas; la última es con cuchillo.' },
-  tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca'], shop: true, teams: true, tdm: true, minPlayers: 4,
+  tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca', 'cuartotramo'], shop: true, teams: true, tdm: true, minPlayers: 4,
              desc: 'Rojo contra azul: cada baja suma para tu equipo hasta llegar al límite que elijan. Online arranca cuando hay 4 jugadores; mientras tanto, calentamiento.' },
   snipers: { name: 'Francotiradores', maps: ['fuertes'], shop: false, teams: true, tk: true, snipers: true, inf: true, timelimit: 360, teamLimit: 30,
              desc: 'Rojo contra azul con francotirador y cuchillo nomás: el francotirador mata de un tiro y con el cuchillo en la mano corrés más rápido. Racha de 6 bajas: escopeta doble. Sin tienda y sin mira hasta que apuntás.' },

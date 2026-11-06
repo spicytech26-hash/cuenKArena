@@ -158,7 +158,7 @@ function buildPyramid() {
   for (let k = 0; k <= 4; k++) { const o = S[k] * .55; lights.push({ x: o, y: Y[k] + 2.6, z: -o, c: LCOL[k], i: .6, d: 18 }, { x: -o, y: Y[k] + 2.6, z: o, c: LCOL[k], i: .6, d: 18 }); }
   lights.push({ x: 0, y: 4, z: 0, c: 0x40e0ff, i: .3, d: 12 }, { x: 0, y: 14, z: 0, c: 0x40e0ff, i: .3, d: 12 }, { x: 0, y: -8, z: 0, c: 0xb040ff, i: .9, d: 18 });
 
-  return finish({ id: 'pyramid', name: 'Pyramid', navMaxY: 24, zerog, bounds: { x0: -21, x1: 21, z0: -21, z1: 21 }, deco, modos: ['arena', 'gungame'],
+  return finish({ id: 'pyramid', name: 'Pyramid', navMaxY: 24, zerog, bounds: { x0: -21, x1: 21, z0: -21, z1: 21 }, deco, modos: ['arena', 'gungame', 'tdm'],
     theme: { sky: 'halloween', tex: 'ruina', ambiente: 'piramide', fog: 0x0c0818, fogD: .006, amb: 0x5a4a90, ambI: .48, hemi: [0x6a58a8, 0x3a2a58, .52], sun: true, sunC: 0x9a88c0, sunI: .4, sunPos: [0, 60, 50], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
 }
 MAPDEFS.pyramid = buildPyramid;

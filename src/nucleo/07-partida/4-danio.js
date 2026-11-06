@@ -2,10 +2,16 @@
   damage(t, amt, att, w, dir, ks, how) {
     if (!t.alive || !this.live() || amt <= 0) return;
     if (this.mode.teams && att && att !== t && att.team === t.team) return; // sin fuego amigo
+    if (att && att !== t && hasCard(att, 'carnicero')) amt *= CARD_FX.DMG;   // carta Carnicero
+    if (hasCard(t, 'coraza')) amt *= CARD_FX.ARMOR;                          // carta Coraza
     if (this.mode.snipers && w === 8 && att && att !== t) amt = Math.max(amt, Math.ceil(t.hp + t.ar) + 1);   // en Francotiradores mata de un tiro
     let take = amt;
     // daño hecho (para la tabla final): solo lo que de verdad le sacaste, sin contar lo que sobra al matarlo
-    if (att && att !== t) att.dmg = (att.dmg || 0) + Math.min(amt, Math.max(0, t.hp) + t.ar);
+    if (att && att !== t) {
+      const real = Math.min(amt, Math.max(0, t.hp) + t.ar);
+      att.dmg = (att.dmg || 0) + real;
+      if (att.alive && hasCard(att, 'vampiro')) { const h = Math.min(100 - att.hp, real * CARD_FX.VAMP); if (h > 0) { att.hp += h; att.dirty = true; } }   // carta Vampirismo
+    }
     if (t.ar > 0 && !(w != null && WEAPONS[w] && WEAPONS[w].melee)) { const save = Math.min(t.ar, Math.ceil(amt / 3)); t.ar -= save; take -= save; }
     t.hp -= take; t.dirty = true;
     const kick = dir && ks ? [dir[0] * amt * ks, dir[1] * amt * ks, dir[2] * amt * ks] : null;
@@ -14,6 +20,8 @@
       if (att && att !== t && t.ai) { t.ai.hurtBy = att.id; t.ai.hurtT = 2; }
     } else if (t.send) t.send({ t: 'ev', e: 'dmg', a: att ? att.id : 0, n: Math.round(amt), k: kick ? r3a(kick) : null, from: att && att !== t ? r3a([att.s.x, att.s.y + 1, att.s.z]) : null });
     if (att && att !== t && att.send) att.send({ t: 'ev', e: 'hit', id: t.id, n: Math.round(amt), k: t.hp <= 0 ? 1 : 0, h: this.curHS ? 1 : 0 });
+    // carta Toque ígneo: al que golpeás lo dejás prendido fuego (el daño del fuego no lo vuelve a prender)
+    if (t.hp > 0 && att && att !== t && how !== 'fire' && hasCard(att, 'igneo')) this.ignite(t, att);
     if (t.hp <= 0) this.kill(t, att, w, how, amt);
   }
   kill(v, att, w, how) {
@@ -29,9 +37,13 @@
       if (v.streak >= 3) { n += ECON.SHUTDOWN; why.push('cortaste una racha'); }
       if (w === 0) { n += ECON.PISTOL; why.push('con pistola'); }
       if (carrier) { n += 150; why.push('frenaste al de la bandera'); }
+      if (hasCard(att, 'botin')) { n = Math.round(n * CARD_FX.CASH); why.push('botín de guerra'); }   // carta Botín de guerra
       this.credit(att, n, why.join(' · '));
+      if (att.alive && hasCard(att, 'trofeo')) { att.ar = Math.min(100, att.ar + CARD_FX.KILL_AR); att.dirty = true; }        // carta Trofeo
+      if (att.alive && hasCard(att, 'sanguijuela')) { att.hp = Math.min(100, att.hp + CARD_FX.KILL_HP); att.dirty = true; }   // carta Hambre de sangre
+      this.checkCard(att);
     } else v.frags--;
-    v.streak = 0;
+    v.streak = 0; v.burnT = 0;
     this.dropCarried(v);
     const ns = !!(this.curNS && k && k !== v.id && w != null && WEAPONS[w] && WEAPONS[w].scope);
     this.bcast({ t: 'ev', e: 'kill', k, v: v.id, w: w == null ? -1 : w, how: how || 'frag', gib: gib ? 1 : 0, ns: ns ? 1 : 0, p: r3a([v.s.x, v.s.y, v.s.z]) });
@@ -49,6 +61,7 @@
     }
     this.sendScores();
     if (won || (scoring && !this.mode.gg && !this.mode.teams && att && att !== v && att.frags >= this.o.fraglimit)) this.endMatch();
+    if (scoring && hasCard(v, 'bomba')) this.deathBlast(v);   // carta Carga mortal: explota al morir
   }
   /* ---- gungame: subir y bajar de nivel ---- */
   ggKill(v, att, w) {

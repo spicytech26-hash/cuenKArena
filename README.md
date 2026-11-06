@@ -7,10 +7,10 @@ Deathmatch online estilo Quake que corre en el navegador. Al terminar cada parti
 Al tocar **Jugar online** (o **Práctica con bots**) elegís el modo. Cada modo es una sala aparte del servidor.
 
 - **Francotiradores** (mapa *snp1 · Fuertes del Cañón*): rojo contra azul, cada equipo en su establo a un lado del cañón. Solo francotirador (mata de un tiro, munición infinita) y cuchillo (con el cuchillo en la mano corrés un 30 % más rápido). Una racha de 6 bajas sin morir desbloquea la escopeta doble (tecla 2) hasta que te maten. Sin tienda y sin mira: la retícula aparece solo al apuntar con el clic derecho. Gana el primer equipo a 30 bajas o el que tenga más a los 6 minutos.
-- **Arena**: todos contra todos en La Represa, Humita, La Cuenca, El Cuarto Tramo, Skatenight y Pyramid, con créditos y tienda. Cada partida dura **5 minutos** (online y en práctica).
+- **Arena**: todos contra todos en La Represa, Humita, La Cuenca, El Cuarto Tramo, Skatenight y Pyramid, con créditos y tienda. Cada partida dura **5 minutos** (online y en práctica). Con **cartas de mejora** (ver más abajo).
 - **Gungame**: todos arrancan con la ametralladora y cada baja te da la siguiente arma de una lista de 20 niveles (armas fuertes primero, pistola, riel y francotirador al final, cuchillo en el último). Munición infinita, sin tienda y sin nada tirado en el mapa (ni armas, ni vida, ni blindaje). Además de la del nivel tenés siempre el cuchillo: si te matás solo, o te matan con cuchillo, bajás un nivel. Gana el primero en hacer la baja número 20.
-- **Team Deathmatch**: rojo contra azul, cada baja suma para el equipo hasta llegar al límite. Online la sala espera a tener **4 jugadores** (mientras tanto hay calentamiento y las bajas no cuentan) y arranca con una cuenta regresiva. El límite de bajas lo elige el primero en entrar desde la pantalla de modos, y se puede cambiar desde el menú (Esc) mientras esperan.
-- **Captura la bandera**: rojo (Posadas) contra azul (Encarnación) en **ctf1 · El Puente**. Robá la bandera rival del fortín enemigo y llevala hasta el pedestal de tu base (cuenta aunque tu bandera esté robada). Si matan al que la lleva, la bandera queda tirada 20 segundos: si la toca su equipo vuelve a la base. Gana el primer equipo en capturarla 3 veces (se cambia con `/caplimit N`). No hay fuego amigo y los equipos se equilibran solos con los bots.
+- **Team Deathmatch** (con **cartas de mejora**): rojo contra azul, cada baja suma para el equipo hasta llegar al límite. Online la sala espera a tener **4 jugadores** (mientras tanto hay calentamiento y las bajas no cuentan) y arranca con una cuenta regresiva. El límite de bajas lo elige el primero en entrar desde la pantalla de modos, y se puede cambiar desde el menú (Esc) mientras esperan.
+- **Captura la bandera** (con **cartas de mejora**): rojo (Posadas) contra azul (Encarnación) en **ctf1 · El Puente**. Robá la bandera rival del fortín enemigo y llevala hasta el pedestal de tu base (cuenta aunque tu bandera esté robada). Si matan al que la lleva, la bandera queda tirada 20 segundos: si la toca su equipo vuelve a la base. Gana el primer equipo en capturarla 3 veces (se cambia con `/caplimit N`). No hay fuego amigo y los equipos se equilibran solos con los bots.
 
 ## Armas
 
@@ -186,7 +186,7 @@ Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 
 | W A S D | moverse |
 | Espacio | saltar (mantenelo para encadenar saltos) |
 | Mouse / click | apuntar / disparar |
-| 1 · 2 · 3 · 4, rueda, Q | 1 arma principal, 2 pistola, 3 cuchillo (también V), 4 molotov. Q vuelve al arma que tenías antes. En Gungame: 1 el arma del nivel y 3 el cuchillo (acuchillar baja un nivel al otro) |
+| 1 · 2 · 3 · 4, rueda, Q | 1 arma principal, 2 pistola, 3 cuchillo (también V), 4 molotov. Q vuelve al arma que tenías antes. En Gungame: 1 el arma del nivel y 3 el cuchillo (acuchillar baja un nivel al otro). **Mientras hay cartas para elegir, 1 · 2 · 3 eligen carta** |
 | E | agarrar el arma tirada al lado: reemplaza tu principal hasta que morís (al reaparecer volvés a tener la comprada). Si tenías un arma principal (comprada o levantada, no la escopeta de base), queda tirada en el mismo lugar donde estaba la que agarraste, para que otro la levante o la vuelvas a cambiar |
 | F | inspeccionar el arma (como en CS o Valorant) |
 | F o V | cuchillo |
@@ -391,3 +391,26 @@ Como en TF2, después de un instante ves **en primera persona lo que ve el que t
 ## Vista en tercera persona
 
 Con **H** (o en Ajustes → Video) pasás de primera a tercera persona: la cámara va sobre el hombro, con la mira en el centro. **J** cambia de hombro. Con el francotirador volvés a primera persona para mirar por la mira. Los disparos van a donde marca la mira.
+
+## Cartas de mejora (estilo roguelike)
+
+En **Arena**, **Team Deathmatch** y **Captura la bandera** cada partida te arma un personaje distinto. A las **3, 6 y 9 bajas** te aparecen abajo del centro **tres cartas al azar** (de nueve) y te quedás con una: **máximo 3 por partida**. Duran hasta que termina la partida y se borran en la siguiente. En Gungame y Francotiradores no hay cartas.
+
+- Se elige con **1 · 2 · 3** (o con un clic, si tenés el mouse libre). El cartel **no te traba**: podés seguir corriendo y disparando mientras decidís.
+- Si dejás pasar los **12 segundos** (la barra naranja de abajo), te quedás con la primera.
+- Los **bots** también reciben cartas, al azar y al instante, así no quedan en desventaja.
+- Las que ya tenés quedan de muestra **abajo a la izquierda**, con el cartel de cuántas bajas te faltan para la próxima.
+
+| Carta | Qué hace |
+|---|---|
+| **Vampirismo** | Te curás con el 30 % del daño que hacés (hasta 100 de vida) |
+| **Cohetero** | Tus propias explosiones no te lastiman: rocket jump gratis |
+| **Carga mortal** | Al morir explotás: 85 de daño en el centro y 42 en el borde, hasta 5,5 m |
+| **Toque ígneo** | Al que golpeás lo dejás prendido fuego: 4 de daño cada medio segundo durante 3 s |
+| **Carnicero** | +15 % de daño con todas las armas |
+| **Coraza** | Recibís un 15 % menos de daño |
+| **Botín de guerra** | +60 % de créditos por cada baja |
+| **Trofeo** | Cada baja te suma 25 de blindaje (hasta 100) |
+| **Hambre de sangre** | Cada baja te cura 40 de vida (hasta 100) |
+
+Todo lo decide el servidor: el daño, la curación, el fuego y la explosión al morir salen de `src/nucleo/`, el cliente solo dibuja las cartas.

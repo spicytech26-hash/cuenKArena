@@ -1,6 +1,6 @@
 /* =================== ESTADO =================== */
 const me={s:{x:0,y:0,z:0,vx:0,vy:0,vz:0,on:true},yaw:0,pitch:0,alive:false,hp:100,ar:0,am:C.AMMO0(0),ow:[1,1,0,0,0,0,0,1,0],mag:{2:2},rel:0,relW:-1,scope:false,lvlSwitch:false,w:1,q:0,deadT:0,killer:0,lvl:0,
-  cr:C.ECON.START,unl:[1,1,0,0,0,0,0,1,0],eyeC:K.EYE,mt:9,mdir:1,ads:0,perk:{ar:0,am:0},cool:0,held:false,kick:0,raise:0,flash:0,bob:0,dip:0,roll:0,tilt:0,padT:0,stepT:0,lastW:0,heat:0};
+  cards:[],kills:0,cr:C.ECON.START,unl:[1,1,0,0,0,0,0,1,0],eyeC:K.EYE,mt:9,mdir:1,ads:0,perk:{ar:0,am:0},cool:0,held:false,kick:0,raise:0,flash:0,bob:0,dip:0,roll:0,tilt:0,padT:0,stepT:0,lastW:0,heat:0};
 const players=new Map();
 let myId=0,net=null,online=false,inGame=false,paused=false,shake=0;
 let scores=[],timeLeft=600,fragLimit=20,matchState='play',ping=0;

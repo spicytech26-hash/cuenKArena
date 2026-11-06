@@ -106,18 +106,50 @@ const SHOP = [
 ];
 /* ---------- Modos de juego ---------- */
 const MODES = {
-  arena:   { name: 'Arena', maps: ['represa', 'panymanteca', 'lacuenca', 'cuartotramo'], shop: true, timelimit: 300,
+  arena:   { name: 'Arena', maps: ['represa', 'panymanteca', 'lacuenca', 'cuartotramo'], shop: true, cards: true, timelimit: 300,
              desc: 'Todos contra todos. Cada frag da créditos para la tienda (B).' },
   gungame: { name: 'Gungame', maps: ['represa', 'panymanteca', 'lacuenca', 'cuartotramo'], shop: false, gg: true,
              desc: 'Cada baja te da la siguiente arma de la lista. Munición infinita, sin tienda. Si te matan con cuchillo bajás un nivel. Gana el primero en hacer las 20 bajas; la última es con cuchillo.' },
-  tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca', 'cuartotramo'], shop: true, teams: true, tdm: true, minPlayers: 4,
+  tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca', 'cuartotramo'], shop: true, cards: true, teams: true, tdm: true, minPlayers: 4,
              desc: 'Rojo contra azul: cada baja suma para tu equipo hasta llegar al límite que elijan. Online arranca cuando hay 4 jugadores; mientras tanto, calentamiento.' },
   snipers: { name: 'Francotiradores', maps: ['fuertes'], shop: false, teams: true, tk: true, snipers: true, inf: true, timelimit: 360, teamLimit: 30,
              desc: 'Rojo contra azul con francotirador y cuchillo nomás: el francotirador mata de un tiro y con el cuchillo en la mano corrés más rápido. Racha de 6 bajas: escopeta doble. Sin tienda y sin mira hasta que apuntás.' },
-  ctf:     { name: 'Captura la bandera', maps: ['puente'], shop: true, teams: true, ctf: true,
+  ctf:     { name: 'Captura la bandera', maps: ['puente'], shop: true, cards: true, teams: true, ctf: true,
              desc: 'Rojo contra azul. Robá la bandera rival y llevala hasta tu base. Gana el primer equipo en capturarla 3 veces.' }
 };
 const MODE_IDS = Object.keys(MODES);
+
+/* ---------- Cartas de mejora (estilo roguelike) ----------
+   Solo en los modos con `cards` (Arena, Team Deathmatch y Captura la bandera).
+   A las 3, 6 y 9 bajas le aparecen 3 cartas al azar y se queda con una: máximo 3 por partida.
+   Duran toda la partida y se borran en `restart()`. Los bots eligen al azar y al toque. */
+const CARD_AT = [3, 6, 9];                 // bajas que destraban cada carta
+const CARD_MAX = CARD_AT.length;           // cuántas lleva como máximo
+const CARD_PICK = 3;                       // cuántas se ofrecen por vez
+const CARD_TIME = 12;                      // si no elige en 12 s se queda con la primera
+const CARD_FX = {
+  VAMP: .3,                                // vampirismo: te curás con el 30% del daño que hacés
+  DMG: 1.15,                               // carnicero: +15% de daño
+  ARMOR: .85,                              // coraza: -15% de daño recibido
+  CASH: 1.6,                               // botín de guerra: +60% de créditos por baja
+  KILL_AR: 25,                             // trofeo: blindaje por baja
+  KILL_HP: 40,                             // hambre de sangre: vida por baja
+  BURN_T: 3, BURN_DMG: 4, BURN_EVERY: .5,  // toque ígneo: 4 de daño cada 0,5 s durante 3 s (24 en total)
+  BLAST_R: 5.5, BLAST_DMG: 85              // carga mortal: 85 en el centro, 42 en el borde
+};
+const CARDS = [
+  { id: 'vampiro',     name: 'Vampirismo',       desc: 'Te curás con el 30% del daño que hacés',            c: '#d4120f', ic: 'gota' },
+  { id: 'cohetero',    name: 'Cohetero',         desc: 'Tus explosiones no te lastiman: rocket jump gratis', c: '#ff7a1a', ic: 'cohete' },
+  { id: 'bomba',       name: 'Carga mortal',     desc: 'Al morir explotás y te llevás al que esté cerca',    c: '#ffb347', ic: 'bomba' },
+  { id: 'igneo',       name: 'Toque ígneo',      desc: 'Al que golpeás lo dejás prendido fuego 3 s',         c: '#ff4a1a', ic: 'llama' },
+  { id: 'carnicero',   name: 'Carnicero',        desc: '+15% de daño con todas las armas',                   c: '#8dff3a', ic: 'colmillo' },
+  { id: 'coraza',      name: 'Coraza',           desc: 'Aguantás un 15% más: recibís menos daño',            c: '#9b4dff', ic: 'escudo' },
+  { id: 'botin',       name: 'Botín de guerra',  desc: '+60% de créditos por cada baja',                     c: '#7fe0a0', ic: 'moneda' },
+  { id: 'trofeo',      name: 'Trofeo',           desc: 'Cada baja te suma 25 de blindaje',                   c: '#38d6c4', ic: 'placa' },
+  { id: 'sanguijuela', name: 'Hambre de sangre', desc: 'Cada baja te cura 40 de vida',                       c: '#ff5c8a', ic: 'corazon' }
+];
+const CARD_BY = {}; for (const c of CARDS) CARD_BY[c.id] = c;
+const hasCard = (p, id) => !!(p && p.cards && p.cards.indexOf(id) >= 0);
 // sifón: mini escudos que suelta el que muere
 // duran 10 s desde que caen al piso (a los 8 s empiezan a parpadear, eso lo hace el cliente)
 const SHARD = { N: 5, AR: 5, CAP: 100, LIFE: 10.45, MAX: 80 };
@@ -2488,6 +2520,7 @@ class Game {
     return { id, name, skin, color: skin.c, bot, send: null, s: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, on: false }, yaw: 0, pitch: 0, w: 1,
       hp: 100, ar: 0, am: AMMO0(0), ow: OW0(), mag: {}, relT: {}, alive: false, deadT: 0,
       frags: 0, deaths: 0, quadT: 0, lavaT: 0, megaT: 0, lastFire: -9, ping: 0, dirty: true, joined: false, ai: null, spawnT: 0, padT: 0,
+      cards: [], cof: null, cofT: 0, burnT: 0, burnBy: 0, burnTick: 0,
       cr: ECON.START, unl: OW0(), eq: 1, perk: { ar: 0, am: 0 }, streak: 0, lvl: 0, team: -1, caps: 0, kills: 0, dmg: 0, acct: null, plvl: 0, joinT: 0, role: id % 3 === 0 ? 'def' : 'att' };
   }
   // el servidor avisa qué cuenta tiene cada jugador (para su nivel y para sumarle experiencia)
@@ -2538,7 +2571,7 @@ class Game {
         if (this.mode.teams) this.setTeam(p, this.pickTeam(p));
         p.joined = true; p.joinT = this.time; p.kills = 0; p.dmg = 0; p.bestLife = 0;
         if (this.mode.tdm && this.o.online && this.humanCount(false) <= 1 && Number.isInteger(m.fl) && m.fl >= 5 && m.fl <= 500) this.o.fraglimit = m.fl;
-        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts, sh: this.shards.map(s => [s.id, r3(s.x), r3(s.y), r3(s.z), r2(s.t)]), mv: this.voteState() });
+        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts, cd: p.cards.slice(), sh: this.shards.map(s => [s.id, r3(s.x), r3(s.y), r3(s.z), r2(s.t)]), mv: this.voteState() });
         this.bcast({ t: 'ev', e: 'join', id, n: p.name, c: p.color, s: p.skin, tm: p.team }, id);
         this.spawn(p); this.botT = 0; this.sendScores();
         break;
@@ -2580,6 +2613,7 @@ class Game {
       case 'cfg': if (!this.o.online) this.configure(m); break;
       case 'kick': this.startKick(p, m.id | 0); break;
       case 'grab': this.grab(p); break;
+      case 'card': this.takeCard(p, m.i | 0); break;
       case 'equip': this.equip(p, m.w | 0); break;
       case 'ready': if (this.state === 'inter' && p.joined && !p.bot && !p.ready) { p.ready = true; this.checkReady(); } break;
       case 'vote': this.castVote(p, !!m.y); break;
@@ -3016,6 +3050,7 @@ class Game {
       if (dist >= W_.rad) continue;
       if (!los(this.W, pr.x, pr.y + .1, pr.z, t.s.x, t.s.y + .9, t.s.z) && !los(this.W, pr.x, pr.y + .1, pr.z, t.s.x, t.s.y + .2, t.s.z)) continue;
       const self = t.id === pr.own;
+      if (self && hasCard(t, 'cohetero')) continue;   // carta Cohetero: tus propias explosiones no te lastiman
       let dmg = W_.dmg * (1 - (W_.sfall || .6) * dist / W_.rad) * pr.q; if (self) dmg *= pr.k === 'rocket' ? .28 : .5;
       const cx = t.s.x - pr.x, cy = t.s.y + .9 - pr.y, cz = t.s.z - pr.z, cl = Math.hypot(cx, cy, cz) || 1;
       const ks = self && !t.bot ? 0 : .16;
@@ -3062,10 +3097,16 @@ class Game {
   damage(t, amt, att, w, dir, ks, how) {
     if (!t.alive || !this.live() || amt <= 0) return;
     if (this.mode.teams && att && att !== t && att.team === t.team) return; // sin fuego amigo
+    if (att && att !== t && hasCard(att, 'carnicero')) amt *= CARD_FX.DMG;   // carta Carnicero
+    if (hasCard(t, 'coraza')) amt *= CARD_FX.ARMOR;                          // carta Coraza
     if (this.mode.snipers && w === 8 && att && att !== t) amt = Math.max(amt, Math.ceil(t.hp + t.ar) + 1);   // en Francotiradores mata de un tiro
     let take = amt;
     // daño hecho (para la tabla final): solo lo que de verdad le sacaste, sin contar lo que sobra al matarlo
-    if (att && att !== t) att.dmg = (att.dmg || 0) + Math.min(amt, Math.max(0, t.hp) + t.ar);
+    if (att && att !== t) {
+      const real = Math.min(amt, Math.max(0, t.hp) + t.ar);
+      att.dmg = (att.dmg || 0) + real;
+      if (att.alive && hasCard(att, 'vampiro')) { const h = Math.min(100 - att.hp, real * CARD_FX.VAMP); if (h > 0) { att.hp += h; att.dirty = true; } }   // carta Vampirismo
+    }
     if (t.ar > 0 && !(w != null && WEAPONS[w] && WEAPONS[w].melee)) { const save = Math.min(t.ar, Math.ceil(amt / 3)); t.ar -= save; take -= save; }
     t.hp -= take; t.dirty = true;
     const kick = dir && ks ? [dir[0] * amt * ks, dir[1] * amt * ks, dir[2] * amt * ks] : null;
@@ -3074,6 +3115,8 @@ class Game {
       if (att && att !== t && t.ai) { t.ai.hurtBy = att.id; t.ai.hurtT = 2; }
     } else if (t.send) t.send({ t: 'ev', e: 'dmg', a: att ? att.id : 0, n: Math.round(amt), k: kick ? r3a(kick) : null, from: att && att !== t ? r3a([att.s.x, att.s.y + 1, att.s.z]) : null });
     if (att && att !== t && att.send) att.send({ t: 'ev', e: 'hit', id: t.id, n: Math.round(amt), k: t.hp <= 0 ? 1 : 0, h: this.curHS ? 1 : 0 });
+    // carta Toque ígneo: al que golpeás lo dejás prendido fuego (el daño del fuego no lo vuelve a prender)
+    if (t.hp > 0 && att && att !== t && how !== 'fire' && hasCard(att, 'igneo')) this.ignite(t, att);
     if (t.hp <= 0) this.kill(t, att, w, how, amt);
   }
   kill(v, att, w, how) {
@@ -3089,9 +3132,13 @@ class Game {
       if (v.streak >= 3) { n += ECON.SHUTDOWN; why.push('cortaste una racha'); }
       if (w === 0) { n += ECON.PISTOL; why.push('con pistola'); }
       if (carrier) { n += 150; why.push('frenaste al de la bandera'); }
+      if (hasCard(att, 'botin')) { n = Math.round(n * CARD_FX.CASH); why.push('botín de guerra'); }   // carta Botín de guerra
       this.credit(att, n, why.join(' · '));
+      if (att.alive && hasCard(att, 'trofeo')) { att.ar = Math.min(100, att.ar + CARD_FX.KILL_AR); att.dirty = true; }        // carta Trofeo
+      if (att.alive && hasCard(att, 'sanguijuela')) { att.hp = Math.min(100, att.hp + CARD_FX.KILL_HP); att.dirty = true; }   // carta Hambre de sangre
+      this.checkCard(att);
     } else v.frags--;
-    v.streak = 0;
+    v.streak = 0; v.burnT = 0;
     this.dropCarried(v);
     const ns = !!(this.curNS && k && k !== v.id && w != null && WEAPONS[w] && WEAPONS[w].scope);
     this.bcast({ t: 'ev', e: 'kill', k, v: v.id, w: w == null ? -1 : w, how: how || 'frag', gib: gib ? 1 : 0, ns: ns ? 1 : 0, p: r3a([v.s.x, v.s.y, v.s.z]) });
@@ -3109,6 +3156,7 @@ class Game {
     }
     this.sendScores();
     if (won || (scoring && !this.mode.gg && !this.mode.teams && att && att !== v && att.frags >= this.o.fraglimit)) this.endMatch();
+    if (scoring && hasCard(v, 'bomba')) this.deathBlast(v);   // carta Carga mortal: explota al morir
   }
   /* ---- gungame: subir y bajar de nivel ---- */
   ggKill(v, att, w) {
@@ -3308,7 +3356,7 @@ class Game {
     for (const it of this.items) { it.up = !it.off; it.t = 0; it.type = it.base; }
     this.bcast({ t: 'start', map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), tm: this.time, fs: this.flagState(), ts: this.ts });
     for (const p of this.players.values()) if (p.joined) {
-      p.ready = false; p.frags = 0; p.deaths = 0; p.cr = ECON.START; p.unl = OW0(); p.eq = 1; p.perk = { ar: 0, am: 0 }; p.streak = 0; p.lvl = 0; p.caps = 0; p.kills = 0; p.dmg = 0; p.bestLife = 0; p.lifeT0 = p.alive ? this.time : null; p.joinT = this.time; p.dirty = true;
+      p.ready = false; p.frags = 0; p.deaths = 0; p.cr = ECON.START; p.unl = OW0(); p.eq = 1; p.perk = { ar: 0, am: 0 }; p.cards = []; p.cof = null; p.cofT = 0; p.burnT = 0; p.streak = 0; p.lvl = 0; p.caps = 0; p.kills = 0; p.dmg = 0; p.bestLife = 0; p.lifeT0 = p.alive ? this.time : null; p.joinT = this.time; p.dirty = true;
       this.spawn(p);
     }
     this.sendScores();
@@ -3387,7 +3435,7 @@ class Game {
     }
     if (this.mvote) { this.mvT = (this.mvT || 0) - dt; if (this.mvT <= 0) { this.mvT = 1; this.checkMapVote(); if (this.mvote) this.sendVote(); } }
     if (this.vote) { this.voteT = (this.voteT || 0) - dt; if (this.voteT <= 0) { this.voteT = 1; this.checkVote(); if (this.vote) this.sendVote(); } }
-    if (this.live()) { this.tickProjs(dt); this.tickFires(dt); this.tickItems(dt); this.tickShards(dt); if (this.flags.length && this.state === 'play') this.tickFlags(dt); }
+    if (this.live()) { this.tickProjs(dt); this.tickFires(dt); this.tickItems(dt); this.tickShards(dt); this.tickBurn(dt); if (this.mode.cards) this.tickCards(dt); if (this.flags.length && this.state === 'play') this.tickFlags(dt); }
     this.snapT -= dt;
     if (this.snapT <= 1e-6) { this.snapT += .05; if (this.snapT < 0) this.snapT = 0; this.snapshot(); }
     this.scT -= dt;
@@ -3404,13 +3452,87 @@ class Game {
     for (const p of this.players.values()) {
       if (p.bot || !p.send || !p.joined || !p.dirty) continue;
       p.dirty = false;
-      p.send({ t: 'you', hp: Math.ceil(p.hp), ar: Math.ceil(p.ar), am: Object.assign({}, p.am), ow: p.ow.slice(), q: Math.ceil(p.quadT), al: p.alive ? 1 : 0, cr: p.cr, unl: p.unl.slice(), perk: Object.assign({}, p.perk), lvl: p.lvl });
+      p.send({ t: 'you', hp: Math.ceil(p.hp), ar: Math.ceil(p.ar), am: Object.assign({}, p.am), ow: p.ow.slice(), q: Math.ceil(p.quadT), al: p.alive ? 1 : 0, cr: p.cr, unl: p.unl.slice(), perk: Object.assign({}, p.perk), lvl: p.lvl, ck: this.mode.cards ? p.kills : 0 });
     }
   }
 
   /* =====================================================================
      BOTS
      ===================================================================== */
+
+  /* =====================================================================
+     CARTAS DE MEJORA (estilo roguelike) — Arena, Team Deathmatch y Captura la bandera
+     A las 3, 6 y 9 bajas le aparecen 3 cartas al azar (de 9) y elige una con 1-2-3.
+     Son del servidor: el cliente solo las dibuja. Máximo 3 por partida y duran hasta el final.
+     ===================================================================== */
+
+  // se llama desde kill() cada vez que alguien sube una baja
+  checkCard(p) {
+    if (!this.mode.cards || p.cof || p.cards.length >= CARD_MAX) return;
+    if (p.kills < CARD_AT[p.cards.length]) return;
+    this.offerCards(p);
+  }
+  // tres al azar entre las que todavía no tiene
+  offerCards(p) {
+    const pool = [];
+    for (const c of CARDS) if (!hasCard(p, c.id)) pool.push(c.id);
+    for (let i = pool.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0, t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+    const l = pool.slice(0, CARD_PICK);
+    if (!l.length) return;
+    p.cof = l; p.cofT = CARD_TIME;
+    if (p.bot) { this.takeCard(p, (Math.random() * l.length) | 0); return; }   // los bots eligen al azar y al toque, así no quedan en desventaja
+    if (p.send) p.send({ t: 'ev', e: 'cof', l, n: p.cards.length + 1, of: CARD_MAX, d: CARD_TIME });
+  }
+  takeCard(p, i) {
+    if (!p.cof || !p.cof.length) return;
+    const id = p.cof[clamp(i | 0, 0, p.cof.length - 1)];
+    p.cof = null; p.cofT = 0;
+    p.cards.push(id); p.dirty = true;
+    if (hasCard(p, 'trofeo') && p.alive) { p.ar = Math.min(100, p.ar + CARD_FX.KILL_AR); }   // la que da blindaje arranca cobrando la baja que la destrabó
+    if (p.send) p.send({ t: 'ev', e: 'card', id, l: p.cards.slice() });
+    if (!p.bot) this.bcast({ t: 'ev', e: 'sys', m: p.name + ' tomó la carta ' + CARD_BY[id].name });
+  }
+  // cuenta para atrás de la elección: si se le acaba el tiempo se queda con la primera
+  tickCards(dt) {
+    for (const p of this.players.values()) {
+      if (!p.cof) continue;
+      p.cofT -= dt;
+      if (p.cofT <= 0) this.takeCard(p, 0);
+    }
+  }
+
+  /* ---- toque ígneo: el golpeado queda prendido fuego y se va quemando ---- */
+  ignite(t, att) {
+    t.burnT = CARD_FX.BURN_T; t.burnBy = att.id; t.burnTick = CARD_FX.BURN_EVERY;
+    this.bcast({ t: 'ev', e: 'burn', id: t.id, d: CARD_FX.BURN_T });
+  }
+  tickBurn(dt) {
+    for (const t of this.players.values()) {
+      if (!(t.burnT > 0)) continue;
+      if (!t.alive || !t.joined) { t.burnT = 0; continue; }
+      t.burnT -= dt; t.burnTick -= dt;
+      if (t.burnTick > 0) continue;
+      t.burnTick = CARD_FX.BURN_EVERY;
+      this.damage(t, CARD_FX.BURN_DMG, this.players.get(t.burnBy) || null, null, null, 0, 'fire');
+      if (!this.live()) return;
+    }
+  }
+
+  /* ---- carga mortal: el que muere explota (se llama al final de kill()) ---- */
+  deathBlast(v) {
+    const R = CARD_FX.BLAST_R, D = CARD_FX.BLAST_DMG, ox = v.s.x, oy = v.s.y + .9, oz = v.s.z;
+    this.bcast({ t: 'ev', e: 'cblast', p: r3a([ox, oy, oz]), r: R });
+    for (const t of this.players.values()) {
+      if (!t.alive || !t.joined || t === v) continue;
+      if (this.mode.teams && t.team === v.team) continue;
+      const d = boxDist(ox, oy, oz, t.s.x, t.s.y, t.s.z);
+      if (d >= R) continue;
+      if (!los(this.W, ox, oy, oz, t.s.x, t.s.y + .9, t.s.z) && !los(this.W, ox, oy, oz, t.s.x, t.s.y + .2, t.s.z)) continue;
+      const cx = t.s.x - ox, cy = t.s.y + .9 - oy, cz = t.s.z - oz, cl = Math.hypot(cx, cy, cz) || 1;
+      this.damage(t, D * (1 - .5 * d / R), v, null, [cx / cl, cy / cl, cz / cl], .16, 'cblast');
+      if (!this.live()) return;
+    }
+  }
   // gravedad cero: lleva al bot a la altura yb del borde de un nivel (piso en yb) y, ya a esa altura, hacia (tx, tz). Antes de llegar se queda dentro del pozo.
   zgSteer(s, yb, tx, tz) {
     const zb = this.W.zerog[0], cx = (zb.min[0] + zb.max[0]) / 2, cz = (zb.min[2] + zb.max[2]) / 2, inZ = inZeroG(this.W, s);
@@ -3626,5 +3748,5 @@ class Game {
   }
 }
 
-return { PRIMARY, primaryOf, censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, EMBLEMS, SKILL, topAt, pmove, inZeroG, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
+return { PRIMARY, primaryOf, censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, CARDS, CARD_BY, CARD_AT, CARD_MAX, CARD_FX, hasCard, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, EMBLEMS, SKILL, topAt, pmove, inZeroG, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
 });

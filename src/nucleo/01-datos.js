@@ -94,18 +94,50 @@ const SHOP = [
 ];
 /* ---------- Modos de juego ---------- */
 const MODES = {
-  arena:   { name: 'Arena', maps: ['represa', 'panymanteca', 'lacuenca', 'cuartotramo'], shop: true, timelimit: 300,
+  arena:   { name: 'Arena', maps: ['represa', 'panymanteca', 'lacuenca', 'cuartotramo'], shop: true, cards: true, timelimit: 300,
              desc: 'Todos contra todos. Cada frag da créditos para la tienda (B).' },
   gungame: { name: 'Gungame', maps: ['represa', 'panymanteca', 'lacuenca', 'cuartotramo'], shop: false, gg: true,
              desc: 'Cada baja te da la siguiente arma de la lista. Munición infinita, sin tienda. Si te matan con cuchillo bajás un nivel. Gana el primero en hacer las 20 bajas; la última es con cuchillo.' },
-  tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca', 'cuartotramo'], shop: true, teams: true, tdm: true, minPlayers: 4,
+  tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca', 'cuartotramo'], shop: true, cards: true, teams: true, tdm: true, minPlayers: 4,
              desc: 'Rojo contra azul: cada baja suma para tu equipo hasta llegar al límite que elijan. Online arranca cuando hay 4 jugadores; mientras tanto, calentamiento.' },
   snipers: { name: 'Francotiradores', maps: ['fuertes'], shop: false, teams: true, tk: true, snipers: true, inf: true, timelimit: 360, teamLimit: 30,
              desc: 'Rojo contra azul con francotirador y cuchillo nomás: el francotirador mata de un tiro y con el cuchillo en la mano corrés más rápido. Racha de 6 bajas: escopeta doble. Sin tienda y sin mira hasta que apuntás.' },
-  ctf:     { name: 'Captura la bandera', maps: ['puente'], shop: true, teams: true, ctf: true,
+  ctf:     { name: 'Captura la bandera', maps: ['puente'], shop: true, cards: true, teams: true, ctf: true,
              desc: 'Rojo contra azul. Robá la bandera rival y llevala hasta tu base. Gana el primer equipo en capturarla 3 veces.' }
 };
 const MODE_IDS = Object.keys(MODES);
+
+/* ---------- Cartas de mejora (estilo roguelike) ----------
+   Solo en los modos con `cards` (Arena, Team Deathmatch y Captura la bandera).
+   A las 3, 6 y 9 bajas le aparecen 3 cartas al azar y se queda con una: máximo 3 por partida.
+   Duran toda la partida y se borran en `restart()`. Los bots eligen al azar y al toque. */
+const CARD_AT = [3, 6, 9];                 // bajas que destraban cada carta
+const CARD_MAX = CARD_AT.length;           // cuántas lleva como máximo
+const CARD_PICK = 3;                       // cuántas se ofrecen por vez
+const CARD_TIME = 12;                      // si no elige en 12 s se queda con la primera
+const CARD_FX = {
+  VAMP: .3,                                // vampirismo: te curás con el 30% del daño que hacés
+  DMG: 1.15,                               // carnicero: +15% de daño
+  ARMOR: .85,                              // coraza: -15% de daño recibido
+  CASH: 1.6,                               // botín de guerra: +60% de créditos por baja
+  KILL_AR: 25,                             // trofeo: blindaje por baja
+  KILL_HP: 40,                             // hambre de sangre: vida por baja
+  BURN_T: 3, BURN_DMG: 4, BURN_EVERY: .5,  // toque ígneo: 4 de daño cada 0,5 s durante 3 s (24 en total)
+  BLAST_R: 5.5, BLAST_DMG: 85              // carga mortal: 85 en el centro, 42 en el borde
+};
+const CARDS = [
+  { id: 'vampiro',     name: 'Vampirismo',       desc: 'Te curás con el 30% del daño que hacés',            c: '#d4120f', ic: 'gota' },
+  { id: 'cohetero',    name: 'Cohetero',         desc: 'Tus explosiones no te lastiman: rocket jump gratis', c: '#ff7a1a', ic: 'cohete' },
+  { id: 'bomba',       name: 'Carga mortal',     desc: 'Al morir explotás y te llevás al que esté cerca',    c: '#ffb347', ic: 'bomba' },
+  { id: 'igneo',       name: 'Toque ígneo',      desc: 'Al que golpeás lo dejás prendido fuego 3 s',         c: '#ff4a1a', ic: 'llama' },
+  { id: 'carnicero',   name: 'Carnicero',        desc: '+15% de daño con todas las armas',                   c: '#8dff3a', ic: 'colmillo' },
+  { id: 'coraza',      name: 'Coraza',           desc: 'Aguantás un 15% más: recibís menos daño',            c: '#9b4dff', ic: 'escudo' },
+  { id: 'botin',       name: 'Botín de guerra',  desc: '+60% de créditos por cada baja',                     c: '#7fe0a0', ic: 'moneda' },
+  { id: 'trofeo',      name: 'Trofeo',           desc: 'Cada baja te suma 25 de blindaje',                   c: '#38d6c4', ic: 'placa' },
+  { id: 'sanguijuela', name: 'Hambre de sangre', desc: 'Cada baja te cura 40 de vida',                       c: '#ff5c8a', ic: 'corazon' }
+];
+const CARD_BY = {}; for (const c of CARDS) CARD_BY[c.id] = c;
+const hasCard = (p, id) => !!(p && p.cards && p.cards.indexOf(id) >= 0);
 // sifón: mini escudos que suelta el que muere
 // duran 10 s desde que caen al piso (a los 8 s empiezan a parpadear, eso lo hace el cliente)
 const SHARD = { N: 5, AR: 5, CAP: 100, LIFE: 10.45, MAX: 80 };

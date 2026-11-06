@@ -869,3 +869,49 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 #feed .me{background:linear-gradient(135deg,transparent 10px,rgba(80,32,8,.9) 10.5px)}
 #shopHint,#kickHint,#mapHint{clip-path:none;background:linear-gradient(135deg,transparent 8px,rgba(22,9,12,.8) 8.5px)}
 #pick,#grabHint{clip-path:none;background:linear-gradient(315deg,transparent 8px,rgba(22,9,12,.85) 8.5px)}
+
+/* =====================================================================
+   CARTAS DE MEJORA (roguelike) · Interfaz v2
+   El cartel de elección aparece abajo del centro y no tapa la mira; se anima solo con
+   transform y opacity, y las esquinas cortadas son degradados (nada de clip-path sobre el WebGL).
+   ===================================================================== */
+#cards{position:fixed;left:50%;bottom:calc(122px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:4;max-width:calc(100vw - 24px)}
+#cards .ctitle{font-size:11px;letter-spacing:.42em;text-transform:uppercase;color:var(--pump2);text-shadow:0 1px 0 #000}
+#cards .ctitle b{font-weight:400;color:var(--bone)}
+#cards.in .ctitle{animation:cTitleIn .3s ease-out}
+#cards .crow{display:flex;gap:12px;perspective:900px}
+#cards .ccard{position:relative;width:200px;padding:14px 12px 12px;text-align:center;pointer-events:auto;cursor:pointer;
+  background:linear-gradient(135deg,transparent 13px,rgba(16,7,10,.93) 13.5px);border-bottom:3px solid var(--cc);
+  animation:cardIn .42s cubic-bezier(.2,1.25,.4,1) backwards}
+#cards .ccard::before{content:"";position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,transparent,var(--cc))}
+#cards .ccard:hover{background:linear-gradient(135deg,transparent 13px,rgba(44,14,16,.95) 13.5px)}
+#cards .ck{position:absolute;right:10px;top:8px;font-family:var(--display);font-style:normal;font-size:15px;line-height:1;color:var(--cc);opacity:.85}
+#cards .cic{color:var(--cc);height:50px;display:flex;align-items:center;justify-content:center;margin-bottom:6px}
+#cards .cic svg{width:46px;height:46px;display:block}
+#cards.in .cic{animation:cIcoIn .5s cubic-bezier(.2,1.5,.4,1) .12s backwards}
+#cards .cn{font-family:var(--display);font-size:18px;line-height:1.1;text-transform:uppercase;color:var(--bone);text-shadow:0 2px 0 #000}
+#cards .cd{font-size:11.5px;line-height:1.35;color:#b79d86;margin-top:5px;min-height:2.7em}
+#cards .cbar{width:min(420px,80vw);height:4px;background:rgba(0,0,0,.6);box-shadow:0 1px 0 #000}
+#cards .cbar i{display:block;height:100%;background:linear-gradient(90deg,var(--blood),var(--pump));transform-origin:left;transform:scaleX(1)}
+#cards .chint{font-size:10.5px;letter-spacing:.3em;text-transform:uppercase;color:#8e7a66}
+#cards .ccard.taken{animation:cardTaken .42s cubic-bezier(.2,1.4,.4,1) forwards}
+#cards .ccard.gone{animation:cardGone .3s ease-in forwards}
+@keyframes cardIn{from{opacity:0;transform:translateY(46px) rotateX(-32deg) scale(.88)}to{opacity:1;transform:none}}
+@keyframes cIcoIn{from{opacity:0;transform:scale(.2) rotate(-25deg)}to{opacity:1;transform:none}}
+@keyframes cTitleIn{from{opacity:0;letter-spacing:.9em}to{opacity:1;letter-spacing:.42em}}
+@keyframes cardTaken{0%{transform:none}40%{transform:translateY(-14px) scale(1.12)}100%{opacity:0;transform:translateY(-34px) scale(1.02)}}
+@keyframes cardGone{to{opacity:0;transform:translateY(16px) scale(.9)}}
+/* ---- el mazo que ya tenés, abajo a la izquierda ---- */
+#myCards{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:flex-start;gap:3px}
+#myCards .mcard{display:flex;align-items:center;gap:7px;padding:4px 14px 4px 9px;max-width:230px;
+  background:linear-gradient(315deg,transparent 8px,rgba(22,9,12,.8) 8.5px);border-left:3px solid var(--cc)}
+#myCards .mcard b{font-weight:400;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--bone);text-shadow:0 1px 0 #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#myCards .mic{color:var(--cc);display:flex}
+#myCards .mic svg{width:16px;height:16px;display:block}
+#myCards .mcard.nueva{animation:mcardIn .45s cubic-bezier(.2,1.4,.4,1)}
+@keyframes mcardIn{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:none}}
+#myCards .cnext{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:#8e7a66;padding-left:12px;text-shadow:0 1px 0 #000}
+#myCards .cnext b{font-weight:400;color:var(--pump2)}
+#myCards .cnext.full{color:var(--pump2)}
+@media (max-width:620px){#cards .ccard{width:124px;padding:10px 8px}#cards .ccard .cd{display:none}#cards .cic{height:38px}#cards .cic svg{width:34px;height:34px}#cards .cn{font-size:13px}#myCards .mcard b{display:none}}
+@media (prefers-reduced-motion:reduce){#cards .ccard,#cards.in .cic,#cards.in .ctitle,#myCards .mcard.nueva{animation:none}}

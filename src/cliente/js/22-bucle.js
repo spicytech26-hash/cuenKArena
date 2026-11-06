@@ -16,7 +16,7 @@ function frame(now){
   if(net)net.update(dt);
   updMovers();
   if(inGame&&!paused){
-    updMe(dt);updProjs(dt);updFires(dt);updRemote(dt);updMiModelo(dt);updCamera(dt);updViewmodel(dt);updNight(dt);
+    updMe(dt);updProjs(dt);updFires(dt);updCards(dt);updRemote(dt);updMiModelo(dt);updCamera(dt);updViewmodel(dt);updNight(dt);
     G.pingT-=dt;if(online&&G.pingT<=0&&net){G.pingT=2;net.send({t:'ping',c:performance.now(),r:ping});}
     if(Math.floor(G.time*2)!==Math.floor((G.time-dt)*2))updateHUD();
   }else if(!inGame){attract(dt);vms.forEach(v=>v.visible=false);flashMesh.visible=false;}

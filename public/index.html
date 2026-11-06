@@ -877,6 +877,52 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 #feed .me{background:linear-gradient(135deg,transparent 10px,rgba(80,32,8,.9) 10.5px)}
 #shopHint,#kickHint,#mapHint{clip-path:none;background:linear-gradient(135deg,transparent 8px,rgba(22,9,12,.8) 8.5px)}
 #pick,#grabHint{clip-path:none;background:linear-gradient(315deg,transparent 8px,rgba(22,9,12,.85) 8.5px)}
+
+/* =====================================================================
+   CARTAS DE MEJORA (roguelike) · Interfaz v2
+   El cartel de elección aparece abajo del centro y no tapa la mira; se anima solo con
+   transform y opacity, y las esquinas cortadas son degradados (nada de clip-path sobre el WebGL).
+   ===================================================================== */
+#cards{position:fixed;left:50%;bottom:calc(122px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:4;max-width:calc(100vw - 24px)}
+#cards .ctitle{font-size:11px;letter-spacing:.42em;text-transform:uppercase;color:var(--pump2);text-shadow:0 1px 0 #000}
+#cards .ctitle b{font-weight:400;color:var(--bone)}
+#cards.in .ctitle{animation:cTitleIn .3s ease-out}
+#cards .crow{display:flex;gap:12px;perspective:900px}
+#cards .ccard{position:relative;width:200px;padding:14px 12px 12px;text-align:center;pointer-events:auto;cursor:pointer;
+  background:linear-gradient(135deg,transparent 13px,rgba(16,7,10,.93) 13.5px);border-bottom:3px solid var(--cc);
+  animation:cardIn .42s cubic-bezier(.2,1.25,.4,1) backwards}
+#cards .ccard::before{content:"";position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,transparent,var(--cc))}
+#cards .ccard:hover{background:linear-gradient(135deg,transparent 13px,rgba(44,14,16,.95) 13.5px)}
+#cards .ck{position:absolute;right:10px;top:8px;font-family:var(--display);font-style:normal;font-size:15px;line-height:1;color:var(--cc);opacity:.85}
+#cards .cic{color:var(--cc);height:50px;display:flex;align-items:center;justify-content:center;margin-bottom:6px}
+#cards .cic svg{width:46px;height:46px;display:block}
+#cards.in .cic{animation:cIcoIn .5s cubic-bezier(.2,1.5,.4,1) .12s backwards}
+#cards .cn{font-family:var(--display);font-size:18px;line-height:1.1;text-transform:uppercase;color:var(--bone);text-shadow:0 2px 0 #000}
+#cards .cd{font-size:11.5px;line-height:1.35;color:#b79d86;margin-top:5px;min-height:2.7em}
+#cards .cbar{width:min(420px,80vw);height:4px;background:rgba(0,0,0,.6);box-shadow:0 1px 0 #000}
+#cards .cbar i{display:block;height:100%;background:linear-gradient(90deg,var(--blood),var(--pump));transform-origin:left;transform:scaleX(1)}
+#cards .chint{font-size:10.5px;letter-spacing:.3em;text-transform:uppercase;color:#8e7a66}
+#cards .ccard.taken{animation:cardTaken .42s cubic-bezier(.2,1.4,.4,1) forwards}
+#cards .ccard.gone{animation:cardGone .3s ease-in forwards}
+@keyframes cardIn{from{opacity:0;transform:translateY(46px) rotateX(-32deg) scale(.88)}to{opacity:1;transform:none}}
+@keyframes cIcoIn{from{opacity:0;transform:scale(.2) rotate(-25deg)}to{opacity:1;transform:none}}
+@keyframes cTitleIn{from{opacity:0;letter-spacing:.9em}to{opacity:1;letter-spacing:.42em}}
+@keyframes cardTaken{0%{transform:none}40%{transform:translateY(-14px) scale(1.12)}100%{opacity:0;transform:translateY(-34px) scale(1.02)}}
+@keyframes cardGone{to{opacity:0;transform:translateY(16px) scale(.9)}}
+/* ---- el mazo que ya tenés, abajo a la izquierda ---- */
+#myCards{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:flex-start;gap:3px}
+#myCards .mcard{display:flex;align-items:center;gap:7px;padding:4px 14px 4px 9px;max-width:230px;
+  background:linear-gradient(315deg,transparent 8px,rgba(22,9,12,.8) 8.5px);border-left:3px solid var(--cc)}
+#myCards .mcard b{font-weight:400;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--bone);text-shadow:0 1px 0 #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#myCards .mic{color:var(--cc);display:flex}
+#myCards .mic svg{width:16px;height:16px;display:block}
+#myCards .mcard.nueva{animation:mcardIn .45s cubic-bezier(.2,1.4,.4,1)}
+@keyframes mcardIn{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:none}}
+#myCards .cnext{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:#8e7a66;padding-left:12px;text-shadow:0 1px 0 #000}
+#myCards .cnext b{font-weight:400;color:var(--pump2)}
+#myCards .cnext.full{color:var(--pump2)}
+@media (max-width:620px){#cards .ccard{width:124px;padding:10px 8px}#cards .ccard .cd{display:none}#cards .cic{height:38px}#cards .cic svg{width:34px;height:34px}#cards .cn{font-size:13px}#myCards .mcard b{display:none}}
+@media (prefers-reduced-motion:reduce){#cards .ccard,#cards.in .cic,#cards.in .ctitle,#myCards .mcard.nueva{animation:none}}
 </style>
 
 <canvas id="c"></canvas>
@@ -929,6 +975,8 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
   <div id="kickHint" hidden>K · KICKEAR</div>
   <div id="mapHint">Y · CAMBIAR MAPA</div>
   <div id="shopHint">B · TIENDA · mantené E: armas</div>
+  <div id="cards" hidden></div>
+  <div id="myCards" hidden></div>
   <div id="slots"></div>
   <div id="voteBox" hidden role="status" aria-live="polite"></div>
   <div id="grabHint" hidden></div>
@@ -3530,7 +3578,7 @@ function updShards(dt){for(const s of shards.values()){
 
 /* =================== ESTADO =================== */
 const me={s:{x:0,y:0,z:0,vx:0,vy:0,vz:0,on:true},yaw:0,pitch:0,alive:false,hp:100,ar:0,am:C.AMMO0(0),ow:[1,1,0,0,0,0,0,1,0],mag:{2:2},rel:0,relW:-1,scope:false,lvlSwitch:false,w:1,q:0,deadT:0,killer:0,lvl:0,
-  cr:C.ECON.START,unl:[1,1,0,0,0,0,0,1,0],eyeC:K.EYE,mt:9,mdir:1,ads:0,perk:{ar:0,am:0},cool:0,held:false,kick:0,raise:0,flash:0,bob:0,dip:0,roll:0,tilt:0,padT:0,stepT:0,lastW:0,heat:0};
+  cards:[],kills:0,cr:C.ECON.START,unl:[1,1,0,0,0,0,0,1,0],eyeC:K.EYE,mt:9,mdir:1,ads:0,perk:{ar:0,am:0},cool:0,held:false,kick:0,raise:0,flash:0,bob:0,dip:0,roll:0,tilt:0,padT:0,stepT:0,lastW:0,heat:0};
 const players=new Map();
 let myId=0,net=null,online=false,inGame=false,paused=false,shake=0;
 let scores=[],timeLeft=600,fragLimit=20,matchState='play',ping=0;
@@ -3659,7 +3707,7 @@ function onMsg(m){
       loadMap(m.map);applyMode();
       if(typeof m.tm==='number'&&online)CLK.off=m.tm-performance.now()/1000-.05;
       m.roster.forEach(r=>{if(r[0]!==myId)ensurePlayer(r[0],r[1],r[2],r[3],r[4],r[5]);});
-      syncItems(m);clearShards();if(m.sh)for(const s of m.sh)addShard(s[0],s[1],s[2],s[3],s[1],s[2],s[3],s[4]);
+      syncItems(m);clearShards();resetCards();if(m.cd&&m.cd.length){me.cards=m.cd.slice();renderMyCards();}if(m.sh)for(const s of m.sh)addShard(s[0],s[1],s[2],s[3],s[1],s[2],s[3],s[4]);
       sysChat((online?'Conectado a '+location.host:'Práctica · '+S.bots+' bots')+' · '+C.MODES[MODE].name+' · '+W.name+(C.MODES[MODE].shop?' · B abre la tienda':''));
       if(MODE==='ctf'&&myTeam>=0)announce('EQUIPO '+TEAMS[myTeam].name.toUpperCase(),'Robá la bandera rival y traela a tu base');
       else if(MODE==='tdm'&&myTeam>=0)announce('EQUIPO '+TEAMS[myTeam].name.toUpperCase(),m.state==='play'?'Cada baja suma para tu equipo':'Esperando jugadores · calentamiento');
@@ -3684,6 +3732,7 @@ function onMsg(m){
       me.hp=m.hp;me.ar=m.ar;me.am=Object.assign({},m.am);me.ow=m.ow.slice();me.q=m.q;
       if(m.cr!=null){me.cr=m.cr;me.unl=m.unl.slice();me.perk=Object.assign({},m.perk);}
       if(m.lvl!=null)me.lvl=m.lvl;
+      if(m.ck!=null&&m.ck!==me.kills){me.kills=m.ck;renderMyCards();}
       if(!m.al&&me.alive)me.alive=false;
       if(MODE==='gungame'&&(me.lvlSwitch||!me.ow[me.w])&&me.ow[GG[Math.min(me.lvl,GG.length-1)]]){me.lvlSwitch=false;const nw=GG[Math.min(me.lvl,GG.length-1)];if(nw!==me.w){me.w=nw;me.raise=1;me.scope=false;me.cool=Math.max(me.cool,.25);if(WEAPONS[nw].mag){me.mag[nw]=WEAPONS[nw].mag;me.rel=0;}showWeapon();}}
       else if(!me.ow[me.w]){const pr=C.primaryOf(me.ow),i=pr>=0?pr:me.ow.findIndex(Boolean);if(i>=0){me.lastW=me.w;me.w=i;me.raise=1;me.scope=false;me.cool=Math.max(me.cool,.25);showWeapon();}}
@@ -3736,7 +3785,7 @@ function onMsg(m){
       clearShards();renderMapVote(null);
       matchState='play';$('inter').hidden=true;$('board').hidden=true;$('bStay').disabled=false;$('bStay').textContent='Jugar de nuevo';
       if(!document.pointerLockElement&&$('menu').hidden&&inGame){announce('¡ARRANCÓ!','Hacé click para jugar');}
-      if(m.fs)FL=m.fs;if(m.ts)TS=m.ts;me.lvl=0;
+      if(m.fs)FL=m.fs;if(m.ts)TS=m.ts;me.lvl=0;resetCards();
       if(m.map&&m.map!==W.id){loadMap(m.map);projs.forEach(p=>scene.remove(p.m));projs.length=0;}
       syncItems(m);
       announce(W.name.toUpperCase(),MODE==='ctf'?'primero a '+capLimit+' capturas':(MODE==='tdm'||MODE==='snipers')?'primer equipo en llegar a '+fragLimit+' bajas':MODE==='gungame'?'primero en completar los '+GG.length+' niveles':'primero a '+fragLimit+' frags');SFX.start();
@@ -3763,6 +3812,10 @@ function onEvent(m){
     case 'flag': FL=m.fs;TS=m.ts;onFlag(m);break;
     case 'fire': fxFire(m);break;
     case 'grab': me.grabW=m.w;break;
+    case 'cof': openCards(m);break;                       // te toca elegir carta
+    case 'card': onCardTaken(m);break;                     // carta confirmada por el servidor
+    case 'burn': addBurn(m.id,m.d);break;                  // carta Toque ígneo: se está quemando
+    case 'cblast': fxExplosion(m.p[0],m.p[1],m.p[2]);break;   // carta Carga mortal: el que murió explotó
     case 'unlock': announce('¡RACHA DE 6!','Desbloqueaste la escopeta doble · tecla 2');SFX.hunt();break;
     case 'gdirect': announce('¡GRANADA DIRECTA!',m.n?'+'+m.n+' ¤':'');SFX.hunt();break;
     case 'hunt': announce('¡TIRO DE CAZADOR!',m.d+' m'+(m.air?' · en pleno salto':'')+(m.n?' · +'+m.n+' ¤':''));SFX.hunt();break;
@@ -3849,7 +3902,9 @@ function onKill(m){
   const W_=m.w>=0?WEAPONS[m.w]:null;
   const vn='<b style="color:'+colorOf(m.v)+'">'+esc(nameOf(m.v))+'</b>';
   let line;
-  if(m.how==='lava')line=vn+' <i>se derritió en la lava</i>';
+  if(m.how==='fire'&&m.k&&m.k!==m.v)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>lo quemó vivo a</i> '+vn;
+  else if(m.how==='cblast'&&m.k&&m.k!==m.v)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>se lo llevó al explotar</i> '+vn;
+  else if(m.how==='lava')line=vn+' <i>se derritió en la lava</i>';
   else if(m.how==='water')line=vn+' <i>se lo llevó el río</i>';
   else if(m.how==='void')line=vn+' <i>cayó al vacío</i>';
   else if(!m.k||m.k===m.v)line=vn+' <i>se voló a sí mismo</i>';
@@ -3863,7 +3918,7 @@ function onKill(m){
     // "JUGADOR te ha eliminado" en grande, el arma abajo y "Cobrale venganza" en chico; si no fue un jugador, el motivo en grande
     const env=m.how==='water'?'Te llevó el río':m.how==='lava'?'Te derretiste en la lava':m.how==='void'?'Caíste al vacío':(!m.k||m.k===myId)?'Te volaste a vos mismo':'';
     if(env){$('deathBig').textContent=env;$('deathBy').textContent='';$('deathRev').textContent='Volvé más fuerte';}
-    else{$('deathBig').innerHTML='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> te ha eliminado';$('deathBy').textContent=m.ns?'sin usar mira':W_?'con '+W_.name:'';$('deathRev').textContent='Cobrale venganza';}
+    else{$('deathBig').innerHTML='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> te ha eliminado';$('deathBy').textContent=m.how==='fire'?'te prendió fuego':m.how==='cblast'?'explotó al morir':m.ns?'sin usar mira':W_?'con '+W_.name:'';$('deathRev').textContent='Cobrale venganza';}
     $('deathBox').hidden=false;$('deathBox').classList.remove('in');void $('deathBox').offsetWidth;$('deathBox').classList.add('in');$('deathHint').textContent='';
     if(m.gib)fxGib(me.s.x,me.s.y,me.s.z);else fxBlood(me.s.x,me.s.y+1,me.s.z,20);
     SFX.die(1);
@@ -4397,6 +4452,103 @@ function renderCombos(){
     const b=document.createElement('button');b.type='button';b.className='btn';b.textContent='+ Guardar esta combinación';b.addEventListener('click',()=>{lkAdding=true;renderCombos();});box.appendChild(b);
   }else{const n=document.createElement('span');n.className='note';n.textContent='Máximo 8: borrá una para guardar otra.';box.appendChild(n);}
 }
+/* =================== CARTAS DE MEJORA (estilo roguelike) ===================
+   A las 3, 6 y 9 bajas el servidor manda 3 cartas (`cof`) y el jugador elige una con 1-2-3
+   (o con un clic, cuando el mouse está libre). Mientras elige puede seguir jugando: el cartel
+   no traba el movimiento ni la mira, y si deja pasar los 12 s se queda con la primera.
+   Las que ya tiene quedan de muestra abajo a la izquierda. El servidor es el que decide todo. */
+const CU = { open: false, list: [], t: 0, max: 0, n: 1, of: 3 };
+const BURN = new Map();       // id del jugador → segundos que le queda de fuego (carta Toque ígneo)
+let burnT = 0;
+
+const CARD_SVG = {
+  gota:    '<path d="M12 2c0 0-6.5 7.8-6.5 12A6.5 6.5 0 0 0 18.5 14C18.5 9.8 12 2 12 2z"/>',
+  cohete:  '<path d="M12 1.5c2.6 2.4 4 5.6 4 9.2v5.1l-2 2.2h-4l-2-2.2v-5.1c0-3.6 1.4-6.8 4-9.2z"/><path d="M6 12.5 3.2 17.6 7 15.8zm12 0 2.8 5.1L17 15.8z"/><path d="M10.4 20.4h3.2L12 23z"/>',
+  bomba:   '<circle cx="11" cy="14" r="7"/><path d="M15.2 6.3 17 8.1l1.6-1.6 1.6 1.6L22 6.5 19.9 4.4 18.3 6 16.9 4.6z"/>',
+  llama:   '<path d="M12 1.5c3.2 4.3 5.2 6.6 5.2 10A5.2 5.2 0 0 1 6.8 11.5c0-3.4 2-5.7 5.2-10z"/><path d="M12 11.6c1.1 1.7 2.1 2.7 2.1 4.1a2.1 2.1 0 0 1-4.2 0c0-1.4 1-2.4 2.1-4.1z" opacity=".55"/>',
+  colmillo:'<path d="M5.5 2.5h13l-2.2 7.2L12 22 8 9.7z"/>',
+  escudo:  '<path d="M12 1.8 20.5 5v6.2c0 5.2-3.5 9.4-8.5 11.4-5-2-8.5-6.2-8.5-11.4V5z"/>',
+  moneda:  '<circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6.4 5 9 7.6 7.6 9zm11.2 0L15 7.6 16.4 9zM6.4 19 9 16.4 7.6 15zm11.2 0L15 16.4 16.4 15z"/>',
+  placa:   '<path d="M12 1.6 21 7l-9 5-9-5z"/><path d="M12 12.4 21 17.6l-9 4.8-9-4.8z" opacity=".6"/>',
+  corazon: '<path d="M12 21.6S3.6 16.2 3.6 10.6A4.8 4.8 0 0 1 12 7a4.8 4.8 0 0 1 8.4 3.6c0 5.6-8.4 11-8.4 11z"/>'
+};
+const cardIcon = ic => '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">' + (CARD_SVG[ic] || '') + '</svg>';
+const cardsOpen = () => CU.open;
+function resetCards() { me.cards = []; me.kills = 0; CU.open = false; CU.list = []; $('cards').hidden = true; BURN.clear(); renderMyCards(); }
+
+/* ---- el cartel de elección ---- */
+function openCards(m) {
+  CU.open = true; CU.list = m.l.slice(); CU.t = CU.max = m.d || 12; CU.n = m.n || 1; CU.of = m.of || 3;
+  const box = $('cards');
+  box.innerHTML = '<div class="ctitle">CARTA <b>' + CU.n + '</b> DE ' + CU.of + ' · ELEGÍ UNA</div>' +
+    '<div class="crow">' + CU.list.map((id, i) => {
+      const c = C.CARD_BY[id];
+      return '<div class="ccard" data-i="' + i + '" style="--cc:' + c.c + ';animation-delay:' + (i * .09).toFixed(2) + 's">' +
+        '<i class="ck">' + (i + 1) + '</i><div class="cic">' + cardIcon(c.ic) + '</div>' +
+        '<div class="cn">' + esc(c.name) + '</div><div class="cd">' + esc(c.desc) + '</div></div>';
+    }).join('') + '</div>' +
+    '<div class="cbar"><i></i></div><div class="chint">1 · 2 · 3 o clic · dura toda la partida</div>';
+  box.hidden = false;
+  box.classList.remove('in'); void box.offsetWidth; box.classList.add('in');
+  [...box.querySelectorAll('.ccard')].forEach(e => e.addEventListener('click', () => pickCard(+e.dataset.i)));
+  announce('¡CARTA NUEVA!', CU.n + ' de ' + CU.of + ' · elegí con 1, 2 o 3');
+  SFX.hunt();
+}
+function pickCard(i) {
+  if (!CU.open || !CU.list[i]) return;
+  CU.open = false;
+  const box = $('cards');
+  [...box.querySelectorAll('.ccard')].forEach((e, k) => { e.style.animationDelay = '0s'; e.classList.add(k === i ? 'taken' : 'gone'); });
+  const bar = box.querySelector('.cbar'); if (bar) bar.hidden = true;
+  setTimeout(() => { if (!CU.open) box.hidden = true; }, 430);
+  if (net) net.send({ t: 'card', i });
+  SFX.quad();
+}
+// el servidor confirma la carta: queda en la muestra de abajo
+function onCardTaken(m) {
+  me.cards = (m.l || []).slice();
+  const c = C.CARD_BY[m.id];
+  if (c) announce(c.name.toUpperCase(), c.desc);
+  renderMyCards();
+  updateHUD();
+}
+/* ---- las que ya tiene, abajo a la izquierda ---- */
+function renderMyCards() {
+  const box = $('myCards'), l = me.cards || [];
+  const hay = inGame && !!(C.MODES[MODE] && C.MODES[MODE].cards);
+  if (!hay) { box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  const falta = C.CARD_AT[l.length];
+  const prog = falta != null ? '<div class="cnext">PRÓXIMA CARTA EN <b>' + Math.max(0, falta - (me.kills || 0)) + '</b></div>' : '<div class="cnext full">MAZO COMPLETO</div>';
+  box.innerHTML = l.map((id, i) => {
+    const c = C.CARD_BY[id]; if (!c) return '';
+    return '<div class="mcard' + (i === l.length - 1 ? ' nueva' : '') + '" style="--cc:' + c.c + '" title="' + esc(c.desc) + '"><span class="mic">' + cardIcon(c.ic) + '</span><b>' + esc(c.name) + '</b></div>';
+  }).join('') + prog;
+}
+
+/* ---- fuego de la carta Toque ígneo: unas chispas naranjas sobre el que se quema ---- */
+function addBurn(id, d) { BURN.set(id, d); if (id === myId) SFX.sizzle && SFX.sizzle(); }
+function updCards(dt) {
+  if (CU.open) {
+    CU.t -= dt;
+    const bar = document.querySelector('#cards .cbar i');
+    if (bar) bar.style.transform = 'scaleX(' + Math.max(0, CU.t / CU.max).toFixed(3) + ')';
+    if (CU.t <= 0) { CU.open = false; $('cards').hidden = true; }   // el servidor ya se queda con la primera
+  }
+  if (!BURN.size) return;
+  burnT -= dt;
+  const emitir = burnT <= 0; if (emitir) burnT = .11;
+  for (const [id, t] of BURN) {
+    const n = t - dt;
+    if (n <= 0) { BURN.delete(id); continue; }
+    BURN.set(id, n);
+    if (!emitir) continue;
+    let x, y, z;
+    if (id === myId) { if (!me.alive) continue; x = me.s.x; y = me.s.y; z = me.s.z; }
+    else { const p = players.get(id); if (!p || !p.alive) continue; x = p.x; y = p.y; z = p.z; }
+    fxAire(x, y + .9, z, 1, .45, .1);
+  }
+}
 /* =================== ENTRADA =================== */
 // movimiento crudo del mouse (sin la aceleración de Windows/macOS) cuando el navegador lo permite; si no, el bloqueo común
 let rawOK=true;
@@ -4516,6 +4668,8 @@ addEventListener('keydown',e=>{
   // 1 arma principal · 2 pistola · 3 cuchillo · 4 molotov (en Gungame: 1 el arma del nivel, 3 el cuchillo)
   const ggW=MODE==='gungame'?me.ow.findIndex((v,i)=>v&&i!==7):-1;
   const n=MODE==='snipers'?{Digit1:8,Digit2:2,Digit3:7,Numpad1:8,Numpad2:2,Numpad3:7}[e.code]:MODE==='gungame'?{Digit1:ggW,Digit3:7,Numpad1:ggW,Numpad3:7}[e.code]:{Digit1:C.primaryOf(me.ow),Digit2:0,Digit3:7,Digit4:10,Numpad1:C.primaryOf(me.ow),Numpad2:0,Numpad3:7,Numpad4:10}[e.code];
+  // mientras hay cartas para elegir, 1-2-3 eligen carta en vez de cambiar de arma
+  if(cardsOpen()&&!e.repeat){const d=/^(?:Digit|Numpad)([1-3])$/.exec(e.code);if(d){e.preventDefault();pickCard(+d[1]-1);return;}}
   if(e.code==='KeyE')wheelKey(true,e.repeat);
   if(e.code==='KeyR')startReload(me.w);
   if(e.code==='KeyV')selectWeapon(7);if(n!==undefined&&n>=0)selectWeapon(n);
@@ -4747,7 +4901,7 @@ function applyMode(){
   const gg=MODE==='gungame',tm=teamsMode();
   $('tCrBox').hidden=!C.MODES[MODE].shop;$('shopHint').hidden=!C.MODES[MODE].shop;$('kickHint').hidden=!online;$('mapHint').hidden=C.MODES[MODE].maps.length<2;$('tLvlBox').hidden=!gg;$('tNextBox').hidden=!gg;
   $('ctfBox').hidden=!tm;$('carry').hidden=true;$('tRank').parentElement.hidden=tm;$('lobbyBox').hidden=true;
-  $('slots').innerHTML='';updateHUD();
+  $('slots').innerHTML='';renderMyCards();updateHUD();
 }
 
 /* =================== CÁMARA Y ARMA EN MANO =================== */
@@ -5892,7 +6046,7 @@ function frame(now){
   if(net)net.update(dt);
   updMovers();
   if(inGame&&!paused){
-    updMe(dt);updProjs(dt);updFires(dt);updRemote(dt);updMiModelo(dt);updCamera(dt);updViewmodel(dt);updNight(dt);
+    updMe(dt);updProjs(dt);updFires(dt);updCards(dt);updRemote(dt);updMiModelo(dt);updCamera(dt);updViewmodel(dt);updNight(dt);
     G.pingT-=dt;if(online&&G.pingT<=0&&net){G.pingT=2;net.send({t:'ping',c:performance.now(),r:ping});}
     if(Math.floor(G.time*2)!==Math.floor((G.time-dt)*2))updateHUD();
   }else if(!inGame){attract(dt);vms.forEach(v=>v.visible=false);flashMesh.visible=false;}

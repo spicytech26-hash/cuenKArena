@@ -154,6 +154,7 @@
       if (dist >= W_.rad) continue;
       if (!los(this.W, pr.x, pr.y + .1, pr.z, t.s.x, t.s.y + .9, t.s.z) && !los(this.W, pr.x, pr.y + .1, pr.z, t.s.x, t.s.y + .2, t.s.z)) continue;
       const self = t.id === pr.own;
+      if (self && hasCard(t, 'cohetero')) continue;   // carta Cohetero: tus propias explosiones no te lastiman
       let dmg = W_.dmg * (1 - (W_.sfall || .6) * dist / W_.rad) * pr.q; if (self) dmg *= pr.k === 'rocket' ? .28 : .5;
       const cx = t.s.x - pr.x, cy = t.s.y + .9 - pr.y, cz = t.s.z - pr.z, cl = Math.hypot(cx, cy, cz) || 1;
       const ks = self && !t.bot ? 0 : .16;

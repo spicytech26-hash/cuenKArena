@@ -7,7 +7,7 @@ function onMsg(m){
       loadMap(m.map);applyMode();
       if(typeof m.tm==='number'&&online)CLK.off=m.tm-performance.now()/1000-.05;
       m.roster.forEach(r=>{if(r[0]!==myId)ensurePlayer(r[0],r[1],r[2],r[3],r[4],r[5]);});
-      syncItems(m);clearShards();if(m.sh)for(const s of m.sh)addShard(s[0],s[1],s[2],s[3],s[1],s[2],s[3],s[4]);
+      syncItems(m);clearShards();resetCards();if(m.cd&&m.cd.length){me.cards=m.cd.slice();renderMyCards();}if(m.sh)for(const s of m.sh)addShard(s[0],s[1],s[2],s[3],s[1],s[2],s[3],s[4]);
       sysChat((online?'Conectado a '+location.host:'Práctica · '+S.bots+' bots')+' · '+C.MODES[MODE].name+' · '+W.name+(C.MODES[MODE].shop?' · B abre la tienda':''));
       if(MODE==='ctf'&&myTeam>=0)announce('EQUIPO '+TEAMS[myTeam].name.toUpperCase(),'Robá la bandera rival y traela a tu base');
       else if(MODE==='tdm'&&myTeam>=0)announce('EQUIPO '+TEAMS[myTeam].name.toUpperCase(),m.state==='play'?'Cada baja suma para tu equipo':'Esperando jugadores · calentamiento');
@@ -32,6 +32,7 @@ function onMsg(m){
       me.hp=m.hp;me.ar=m.ar;me.am=Object.assign({},m.am);me.ow=m.ow.slice();me.q=m.q;
       if(m.cr!=null){me.cr=m.cr;me.unl=m.unl.slice();me.perk=Object.assign({},m.perk);}
       if(m.lvl!=null)me.lvl=m.lvl;
+      if(m.ck!=null&&m.ck!==me.kills){me.kills=m.ck;renderMyCards();}
       if(!m.al&&me.alive)me.alive=false;
       if(MODE==='gungame'&&(me.lvlSwitch||!me.ow[me.w])&&me.ow[GG[Math.min(me.lvl,GG.length-1)]]){me.lvlSwitch=false;const nw=GG[Math.min(me.lvl,GG.length-1)];if(nw!==me.w){me.w=nw;me.raise=1;me.scope=false;me.cool=Math.max(me.cool,.25);if(WEAPONS[nw].mag){me.mag[nw]=WEAPONS[nw].mag;me.rel=0;}showWeapon();}}
       else if(!me.ow[me.w]){const pr=C.primaryOf(me.ow),i=pr>=0?pr:me.ow.findIndex(Boolean);if(i>=0){me.lastW=me.w;me.w=i;me.raise=1;me.scope=false;me.cool=Math.max(me.cool,.25);showWeapon();}}
@@ -84,7 +85,7 @@ function onMsg(m){
       clearShards();renderMapVote(null);
       matchState='play';$('inter').hidden=true;$('board').hidden=true;$('bStay').disabled=false;$('bStay').textContent='Jugar de nuevo';
       if(!document.pointerLockElement&&$('menu').hidden&&inGame){announce('¡ARRANCÓ!','Hacé click para jugar');}
-      if(m.fs)FL=m.fs;if(m.ts)TS=m.ts;me.lvl=0;
+      if(m.fs)FL=m.fs;if(m.ts)TS=m.ts;me.lvl=0;resetCards();
       if(m.map&&m.map!==W.id){loadMap(m.map);projs.forEach(p=>scene.remove(p.m));projs.length=0;}
       syncItems(m);
       announce(W.name.toUpperCase(),MODE==='ctf'?'primero a '+capLimit+' capturas':(MODE==='tdm'||MODE==='snipers')?'primer equipo en llegar a '+fragLimit+' bajas':MODE==='gungame'?'primero en completar los '+GG.length+' niveles':'primero a '+fragLimit+' frags');SFX.start();
@@ -111,6 +112,10 @@ function onEvent(m){
     case 'flag': FL=m.fs;TS=m.ts;onFlag(m);break;
     case 'fire': fxFire(m);break;
     case 'grab': me.grabW=m.w;break;
+    case 'cof': openCards(m);break;                       // te toca elegir carta
+    case 'card': onCardTaken(m);break;                     // carta confirmada por el servidor
+    case 'burn': addBurn(m.id,m.d);break;                  // carta Toque ígneo: se está quemando
+    case 'cblast': fxExplosion(m.p[0],m.p[1],m.p[2]);break;   // carta Carga mortal: el que murió explotó
     case 'unlock': announce('¡RACHA DE 6!','Desbloqueaste la escopeta doble · tecla 2');SFX.hunt();break;
     case 'gdirect': announce('¡GRANADA DIRECTA!',m.n?'+'+m.n+' ¤':'');SFX.hunt();break;
     case 'hunt': announce('¡TIRO DE CAZADOR!',m.d+' m'+(m.air?' · en pleno salto':'')+(m.n?' · +'+m.n+' ¤':''));SFX.hunt();break;
@@ -197,7 +202,9 @@ function onKill(m){
   const W_=m.w>=0?WEAPONS[m.w]:null;
   const vn='<b style="color:'+colorOf(m.v)+'">'+esc(nameOf(m.v))+'</b>';
   let line;
-  if(m.how==='lava')line=vn+' <i>se derritió en la lava</i>';
+  if(m.how==='fire'&&m.k&&m.k!==m.v)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>lo quemó vivo a</i> '+vn;
+  else if(m.how==='cblast'&&m.k&&m.k!==m.v)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>se lo llevó al explotar</i> '+vn;
+  else if(m.how==='lava')line=vn+' <i>se derritió en la lava</i>';
   else if(m.how==='water')line=vn+' <i>se lo llevó el río</i>';
   else if(m.how==='void')line=vn+' <i>cayó al vacío</i>';
   else if(!m.k||m.k===m.v)line=vn+' <i>se voló a sí mismo</i>';
@@ -211,7 +218,7 @@ function onKill(m){
     // "JUGADOR te ha eliminado" en grande, el arma abajo y "Cobrale venganza" en chico; si no fue un jugador, el motivo en grande
     const env=m.how==='water'?'Te llevó el río':m.how==='lava'?'Te derretiste en la lava':m.how==='void'?'Caíste al vacío':(!m.k||m.k===myId)?'Te volaste a vos mismo':'';
     if(env){$('deathBig').textContent=env;$('deathBy').textContent='';$('deathRev').textContent='Volvé más fuerte';}
-    else{$('deathBig').innerHTML='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> te ha eliminado';$('deathBy').textContent=m.ns?'sin usar mira':W_?'con '+W_.name:'';$('deathRev').textContent='Cobrale venganza';}
+    else{$('deathBig').innerHTML='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> te ha eliminado';$('deathBy').textContent=m.how==='fire'?'te prendió fuego':m.how==='cblast'?'explotó al morir':m.ns?'sin usar mira':W_?'con '+W_.name:'';$('deathRev').textContent='Cobrale venganza';}
     $('deathBox').hidden=false;$('deathBox').classList.remove('in');void $('deathBox').offsetWidth;$('deathBox').classList.add('in');$('deathHint').textContent='';
     if(m.gib)fxGib(me.s.x,me.s.y,me.s.z);else fxBlood(me.s.x,me.s.y+1,me.s.z,20);
     SFX.die(1);

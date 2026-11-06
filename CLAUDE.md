@@ -23,7 +23,7 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | Archivo | Qué tiene |
 |---|---|
 | `src/nucleo/00-encabezado.js` | apertura del módulo (UMD) |
-| `src/nucleo/01-datos.js` | física `K`, **`WEAPONS` (daño, cadencia, cargador)**, `ITEMS` (respawn), munición, `SHOP` (tienda y precios), `ECON`, **`MODES`** (modos y qué mapas usan), gungame, equipos, XP, niveles y medallas |
+| `src/nucleo/01-datos.js` | física `K`, **`WEAPONS` (daño, cadencia, cargador)**, `ITEMS` (respawn), munición, `SHOP` (tienda y precios), `ECON`, **`MODES`** (modos y qué mapas usan; `cards` prende las cartas), **`CARDS`/`CARD_FX`** (cartas de mejora), gungame, equipos, XP, niveles y medallas |
 | `src/nucleo/02-kit-mapas.js` | `mapKit()` (`add`, `ramp`, `wall`, `stairs`, `mover`, `I`, `finish`), `MAPDEFS` y `mapFromData()` (mapas del editor) |
 | `src/nucleo/02-mapas/N-id.js` | **un archivo por mapa**: 1 represa, 2 humita (el id interno sigue siendo `panymanteca`, no cambiarlo: lo usan los ajustes guardados, la votación y `public/maps/panymanteca.jpg`), 3 lacuenca, 4 puente (CTF), 5 fuertes (francotiradores), 6 cuartotramo, 7 skatenight (de noche, con linternas), 8 pyramid (noche lovecraftiana sin linterna, 5 niveles con pozo de **gravedad cero**: `zerog` en el mapa + `inZeroG`/`ZG` en `04-fisica.js`; usa `navMaxY` para que los bots naveguen por encima de 12,5 m y `theme.ambiente:'piramide'` para su sonido). Cada uno termina con `MAPDEFS.id = función;` (el `id`, no el nombre del archivo) |
 | `src/nucleo/03-registro-mapas.js` | arma `MAPS`, apariciones seguras, alias de mapas viejos, plataformas móviles, mapa de prueba del editor |
@@ -36,6 +36,7 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `src/nucleo/07-partida/4-danio.js` | daño, blindaje, muertes, rachas, gungame |
 | `src/nucleo/07-partida/5-banderas-items.js` | captura la bandera, **`give()` (qué da cada ítem)**, sifón, recoger ítems |
 | `src/nucleo/07-partida/6-ciclo.js` | puntajes, fin de partida, votación de mapa, bots de relleno, `tick`, snapshot |
+| `src/nucleo/07-partida/6b-cartas.js` | **cartas de mejora** (roguelike): reparto cada 3 bajas, elección, fuego del toque ígneo y explosión al morir |
 | `src/nucleo/07-partida/7-bots.js` | inteligencia de los bots |
 | `src/nucleo/99-exportar.js` | lo que el módulo exporta |
 
@@ -60,6 +61,7 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `js/12-mensajes.js` | mensajes del servidor (`onMsg`), chat, eventos |
 | `js/13-disparos.js` | proyectiles del lado del cliente, rocket jump, disparar |
 | `js/14-tienda.js` | tienda (B) y taquilla |
+| `js/14b-cartas.js` | **cartas de mejora**: cartel de elección (1-2-3), mazo de abajo a la izquierda, chispas del fuego |
 | `js/15-entrada.js` | teclado, mouse, menú de echar (Y) |
 | `js/16-simulacion.js` | movimiento propio e interpolación de los demás |
 | `js/17-hud.js` | HUD |

@@ -78,16 +78,18 @@ function openCards(m) {
     '<div class="cbar"><i></i></div>';
   box.hidden = false;
   box.classList.remove('in', 'sale'); void box.offsetWidth; box.classList.add('in');
+  $('hud').classList.add('cartas');   // mientras elegís, las ranuras de armas y los carteles de teclas se corren de la vista
   [...box.querySelectorAll('.ccard')].forEach(e => e.addEventListener('click', () => pickCard(+e.dataset.i)));
   SFX.hunt();
 }
-function closeCards() { CU.open = false; $('cards').hidden = true; $('cards').classList.remove('in', 'sale'); }
+function closeCards() { CU.open = false; $('cards').hidden = true; $('cards').classList.remove('in', 'sale'); $('hud').classList.remove('cartas'); }
 function pickCard(i) {
   if (!CU.open || !CU.list[i]) return;
   CU.open = false;
   const box = $('cards');
   [...box.querySelectorAll('.ccard')].forEach((e, k) => { e.style.animationDelay = '0s'; e.classList.add(k === i ? 'taken' : 'gone'); });
   box.classList.add('sale');          // la mano vuelve a buscar las que no elegiste
+  $('hud').classList.remove('cartas');
   const bar = box.querySelector('.cbar'); if (bar) bar.hidden = true;
   setTimeout(() => { if (!CU.open) box.hidden = true; }, 640);
   if (net) net.send({ t: 'card', i });

@@ -1017,3 +1017,60 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
   padding:10px 12px;background:linear-gradient(135deg,transparent 9px,rgba(12,24,19,.8) 9.5px);border-left:3px solid rgba(127,174,143,.4)}
 #grimorio .grvacio b{font-weight:400;font-style:normal;font-family:var(--display);color:var(--pump2)}
 @media (max-width:700px){#grimorio .grc p{display:none}#grimorio .grnote{display:none}}
+
+/* =====================================================================
+   LA CORONA · placa de quién la tiene, barra del punto y flecha cuando queda fuera de pantalla
+   Solo en los modos con `crown` (hoy Arena). Nada de clip-path ni filter: las esquinas
+   cortadas salen con el truco del linear-gradient, como en el resto de la Interfaz v2.
+   ===================================================================== */
+#crwBox{position:fixed;left:50%;top:calc(56px + env(safe-area-inset-top,0px));transform:translateX(-50%);
+  display:flex;align-items:center;gap:10px;padding:4px 16px 5px 11px;max-width:min(380px,88vw);z-index:4;
+  background:linear-gradient(135deg,transparent 9px,rgba(12,20,17,.86) 9.5px);
+  border-bottom:2px solid rgba(201,168,78,.4);font-family:Georgia,'Palatino Linotype',serif;text-shadow:0 1px 0 #000}
+#crwBox .cbi{display:block;width:22px;flex:0 0 auto;color:#c9a84e}
+#crwBox .cbi svg{width:22px;height:16px;display:block;fill:currentColor}
+#crwBox .cbt{display:flex;flex-direction:column;min-width:0}
+#crwBox .cbt b{font-family:var(--display);font-weight:400;font-size:13px;letter-spacing:.1em;text-transform:uppercase;
+  color:#e6d8b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15}
+#crwBox .cbt i{font-style:italic;font-size:10.5px;letter-spacing:.03em;color:#8e9c91;white-space:nowrap}
+#crwBox .cbp{position:relative;width:66px;height:5px;flex:0 0 auto;background:rgba(0,0,0,.55);overflow:hidden}
+#crwBox .cbp i{display:block;width:100%;height:100%;transform:scaleX(0);transform-origin:left;
+  background:linear-gradient(90deg,#7fae8f,#8dff3a)}
+#crwBox.libre{border-bottom-color:rgba(127,174,143,.45)}
+#crwBox.libre .cbi{color:#8dff3a}
+#crwBox.mia{border-bottom-color:var(--witch)}
+#crwBox.mia .cbt b{color:#f1e3c2}
+#crwBox.mia .cbp i{background:linear-gradient(90deg,var(--witch),#d7b3ff)}
+/* flecha alrededor de la mira, misma idea que el indicador de daño pero sin clip-path */
+#crwDir{position:fixed;left:50%;top:50%;width:200px;height:200px;margin:-100px 0 0 -100px;opacity:.9}
+#crwDir::before{content:"";position:absolute;left:50%;top:0;width:0;height:0;margin-left:-9px;
+  border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:15px solid #c9a84e}
+#crwMine{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  font-family:var(--display);font-size:17px;letter-spacing:.06em;color:#f1e3c2;padding:5px 26px;white-space:nowrap;
+  background:linear-gradient(135deg,transparent 10px,rgba(26,14,38,.9) 10.5px);border-bottom:2px solid var(--witch)}
+#crwMine b{color:#8dff3a}
+/* puntos que vienen de la corona, al lado del total de bajas en el tablero (Tab) */
+#board .crwpt{display:inline-block;margin-left:6px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;
+  color:#c9a84e;vertical-align:1px}
+@media (max-width:760px){#crwBox{max-width:76vw}#crwBox .cbt i{display:none}#crwMine{font-size:14px;padding:4px 16px}}
+
+/* =====================================================================
+   LA TORMENTA DEL ÚLTIMO MINUTO · viñeta roja afuera y mapita con el círculo (solo Arena)
+   El mapita trabaja en coordenadas del mundo: el viewBox lo pone el cliente con los
+   límites del mapa, así el círculo y el puntito del jugador van derecho sin convertir nada.
+   ===================================================================== */
+#stmtint{background:radial-gradient(ellipse at center,rgba(255,40,20,0) 28%,rgba(190,12,8,.62));opacity:0}
+#stmBox{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));
+  display:flex;align-items:center;gap:9px;padding:6px 12px 7px 8px;
+  background:linear-gradient(135deg,transparent 9px,rgba(12,20,17,.84) 9.5px);
+  border-bottom:2px solid rgba(255,80,40,.45);font-family:Georgia,'Palatino Linotype',serif;text-shadow:0 1px 0 #000}
+#stmBox #stmSvg{width:54px;height:54px;flex:0 0 auto;display:block;overflow:visible}
+#stmBox #stmC{fill:rgba(255,60,30,.08);stroke:#ff5a2a;stroke-width:1.6;vector-effect:non-scaling-stroke}
+#stmBox #stmMe{fill:#8dff3a;stroke:#0b1210;stroke-width:.8;vector-effect:non-scaling-stroke}
+#stmBox .sbt{display:flex;flex-direction:column;min-width:0}
+#stmBox .sbt b{font-family:var(--display);font-weight:400;font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:#e6d8b8;white-space:nowrap;line-height:1.15}
+#stmBox .sbt i{font-style:italic;font-size:10.5px;letter-spacing:.03em;color:#8e9c91;white-space:nowrap;font-variant-numeric:tabular-nums}
+#stmBox.afuera{border-bottom-color:#ff2a1a;animation:blink 1s steps(2) infinite}
+#stmBox.afuera .sbt b{color:#ff8a6a}
+@media (max-width:760px){#stmBox{padding:4px 9px 5px 6px}#stmBox #stmSvg{width:40px;height:40px}#stmBox .sbt i{font-size:9.5px}}

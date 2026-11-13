@@ -84,7 +84,7 @@ for (const k in ITEMS) if (!ITEMS[k].name && ITEMS[k].ammo) ITEMS[k].name = AMMO
 
 const COLORS = ['#e8542a', '#3fa7ff', '#9ccc3c', '#ffcc33', '#c45cff', '#ff5c8a', '#38d6c4', '#f2efe6', '#ff8f1f', '#7a8cff'];
 /* ---------- Economía: créditos por frag y tienda (tecla B) ---------- */
-const ECON = { START: 300, KILL: 200, SHUTDOWN: 100, PISTOL: 100, MAX: 9999 };
+const ECON = { START: 300, KILL: 400, SHUTDOWN: 100, PISTOL: 100, MAX: 9999 };
 // pack: munición con la que aparecés si desbloqueaste el arma
 const SHOP = [
   { id: 'w0', cat: 'Pistolas', name: 'Pistola', w: 0, price: 0, free: 1, desc: 'Arrancás con 60 balas; comparte munición con la ametralladora' },
@@ -106,8 +106,8 @@ const SHOP = [
 ];
 /* ---------- Modos de juego ---------- */
 const MODES = {
-  arena:   { name: 'Arena', maps: ['represa', 'panymanteca', 'lacuenca', 'cuartotramo'], shop: true, cards: true, timelimit: 300,
-             desc: 'Todos contra todos. Cada frag da créditos para la tienda (B).' },
+  arena:   { name: 'Arena', maps: ['represa', 'panymanteca', 'lacuenca', 'cuartotramo'], shop: true, cards: true, crown: true, storm: true, timelimit: 300,
+             desc: 'Todos contra todos. Cada baja da créditos para la tienda (B). Buscá la corona: cada 15 s con ella puesta valen 1 punto y ¤ 300. En el último minuto la zona se achica.' },
   gungame: { name: 'Gungame', maps: ['represa', 'panymanteca', 'lacuenca', 'cuartotramo'], shop: false, gg: true,
              desc: 'Cada baja te da la siguiente arma de la lista. Munición infinita, sin tienda. Si te matan con cuchillo bajás un nivel. Gana el primero en hacer las 20 bajas; la última es con cuchillo.' },
   tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca', 'cuartotramo'], shop: true, cards: true, teams: true, tdm: true, minPlayers: 4,
@@ -152,7 +152,50 @@ const CARD_BY = {}; for (const c of CARDS) CARD_BY[c.id] = c;
 const hasCard = (p, id) => !!(p && p.cards && p.cards.indexOf(id) >= 0);
 // sifón: mini escudos que suelta el que muere
 // duran 10 s desde que caen al piso (a los 8 s empiezan a parpadear, eso lo hace el cliente)
+/* ---------- La tormenta del último minuto (por ahora solo Arena: la prende `storm` en MODES) ----------
+   Cuando quedan STORM.WARN segundos (sobre la duración real de la partida, no un número fijo) se avisa,
+   y STORM.DELAY después arranca. La zona segura es un círculo que al principio contiene todo el área
+   jugable y se achica linealmente hasta STORM.MIN_R en STORM.SHRINK segundos. Afuera hay daño continuo
+   que sube con el tiempo y que el blindaje no frena. Un mapa puede declarar `stormCenter: [x, z]` y
+   `stormR` (radio final) si el centro automático no le sirve. */
+const STORM = {
+  WARN: 60,          // avisa cuando queda este tiempo de partida
+  DELAY: 10,         // arranca este rato después del aviso
+  SHRINK: 40,        // cuánto tarda en achicarse del todo
+  MIN_R: 22,         // radio final (se puede pisar por mapa con `stormR`)
+  DMG0: 5,           // daño por segundo al empezar
+  DMG1: 15,          // daño por segundo con la zona ya chica
+  STEP: .25,         // cada cuánto se aplica el daño
+  CROWN_EVERY: 7.5,  // mientras dura, la corona paga cada tanto en lugar de CROWN.EVERY
+  MARGIN: 2          // un poco más grande que el área jugable al arrancar
+};
+/* Las dos cuentas de la tormenta, compartidas entre servidor y cliente: con los parámetros que
+   manda el servidor una sola vez (`i`) y el reloj del servidor alcanza para saber radio y daño.
+   i = [arranque, centro x, centro z, radio inicial, radio final, achique, daño inicial, daño final] */
+const stormK = (i, now) => !i ? 0 : Math.max(0, Math.min(1, i[5] ? (now - i[0]) / i[5] : 1));
+const stormR = (i, now) => !i ? 0 : i[3] + (i[4] - i[3]) * stormK(i, now);
+const stormDmg = (i, now) => !i ? 0 : i[6] + (i[7] - i[6]) * stormK(i, now);
 const SHARD = { N: 5, AR: 5, CAP: 100, LIFE: 10.45, MAX: 80 };
+/* ---------- La Corona (por ahora solo Arena: la prende `crown` en MODES) ----------
+   Hay una sola corona por partida y la lleva uno solo. Aparece a los 45 s de que arranca el reloj
+   y se avisa a todos. Cada 15 s seguidos de tenerla: 1 punto al tablero (el mismo contador de bajas
+   que define al ganador) y 100 créditos para la tienda. Al portador lo ve todo el mundo.
+   Es del servidor: el cliente solo la dibuja. */
+const CROWN = {
+  AT: 45,        // segundos desde que arranca la partida hasta que aparece
+  EVERY: 15,     // cada cuántos segundos seguidos paga (se reinicia al perderla)
+  PTS: 1,        // puntos al tablero por tanda
+  CASH: 300,     // créditos por tanda (una baja da ECON.KILL = 400)
+  KILL_PTS: 2,   // puntos extra para el que mata al portador
+  ARM: 1.5,      // nadie la puede levantar hasta 1,5 s después de que cae
+  IDLE: 20,      // si queda sola este tiempo, se muda lejos del último portador
+  VOID: 5,       // si cae en la lava o fuera del mapa, vuelve a un punto seguro
+  FAR: 18,       // al mudarse busca un punto a más de esta distancia del último portador
+  R: 1.1,        // radio para levantarla
+  HEAD: 1.75,    // altura de la corona sobre el portador
+  BOT_GO: [22, 38, 55, 75],   // a cuántos metros la van a buscar los bots, por dificultad (Fácil a Pesadilla)
+  BOT_AIM: [8, 16, 26, 36]    // cuánto priorizan al portador al elegir a quién dispararle
+};
 // Gungame: arranca con armas fuertes y termina con las difíciles; la última baja es con machete
 const GG = [3, 5, 2, 4, 1, 6, 8, 0, 3, 5, 2, 4, 1, 9, 8, 0, 5, 6, 9, 7];
 const TEAMS = [{ name: 'Rojo', c: '#ff4a3a' }, { name: 'Azul', c: '#3a8bff' }];
@@ -2475,7 +2518,7 @@ class Game {
     if (!MODES[this.o.mode]) this.o.mode = 'arena';
     this.mode = MODES[this.o.mode];
     if (this.mode.timelimit) this.o.timelimit = this.mode.timelimit;   // la Arena dura 6 minutos, online y en práctica
-    this.shards = []; this.sid = 1; this.mapVotes = new Map(); this.voteOpts = null;
+    this.shards = []; this.sid = 1; this.crown = null; this.storm = null; this.mapVotes = new Map(); this.voteOpts = null;
     this.players = new Map(); this.nextId = 1; this.projs = []; this.fires = []; this.pid = 1; this.vote = null; this.mvote = null; this.bans = new Map(); this.kickN = new Map();
     this.time = 0; this.snapT = 0; this.scT = 0; this.botT = 0; this.state = 'play'; this.left = this.o.timelimit; this.interT = 0;
     this.ts = [0, 0]; this.flags = []; this.countT = 0;
@@ -2510,7 +2553,7 @@ class Game {
     const p = this.players.get(id); if (!p) return;
     this.players.delete(id);
     this.dropCarried(p);
-    if (p.acct && this.state === 'play' && this.o.onXP) { const xp = this.matchXP(p, false, false); if (xp > 0) this.o.onXP(p, xp, { kills: p.kills, partida: 0, victoria: 0 }); }
+    if (p.acct && this.state === 'play' && this.o.onXP) { const xp = this.matchXP(p, false, false); if (xp > 0) this.o.onXP(p, xp, { kills: p.rkills, partida: 0, victoria: 0 }); }
     if (p.joined) { this.bcast({ t: 'ev', e: 'leave', id, n: p.name }); this.botT = 0; }
     if (this.vote) this.checkVote();
     if (this.mvote) this.checkMapVote();
@@ -2519,9 +2562,9 @@ class Game {
   newPlayer(id, name, skin, bot) {
     return { id, name, skin, color: skin.c, bot, send: null, s: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, on: false }, yaw: 0, pitch: 0, w: 1,
       hp: 100, ar: 0, am: AMMO0(0), ow: OW0(), mag: {}, relT: {}, alive: false, deadT: 0,
-      frags: 0, deaths: 0, quadT: 0, lavaT: 0, megaT: 0, lastFire: -9, ping: 0, dirty: true, joined: false, ai: null, spawnT: 0, padT: 0,
+      kills: 0, deaths: 0, quadT: 0, lavaT: 0, megaT: 0, lastFire: -9, ping: 0, dirty: true, joined: false, ai: null, spawnT: 0, padT: 0,
       cards: [], cof: null, cofT: 0, burnT: 0, burnBy: 0, burnTick: 0,
-      cr: ECON.START, unl: OW0(), eq: 1, perk: { ar: 0, am: 0 }, streak: 0, lvl: 0, team: -1, caps: 0, kills: 0, dmg: 0, acct: null, plvl: 0, joinT: 0, role: id % 3 === 0 ? 'def' : 'att' };
+      cr: ECON.START, unl: OW0(), eq: 1, perk: { ar: 0, am: 0 }, streak: 0, lvl: 0, team: -1, caps: 0, rkills: 0, dmg: 0, cpts: 0, ctime: 0, acct: null, plvl: 0, joinT: 0, role: id % 3 === 0 ? 'def' : 'att' };
   }
   // el servidor avisa qué cuenta tiene cada jugador (para su nivel y para sumarle experiencia)
   setAccount(id, a) { const p = this.players.get(id); if (!p) return; p.acct = a ? a.sub : null; p.plvl = a ? a.level : 0; if (p.joined) this.sendScores(); }
@@ -2532,7 +2575,7 @@ class Game {
     const parts = {
       partida: finished ? XP.PLAY : 0,
       minutos: Math.min(XP.MAX_MIN, Math.floor(mins)) * XP.PER_MIN,
-      bajas: p.kills * XP.KILL,
+      bajas: p.rkills * XP.KILL,
       aguante: Math.min(XP.MAX_SURVIVE, Math.floor(life / 60) * XP.SURVIVE),
       victoria: finished && won ? XP.WIN : 0,
       capturas: p.caps * XP.CAP
@@ -2569,9 +2612,9 @@ class Game {
         p.name = this.uniqueName(cleanName(m.name));
         p.skin = cleanSkin(m.skin || { c: m.color }, p.skin); p.color = p.skin.c;
         if (this.mode.teams) this.setTeam(p, this.pickTeam(p));
-        p.joined = true; p.joinT = this.time; p.kills = 0; p.dmg = 0; p.bestLife = 0;
+        p.joined = true; p.joinT = this.time; p.rkills = 0; p.dmg = 0; p.bestLife = 0;
         if (this.mode.tdm && this.o.online && this.humanCount(false) <= 1 && Number.isInteger(m.fl) && m.fl >= 5 && m.fl <= 500) this.o.fraglimit = m.fl;
-        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts, cd: p.cards.slice(), sh: this.shards.map(s => [s.id, r3(s.x), r3(s.y), r3(s.z), r2(s.t)]), mv: this.voteState() });
+        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts, cd: p.cards.slice(), sh: this.shards.map(s => [s.id, r3(s.x), r3(s.y), r3(s.z), r2(s.t)]), cw: this.crownState(), st: this.stormInfo(), mv: this.voteState() });
         this.bcast({ t: 'ev', e: 'join', id, n: p.name, c: p.color, s: p.skin, tm: p.team }, id);
         this.spawn(p); this.botT = 0; this.sendScores();
         break;
@@ -2789,7 +2832,8 @@ class Game {
   /* ---- aparición ---- */
   pickSpawn(p) {
     const alive = [...this.players.values()].filter(q => q.alive && (!this.mode.teams || !p || q.team !== p.team));
-    const list = this.mode.teams && p && p.team >= 0 && this.W.tspawns ? this.W.tspawns[p.team] : this.W.spawns;
+    let list = this.mode.teams && p && p.team >= 0 && this.W.tspawns ? this.W.tspawns[p.team] : this.W.spawns;
+    if (this.stormOn() && this.storm) list = this.stormSpawns(list);   // con la tormenta, solo apariciones dentro del círculo
     const scored = list.map(sp => {
       let d = 1e9; for (const q of alive) d = Math.min(d, Math.hypot(q.s.x - sp.x, q.s.y - sp.y, q.s.z - sp.z));
       return { sp, d: d + Math.random() * 6 };
@@ -3107,7 +3151,7 @@ class Game {
       att.dmg = (att.dmg || 0) + real;
       if (att.alive && hasCard(att, 'vampiro')) { const h = Math.min(100 - att.hp, real * CARD_FX.VAMP); if (h > 0) { att.hp += h; att.dirty = true; } }   // carta Vampirismo
     }
-    if (t.ar > 0 && !(w != null && WEAPONS[w] && WEAPONS[w].melee)) { const save = Math.min(t.ar, Math.ceil(amt / 3)); t.ar -= save; take -= save; }
+    if (t.ar > 0 && how !== 'storm' && !(w != null && WEAPONS[w] && WEAPONS[w].melee)) { const save = Math.min(t.ar, Math.ceil(amt / 3)); t.ar -= save; take -= save; }
     t.hp -= take; t.dirty = true;
     const kick = dir && ks ? [dir[0] * amt * ks, dir[1] * amt * ks, dir[2] * amt * ks] : null;
     if (t.bot) {
@@ -3125,9 +3169,10 @@ class Game {
     if (v.lifeT0 != null) { v.bestLife = Math.max(v.bestLife || 0, this.time - v.lifeT0); v.lifeT0 = null; }
     let k = 0;
     const carrier = this.flags.some(f => f.st === 1 && f.by === v.id), scoring = this.state === 'play';
+    const crowned = !!(this.crownOn() && this.crown && this.crown.by === v.id);
     if (!scoring) { v.deaths--; k = att && att !== v ? att.id : 0; }
     else if (att && att !== v) {
-      att.frags++; att.kills++; k = att.id; att.streak++;
+      att.kills++; att.rkills++; k = att.id; att.streak++;
       let n = ECON.KILL; const why = [];
       if (v.streak >= 3) { n += ECON.SHUTDOWN; why.push('cortaste una racha'); }
       if (w === 0) { n += ECON.PISTOL; why.push('con pistola'); }
@@ -3136,8 +3181,12 @@ class Game {
       this.credit(att, n, why.join(' · '));
       if (att.alive && hasCard(att, 'trofeo')) { att.ar = Math.min(100, att.ar + CARD_FX.KILL_AR); att.dirty = true; }        // carta Trofeo
       if (att.alive && hasCard(att, 'sanguijuela')) { att.hp = Math.min(100, att.hp + CARD_FX.KILL_HP); att.dirty = true; }   // carta Hambre de sangre
+      if (crowned) {   // regicidio: puntos extra, los créditos son los normales de una baja
+        att.kills += CROWN.KILL_PTS; att.cpts += CROWN.KILL_PTS;
+        this.bcast({ t: 'ev', e: 'crw', a: 'regi', id: att.id, n: att.name, v: v.name, pts: CROWN.KILL_PTS });
+      }
       this.checkCard(att);
-    } else v.frags--;
+    } else if (how !== 'storm') v.kills--;   // la tormenta no le da puntos a nadie, pero tampoco te resta
     v.streak = 0; v.burnT = 0;
     this.dropCarried(v);
     const ns = !!(this.curNS && k && k !== v.id && w != null && WEAPONS[w] && WEAPONS[w].scope);
@@ -3155,9 +3204,9 @@ class Game {
       this.bcast({ t: 'ev', e: 'sys', m: att.name + ' hizo una racha de 6 bajas: ¡desbloqueó la escopeta doble!' });
     }
     this.sendScores();
-    // Arena termina siempre por tiempo: el límite de frags no aportaba nada (5 minutos, casi nunca se llegaba).
+    // Arena termina siempre por tiempo: el límite de bajas no aportaba nada (5 minutos, casi nunca se llegaba).
     // Queda detrás de `fragLimit` por si algún modo lo quiere de vuelta; los modos por equipos usan `teamLimit`.
-    if (won || (scoring && this.mode.fragLimit && !this.mode.gg && !this.mode.teams && att && att !== v && att.frags >= this.o.fraglimit)) this.endMatch();
+    if (won || (scoring && this.mode.fragLimit && !this.mode.gg && !this.mode.teams && att && att !== v && att.kills >= this.o.fraglimit)) this.endMatch();
     if (scoring && hasCard(v, 'bomba')) this.deathBlast(v);   // carta Carga mortal: explota al morir
   }
   /* ---- gungame: subir y bajar de nivel ---- */
@@ -3182,6 +3231,7 @@ class Game {
   /* ---- captura la bandera ---- */
   flagEv(a, f, p) { this.bcast({ t: 'ev', e: 'flag', a, f: f.team, id: p ? p.id : 0, n: p ? p.name : '', fs: this.flagState(), ts: this.ts }); }
   dropCarried(p) {
+    this.dropCrown(p);
     for (const f of this.flags) {
       if (f.st !== 1 || f.by !== p.id) continue;
       const hit = raycast(this.W, p.s.x, p.s.y + .5, p.s.z, 0, -1, 0, 30);
@@ -3301,10 +3351,10 @@ class Game {
   scores() {
     const gg = this.mode.gg;
     return [...this.players.values()].filter(p => p.joined)
-      .sort((a, b) => (gg ? b.lvl - a.lvl : 0) || (this.mode.teams ? b.caps - a.caps : 0) || b.frags - a.frags || a.deaths - b.deaths)
-      .map(p => [p.id, p.name, p.frags, p.deaths, p.bot ? 0 : p.ping, p.bot ? 1 : 0, p.color, p.cr, p.lvl, p.team, p.caps, p.plvl, Math.round(p.dmg || 0)]);
+      .sort((a, b) => (gg ? b.lvl - a.lvl : 0) || (this.mode.teams ? b.caps - a.caps : 0) || b.kills - a.kills || (this.mode.crown ? b.ctime - a.ctime : 0) || a.deaths - b.deaths)
+      .map(p => [p.id, p.name, p.kills, p.deaths, p.bot ? 0 : p.ping, p.bot ? 1 : 0, p.color, p.cr, p.lvl, p.team, p.caps, p.plvl, Math.round(p.dmg || 0), p.cpts || 0, Math.round(p.ctime || 0)]);
   }
-  sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, st: this.state, map: this.W.id, mode: this.o.mode, ts: this.ts, fs: this.flagState(), cd: Math.ceil(this.countT), hn: this.humanCount(false), mp: this.mode.minPlayers || 0, iu: this.items.map(it => it.up ? 1 : 0).join('') }); }   // iu: qué ítems están en pie; el cliente se resincroniza cada segundo, así un botiquín nunca queda "desaparecido" por un aviso perdido
+  sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, st: this.state, map: this.W.id, mode: this.o.mode, ts: this.ts, fs: this.flagState(), cd: Math.ceil(this.countT), hn: this.humanCount(false), mp: this.mode.minPlayers || 0, cw: this.crownState(), iu: this.items.map(it => it.up ? 1 : 0).join('') }); }   // iu: qué ítems están en pie; el cliente se resincroniza cada segundo, así un botiquín nunca queda "desaparecido" por un aviso perdido
   endMatch() {
     if (this.state !== 'play') return;
     this.state = 'inter'; this.interT = 25;
@@ -3324,7 +3374,7 @@ class Game {
         if (!p.joined || p.bot || !p.acct) continue;
         const won = this.mode.teams ? p.team === wt : !!(l.length && l[0][0] === p.id);
         const xp = this.matchXP(p, true, won);
-        if (xp > 0) this.o.onXP(p, xp, { kills: p.kills, partida: 1, victoria: won ? 1 : 0 });
+        if (xp > 0) this.o.onXP(p, xp, { kills: p.rkills, partida: 1, victoria: won ? 1 : 0 });
       }
     }
     this.bcast({ t: 'end', l, w, wt: this.mode.teams ? (this.ts[0] === this.ts[1] ? -1 : this.ts[0] > this.ts[1] ? 0 : 1) : -1, ts: this.ts, next, nextName: next ? MAPS[next].name : '', mv: this.voteState(), secs: this.interT });
@@ -3351,6 +3401,8 @@ class Game {
     if (!mapId && !this.nextMap && this.voteOpts) this.nextMap = this.voteWinner();
     this.voteOpts = null; this.mapVotes.clear();
     for (const s of this.shards) this.bcast({ t: 'ev', e: 'shx', id: s.id }); this.shards.length = 0;
+    if (this.crown) { this.crown = null; this.bcast({ t: 'ev', e: 'crw', a: 'off' }); }
+    if (this.storm) { this.storm = null; this.bcast({ t: 'ev', e: 'stm', a: 'off' }); }
     const id = mapId || this.nextMap || this.W.id; this.nextMap = null;
     if (id !== this.W.id) this.setMap(id); else this.resetFlags();
     this.state = 'play'; this.left = this.o.timelimit; this.projs.length = 0;
@@ -3358,7 +3410,7 @@ class Game {
     for (const it of this.items) { it.up = !it.off; it.t = 0; it.type = it.base; }
     this.bcast({ t: 'start', map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), tm: this.time, fs: this.flagState(), ts: this.ts });
     for (const p of this.players.values()) if (p.joined) {
-      p.ready = false; p.frags = 0; p.deaths = 0; p.cr = ECON.START; p.unl = OW0(); p.eq = 1; p.perk = { ar: 0, am: 0 }; p.cards = []; p.cof = null; p.cofT = 0; p.burnT = 0; p.streak = 0; p.lvl = 0; p.caps = 0; p.kills = 0; p.dmg = 0; p.bestLife = 0; p.lifeT0 = p.alive ? this.time : null; p.joinT = this.time; p.dirty = true;
+      p.ready = false; p.kills = 0; p.deaths = 0; p.cr = ECON.START; p.unl = OW0(); p.eq = 1; p.perk = { ar: 0, am: 0 }; p.cards = []; p.cof = null; p.cofT = 0; p.burnT = 0; p.streak = 0; p.lvl = 0; p.caps = 0; p.rkills = 0; p.cpts = 0; p.ctime = 0; p.stormT = 0; p.dmg = 0; p.bestLife = 0; p.lifeT0 = p.alive ? this.time : null; p.joinT = this.time; p.dirty = true;
       this.spawn(p);
     }
     this.sendScores();
@@ -3437,7 +3489,7 @@ class Game {
     }
     if (this.mvote) { this.mvT = (this.mvT || 0) - dt; if (this.mvT <= 0) { this.mvT = 1; this.checkMapVote(); if (this.mvote) this.sendVote(); } }
     if (this.vote) { this.voteT = (this.voteT || 0) - dt; if (this.voteT <= 0) { this.voteT = 1; this.checkVote(); if (this.vote) this.sendVote(); } }
-    if (this.live()) { this.tickProjs(dt); this.tickFires(dt); this.tickItems(dt); this.tickShards(dt); this.tickBurn(dt); if (this.mode.cards) this.tickCards(dt); if (this.flags.length && this.state === 'play') this.tickFlags(dt); }
+    if (this.live()) { this.tickProjs(dt); this.tickFires(dt); this.tickItems(dt); this.tickShards(dt); this.tickBurn(dt); if (this.mode.cards) this.tickCards(dt); if (this.mode.crown) this.tickCrown(dt); if (this.mode.storm) this.tickStorm(dt); if (this.flags.length && this.state === 'play') this.tickFlags(dt); }
     this.snapT -= dt;
     if (this.snapT <= 1e-6) { this.snapT += .05; if (this.snapT < 0) this.snapT = 0; this.snapshot(); }
     this.scT -= dt;
@@ -3454,7 +3506,7 @@ class Game {
     for (const p of this.players.values()) {
       if (p.bot || !p.send || !p.joined || !p.dirty) continue;
       p.dirty = false;
-      p.send({ t: 'you', hp: Math.ceil(p.hp), ar: Math.ceil(p.ar), am: Object.assign({}, p.am), ow: p.ow.slice(), q: Math.ceil(p.quadT), al: p.alive ? 1 : 0, cr: p.cr, unl: p.unl.slice(), perk: Object.assign({}, p.perk), lvl: p.lvl, ck: this.mode.cards ? p.kills : 0 });
+      p.send({ t: 'you', hp: Math.ceil(p.hp), ar: Math.ceil(p.ar), am: Object.assign({}, p.am), ow: p.ow.slice(), q: Math.ceil(p.quadT), al: p.alive ? 1 : 0, cr: p.cr, unl: p.unl.slice(), perk: Object.assign({}, p.perk), lvl: p.lvl, ck: this.mode.cards ? p.rkills : 0 });
     }
   }
 
@@ -3471,7 +3523,7 @@ class Game {
   // se llama desde kill() cada vez que alguien sube una baja
   checkCard(p) {
     if (!this.mode.cards || p.cof || p.cards.length >= CARD_MAX) return;
-    if (p.kills < CARD_AT[p.cards.length]) return;
+    if (p.rkills < CARD_AT[p.cards.length]) return;
     this.offerCards(p);
   }
   // tres al azar entre las que todavía no tiene
@@ -3535,6 +3587,203 @@ class Game {
       if (!this.live()) return;
     }
   }
+
+  /* =====================================================================
+     LA CORONA — solo los modos con `crown` (hoy nomás Arena)
+     Hay una sola corona por partida y la lleva uno solo. Aparece a los 45 s de que arranca
+     el reloj (CROWN.AT) en un punto de aparición seguro y se avisa a todos.
+     Cada 15 s seguidos de tenerla (CROWN.EVERY) el portador suma 1 punto al tablero —el mismo
+     contador de bajas que define al ganador— y 100 créditos. Si la pierde, el reloj vuelve a cero.
+     Al que mata al portador le dan 2 puntos extra. Todo lo decide el servidor: el cliente dibuja.
+     ===================================================================== */
+
+  crownOn() { return !!this.mode.crown; }
+  // cada cuánto paga: la mitad mientras la tormenta está activa
+  crownEvery() { return this.stormOn() && this.stormActive() ? Math.min(CROWN.EVERY, STORM.CROWN_EVERY) : CROWN.EVERY; }
+
+  // un punto de aparición seguro, lejos de donde se perdió la corona
+  crownSpot(ax, az) {
+    let list = this.W.spawns;
+    if (!list || !list.length) return null;
+    if (this.stormOn() && this.storm) list = this.stormSpawns(list);   // con la tormenta, siempre dentro del círculo
+    const far = ax == null ? null : list.filter(sp => Math.hypot(sp.x - ax, sp.z - az) > CROWN.FAR);
+    const pool = far && far.length ? far : list;
+    return pool[(Math.random() * pool.length) | 0];
+  }
+
+  // cuánto lleva seguido el portador (el cliente lo calcula igual, con el reloj del servidor)
+  crownProg() { const c = this.crown; return c && c.by ? Math.max(0, this.time - c.t0) : 0; }
+  /* Estado completo, para el `welcome` y para resincronizar una vez por segundo en `sc`.
+     Va `t0` (cuándo arrancó la cuenta de los 15 s) y no el progreso: así el cliente lo calcula
+     solo con el reloj del servidor y el snapshot no tiene que llevar nada de la corona. */
+  crownState() {
+    if (!this.crownOn()) return null;
+    const c = this.crown;
+    if (!c) return [0, 0, 0, 0, 0, 0];
+    return [r2(c.x), r2(c.y), r2(c.z), c.by, r2(c.t0), c.dead > 0 ? 1 : 0];
+  }
+
+  spawnCrown() {
+    const sp = this.crownSpot(null, null); if (!sp) return;
+    this.crown = { x: sp.x, y: sp.y + .8, z: sp.z, by: 0, arm: 0, idle: 0, t0: 0, dead: 0, lx: null, lz: null };
+    this.bcast({ t: 'ev', e: 'crw', a: 'spawn', p: r3a([this.crown.x, this.crown.y, this.crown.z]) });
+    this.bcast({ t: 'ev', e: 'sys', m: '¡Apareció La Corona! Cada ' + CROWN.EVERY + ' s con ella puesta valen ' + CROWN.PTS + ' punto y ' + CROWN.CASH + ' créditos' });
+    this.sendScores();
+  }
+
+  // la muda a otro punto seguro (quedó sola mucho tiempo, o se cayó al vacío)
+  moveCrown(ax, az) {
+    const c = this.crown, sp = this.crownSpot(ax, az);
+    if (!c || !sp) return;
+    c.x = sp.x; c.y = sp.y + .8; c.z = sp.z;
+    c.by = 0; c.t0 = 0; c.idle = 0; c.arm = 0; c.dead = 0;
+    this.bcast({ t: 'ev', e: 'crw', a: 'move', p: r3a([c.x, c.y, c.z]) });
+  }
+
+  takeCrown(p) {
+    const c = this.crown;
+    if (!c || c.by || c.arm > 0 || c.dead > 0 || !p.alive || !p.joined) return false;
+    c.by = p.id; c.t0 = this.time; c.idle = 0;
+    c.x = p.s.x; c.y = p.s.y + CROWN.HEAD; c.z = p.s.z;
+    this.bcast({ t: 'ev', e: 'crw', a: 'take', id: p.id, n: p.name, t0: r2(c.t0) });
+    return true;
+  }
+
+  // se llama desde dropCarried(): vale para la muerte y para el que se desconecta
+  dropCrown(p) {
+    const c = this.crown;
+    if (!c || c.by !== p.id) return;
+    const oy = p.s.y + 1, hit = raycast(this.W, p.s.x, oy, p.s.z, 0, -1, 0, 16), tr = triggers(this.W, p.s);
+    c.by = 0; c.t0 = 0; c.idle = 0; c.arm = CROWN.ARM; c.lx = p.s.x; c.lz = p.s.z;
+    c.x = p.s.x; c.z = p.s.z; c.y = hit ? oy - hit.t + .8 : oy;
+    // en la lava, en el agua, fuera del mapa o colgada en el aire: se pierde y vuelve sola a un punto seguro
+    if (!hit || tr.lava || tr.water || p.s.y < K.KILLY + 2) c.dead = CROWN.VOID;
+    this.bcast({ t: 'ev', e: 'crw', a: 'drop', p: r3a([c.x, c.y, c.z]), v: c.dead > 0 ? 1 : 0, id: p.id });
+  }
+
+  tickCrown(dt) {
+    if (!this.crownOn() || this.state !== 'play') return;
+    const c = this.crown;
+    if (!c) { if (this.o.timelimit - this.left >= CROWN.AT) this.spawnCrown(); return; }
+
+    if (c.dead > 0) {                                   // se cayó al vacío: vuelve en CROWN.VOID segundos
+      c.dead -= dt;
+      if (c.dead <= 0) { c.dead = 0; this.moveCrown(c.lx, c.lz); }
+      return;
+    }
+
+    if (c.by) {                                         // la tiene alguien
+      const h = this.players.get(c.by);
+      if (!h || !h.joined) { c.by = 0; c.arm = CROWN.ARM; c.t0 = 0; c.idle = 0; return; }
+      if (!h.alive) { this.dropCrown(h); return; }
+      c.x = h.s.x; c.y = h.s.y + CROWN.HEAD; c.z = h.s.z;
+      h.ctime += dt;
+      const every = this.crownEvery();
+      while (this.time - c.t0 >= every) {
+        c.t0 += every;
+        h.kills += CROWN.PTS; h.cpts += CROWN.PTS; h.dirty = true;
+        this.credit(h, CROWN.CASH, 'la corona');
+        this.bcast({ t: 'ev', e: 'crw', a: 'pay', id: h.id, n: h.name, pts: CROWN.PTS, cr: CROWN.CASH, t0: r2(c.t0) });
+      }
+      return;
+    }
+
+    // suelta en el piso
+    if (c.arm > 0) c.arm -= dt;
+    c.idle += dt;
+    if (c.idle >= CROWN.IDLE) { this.moveCrown(c.lx, c.lz); return; }   // nadie la levanta: se muda lejos
+    if (this.stormOn() && this.outStorm(c.x, c.z)) { this.moveCrown(c.lx, c.lz); return; }   // quedó fuera de la zona: vuelve adentro
+    if (c.arm > 0) return;
+    for (const p of this.players.values()) {
+      if (!p.alive || !p.joined) continue;
+      if (Math.abs(p.s.x - c.x) < CROWN.R && Math.abs(p.s.z - c.z) < CROWN.R && p.s.y > c.y - 2 && p.s.y < c.y + 1.4) { this.takeCrown(p); break; }
+    }
+  }
+
+  /* =====================================================================
+     LA TORMENTA DEL ÚLTIMO MINUTO — solo los modos con `storm` (hoy nomás Arena)
+     Cuando quedan STORM.WARN segundos de partida (60, calculado sobre la duración real,
+     no un número fijo) se avisa a todos y suena la alerta. STORM.DELAY después (10 s)
+     arranca: la zona segura es un círculo que al principio contiene todo el área jugable
+     (`bounds` del mapa, o `stormCenter` si el mapa lo declara) y se achica de forma lineal
+     hacia el centro durante STORM.SHRINK segundos hasta STORM.MIN_R, y se queda así.
+     Afuera se recibe daño continuo que sube con el tiempo y que el blindaje NO frena.
+     Los parámetros van por red una sola vez: el cliente calcula el radio con `stormR()`
+     y el reloj del servidor. Mientras dura, la corona paga cada STORM.CROWN_EVERY.
+     ===================================================================== */
+
+  stormOn() { return !!this.mode.storm; }
+
+  // el círculo inicial: centro y radio que contienen el área jugable del mapa (se calcula una vez)
+  stormCircle() {
+    const W = this.W;
+    if (W._storm) return W._storm;
+    const b = W.bounds || { x0: -40, x1: 40, z0: -40, z1: 40 };
+    const cx = W.stormCenter ? W.stormCenter[0] : (b.x0 + b.x1) / 2;
+    const cz = W.stormCenter ? W.stormCenter[1] : (b.z0 + b.z1) / 2;
+    // el radio tiene que llegar a la esquina más lejana, así al arrancar nadie está afuera
+    let r = 0;
+    for (const x of [b.x0, b.x1]) for (const z of [b.z0, b.z1]) r = Math.max(r, Math.hypot(x - cx, z - cz));
+    for (const sp of W.spawns) r = Math.max(r, Math.hypot(sp.x - cx, sp.z - cz));
+    W._storm = { cx, cz, r0: Math.ceil(r + STORM.MARGIN), r1: W.stormR || STORM.MIN_R };
+    return W._storm;
+  }
+
+  // lo que viaja al cliente, una sola vez: [arranque, centro x, centro z, radio inicial, radio final, achique, daño inicial, daño final]
+  stormInfo() {
+    const s = this.storm;
+    return s ? [r2(s.t0), s.cx, s.cz, s.r0, s.r1, STORM.SHRINK, STORM.DMG0, STORM.DMG1] : null;
+  }
+  stormActive() { return !!(this.storm && this.time >= this.storm.t0); }
+  stormRadius() { return this.storm ? stormR(this.stormInfo(), this.time) : 0; }
+  // ¿está fuera de la zona segura?
+  outStorm(x, z) {
+    if (!this.stormActive()) return false;
+    const s = this.storm, r = this.stormRadius();
+    return Math.hypot(x - s.cx, z - s.cz) > r;
+  }
+  /* apariciones que quedan dentro de la zona; si no hay ninguna, la más cercana al centro
+     (siempre un punto de aparición de verdad, para no dejar a nadie dentro de una pared) */
+  stormSpawns(list) {
+    if (!this.storm) return list;
+    const s = this.storm, r = this.stormActive() ? this.stormRadius() : s.r0;
+    const dentro = list.filter(sp => Math.hypot(sp.x - s.cx, sp.z - s.cz) <= r * .9);
+    if (dentro.length) return dentro;
+    let best = list[0], bd = 1e9;
+    for (const sp of list) { const d = Math.hypot(sp.x - s.cx, sp.z - s.cz); if (d < bd) { bd = d; best = sp; } }
+    return best ? [best] : list;
+  }
+
+  // a dónde corre un bot que quedó afuera: la aparición dentro del círculo que le quede más cerca
+  stormRefuge(p) {
+    const l = this.stormSpawns(this.W.spawns);
+    let best = null, bd = 1e9;
+    for (const sp of l) { const d = Math.hypot(sp.x - p.s.x, sp.z - p.s.z); if (d < bd) { bd = d; best = sp; } }
+    return best;
+  }
+
+  tickStorm(dt) {
+    if (!this.stormOn() || this.state !== 'play') return;
+    const dur = this.o.timelimit;
+    if (dur <= STORM.WARN + STORM.DELAY) return;        // partida muy corta: no da para la tormenta
+    if (!this.storm) {
+      if (this.left > STORM.WARN) return;
+      const c = this.stormCircle();
+      this.storm = { t0: this.time + STORM.DELAY, cx: c.cx, cz: c.cz, r0: c.r0, r1: c.r1 };
+      this.bcast({ t: 'ev', e: 'stm', a: 'warn', i: this.stormInfo(), d: STORM.DELAY });
+      return;
+    }
+    if (!this.stormActive()) return;
+    if (!this.storm.on) { this.storm.on = 1; this.bcast({ t: 'ev', e: 'stm', a: 'go', i: this.stormInfo() }); }
+    // daño a los que están afuera, en pasos de STORM.STEP, sin que el blindaje lo frene
+    const dps = stormDmg(this.stormInfo(), this.time);
+    for (const p of this.players.values()) {
+      if (!p.joined || !p.alive) { if (p.stormT) p.stormT = 0; continue; }
+      if (!this.outStorm(p.s.x, p.s.z)) { p.stormT = 0; continue; }
+      p.stormT = (p.stormT || 0) - dt;
+      if (p.stormT <= 0) { p.stormT = STORM.STEP; this.damage(p, dps * STORM.STEP, null, null, null, 0, 'storm'); }
+    }
+  }
   // gravedad cero: lleva al bot a la altura yb del borde de un nivel (piso en yb) y, ya a esa altura, hacia (tx, tz). Antes de llegar se queda dentro del pozo.
   zgSteer(s, yb, tx, tz) {
     const zb = this.W.zerog[0], cx = (zb.min[0] + zb.max[0]) / 2, cz = (zb.min[2] + zb.max[2]) / 2, inZ = inZeroG(this.W, s);
@@ -3551,6 +3800,8 @@ class Game {
   skill() { return SKILL[this.o.botSkill] || SKILL[1]; }
   findTarget(p) {
     let best = null, bd = 1e9; const sk = this.skill();
+    const skI = Math.max(0, Math.min(3, this.o.botSkill | 0));
+    const cw = this.crownOn() && this.crown && this.crown.by !== p.id ? this.crown.by : 0;   // el de la corona es el objetivo preferido
     const ex = p.s.x, ey = p.s.y + K.EYE, ez = p.s.z;
     for (const t of this.players.values()) {
       if (t === p || !t.alive || !t.joined || (this.mode.teams && t.team === p.team)) continue;
@@ -3561,7 +3812,7 @@ class Game {
       const f = dirFromAngles(p.yaw, 0), dot = ((t.s.x - ex) * f[0] + (t.s.z - ez) * f[2]) / (Math.hypot(t.s.x - ex, t.s.z - ez) || 1);
       if (dot < sk.fov && !hurt && d > 4 && t.id !== p.ai.tgt) continue;
       if (!los(this.W, ex, ey, ez, t.s.x, t.s.y + 1.2, t.s.z)) continue;
-      const score = d - (p.ai.hurtBy === t.id && p.ai.hurtT > 0 ? 15 : 0) - (t.id === p.ai.tgt ? 8 : 0);
+      const score = d - (p.ai.hurtBy === t.id && p.ai.hurtT > 0 ? 15 : 0) - (t.id === p.ai.tgt ? 8 : 0) - (t.id === cw ? CROWN.BOT_AIM[skI] : 0);
       if (score < bd) { bd = score; best = t; }
     }
     return best;
@@ -3627,6 +3878,11 @@ class Game {
   }
   // CTF: qué hace cada bot según el estado de las banderas y su rol (ataque/defensa)
   objective(p) {
+    if (this.stormOn() && this.outStorm(p.s.x, p.s.z)) {   // afuera de la zona segura no hay nada más importante
+      const sp = this.stormRefuge(p);
+      if (sp) return { x: sp.x, y: sp.y, z: sp.z, pri: 160 };
+    }
+    const cr = this.crownObjective(p); if (cr) return cr;
     if (!this.mode.teams || this.flags.length < 2 || p.team < 0) return null;
     const own = this.flags[p.team], enemy = this.flags[1 - p.team], home = this.W.flags[p.team];
     if (enemy.st === 1 && enemy.by === p.id) return { x: home.x, y: home.y, z: home.z, pri: 200 };
@@ -3638,6 +3894,20 @@ class Game {
     }
     if (Math.hypot(p.s.x - home.x, p.s.z - home.z) > 14) return { x: home.x + (Math.random() - .5) * 16, y: 0, z: home.z - Math.sign(home.z) * (4 + Math.random() * 8), pri: 50 };
     return null;
+  }
+  /* la corona para los bots: la van a buscar si está suelta y cerca, y si la tiene otro lo persiguen.
+     Las distancias dependen de la dificultad (CROWN.BOT_GO). El que la lleva sigue jugando normal. */
+  crownObjective(p) {
+    if (!this.crownOn() || this.state !== 'play') return null;
+    const c = this.crown; if (!c || c.dead > 0) return null;
+    const k = Math.max(0, Math.min(3, this.o.botSkill | 0)), lejos = CROWN.BOT_GO[k];
+    if (!c.by) {
+      return Math.hypot(c.x - p.s.x, c.z - p.s.z) < lejos ? { x: c.x, y: c.y, z: c.z, pri: 120 } : null;
+    }
+    if (c.by === p.id) return null;
+    const h = this.players.get(c.by);
+    if (!h || !h.alive) return null;
+    return Math.hypot(h.s.x - p.s.x, h.s.z - p.s.z) < lejos * 1.3 ? { x: h.s.x, y: h.s.y, z: h.s.z, pri: 95 } : null;
   }
   botThink(p, dt) {
     const ai = p.ai, s = p.s, nav = this.nav, sk = SKILL[this.o.botSkill] || SKILL[1];
@@ -3750,5 +4020,5 @@ class Game {
   }
 }
 
-return { PRIMARY, primaryOf, censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, CARDS, CARD_BY, CARD_AT, CARD_MAX, CARD_FX, hasCard, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, EMBLEMS, SKILL, topAt, pmove, inZeroG, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
+return { PRIMARY, primaryOf, censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, CARDS, CARD_BY, CARD_AT, CARD_MAX, CARD_FX, hasCard, CROWN, STORM, stormR, stormDmg, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, EMBLEMS, SKILL, topAt, pmove, inZeroG, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
 });

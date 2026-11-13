@@ -1025,10 +1025,67 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
   padding:10px 12px;background:linear-gradient(135deg,transparent 9px,rgba(12,24,19,.8) 9.5px);border-left:3px solid rgba(127,174,143,.4)}
 #grimorio .grvacio b{font-weight:400;font-style:normal;font-family:var(--display);color:var(--pump2)}
 @media (max-width:700px){#grimorio .grc p{display:none}#grimorio .grnote{display:none}}
+
+/* =====================================================================
+   LA CORONA · placa de quién la tiene, barra del punto y flecha cuando queda fuera de pantalla
+   Solo en los modos con `crown` (hoy Arena). Nada de clip-path ni filter: las esquinas
+   cortadas salen con el truco del linear-gradient, como en el resto de la Interfaz v2.
+   ===================================================================== */
+#crwBox{position:fixed;left:50%;top:calc(56px + env(safe-area-inset-top,0px));transform:translateX(-50%);
+  display:flex;align-items:center;gap:10px;padding:4px 16px 5px 11px;max-width:min(380px,88vw);z-index:4;
+  background:linear-gradient(135deg,transparent 9px,rgba(12,20,17,.86) 9.5px);
+  border-bottom:2px solid rgba(201,168,78,.4);font-family:Georgia,'Palatino Linotype',serif;text-shadow:0 1px 0 #000}
+#crwBox .cbi{display:block;width:22px;flex:0 0 auto;color:#c9a84e}
+#crwBox .cbi svg{width:22px;height:16px;display:block;fill:currentColor}
+#crwBox .cbt{display:flex;flex-direction:column;min-width:0}
+#crwBox .cbt b{font-family:var(--display);font-weight:400;font-size:13px;letter-spacing:.1em;text-transform:uppercase;
+  color:#e6d8b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15}
+#crwBox .cbt i{font-style:italic;font-size:10.5px;letter-spacing:.03em;color:#8e9c91;white-space:nowrap}
+#crwBox .cbp{position:relative;width:66px;height:5px;flex:0 0 auto;background:rgba(0,0,0,.55);overflow:hidden}
+#crwBox .cbp i{display:block;width:100%;height:100%;transform:scaleX(0);transform-origin:left;
+  background:linear-gradient(90deg,#7fae8f,#8dff3a)}
+#crwBox.libre{border-bottom-color:rgba(127,174,143,.45)}
+#crwBox.libre .cbi{color:#8dff3a}
+#crwBox.mia{border-bottom-color:var(--witch)}
+#crwBox.mia .cbt b{color:#f1e3c2}
+#crwBox.mia .cbp i{background:linear-gradient(90deg,var(--witch),#d7b3ff)}
+/* flecha alrededor de la mira, misma idea que el indicador de daño pero sin clip-path */
+#crwDir{position:fixed;left:50%;top:50%;width:200px;height:200px;margin:-100px 0 0 -100px;opacity:.9}
+#crwDir::before{content:"";position:absolute;left:50%;top:0;width:0;height:0;margin-left:-9px;
+  border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:15px solid #c9a84e}
+#crwMine{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  font-family:var(--display);font-size:17px;letter-spacing:.06em;color:#f1e3c2;padding:5px 26px;white-space:nowrap;
+  background:linear-gradient(135deg,transparent 10px,rgba(26,14,38,.9) 10.5px);border-bottom:2px solid var(--witch)}
+#crwMine b{color:#8dff3a}
+/* puntos que vienen de la corona, al lado del total de bajas en el tablero (Tab) */
+#board .crwpt{display:inline-block;margin-left:6px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;
+  color:#c9a84e;vertical-align:1px}
+@media (max-width:760px){#crwBox{max-width:76vw}#crwBox .cbt i{display:none}#crwMine{font-size:14px;padding:4px 16px}}
+
+/* =====================================================================
+   LA TORMENTA DEL ÚLTIMO MINUTO · viñeta roja afuera y mapita con el círculo (solo Arena)
+   El mapita trabaja en coordenadas del mundo: el viewBox lo pone el cliente con los
+   límites del mapa, así el círculo y el puntito del jugador van derecho sin convertir nada.
+   ===================================================================== */
+#stmtint{background:radial-gradient(ellipse at center,rgba(255,40,20,0) 28%,rgba(190,12,8,.62));opacity:0}
+#stmBox{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));
+  display:flex;align-items:center;gap:9px;padding:6px 12px 7px 8px;
+  background:linear-gradient(135deg,transparent 9px,rgba(12,20,17,.84) 9.5px);
+  border-bottom:2px solid rgba(255,80,40,.45);font-family:Georgia,'Palatino Linotype',serif;text-shadow:0 1px 0 #000}
+#stmBox #stmSvg{width:54px;height:54px;flex:0 0 auto;display:block;overflow:visible}
+#stmBox #stmC{fill:rgba(255,60,30,.08);stroke:#ff5a2a;stroke-width:1.6;vector-effect:non-scaling-stroke}
+#stmBox #stmMe{fill:#8dff3a;stroke:#0b1210;stroke-width:.8;vector-effect:non-scaling-stroke}
+#stmBox .sbt{display:flex;flex-direction:column;min-width:0}
+#stmBox .sbt b{font-family:var(--display);font-weight:400;font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:#e6d8b8;white-space:nowrap;line-height:1.15}
+#stmBox .sbt i{font-style:italic;font-size:10.5px;letter-spacing:.03em;color:#8e9c91;white-space:nowrap;font-variant-numeric:tabular-nums}
+#stmBox.afuera{border-bottom-color:#ff2a1a;animation:blink 1s steps(2) infinite}
+#stmBox.afuera .sbt b{color:#ff8a6a}
+@media (max-width:760px){#stmBox{padding:4px 9px 5px 6px}#stmBox #stmSvg{width:40px;height:40px}#stmBox .sbt i{font-size:9.5px}}
 </style>
 
 <canvas id="c"></canvas>
-<div id="flash" class="ov"></div><div id="pflash" class="ov"></div><div id="qtint" class="ov"></div><div id="lavatint" class="ov"></div>
+<div id="flash" class="ov"></div><div id="pflash" class="ov"></div><div id="qtint" class="ov"></div><div id="lavatint" class="ov"></div><div id="stmtint" class="ov"></div>
 <div id="nvig"></div><div id="ngrain"></div>
 <div id="hud" hidden>
   <div id="fpsBox" hidden></div>
@@ -1048,7 +1105,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
     <circle r=".45" fill="#c0261b"/>
   </svg></div>
   <div id="top">
-    <div class="stat"><span class="lbl">Frags</span><b id="tFrags">0</b></div>
+    <div class="stat"><span class="lbl">Bajas</span><b id="tFrags">0</b></div>
     <div class="stat"><span class="lbl">Puesto</span><b id="tRank">–</b></div>
     <div class="stat" id="tCrBox"><span class="lbl">Créditos</span><b id="tCr" class="cash">¤ 300</b></div>
     <div class="stat" id="tLvlBox" hidden><span class="lbl">Nivel</span><b id="tLvl">1/20</b></div>
@@ -1065,6 +1122,10 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
   </div>
   <div id="lobbyBox" hidden><div class="lt" id="lobbyT"></div><div class="ls" id="lobbyS"></div></div>
   <div id="carry" hidden>LLEVÁS LA BANDERA · VOLVÉ A TU BASE</div>
+  <div id="crwBox" hidden><span class="cbi"><svg viewBox="0 0 24 17" aria-hidden="true"><path d="M2.4 15.4h19.2l-1.5-9.6-4.3 3.6L12 1.6 8.2 9.4 3.9 5.8z"/></svg></span><span class="cbt"><b id="crwWho">SIN DUEÑO</b><i id="crwSub">andá a buscarla</i></span><span class="cbp"><i id="crwBar"></i></span></div>
+  <div id="crwDir" hidden></div>
+  <div id="crwMine" hidden>LLEVÁS LA CORONA · <b id="crwMineT">15</b> s PARA EL PUNTO</div>
+  <div id="stmBox" hidden><svg id="stmSvg" viewBox="-50 -50 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><circle id="stmC" cx="0" cy="0" r="0"/><circle id="stmMe" cx="0" cy="0" r="2.6"/></svg><span class="sbt"><b id="stmWho">ZONA SEGURA</b><i id="stmSub">—</i></span></div>
   <div id="feed"></div>
   <div id="center"><div id="cMsg"></div><div id="cSub"></div></div>
   <div id="pick"></div>
@@ -1368,7 +1429,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
           <kbd>W A S D</kbd><span>moverse</span><kbd>Espacio</kbd><span>saltar (mantené para bunny hop)</span>
           <kbd>Click</kbd><span>disparar (click derecho: mira del francotirador)</span><kbd>1 · 2 · 3 · 4</kbd><span>arma principal · pistola · cuchillo · molotov · Q arma anterior · E agarrar arma del piso · F inspeccionar · R recargar</span>
           <kbd>Ctrl · C</kbd><span>agacharse (saltá y agachate para pasar por ventanas)</span>
-          <kbd>B</kbd><span>tienda</span><kbd>Tab</kbd><span>tabla de frags</span>
+          <kbd>B</kbd><span>tienda</span><kbd>Tab</kbd><span>tabla de bajas</span>
           <kbd>H</kbd><span>vista en primera / tercera persona</span><kbd>J</kbd><span>cambiar de hombro (tercera persona)</span>
           <kbd>T · Enter</kbd><span>chat</span><kbd>Esc</kbd><span>menú</span>
         </div>
@@ -1777,7 +1838,7 @@ function updLightSlots(dt){
     sl.cur=Math.min(1,sl.cur+dt*5);l.intensity=v.intensity*sl.cur;}
 }
 function loadMap(id){
-  const M=C.MAPS[id]||C.MAPS.represa;clearShards();initLightSlots();for(const sl of lightSlots){sl.v=null;sl.l.intensity=0;}slotT=0;
+  const M=C.MAPS[id]||C.MAPS.represa;clearShards();clearCrown();clearStorm();initLightSlots();for(const sl of lightSlots){sl.v=null;sl.l.intensity=0;}slotT=0;
   if(level){scene.remove(level.group);level.group.traverse(o=>{if(o.geometry)o.geometry.dispose();});}
   W=M;
   const group=new THREE.Group();scene.add(group);
@@ -3681,9 +3742,248 @@ function updShards(dt){for(const s of shards.values()){
   // a los 8 s empieza a parpadear, cada vez más rápido, y a los 10 s el servidor lo saca
   s.g.visible=s.age<8||Math.sin((s.age-8)*(10+(s.age-8)*14))>-.2;}}
 
+/* ---------- La Corona (solo Arena): modelo en código, haz de luz y avisos del HUD ----------
+   Todo lo decide el servidor (ver src/nucleo/07-partida/6c-corona.js): acá solo se dibuja.
+   El estado llega entero en `welcome` y en `sc` (una vez por segundo, para resincronizar) y
+   los cambios por avisos `crw`. El progreso de los 15 s se calcula con el reloj del servidor.
+   El modelo está normalizado (aro de radio 1, apoyado en y = 0) y se usa en dos lugares:
+   suelto en el piso (hijo de la escena, tamaño CMOD.SUELO) o **colgado del hueso de la cabeza**
+   del portador, como la gorra del robot (tamaño CMOD.CABEZA), así acompaña la animación. */
+const CRW={have:false,g:null,beam:null,by:0,x:0,y:0,z:0,t0:0,lost:0,ph:0,mats:[],geos:[]};
+const CMOD={SUELO:.26,CABEZA:.105,CABY:.048,BOB:.12,GIRO:1.1,RAYO:13};
+const CRW_V=new THREE.Vector3();   // una sola, para no pedir memoria por cuadro
+const crwProg=()=>CRW.by?Math.max(0,serverNow()-CRW.t0):0;   // cuánto lleva seguido el portador
+// mientras la tormenta está activa la corona paga el doble de seguido (igual que en el núcleo)
+const crwEvery=()=>STM.i&&serverNow()>=STM.i[0]?Math.min(C.CROWN.EVERY,C.STORM.CROWN_EVERY):C.CROWN.EVERY;
+
+function buildCrown(){
+  const g=new THREE.Group(),alta=!!S.q,geos=[],mats=[];
+  const mat=o=>{const m=new THREE.MeshPhongMaterial(o);mats.push(m);return m;};
+  const geo=o=>{geos.push(o);return o;};
+  const oro=mat({color:0xc9a84e,emissive:0x1e3a26,shininess:150,specular:0xfff0c0,side:THREE.DoubleSide});
+  const oroV=mat({color:0x8c6b2a,emissive:0x16281a,shininess:80,specular:0xd8c070,flatShading:true});   // oro gastado, con verdín
+  const verde=mat({color:0x8dff3a,emissive:0x2f7a12,shininess:130,specular:0xffffff,flatShading:true});
+  const viola=mat({color:0xb77bff,emissive:0x4a1a8a,shininess:130,specular:0xffffff,flatShading:true});
+  // el aro entero en un solo torno: reborde abajo, cintura y vuelo arriba (una sola llamada de dibujo)
+  const perfil=[[.96,0],[1.07,.035],[1.08,.075],[.99,.125],[.99,.25],[1.12,.33],[1.04,.37]].map(q=>new THREE.Vector2(q[0],q[1]));
+  g.add(new THREE.Mesh(geo(new THREE.LatheGeometry(perfil,16)),oro));
+  const n=5, puaG=geo(new THREE.ConeGeometry(.17,.46,6)), puaCh=alta?geo(new THREE.ConeGeometry(.1,.22,6)):null,
+        perla=alta?geo(new THREE.OctahedronGeometry(.085,0)):null;
+  for(let i=0;i<n;i++){
+    const a=i/n*6.2832, x=Math.cos(a)*.99, z=Math.sin(a)*.99;
+    const p=new THREE.Mesh(puaG,oroV);p.position.set(x,.56,z);g.add(p);                       // púa grande
+    if(!alta)continue;
+    const j=new THREE.Mesh(perla,i%2?verde:viola);j.position.set(x,.85,z);g.add(j);           // perla en la punta
+    const b=a+3.1416/n, ch=new THREE.Mesh(puaCh,oroV);
+    ch.position.set(Math.cos(b)*1.0,.44,Math.sin(b)*1.0);g.add(ch);                           // púa chica entre las grandes
+  }
+  if(alta){                                                                                   // gema del frente, sobre el aro
+    const f=new THREE.Mesh(geo(new THREE.OctahedronGeometry(.15,0)),verde);
+    f.position.set(0,.2,1.0);f.scale.set(1,1.15,.55);g.add(f);
+  }
+  CRW.geos=geos;CRW.mats=mats;
+  return g;
+}
+function crownEnsure(){
+  if(CRW.g)return;
+  CRW.g=buildCrown();CRW.g.scale.setScalar(CMOD.SUELO);scene.add(CRW.g);   // arranca suelta, con el tamaño del piso
+  const gb=new THREE.CylinderGeometry(.42,.72,CMOD.RAYO,8,1,true);
+  const mb=new THREE.MeshBasicMaterial({color:0x9b4dff,transparent:true,opacity:.16,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+  CRW.geos.push(gb);CRW.mats.push(mb);
+  CRW.beam=new THREE.Mesh(gb,mb);scene.add(CRW.beam);
+}
+function clearCrown(){
+  CRW.have=false;CRW.by=0;CRW.t0=0;CRW.lost=0;
+  if(CRW.g){
+    if(CRW.g.parent)CRW.g.parent.remove(CRW.g);
+    if(CRW.beam)scene.remove(CRW.beam);
+    CRW.geos.forEach(o=>o.dispose());CRW.mats.forEach(o=>o.dispose());
+    CRW.geos=[];CRW.mats=[];CRW.g=null;CRW.beam=null;
+  }
+  const b=$('crwBox'),d=$('crwDir'),m=$('crwMine');if(b)b.hidden=true;if(d)d.hidden=true;if(m)m.hidden=true;
+}
+// estado completo: [x, y, z, portador, t0, perdida]
+function setCrownState(cw){
+  if(!cw){clearCrown();return;}
+  if(!cw[0]&&!cw[1]&&!cw[2]&&!cw[3]){CRW.have=false;if(CRW.g)CRW.g.visible=false;return;}   // todavía no apareció
+  CRW.have=true;crownEnsure();
+  CRW.x=cw[0];CRW.y=cw[1];CRW.z=cw[2];CRW.by=cw[3]|0;CRW.t0=cw[4]||0;CRW.lost=cw[5]?1:0;
+}
+function crownEvent(m){
+  switch(m.a){
+    case 'off': clearCrown();break;
+    case 'spawn': case 'move':
+      CRW.have=true;crownEnsure();CRW.by=0;CRW.t0=0;CRW.lost=0;
+      CRW.x=m.p[0];CRW.y=m.p[1];CRW.z=m.p[2];
+      if(m.a==='spawn'){announce('LA CORONA','apareció en el mapa · cada '+C.CROWN.EVERY+' s con ella: 1 punto y '+C.CROWN.CASH+' créditos');SFX.start();}
+      else sysChat('La corona se movió de lugar: nadie la levantaba');
+      break;
+    case 'take':
+      CRW.have=true;crownEnsure();CRW.by=m.id|0;CRW.t0=m.t0||serverNow();CRW.lost=0;
+      if(m.id===myId){announce('LLEVÁS LA CORONA','aguantala '+C.CROWN.EVERY+' s para sumar');SFX.flagTake();}
+      else{feedLine('<b>'+esc(m.n)+'</b> <i>se puso la corona</i>');if(vAt(CRW.x,CRW.y,CRW.z)>.25)SFX.flagTake();}
+      break;
+    case 'drop':
+      CRW.by=0;CRW.t0=0;CRW.lost=m.v?1:0;
+      CRW.x=m.p[0];CRW.y=m.p[1];CRW.z=m.p[2];
+      if(m.id===myId){announce('PERDISTE LA CORONA',m.v?'se cayó al vacío':'quedó en el piso');SFX.flagRet();}
+      else if(m.v)sysChat('La corona se cayó al vacío: vuelve en '+C.CROWN.VOID+' s');
+      break;
+    case 'pay':
+      if(m.t0!=null)CRW.t0=m.t0;
+      if(m.id===myId){G.pick=.3;$('pick').textContent='+'+m.pts+' punto · ¤ '+m.cr+' por la corona';
+        $('pick').classList.remove('show');void $('pick').offsetWidth;$('pick').classList.add('show');SFX.cash();}
+      break;
+    case 'regi':
+      if(m.id===myId){announce('¡REGICIDIO!','+'+m.pts+' puntos por bajar al de la corona');SFX.lvl();}
+      else feedLine('<b>'+esc(m.n)+'</b> <i>le bajó la corona a</i> <b>'+esc(m.v)+'</b>');
+      break;
+  }
+}
+/* el hueso de la cabeza del portador, o null si no hay modelo a la vista */
+function crownHead(id){
+  if(id===myId)return TP.model&&TP.blend>=.5?TP.model.head:null;   // la propia solo en tercera persona
+  const p=players.get(id);
+  return p&&p.alive&&p.model&&p.model.g.visible?p.model.head:null;
+}
+/* ---- cada cuadro: dónde va el modelo y los avisos del HUD ---- */
+function updCrown(dt){
+  const box=$('crwBox');
+  if(!CRW.have||!C.MODES[MODE].crown){
+    if(box&&!box.hidden){box.hidden=true;$('crwDir').hidden=true;$('crwMine').hidden=true;}
+    if(CRW.g){CRW.g.visible=false;CRW.beam.visible=false;}
+    return;
+  }
+  crownEnsure();
+  CRW.ph+=dt;
+  const g=CRW.g,mia=CRW.by===myId,prg=crwProg();
+  // --- el modelo: colgado de la cabeza del portador, o suelto en el piso ---
+  const cab=CRW.lost?null:CRW.by?crownHead(CRW.by):null;
+  const destino=cab||scene;
+  if(g.parent!==destino){
+    if(g.parent)g.parent.remove(g);
+    destino.add(g);
+    if(cab){g.scale.setScalar(CMOD.CABEZA);g.position.set(0,CMOD.CABY,0);g.rotation.set(0,0,0);}
+    else g.scale.setScalar(CMOD.SUELO);
+  }
+  let bx=CRW.x,by=CRW.y,bz=CRW.z;                                  // dónde arranca el haz de luz
+  if(CRW.lost){g.visible=false;}
+  else if(CRW.by){
+    if(cab){g.visible=true;}                                       // la lleva puesta: la mueve el esqueleto
+    else g.visible=false;                                          // es la mía en primera persona, o no tengo su modelo
+    if(mia){bx=me.s.x;by=me.s.y+C.CROWN.HEAD;bz=me.s.z;}
+    else{const p=players.get(CRW.by);if(p){bx=p.x;by=p.y+C.CROWN.HEAD;bz=p.z;}}
+  }else{
+    g.visible=true;by=CRW.y+Math.sin(CRW.ph*2.2)*CMOD.BOB;
+    g.position.set(CRW.x,by,CRW.z);g.rotation.y+=dt*CMOD.GIRO;
+  }
+  CRW.beam.visible=!CRW.lost&&!mia;
+  if(CRW.beam.visible)CRW.beam.position.set(bx,by+CMOD.RAYO/2-.1,bz);
+  // --- el HUD ---
+  if(box.hidden)box.hidden=false;
+  const every=crwEvery(),prog=Math.max(0,Math.min(1,prg/every));
+  const bar=$('crwBar');if(bar._v!==Math.round(prog*60)){bar._v=Math.round(prog*60);bar.style.transform='scaleX('+prog.toFixed(3)+')';}
+  box.classList.toggle('mia',mia);
+  box.classList.toggle('libre',!CRW.by&&!CRW.lost);
+  setTxt('crwWho',CRW.lost?'SE PERDIÓ':CRW.by?(mia?'LA TENÉS VOS':nameOf(CRW.by)):'SIN DUEÑO');
+  setTxt('crwSub',CRW.lost?'vuelve en un rato':CRW.by?Math.max(0,Math.ceil(every-prg))+' s para el punto':'andá a buscarla');
+  const mine=$('crwMine');if(mine.hidden===mia)mine.hidden=!mia;
+  if(mia)setTxt('crwMineT',String(Math.max(0,Math.ceil(every-prg))));
+  // --- flecha cuando queda fuera de pantalla ---
+  const dir=$('crwDir');
+  if(mia||CRW.lost||!me.alive){if(!dir.hidden)dir.hidden=true;return;}
+  CRW_V.set(bx,by,bz).project(camera);
+  if(CRW_V.z<1&&Math.abs(CRW_V.x)<.92&&Math.abs(CRW_V.y)<.92){if(!dir.hidden)dir.hidden=true;return;}
+  if(dir.hidden)dir.hidden=false;
+  const rot=-(Math.atan2(-(bx-me.s.x),-(bz-me.s.z))-me.yaw);
+  if(dir._r!==Math.round(rot*40)){dir._r=Math.round(rot*40);dir.style.transform='rotate('+rot.toFixed(3)+'rad)';}
+}
+/* ---------- La tormenta del último minuto (solo Arena): muro, viñeta y HUD ----------
+   El servidor manda los parámetros UNA sola vez (ver src/nucleo/07-partida/6d-tormenta.js) y
+   acá se calcula todo con el reloj del servidor y las mismas cuentas del núcleo (C.stormR y
+   C.stormDmg), así cliente y servidor nunca se van a discutir dónde está el borde.
+   i = [arranque, centro x, centro z, radio inicial, radio final, achique, daño inicial, daño final] */
+const STM={i:null,muro:null,geos:[],mats:[],av:0};
+const SMOD={ALTO:80,SEG:64,OP:.17,OP2:.3};   // alto del muro, segmentos del círculo y opacidades
+
+function stormEnsure(){
+  if(STM.muro)return;
+  const g=new THREE.CylinderGeometry(1,1,SMOD.ALTO,SMOD.SEG,1,true);
+  const m=new THREE.MeshBasicMaterial({color:0xff2a1a,transparent:true,opacity:SMOD.OP,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+  STM.geos=[g];STM.mats=[m];
+  STM.muro=new THREE.Mesh(g,m);STM.muro.visible=false;scene.add(STM.muro);
+  // el mapita del HUD trabaja directo en coordenadas del mundo: el viewBox son los límites del mapa
+  const b=W&&W.bounds?W.bounds:{x0:-50,x1:50,z0:-50,z1:50};
+  const sv=$('stmSvg');if(sv)sv.setAttribute('viewBox',b.x0+' '+b.z0+' '+(b.x1-b.x0)+' '+(b.z1-b.z0));
+}
+function clearStorm(){
+  STM.i=null;STM.av=0;
+  if(STM.muro){scene.remove(STM.muro);STM.geos.forEach(o=>o.dispose());STM.mats.forEach(o=>o.dispose());STM.geos=[];STM.mats=[];STM.muro=null;}
+  const b=$('stmBox');if(b)b.hidden=true;
+  setOp('stmtint',0);
+}
+function stormSet(i){
+  if(!i){clearStorm();return;}
+  STM.i=i;stormEnsure();
+}
+function stormEvent(m){
+  switch(m.a){
+    case 'off': clearStorm();break;
+    case 'warn':
+      stormSet(m.i);STM.av=1;
+      announce('¡VIENE LA TORMENTA!','la zona se achica en '+(m.d||10)+' s · quedate adentro del círculo');
+      SFX.voteStart();
+      break;
+    case 'go':
+      stormSet(m.i);
+      if(!STM.av){announce('LA TORMENTA','la zona se está achicando');}
+      sysChat('La tormenta arrancó: afuera del círculo el daño sube con el tiempo y el blindaje no lo frena');
+      SFX.start();
+      break;
+  }
+}
+/* ---- cada cuadro ---- */
+function updStorm(dt){
+  const box=$('stmBox');
+  if(!STM.i||!C.MODES[MODE].storm){
+    if(box&&!box.hidden){box.hidden=true;setOp('stmtint',0);}
+    if(STM.muro)STM.muro.visible=false;
+    return;
+  }
+  stormEnsure();
+  const i=STM.i,ahora=serverNow(),t=ahora-i[0],activa=t>=0,r=C.stormR(i,ahora);
+  // --- el muro ---
+  STM.muro.visible=activa;
+  if(activa){
+    STM.muro.position.set(i[1],SMOD.ALTO/2-14,i[2]);
+    STM.muro.scale.set(r,1,r);
+    STM.mats[0].opacity=SMOD.OP+Math.sin(G.time*2.2)*.04;
+  }
+  // --- viñeta roja cuando estás afuera ---
+  const d=Math.hypot(me.s.x-i[1],me.s.z-i[2]),afuera=activa&&me.alive&&d>r;
+  setOp('stmtint',afuera?.42+Math.sin(G.time*5)*.12:0);
+  // --- el HUD: mapita con el círculo y el contador ---
+  if(box.hidden)box.hidden=false;
+  box.classList.toggle('afuera',afuera);
+  const c=$('stmC'),yo=$('stmMe');
+  const rr=Math.round(r*10)/10;
+  if(c._r!==rr){c._r=rr;c.setAttribute('cx',i[1]);c.setAttribute('cy',i[2]);c.setAttribute('r',rr);}
+  const mx=Math.round(me.s.x),mz=Math.round(me.s.z);
+  if(yo._x!==mx||yo._z!==mz){yo._x=mx;yo._z=mz;yo.setAttribute('cx',mx);yo.setAttribute('cy',mz);}
+  if(!activa){
+    setTxt('stmWho','LLEGA LA TORMENTA');
+    setTxt('stmSub','en '+Math.max(0,Math.ceil(-t))+' s');
+  }else if(t<i[5]){
+    setTxt('stmWho',afuera?'¡SALÍ DE LA TORMENTA!':'ZONA SEGURA');
+    setTxt('stmSub',Math.round(r)+' m · se cierra en '+Math.max(0,Math.ceil(i[5]-t))+' s'+(afuera?' · '+Math.round(C.stormDmg(i,ahora))+' HP/s':''));
+  }else{
+    setTxt('stmWho',afuera?'¡SALÍ DE LA TORMENTA!':'ZONA FINAL');
+    setTxt('stmSub',Math.round(r)+' m'+(afuera?' · '+Math.round(C.stormDmg(i,ahora))+' HP/s':''));
+  }
+}
 /* =================== ESTADO =================== */
 const me={s:{x:0,y:0,z:0,vx:0,vy:0,vz:0,on:true},yaw:0,pitch:0,alive:false,hp:100,ar:0,am:C.AMMO0(0),ow:[1,1,0,0,0,0,0,1,0],mag:{2:2},rel:0,relW:-1,scope:false,lvlSwitch:false,w:1,q:0,deadT:0,killer:0,lvl:0,
-  cards:[],kills:0,cr:C.ECON.START,unl:[1,1,0,0,0,0,0,1,0],eyeC:K.EYE,mt:9,mdir:1,ads:0,perk:{ar:0,am:0},cool:0,held:false,kick:0,raise:0,flash:0,bob:0,dip:0,roll:0,tilt:0,padT:0,stepT:0,lastW:0,heat:0};
+  cards:[],rkills:0,cr:C.ECON.START,unl:[1,1,0,0,0,0,0,1,0],eyeC:K.EYE,mt:9,mdir:1,ads:0,perk:{ar:0,am:0},cool:0,held:false,kick:0,raise:0,flash:0,bob:0,dip:0,roll:0,tilt:0,padT:0,stepT:0,lastW:0,heat:0};
 const players=new Map();
 let myId=0,net=null,online=false,inGame=false,paused=false,shake=0;
 let scores=[],timeLeft=600,fragLimit=20,matchState='play',ping=0;
@@ -3812,7 +4112,7 @@ function onMsg(m){
       loadMap(m.map);applyMode();
       if(typeof m.tm==='number'&&online)CLK.off=m.tm-performance.now()/1000-.05;
       m.roster.forEach(r=>{if(r[0]!==myId)ensurePlayer(r[0],r[1],r[2],r[3],r[4],r[5]);});
-      syncItems(m);clearShards();resetCards();if(m.cd&&m.cd.length){me.cards=m.cd.slice();renderMyCards();}if(m.sh)for(const s of m.sh)addShard(s[0],s[1],s[2],s[3],s[1],s[2],s[3],s[4]);
+      syncItems(m);clearShards();clearCrown();clearStorm();setCrownState(m.cw);stormSet(m.st);resetCards();if(m.cd&&m.cd.length){me.cards=m.cd.slice();renderMyCards();}if(m.sh)for(const s of m.sh)addShard(s[0],s[1],s[2],s[3],s[1],s[2],s[3],s[4]);
       sysChat((online?'Conectado a '+location.host:'Práctica · '+S.bots+' bots')+' · '+C.MODES[MODE].name+' · '+W.name+(C.MODES[MODE].shop?' · B abre la tienda':''));
       if(MODE==='ctf'&&myTeam>=0)announce('EQUIPO '+TEAMS[myTeam].name.toUpperCase(),'Robá la bandera rival y traela a tu base');
       else if(MODE==='tdm'&&myTeam>=0)announce('EQUIPO '+TEAMS[myTeam].name.toUpperCase(),m.state==='play'?'Cada baja suma para tu equipo':'Esperando jugadores · calentamiento');
@@ -3837,7 +4137,7 @@ function onMsg(m){
       me.hp=m.hp;me.ar=m.ar;me.am=Object.assign({},m.am);me.ow=m.ow.slice();me.q=m.q;
       if(m.cr!=null){me.cr=m.cr;me.unl=m.unl.slice();me.perk=Object.assign({},m.perk);}
       if(m.lvl!=null)me.lvl=m.lvl;
-      if(m.ck!=null&&m.ck!==me.kills){me.kills=m.ck;renderMyCards();}
+      if(m.ck!=null&&m.ck!==me.rkills){me.rkills=m.ck;renderMyCards();}
       if(!m.al&&me.alive)me.alive=false;
       if(MODE==='gungame'&&(me.lvlSwitch||!me.ow[me.w])&&me.ow[GG[Math.min(me.lvl,GG.length-1)]]){me.lvlSwitch=false;const nw=GG[Math.min(me.lvl,GG.length-1)];if(nw!==me.w){me.w=nw;me.raise=1;me.scope=false;me.cool=Math.max(me.cool,.25);if(WEAPONS[nw].mag){me.mag[nw]=WEAPONS[nw].mag;me.rel=0;}showWeapon();}}
       else if(!me.ow[me.w]){const pr=C.primaryOf(me.ow),i=pr>=0?pr:me.ow.findIndex(Boolean);if(i>=0){me.lastW=me.w;me.w=i;me.raise=1;me.scope=false;me.cool=Math.max(me.cool,.25);showWeapon();}}
@@ -3861,6 +4161,7 @@ function onMsg(m){
     case 'sc':
       if(m.iu&&level)for(let i=0;i<m.iu.length;i++){const o=level.items[i];if(o){const u=m.iu[i]==='1';if(o.g.visible!==u)o.g.visible=u;}}
       scores=m.l;timeLeft=m.tl;fragLimit=m.fl;
+      if(m.cw!==undefined)setCrownState(m.cw);   // resincroniza la corona una vez por segundo
       if(m.st!==matchState&&m.st==='count')SFX.start();
       matchState=m.st;LOBBY={cd:m.cd||0,hn:m.hn||0,mp:m.mp||0};
       if(m.ts)TS=m.ts;if(m.fs)FL=m.fs;if(m.cl)capLimit=m.cl;
@@ -3887,13 +4188,13 @@ function onMsg(m){
     case 'ready': if(online)$('interReady').innerHTML='<b>'+m.n+'/'+m.of+'</b> jugadores listos';break;
     case 'mv': G.myMapVote=m.me;renderMapVote(m);break;
     case 'start':
-      clearShards();renderMapVote(null);
+      clearShards();clearCrown();clearStorm();renderMapVote(null);
       matchState='play';$('inter').hidden=true;$('board').hidden=true;$('bStay').disabled=false;$('bStay').textContent='Jugar de nuevo';
       if(!document.pointerLockElement&&$('menu').hidden&&inGame){announce('¡ARRANCÓ!','Hacé click para jugar');}
       if(m.fs)FL=m.fs;if(m.ts)TS=m.ts;me.lvl=0;resetCards();
       if(m.map&&m.map!==W.id){loadMap(m.map);projs.forEach(p=>scene.remove(p.m));projs.length=0;}
       syncItems(m);
-      announce(W.name.toUpperCase(),MODE==='ctf'?'primero a '+capLimit+' capturas':(MODE==='tdm'||MODE==='snipers')?'primer equipo en llegar a '+fragLimit+' bajas':MODE==='gungame'?'primero en completar los '+GG.length+' niveles':'primero a '+fragLimit+' frags');SFX.start();
+      announce(W.name.toUpperCase(),MODE==='ctf'?'primero a '+capLimit+' capturas':(MODE==='tdm'||MODE==='snipers')?'primer equipo en llegar a '+fragLimit+' bajas':MODE==='gungame'?'primero en completar los '+GG.length+' niveles':'gana el que más bajas haga');SFX.start();
       break;
     case 'pong': ping=Math.round(performance.now()-m.c);break;
     case 'xp': {
@@ -3915,6 +4216,8 @@ function onEvent(m){
         me.boostT=KB.T;SFX.boost();fxAire(s.x,s.y+.1,s.z,1,.6,.2);announce('IMPULSO','kill deslizándote');}
       break;
     case 'flag': FL=m.fs;TS=m.ts;onFlag(m);break;
+    case 'crw': crownEvent(m);break;
+    case 'stm': stormEvent(m);break;
     case 'fire': fxFire(m);break;
     case 'grab': me.grabW=m.w;break;
     case 'cof': openCards(m);break;                       // te toca elegir carta
@@ -4012,6 +4315,7 @@ function onKill(m){
   else if(m.how==='lava')line=vn+' <i>se derritió en la lava</i>';
   else if(m.how==='water')line=vn+' <i>se lo llevó el río</i>';
   else if(m.how==='void')line=vn+' <i>cayó al vacío</i>';
+  else if(m.how==='storm')line=vn+' <i>se quedó en la tormenta</i>';
   else if(!m.k||m.k===m.v)line=vn+' <i>se voló a sí mismo</i>';
   else if(m.ns)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>mató</i> <b class="ns">SIN USAR MIRA</b> <i>a</i> '+vn;
   else if(W_&&W_.melee)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>le entró a pelo a</i> '+vn;
@@ -4021,7 +4325,7 @@ function onKill(m){
   if(m.v===myId){
     me.alive=false;me.deadT=0;me.killer=m.k;me.respawnAsk=false;me.deathPos=[me.s.x,me.s.y,me.s.z];
     // "JUGADOR te ha eliminado" en grande, el arma abajo y "Cobrale venganza" en chico; si no fue un jugador, el motivo en grande
-    const env=m.how==='water'?'Te llevó el río':m.how==='lava'?'Te derretiste en la lava':m.how==='void'?'Caíste al vacío':(!m.k||m.k===myId)?'Te volaste a vos mismo':'';
+    const env=m.how==='water'?'Te llevó el río':m.how==='lava'?'Te derretiste en la lava':m.how==='void'?'Caíste al vacío':m.how==='storm'?'Te comíó la tormenta':(!m.k||m.k===myId)?'Te volaste a vos mismo':'';
     if(env){$('deathBig').textContent=env;$('deathBy').textContent='';$('deathRev').textContent='Volvé más fuerte';}
     else{$('deathBig').innerHTML='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> te ha eliminado';$('deathBy').textContent=m.how==='fire'?'te prendió fuego':m.how==='cblast'?'explotó al morir':m.ns?'sin usar mira':W_?'con '+W_.name:'';$('deathRev').textContent='Cobrale venganza';}
     $('deathBox').hidden=false;$('deathBox').classList.remove('in');void $('deathBox').offsetWidth;$('deathBox').classList.add('in');$('deathHint').textContent='';
@@ -4030,7 +4334,7 @@ function onKill(m){
   }else{
     const p=players.get(m.v);
     if(p){p.alive=false;p.deadT=0;p.gib=!!m.gib;if(m.gib){fxGib(m.p[0],m.p[1],m.p[2]);if(p.model)p.model.g.visible=false;}else fxBlood(m.p[0],m.p[1]+1.1,m.p[2],18);SFX.die(vAt(m.p[0],m.p[1],m.p[2]));}
-    if(m.k===myId){const mine=scores.find(s=>s[0]===myId);announce(m.ns?'¡SIN MIRA! ELIMINASTE A '+nameOf(m.v).toUpperCase():'ELIMINASTE A '+nameOf(m.v).toUpperCase(),((mine?mine[2]:0)+1)+(MODE==='gungame'?' bajas':' frags'));SFX.frag();}
+    if(m.k===myId){const mine=scores.find(s=>s[0]===myId);announce(m.ns?'¡SIN MIRA! ELIMINASTE A '+nameOf(m.v).toUpperCase():'ELIMINASTE A '+nameOf(m.v).toUpperCase(),((mine?mine[2]:0)+1)+' bajas');SFX.frag();}
   }
 }
 function onFlag(m){
@@ -4587,7 +4891,7 @@ const CARD_ICO = {
 const cardIcon = ic => '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" fill-rule="evenodd">' +
   (CARD_ICO[ic] || []).map(([d, op]) => '<path d="' + d + '"' + (op < 1 ? ' opacity="' + op + '"' : '') + '/>').join('') + '</svg>';
 const cardsOpen = () => CU.open;
-function resetCards() { me.cards = []; me.kills = 0; CU.list = []; closeCards(); BURN.clear(); renderMyCards(); }
+function resetCards() { me.cards = []; me.rkills = 0; CU.list = []; closeCards(); BURN.clear(); renderMyCards(); }
 
 /* ---- el reparto: el Mercader del Umbral se materializa y despliega las tres cartas ----
    El mercader es 3D (`14c-mercader.js`); acá va solo el texto, en HTML por encima de esa escena,
@@ -4662,7 +4966,7 @@ function renderMyCards() {
   if (!hay) { box.hidden = true; box.innerHTML = ''; return; }
   box.hidden = false;
   const falta = C.CARD_AT[l.length];
-  const prog = falta != null ? '<div class="cnext">PRÓXIMA CARTA EN <b>' + Math.max(0, falta - (me.kills || 0)) + '</b></div>' : '<div class="cnext full">MAZO COMPLETO</div>';
+  const prog = falta != null ? '<div class="cnext">PRÓXIMA CARTA EN <b>' + Math.max(0, falta - (me.rkills || 0)) + '</b></div>' : '<div class="cnext full">MAZO COMPLETO</div>';
   box.innerHTML = l.map((id, i) => {
     const c = C.CARD_BY[id]; if (!c) return '';
     return '<div class="mcard' + (i === l.length - 1 ? ' nueva' : '') + '" style="--cc:' + c.c + '" title="' + esc(c.desc) + '"><span class="mic">' + cardIcon(c.ic) + '</span><b>' + esc(c.name) + '</b></div>';
@@ -5217,10 +5521,13 @@ function renderKillRow(){
 function renderBoard(){
   const tl=Math.max(0,timeLeft),gg=MODE==='gungame',ctf=MODE==='ctf',tm=teamsMode();
   $('bTitle').textContent=C.MODES[MODE].name+' · '+W.name;
-  const goal=ctf?'primero a '+capLimit+' capturas':MODE==='tdm'?'primer equipo a '+fragLimit+' bajas'+(matchState==='play'?'':' · esperando jugadores'):gg?'primero en completar '+GG.length+' niveles':'gana el que más frags haga';
+  const goal=ctf?'primero a '+capLimit+' capturas':MODE==='tdm'?'primer equipo a '+fragLimit+' bajas'+(matchState==='play'?'':' · esperando jugadores'):gg?'primero en completar '+GG.length+' niveles':'gana el que más bajas haga';
   $('bMeta').textContent=(online?'Online':'Práctica')+' · '+goal+' · quedan '+Math.floor(tl/60)+':'+String(tl%60).padStart(2,'0');
   $('thX').textContent=gg?'Nivel':ctf?'Capturas':'Créditos';
-  const row=(s,i)=>'<tr class="'+(s[0]===myId?'me':'')+'"><td>'+(i+1)+'</td><td>'+(s[11]>0?medalSVG(s[11],20):'')+'<span class="sw" style="background:'+esc(s[6])+'"></span>'+esc(s[1])+(s[5]?'<span class="tag">bot</span>':'')+'</td><td>'+s[2]+'</td><td>'+s[3]+'</td>'+
+  const crown=!!C.MODES[MODE].crown;
+  // en los modos con corona, al lado del total se ve cuántos puntos vinieron de ella
+  const cpt=s=>crown&&s[13]?'<span class="crwpt" title="'+s[13]+' de la corona · '+(s[14]||0)+' s con ella">\u265b '+s[13]+'</span>':'';
+  const row=(s,i)=>'<tr class="'+(s[0]===myId?'me':'')+'"><td>'+(i+1)+'</td><td>'+(s[11]>0?medalSVG(s[11],20):'')+'<span class="sw" style="background:'+esc(s[6])+'"></span>'+esc(s[1])+(s[5]?'<span class="tag">bot</span>':'')+'</td><td>'+s[2]+cpt(s)+'</td><td>'+s[3]+'</td>'+
     (gg?'<td>'+Math.min(GG.length,(s[8]||0)+1)+' · '+WEAPONS[GG[Math.min(GG.length-1,s[8]||0)]].name+'</td>':ctf?'<td>'+(s[10]||0)+'</td>':'<td class="cash">¤ '+(s[7]||0)+'</td>')+
     '<td>'+(s[5]||!online?'–':s[4]||'–')+'</td></tr>';
   if(tm)$('bBody').innerHTML=[0,1].map(t=>'<tr class="team"><td></td><td colspan="5" style="color:'+TEAMS[t].c+'">Equipo '+TEAMS[t].name+' · '+TS[t]+'</td></tr>'+scores.filter(s=>s[9]===t).map(row).join('')).join('');
@@ -5234,7 +5541,7 @@ function renderGrimorio(){
   $('board').classList.toggle('congrim',on);
   if(!on){if(!box.hidden){box.hidden=true;box.innerHTML='';}grimCache='';return;}
   box.hidden=false;
-  const mias=me.cards||[],falta=C.CARD_AT[mias.length],clave=mias.join(',')+'|'+(falta==null?'-':Math.max(0,falta-(me.kills||0)));
+  const mias=me.cards||[],falta=C.CARD_AT[mias.length],clave=mias.join(',')+'|'+(falta==null?'-':Math.max(0,falta-(me.rkills||0)));
   if(clave===grimCache)return;grimCache=clave;
   const cuando=C.CARD_AT.map((n,i)=>'<i'+(i<mias.length?' class="ya"':'')+'>'+n+'</i>').join('<s>·</s>');
   const ROMG=['I','II','III'];
@@ -5247,7 +5554,7 @@ function renderGrimorio(){
   box.innerHTML='<div class="grhead"><b>El Grimorio del Umbral</b>'+
     '<span class="grwhen">Surtido a las '+cuando+' bajas</span>'+
     '<span class="grnote">Tres al azar, te quedás con una · máximo '+C.CARD_MAX+' por partida · duran hasta que termina</span>'+
-    '<span class="grnext">'+(falta==null?'mazo completo':'próxima en '+Math.max(0,falta-(me.kills||0))+' baja'+(Math.max(0,falta-(me.kills||0))===1?'':'s'))+'</span></div>'+
+    '<span class="grnext">'+(falta==null?'mazo completo':'próxima en '+Math.max(0,falta-(me.rkills||0))+' baja'+(Math.max(0,falta-(me.rkills||0))===1?'':'s'))+'</span></div>'+
     (fichas?'<div class="grgrid">'+fichas+'</div>'
           :'<div class="grvacio">Todavía no tenés ninguna. La primera te la reparten a las <b>'+C.CARD_AT[0]+'</b> bajas.</div>');
 }
@@ -6405,7 +6712,7 @@ function frame(now){
     G.pingT-=dt;if(online&&G.pingT<=0&&net){G.pingT=2;net.send({t:'ping',c:performance.now(),r:ping});}
     if(Math.floor(G.time*2)!==Math.floor((G.time-dt)*2))updateHUD();
   }else if(!inGame){attract(dt);vms.forEach(v=>v.visible=false);flashMesh.visible=false;}
-  updClub(dt,beatNow());musicTick();updFlags();
+  updClub(dt,beatNow());musicTick();updFlags();if(inGame&&!paused){updCrown(dt);updStorm(dt);}
   updEffects(dt);renderLocker(dt);
   updLightSlots(dt);
   if(inGame&&paused&&(G.pf=((G.pf||0)+1)%3))return;   // en pausa la escena está quieta: se redibuja a 1/3 de los cuadros

@@ -73,7 +73,7 @@ function updLightSlots(dt){
     sl.cur=Math.min(1,sl.cur+dt*5);l.intensity=v.intensity*sl.cur;}
 }
 function loadMap(id){
-  const M=C.MAPS[id]||C.MAPS.represa;clearShards();initLightSlots();for(const sl of lightSlots){sl.v=null;sl.l.intensity=0;}slotT=0;
+  const M=C.MAPS[id]||C.MAPS.represa;clearShards();clearCrown();clearStorm();initLightSlots();for(const sl of lightSlots){sl.v=null;sl.l.intensity=0;}slotT=0;
   if(level){scene.remove(level.group);level.group.traverse(o=>{if(o.geometry)o.geometry.dispose();});}
   W=M;
   const group=new THREE.Group();scene.add(group);

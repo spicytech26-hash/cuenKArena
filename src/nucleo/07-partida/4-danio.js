@@ -12,7 +12,7 @@
       att.dmg = (att.dmg || 0) + real;
       if (att.alive && hasCard(att, 'vampiro')) { const h = Math.min(100 - att.hp, real * CARD_FX.VAMP); if (h > 0) { att.hp += h; att.dirty = true; } }   // carta Vampirismo
     }
-    if (t.ar > 0 && !(w != null && WEAPONS[w] && WEAPONS[w].melee)) { const save = Math.min(t.ar, Math.ceil(amt / 3)); t.ar -= save; take -= save; }
+    if (t.ar > 0 && how !== 'storm' && !(w != null && WEAPONS[w] && WEAPONS[w].melee)) { const save = Math.min(t.ar, Math.ceil(amt / 3)); t.ar -= save; take -= save; }
     t.hp -= take; t.dirty = true;
     const kick = dir && ks ? [dir[0] * amt * ks, dir[1] * amt * ks, dir[2] * amt * ks] : null;
     if (t.bot) {
@@ -30,9 +30,10 @@
     if (v.lifeT0 != null) { v.bestLife = Math.max(v.bestLife || 0, this.time - v.lifeT0); v.lifeT0 = null; }
     let k = 0;
     const carrier = this.flags.some(f => f.st === 1 && f.by === v.id), scoring = this.state === 'play';
+    const crowned = !!(this.crownOn() && this.crown && this.crown.by === v.id);
     if (!scoring) { v.deaths--; k = att && att !== v ? att.id : 0; }
     else if (att && att !== v) {
-      att.frags++; att.kills++; k = att.id; att.streak++;
+      att.kills++; att.rkills++; k = att.id; att.streak++;
       let n = ECON.KILL; const why = [];
       if (v.streak >= 3) { n += ECON.SHUTDOWN; why.push('cortaste una racha'); }
       if (w === 0) { n += ECON.PISTOL; why.push('con pistola'); }
@@ -41,8 +42,12 @@
       this.credit(att, n, why.join(' · '));
       if (att.alive && hasCard(att, 'trofeo')) { att.ar = Math.min(100, att.ar + CARD_FX.KILL_AR); att.dirty = true; }        // carta Trofeo
       if (att.alive && hasCard(att, 'sanguijuela')) { att.hp = Math.min(100, att.hp + CARD_FX.KILL_HP); att.dirty = true; }   // carta Hambre de sangre
+      if (crowned) {   // regicidio: puntos extra, los créditos son los normales de una baja
+        att.kills += CROWN.KILL_PTS; att.cpts += CROWN.KILL_PTS;
+        this.bcast({ t: 'ev', e: 'crw', a: 'regi', id: att.id, n: att.name, v: v.name, pts: CROWN.KILL_PTS });
+      }
       this.checkCard(att);
-    } else v.frags--;
+    } else if (how !== 'storm') v.kills--;   // la tormenta no le da puntos a nadie, pero tampoco te resta
     v.streak = 0; v.burnT = 0;
     this.dropCarried(v);
     const ns = !!(this.curNS && k && k !== v.id && w != null && WEAPONS[w] && WEAPONS[w].scope);
@@ -60,9 +65,9 @@
       this.bcast({ t: 'ev', e: 'sys', m: att.name + ' hizo una racha de 6 bajas: ¡desbloqueó la escopeta doble!' });
     }
     this.sendScores();
-    // Arena termina siempre por tiempo: el límite de frags no aportaba nada (5 minutos, casi nunca se llegaba).
+    // Arena termina siempre por tiempo: el límite de bajas no aportaba nada (5 minutos, casi nunca se llegaba).
     // Queda detrás de `fragLimit` por si algún modo lo quiere de vuelta; los modos por equipos usan `teamLimit`.
-    if (won || (scoring && this.mode.fragLimit && !this.mode.gg && !this.mode.teams && att && att !== v && att.frags >= this.o.fraglimit)) this.endMatch();
+    if (won || (scoring && this.mode.fragLimit && !this.mode.gg && !this.mode.teams && att && att !== v && att.kills >= this.o.fraglimit)) this.endMatch();
     if (scoring && hasCard(v, 'bomba')) this.deathBlast(v);   // carta Carga mortal: explota al morir
   }
   /* ---- gungame: subir y bajar de nivel ---- */

@@ -47,10 +47,13 @@ function renderKillRow(){
 function renderBoard(){
   const tl=Math.max(0,timeLeft),gg=MODE==='gungame',ctf=MODE==='ctf',tm=teamsMode();
   $('bTitle').textContent=C.MODES[MODE].name+' · '+W.name;
-  const goal=ctf?'primero a '+capLimit+' capturas':MODE==='tdm'?'primer equipo a '+fragLimit+' bajas'+(matchState==='play'?'':' · esperando jugadores'):gg?'primero en completar '+GG.length+' niveles':'gana el que más frags haga';
+  const goal=ctf?'primero a '+capLimit+' capturas':MODE==='tdm'?'primer equipo a '+fragLimit+' bajas'+(matchState==='play'?'':' · esperando jugadores'):gg?'primero en completar '+GG.length+' niveles':'gana el que más bajas haga';
   $('bMeta').textContent=(online?'Online':'Práctica')+' · '+goal+' · quedan '+Math.floor(tl/60)+':'+String(tl%60).padStart(2,'0');
   $('thX').textContent=gg?'Nivel':ctf?'Capturas':'Créditos';
-  const row=(s,i)=>'<tr class="'+(s[0]===myId?'me':'')+'"><td>'+(i+1)+'</td><td>'+(s[11]>0?medalSVG(s[11],20):'')+'<span class="sw" style="background:'+esc(s[6])+'"></span>'+esc(s[1])+(s[5]?'<span class="tag">bot</span>':'')+'</td><td>'+s[2]+'</td><td>'+s[3]+'</td>'+
+  const crown=!!C.MODES[MODE].crown;
+  // en los modos con corona, al lado del total se ve cuántos puntos vinieron de ella
+  const cpt=s=>crown&&s[13]?'<span class="crwpt" title="'+s[13]+' de la corona · '+(s[14]||0)+' s con ella">\u265b '+s[13]+'</span>':'';
+  const row=(s,i)=>'<tr class="'+(s[0]===myId?'me':'')+'"><td>'+(i+1)+'</td><td>'+(s[11]>0?medalSVG(s[11],20):'')+'<span class="sw" style="background:'+esc(s[6])+'"></span>'+esc(s[1])+(s[5]?'<span class="tag">bot</span>':'')+'</td><td>'+s[2]+cpt(s)+'</td><td>'+s[3]+'</td>'+
     (gg?'<td>'+Math.min(GG.length,(s[8]||0)+1)+' · '+WEAPONS[GG[Math.min(GG.length-1,s[8]||0)]].name+'</td>':ctf?'<td>'+(s[10]||0)+'</td>':'<td class="cash">¤ '+(s[7]||0)+'</td>')+
     '<td>'+(s[5]||!online?'–':s[4]||'–')+'</td></tr>';
   if(tm)$('bBody').innerHTML=[0,1].map(t=>'<tr class="team"><td></td><td colspan="5" style="color:'+TEAMS[t].c+'">Equipo '+TEAMS[t].name+' · '+TS[t]+'</td></tr>'+scores.filter(s=>s[9]===t).map(row).join('')).join('');
@@ -64,7 +67,7 @@ function renderGrimorio(){
   $('board').classList.toggle('congrim',on);
   if(!on){if(!box.hidden){box.hidden=true;box.innerHTML='';}grimCache='';return;}
   box.hidden=false;
-  const mias=me.cards||[],falta=C.CARD_AT[mias.length],clave=mias.join(',')+'|'+(falta==null?'-':Math.max(0,falta-(me.kills||0)));
+  const mias=me.cards||[],falta=C.CARD_AT[mias.length],clave=mias.join(',')+'|'+(falta==null?'-':Math.max(0,falta-(me.rkills||0)));
   if(clave===grimCache)return;grimCache=clave;
   const cuando=C.CARD_AT.map((n,i)=>'<i'+(i<mias.length?' class="ya"':'')+'>'+n+'</i>').join('<s>·</s>');
   const ROMG=['I','II','III'];
@@ -77,7 +80,7 @@ function renderGrimorio(){
   box.innerHTML='<div class="grhead"><b>El Grimorio del Umbral</b>'+
     '<span class="grwhen">Surtido a las '+cuando+' bajas</span>'+
     '<span class="grnote">Tres al azar, te quedás con una · máximo '+C.CARD_MAX+' por partida · duran hasta que termina</span>'+
-    '<span class="grnext">'+(falta==null?'mazo completo':'próxima en '+Math.max(0,falta-(me.kills||0))+' baja'+(Math.max(0,falta-(me.kills||0))===1?'':'s'))+'</span></div>'+
+    '<span class="grnext">'+(falta==null?'mazo completo':'próxima en '+Math.max(0,falta-(me.rkills||0))+' baja'+(Math.max(0,falta-(me.rkills||0))===1?'':'s'))+'</span></div>'+
     (fichas?'<div class="grgrid">'+fichas+'</div>'
           :'<div class="grvacio">Todavía no tenés ninguna. La primera te la reparten a las <b>'+C.CARD_AT[0]+'</b> bajas.</div>');
 }

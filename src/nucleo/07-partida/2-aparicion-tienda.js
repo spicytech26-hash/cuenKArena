@@ -1,7 +1,8 @@
   /* ---- aparición ---- */
   pickSpawn(p) {
     const alive = [...this.players.values()].filter(q => q.alive && (!this.mode.teams || !p || q.team !== p.team));
-    const list = this.mode.teams && p && p.team >= 0 && this.W.tspawns ? this.W.tspawns[p.team] : this.W.spawns;
+    let list = this.mode.teams && p && p.team >= 0 && this.W.tspawns ? this.W.tspawns[p.team] : this.W.spawns;
+    if (this.stormOn() && this.storm) list = this.stormSpawns(list);   // con la tormenta, solo apariciones dentro del círculo
     const scored = list.map(sp => {
       let d = 1e9; for (const q of alive) d = Math.min(d, Math.hypot(q.s.x - sp.x, q.s.y - sp.y, q.s.z - sp.z));
       return { sp, d: d + Math.random() * 6 };

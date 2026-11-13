@@ -72,7 +72,7 @@ for (const k in ITEMS) if (!ITEMS[k].name && ITEMS[k].ammo) ITEMS[k].name = AMMO
 
 const COLORS = ['#e8542a', '#3fa7ff', '#9ccc3c', '#ffcc33', '#c45cff', '#ff5c8a', '#38d6c4', '#f2efe6', '#ff8f1f', '#7a8cff'];
 /* ---------- Economía: créditos por frag y tienda (tecla B) ---------- */
-const ECON = { START: 300, KILL: 200, SHUTDOWN: 100, PISTOL: 100, MAX: 9999 };
+const ECON = { START: 300, KILL: 400, SHUTDOWN: 100, PISTOL: 100, MAX: 9999 };
 // pack: munición con la que aparecés si desbloqueaste el arma
 const SHOP = [
   { id: 'w0', cat: 'Pistolas', name: 'Pistola', w: 0, price: 0, free: 1, desc: 'Arrancás con 60 balas; comparte munición con la ametralladora' },
@@ -94,8 +94,8 @@ const SHOP = [
 ];
 /* ---------- Modos de juego ---------- */
 const MODES = {
-  arena:   { name: 'Arena', maps: ['represa', 'panymanteca', 'lacuenca', 'cuartotramo'], shop: true, cards: true, timelimit: 300,
-             desc: 'Todos contra todos. Cada frag da créditos para la tienda (B).' },
+  arena:   { name: 'Arena', maps: ['represa', 'panymanteca', 'lacuenca', 'cuartotramo'], shop: true, cards: true, crown: true, storm: true, timelimit: 300,
+             desc: 'Todos contra todos. Cada baja da créditos para la tienda (B). Buscá la corona: cada 15 s con ella puesta valen 1 punto y ¤ 300. En el último minuto la zona se achica.' },
   gungame: { name: 'Gungame', maps: ['represa', 'panymanteca', 'lacuenca', 'cuartotramo'], shop: false, gg: true,
              desc: 'Cada baja te da la siguiente arma de la lista. Munición infinita, sin tienda. Si te matan con cuchillo bajás un nivel. Gana el primero en hacer las 20 bajas; la última es con cuchillo.' },
   tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca', 'cuartotramo'], shop: true, cards: true, teams: true, tdm: true, minPlayers: 4,
@@ -140,7 +140,50 @@ const CARD_BY = {}; for (const c of CARDS) CARD_BY[c.id] = c;
 const hasCard = (p, id) => !!(p && p.cards && p.cards.indexOf(id) >= 0);
 // sifón: mini escudos que suelta el que muere
 // duran 10 s desde que caen al piso (a los 8 s empiezan a parpadear, eso lo hace el cliente)
+/* ---------- La tormenta del último minuto (por ahora solo Arena: la prende `storm` en MODES) ----------
+   Cuando quedan STORM.WARN segundos (sobre la duración real de la partida, no un número fijo) se avisa,
+   y STORM.DELAY después arranca. La zona segura es un círculo que al principio contiene todo el área
+   jugable y se achica linealmente hasta STORM.MIN_R en STORM.SHRINK segundos. Afuera hay daño continuo
+   que sube con el tiempo y que el blindaje no frena. Un mapa puede declarar `stormCenter: [x, z]` y
+   `stormR` (radio final) si el centro automático no le sirve. */
+const STORM = {
+  WARN: 60,          // avisa cuando queda este tiempo de partida
+  DELAY: 10,         // arranca este rato después del aviso
+  SHRINK: 40,        // cuánto tarda en achicarse del todo
+  MIN_R: 22,         // radio final (se puede pisar por mapa con `stormR`)
+  DMG0: 5,           // daño por segundo al empezar
+  DMG1: 15,          // daño por segundo con la zona ya chica
+  STEP: .25,         // cada cuánto se aplica el daño
+  CROWN_EVERY: 7.5,  // mientras dura, la corona paga cada tanto en lugar de CROWN.EVERY
+  MARGIN: 2          // un poco más grande que el área jugable al arrancar
+};
+/* Las dos cuentas de la tormenta, compartidas entre servidor y cliente: con los parámetros que
+   manda el servidor una sola vez (`i`) y el reloj del servidor alcanza para saber radio y daño.
+   i = [arranque, centro x, centro z, radio inicial, radio final, achique, daño inicial, daño final] */
+const stormK = (i, now) => !i ? 0 : Math.max(0, Math.min(1, i[5] ? (now - i[0]) / i[5] : 1));
+const stormR = (i, now) => !i ? 0 : i[3] + (i[4] - i[3]) * stormK(i, now);
+const stormDmg = (i, now) => !i ? 0 : i[6] + (i[7] - i[6]) * stormK(i, now);
 const SHARD = { N: 5, AR: 5, CAP: 100, LIFE: 10.45, MAX: 80 };
+/* ---------- La Corona (por ahora solo Arena: la prende `crown` en MODES) ----------
+   Hay una sola corona por partida y la lleva uno solo. Aparece a los 45 s de que arranca el reloj
+   y se avisa a todos. Cada 15 s seguidos de tenerla: 1 punto al tablero (el mismo contador de bajas
+   que define al ganador) y 100 créditos para la tienda. Al portador lo ve todo el mundo.
+   Es del servidor: el cliente solo la dibuja. */
+const CROWN = {
+  AT: 45,        // segundos desde que arranca la partida hasta que aparece
+  EVERY: 15,     // cada cuántos segundos seguidos paga (se reinicia al perderla)
+  PTS: 1,        // puntos al tablero por tanda
+  CASH: 300,     // créditos por tanda (una baja da ECON.KILL = 400)
+  KILL_PTS: 2,   // puntos extra para el que mata al portador
+  ARM: 1.5,      // nadie la puede levantar hasta 1,5 s después de que cae
+  IDLE: 20,      // si queda sola este tiempo, se muda lejos del último portador
+  VOID: 5,       // si cae en la lava o fuera del mapa, vuelve a un punto seguro
+  FAR: 18,       // al mudarse busca un punto a más de esta distancia del último portador
+  R: 1.1,        // radio para levantarla
+  HEAD: 1.75,    // altura de la corona sobre el portador
+  BOT_GO: [22, 38, 55, 75],   // a cuántos metros la van a buscar los bots, por dificultad (Fácil a Pesadilla)
+  BOT_AIM: [8, 16, 26, 36]    // cuánto priorizan al portador al elegir a quién dispararle
+};
 // Gungame: arranca con armas fuertes y termina con las difíciles; la última baja es con machete
 const GG = [3, 5, 2, 4, 1, 6, 8, 0, 3, 5, 2, 4, 1, 9, 8, 0, 5, 6, 9, 7];
 const TEAMS = [{ name: 'Rojo', c: '#ff4a3a' }, { name: 'Azul', c: '#3a8bff' }];

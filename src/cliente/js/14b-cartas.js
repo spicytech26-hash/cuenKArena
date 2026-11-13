@@ -28,7 +28,7 @@ const CARD_ICO = {
 const cardIcon = ic => '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" fill-rule="evenodd">' +
   (CARD_ICO[ic] || []).map(([d, op]) => '<path d="' + d + '"' + (op < 1 ? ' opacity="' + op + '"' : '') + '/>').join('') + '</svg>';
 const cardsOpen = () => CU.open;
-function resetCards() { me.cards = []; me.kills = 0; CU.list = []; closeCards(); BURN.clear(); renderMyCards(); }
+function resetCards() { me.cards = []; me.rkills = 0; CU.list = []; closeCards(); BURN.clear(); renderMyCards(); }
 
 /* ---- el reparto: el Mercader del Umbral se materializa y despliega las tres cartas ----
    El mercader es 3D (`14c-mercader.js`); acá va solo el texto, en HTML por encima de esa escena,
@@ -103,7 +103,7 @@ function renderMyCards() {
   if (!hay) { box.hidden = true; box.innerHTML = ''; return; }
   box.hidden = false;
   const falta = C.CARD_AT[l.length];
-  const prog = falta != null ? '<div class="cnext">PRÓXIMA CARTA EN <b>' + Math.max(0, falta - (me.kills || 0)) + '</b></div>' : '<div class="cnext full">MAZO COMPLETO</div>';
+  const prog = falta != null ? '<div class="cnext">PRÓXIMA CARTA EN <b>' + Math.max(0, falta - (me.rkills || 0)) + '</b></div>' : '<div class="cnext full">MAZO COMPLETO</div>';
   box.innerHTML = l.map((id, i) => {
     const c = C.CARD_BY[id]; if (!c) return '';
     return '<div class="mcard' + (i === l.length - 1 ? ' nueva' : '') + '" style="--cc:' + c.c + '" title="' + esc(c.desc) + '"><span class="mic">' + cardIcon(c.ic) + '</span><b>' + esc(c.name) + '</b></div>';

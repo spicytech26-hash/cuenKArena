@@ -7,7 +7,7 @@ function onMsg(m){
       loadMap(m.map);applyMode();
       if(typeof m.tm==='number'&&online)CLK.off=m.tm-performance.now()/1000-.05;
       m.roster.forEach(r=>{if(r[0]!==myId)ensurePlayer(r[0],r[1],r[2],r[3],r[4],r[5]);});
-      syncItems(m);clearShards();resetCards();if(m.cd&&m.cd.length){me.cards=m.cd.slice();renderMyCards();}if(m.sh)for(const s of m.sh)addShard(s[0],s[1],s[2],s[3],s[1],s[2],s[3],s[4]);
+      syncItems(m);clearShards();clearCrown();clearStorm();setCrownState(m.cw);stormSet(m.st);resetCards();if(m.cd&&m.cd.length){me.cards=m.cd.slice();renderMyCards();}if(m.sh)for(const s of m.sh)addShard(s[0],s[1],s[2],s[3],s[1],s[2],s[3],s[4]);
       sysChat((online?'Conectado a '+location.host:'Práctica · '+S.bots+' bots')+' · '+C.MODES[MODE].name+' · '+W.name+(C.MODES[MODE].shop?' · B abre la tienda':''));
       if(MODE==='ctf'&&myTeam>=0)announce('EQUIPO '+TEAMS[myTeam].name.toUpperCase(),'Robá la bandera rival y traela a tu base');
       else if(MODE==='tdm'&&myTeam>=0)announce('EQUIPO '+TEAMS[myTeam].name.toUpperCase(),m.state==='play'?'Cada baja suma para tu equipo':'Esperando jugadores · calentamiento');
@@ -32,7 +32,7 @@ function onMsg(m){
       me.hp=m.hp;me.ar=m.ar;me.am=Object.assign({},m.am);me.ow=m.ow.slice();me.q=m.q;
       if(m.cr!=null){me.cr=m.cr;me.unl=m.unl.slice();me.perk=Object.assign({},m.perk);}
       if(m.lvl!=null)me.lvl=m.lvl;
-      if(m.ck!=null&&m.ck!==me.kills){me.kills=m.ck;renderMyCards();}
+      if(m.ck!=null&&m.ck!==me.rkills){me.rkills=m.ck;renderMyCards();}
       if(!m.al&&me.alive)me.alive=false;
       if(MODE==='gungame'&&(me.lvlSwitch||!me.ow[me.w])&&me.ow[GG[Math.min(me.lvl,GG.length-1)]]){me.lvlSwitch=false;const nw=GG[Math.min(me.lvl,GG.length-1)];if(nw!==me.w){me.w=nw;me.raise=1;me.scope=false;me.cool=Math.max(me.cool,.25);if(WEAPONS[nw].mag){me.mag[nw]=WEAPONS[nw].mag;me.rel=0;}showWeapon();}}
       else if(!me.ow[me.w]){const pr=C.primaryOf(me.ow),i=pr>=0?pr:me.ow.findIndex(Boolean);if(i>=0){me.lastW=me.w;me.w=i;me.raise=1;me.scope=false;me.cool=Math.max(me.cool,.25);showWeapon();}}
@@ -56,6 +56,7 @@ function onMsg(m){
     case 'sc':
       if(m.iu&&level)for(let i=0;i<m.iu.length;i++){const o=level.items[i];if(o){const u=m.iu[i]==='1';if(o.g.visible!==u)o.g.visible=u;}}
       scores=m.l;timeLeft=m.tl;fragLimit=m.fl;
+      if(m.cw!==undefined)setCrownState(m.cw);   // resincroniza la corona una vez por segundo
       if(m.st!==matchState&&m.st==='count')SFX.start();
       matchState=m.st;LOBBY={cd:m.cd||0,hn:m.hn||0,mp:m.mp||0};
       if(m.ts)TS=m.ts;if(m.fs)FL=m.fs;if(m.cl)capLimit=m.cl;
@@ -82,13 +83,13 @@ function onMsg(m){
     case 'ready': if(online)$('interReady').innerHTML='<b>'+m.n+'/'+m.of+'</b> jugadores listos';break;
     case 'mv': G.myMapVote=m.me;renderMapVote(m);break;
     case 'start':
-      clearShards();renderMapVote(null);
+      clearShards();clearCrown();clearStorm();renderMapVote(null);
       matchState='play';$('inter').hidden=true;$('board').hidden=true;$('bStay').disabled=false;$('bStay').textContent='Jugar de nuevo';
       if(!document.pointerLockElement&&$('menu').hidden&&inGame){announce('¡ARRANCÓ!','Hacé click para jugar');}
       if(m.fs)FL=m.fs;if(m.ts)TS=m.ts;me.lvl=0;resetCards();
       if(m.map&&m.map!==W.id){loadMap(m.map);projs.forEach(p=>scene.remove(p.m));projs.length=0;}
       syncItems(m);
-      announce(W.name.toUpperCase(),MODE==='ctf'?'primero a '+capLimit+' capturas':(MODE==='tdm'||MODE==='snipers')?'primer equipo en llegar a '+fragLimit+' bajas':MODE==='gungame'?'primero en completar los '+GG.length+' niveles':'primero a '+fragLimit+' frags');SFX.start();
+      announce(W.name.toUpperCase(),MODE==='ctf'?'primero a '+capLimit+' capturas':(MODE==='tdm'||MODE==='snipers')?'primer equipo en llegar a '+fragLimit+' bajas':MODE==='gungame'?'primero en completar los '+GG.length+' niveles':'gana el que más bajas haga');SFX.start();
       break;
     case 'pong': ping=Math.round(performance.now()-m.c);break;
     case 'xp': {
@@ -110,6 +111,8 @@ function onEvent(m){
         me.boostT=KB.T;SFX.boost();fxAire(s.x,s.y+.1,s.z,1,.6,.2);announce('IMPULSO','kill deslizándote');}
       break;
     case 'flag': FL=m.fs;TS=m.ts;onFlag(m);break;
+    case 'crw': crownEvent(m);break;
+    case 'stm': stormEvent(m);break;
     case 'fire': fxFire(m);break;
     case 'grab': me.grabW=m.w;break;
     case 'cof': openCards(m);break;                       // te toca elegir carta
@@ -207,6 +210,7 @@ function onKill(m){
   else if(m.how==='lava')line=vn+' <i>se derritió en la lava</i>';
   else if(m.how==='water')line=vn+' <i>se lo llevó el río</i>';
   else if(m.how==='void')line=vn+' <i>cayó al vacío</i>';
+  else if(m.how==='storm')line=vn+' <i>se quedó en la tormenta</i>';
   else if(!m.k||m.k===m.v)line=vn+' <i>se voló a sí mismo</i>';
   else if(m.ns)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>mató</i> <b class="ns">SIN USAR MIRA</b> <i>a</i> '+vn;
   else if(W_&&W_.melee)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>le entró a pelo a</i> '+vn;
@@ -216,7 +220,7 @@ function onKill(m){
   if(m.v===myId){
     me.alive=false;me.deadT=0;me.killer=m.k;me.respawnAsk=false;me.deathPos=[me.s.x,me.s.y,me.s.z];
     // "JUGADOR te ha eliminado" en grande, el arma abajo y "Cobrale venganza" en chico; si no fue un jugador, el motivo en grande
-    const env=m.how==='water'?'Te llevó el río':m.how==='lava'?'Te derretiste en la lava':m.how==='void'?'Caíste al vacío':(!m.k||m.k===myId)?'Te volaste a vos mismo':'';
+    const env=m.how==='water'?'Te llevó el río':m.how==='lava'?'Te derretiste en la lava':m.how==='void'?'Caíste al vacío':m.how==='storm'?'Te comíó la tormenta':(!m.k||m.k===myId)?'Te volaste a vos mismo':'';
     if(env){$('deathBig').textContent=env;$('deathBy').textContent='';$('deathRev').textContent='Volvé más fuerte';}
     else{$('deathBig').innerHTML='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> te ha eliminado';$('deathBy').textContent=m.how==='fire'?'te prendió fuego':m.how==='cblast'?'explotó al morir':m.ns?'sin usar mira':W_?'con '+W_.name:'';$('deathRev').textContent='Cobrale venganza';}
     $('deathBox').hidden=false;$('deathBox').classList.remove('in');void $('deathBox').offsetWidth;$('deathBox').classList.add('in');$('deathHint').textContent='';
@@ -225,7 +229,7 @@ function onKill(m){
   }else{
     const p=players.get(m.v);
     if(p){p.alive=false;p.deadT=0;p.gib=!!m.gib;if(m.gib){fxGib(m.p[0],m.p[1],m.p[2]);if(p.model)p.model.g.visible=false;}else fxBlood(m.p[0],m.p[1]+1.1,m.p[2],18);SFX.die(vAt(m.p[0],m.p[1],m.p[2]));}
-    if(m.k===myId){const mine=scores.find(s=>s[0]===myId);announce(m.ns?'¡SIN MIRA! ELIMINASTE A '+nameOf(m.v).toUpperCase():'ELIMINASTE A '+nameOf(m.v).toUpperCase(),((mine?mine[2]:0)+1)+(MODE==='gungame'?' bajas':' frags'));SFX.frag();}
+    if(m.k===myId){const mine=scores.find(s=>s[0]===myId);announce(m.ns?'¡SIN MIRA! ELIMINASTE A '+nameOf(m.v).toUpperCase():'ELIMINASTE A '+nameOf(m.v).toUpperCase(),((mine?mine[2]:0)+1)+' bajas');SFX.frag();}
   }
 }
 function onFlag(m){

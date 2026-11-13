@@ -10,7 +10,7 @@
 </style>
 
 <canvas id="c"></canvas>
-<div id="flash" class="ov"></div><div id="pflash" class="ov"></div><div id="qtint" class="ov"></div><div id="lavatint" class="ov"></div>
+<div id="flash" class="ov"></div><div id="pflash" class="ov"></div><div id="qtint" class="ov"></div><div id="lavatint" class="ov"></div><div id="stmtint" class="ov"></div>
 <div id="nvig"></div><div id="ngrain"></div>
 <div id="hud" hidden>
   <div id="fpsBox" hidden></div>
@@ -30,7 +30,7 @@
     <circle r=".45" fill="#c0261b"/>
   </svg></div>
   <div id="top">
-    <div class="stat"><span class="lbl">Frags</span><b id="tFrags">0</b></div>
+    <div class="stat"><span class="lbl">Bajas</span><b id="tFrags">0</b></div>
     <div class="stat"><span class="lbl">Puesto</span><b id="tRank">–</b></div>
     <div class="stat" id="tCrBox"><span class="lbl">Créditos</span><b id="tCr" class="cash">¤ 300</b></div>
     <div class="stat" id="tLvlBox" hidden><span class="lbl">Nivel</span><b id="tLvl">1/20</b></div>
@@ -47,6 +47,10 @@
   </div>
   <div id="lobbyBox" hidden><div class="lt" id="lobbyT"></div><div class="ls" id="lobbyS"></div></div>
   <div id="carry" hidden>LLEVÁS LA BANDERA · VOLVÉ A TU BASE</div>
+  <div id="crwBox" hidden><span class="cbi"><svg viewBox="0 0 24 17" aria-hidden="true"><path d="M2.4 15.4h19.2l-1.5-9.6-4.3 3.6L12 1.6 8.2 9.4 3.9 5.8z"/></svg></span><span class="cbt"><b id="crwWho">SIN DUEÑO</b><i id="crwSub">andá a buscarla</i></span><span class="cbp"><i id="crwBar"></i></span></div>
+  <div id="crwDir" hidden></div>
+  <div id="crwMine" hidden>LLEVÁS LA CORONA · <b id="crwMineT">15</b> s PARA EL PUNTO</div>
+  <div id="stmBox" hidden><svg id="stmSvg" viewBox="-50 -50 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><circle id="stmC" cx="0" cy="0" r="0"/><circle id="stmMe" cx="0" cy="0" r="2.6"/></svg><span class="sbt"><b id="stmWho">ZONA SEGURA</b><i id="stmSub">—</i></span></div>
   <div id="feed"></div>
   <div id="center"><div id="cMsg"></div><div id="cSub"></div></div>
   <div id="pick"></div>
@@ -350,7 +354,7 @@
           <kbd>W A S D</kbd><span>moverse</span><kbd>Espacio</kbd><span>saltar (mantené para bunny hop)</span>
           <kbd>Click</kbd><span>disparar (click derecho: mira del francotirador)</span><kbd>1 · 2 · 3 · 4</kbd><span>arma principal · pistola · cuchillo · molotov · Q arma anterior · E agarrar arma del piso · F inspeccionar · R recargar</span>
           <kbd>Ctrl · C</kbd><span>agacharse (saltá y agachate para pasar por ventanas)</span>
-          <kbd>B</kbd><span>tienda</span><kbd>Tab</kbd><span>tabla de frags</span>
+          <kbd>B</kbd><span>tienda</span><kbd>Tab</kbd><span>tabla de bajas</span>
           <kbd>H</kbd><span>vista en primera / tercera persona</span><kbd>J</kbd><span>cambiar de hombro (tercera persona)</span>
           <kbd>T · Enter</kbd><span>chat</span><kbd>Esc</kbd><span>menú</span>
         </div>

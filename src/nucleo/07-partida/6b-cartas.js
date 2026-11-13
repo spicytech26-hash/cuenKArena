@@ -8,7 +8,7 @@
   // se llama desde kill() cada vez que alguien sube una baja
   checkCard(p) {
     if (!this.mode.cards || p.cof || p.cards.length >= CARD_MAX) return;
-    if (p.kills < CARD_AT[p.cards.length]) return;
+    if (p.rkills < CARD_AT[p.cards.length]) return;
     this.offerCards(p);
   }
   // tres al azar entre las que todavía no tiene
@@ -72,3 +72,4 @@
       if (!this.live()) return;
     }
   }
+

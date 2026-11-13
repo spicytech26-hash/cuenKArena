@@ -14,6 +14,8 @@
   skill() { return SKILL[this.o.botSkill] || SKILL[1]; }
   findTarget(p) {
     let best = null, bd = 1e9; const sk = this.skill();
+    const skI = Math.max(0, Math.min(3, this.o.botSkill | 0));
+    const cw = this.crownOn() && this.crown && this.crown.by !== p.id ? this.crown.by : 0;   // el de la corona es el objetivo preferido
     const ex = p.s.x, ey = p.s.y + K.EYE, ez = p.s.z;
     for (const t of this.players.values()) {
       if (t === p || !t.alive || !t.joined || (this.mode.teams && t.team === p.team)) continue;
@@ -24,7 +26,7 @@
       const f = dirFromAngles(p.yaw, 0), dot = ((t.s.x - ex) * f[0] + (t.s.z - ez) * f[2]) / (Math.hypot(t.s.x - ex, t.s.z - ez) || 1);
       if (dot < sk.fov && !hurt && d > 4 && t.id !== p.ai.tgt) continue;
       if (!los(this.W, ex, ey, ez, t.s.x, t.s.y + 1.2, t.s.z)) continue;
-      const score = d - (p.ai.hurtBy === t.id && p.ai.hurtT > 0 ? 15 : 0) - (t.id === p.ai.tgt ? 8 : 0);
+      const score = d - (p.ai.hurtBy === t.id && p.ai.hurtT > 0 ? 15 : 0) - (t.id === p.ai.tgt ? 8 : 0) - (t.id === cw ? CROWN.BOT_AIM[skI] : 0);
       if (score < bd) { bd = score; best = t; }
     }
     return best;
@@ -90,6 +92,11 @@
   }
   // CTF: qué hace cada bot según el estado de las banderas y su rol (ataque/defensa)
   objective(p) {
+    if (this.stormOn() && this.outStorm(p.s.x, p.s.z)) {   // afuera de la zona segura no hay nada más importante
+      const sp = this.stormRefuge(p);
+      if (sp) return { x: sp.x, y: sp.y, z: sp.z, pri: 160 };
+    }
+    const cr = this.crownObjective(p); if (cr) return cr;
     if (!this.mode.teams || this.flags.length < 2 || p.team < 0) return null;
     const own = this.flags[p.team], enemy = this.flags[1 - p.team], home = this.W.flags[p.team];
     if (enemy.st === 1 && enemy.by === p.id) return { x: home.x, y: home.y, z: home.z, pri: 200 };
@@ -101,6 +108,20 @@
     }
     if (Math.hypot(p.s.x - home.x, p.s.z - home.z) > 14) return { x: home.x + (Math.random() - .5) * 16, y: 0, z: home.z - Math.sign(home.z) * (4 + Math.random() * 8), pri: 50 };
     return null;
+  }
+  /* la corona para los bots: la van a buscar si está suelta y cerca, y si la tiene otro lo persiguen.
+     Las distancias dependen de la dificultad (CROWN.BOT_GO). El que la lleva sigue jugando normal. */
+  crownObjective(p) {
+    if (!this.crownOn() || this.state !== 'play') return null;
+    const c = this.crown; if (!c || c.dead > 0) return null;
+    const k = Math.max(0, Math.min(3, this.o.botSkill | 0)), lejos = CROWN.BOT_GO[k];
+    if (!c.by) {
+      return Math.hypot(c.x - p.s.x, c.z - p.s.z) < lejos ? { x: c.x, y: c.y, z: c.z, pri: 120 } : null;
+    }
+    if (c.by === p.id) return null;
+    const h = this.players.get(c.by);
+    if (!h || !h.alive) return null;
+    return Math.hypot(h.s.x - p.s.x, h.s.z - p.s.z) < lejos * 1.3 ? { x: h.s.x, y: h.s.y, z: h.s.z, pri: 95 } : null;
   }
   botThink(p, dt) {
     const ai = p.ai, s = p.s, nav = this.nav, sk = SKILL[this.o.botSkill] || SKILL[1];

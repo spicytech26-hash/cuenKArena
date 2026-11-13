@@ -145,7 +145,7 @@ async function dbGet(sub) {
   if (c && c._temp) {   // volvió la base: se suma lo que ganó mientras estuvo caída
     const r = row || vacio(sub), d = c._d;
     r.xp = (r.xp | 0) + d.xp; r.kills = (r.kills | 0) + d.kills; r.partidas = (r.partidas | 0) + d.partidas; r.victorias = (r.victorias | 0) + d.victorias;
-    if (d.perfil || !row) { r.nombre = c.nombre; r.skin = c.skin; r.mira = c.mira; }
+    if (!row) { r.nombre = c.nombre; r.skin = c.skin; r.mira = c.mira; }   // con perfil guardado, se respeta el guardado
     cache.set(sub, r); dbPut(r).catch(() => {});
     return r;
   }
@@ -206,7 +206,6 @@ async function update(tok, data) {
   if (data.nombre !== undefined) row.nombre = cleanName(data.nombre);
   if (data.skin !== undefined) row.skin = cleanSkin(data.skin);
   if (data.mira !== undefined) row.mira = cleanMira(data.mira);
-  if (row._temp) row._d.perfil = 1;
   await dbPut(row);
   return profile(row);
 }

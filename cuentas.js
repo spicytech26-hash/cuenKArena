@@ -190,4 +190,12 @@ function addXP(sub, gain, info) {
   return next;
 }
 
+// Los proyectos gratis de Supabase se pausan solos después de una semana sin consultas, y entonces
+// nadie puede iniciar sesión (ENOTFOUND). Una consulta mínima cada 12 h lo mantiene despierto.
+if (SB_URL && SB_KEY && !process.env.SIN_DESPERTADOR) {
+  const despertar = () => request(SB_URL + '/rest/v1/jugadores?select=sub&limit=1', { method: 'GET', headers: sbHeaders() }, null, 15000)
+    .then(r => { if (r.status >= 400) console.warn('Supabase respondió ' + r.status + ' al despertador'); })
+    .catch(e => console.warn('Supabase no responde (¿proyecto pausado?): ' + e.message));
+  setTimeout(despertar, 20000).unref(); setInterval(despertar, 12 * 3600 * 1000).unref();
+}
 module.exports = { _test: { makeSession, dbPut }, enabled, persistent, clientId: () => CLIENT_ID, login, me, update, addXP, readSession, levelInfo };

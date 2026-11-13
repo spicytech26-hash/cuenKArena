@@ -276,5 +276,5 @@ function showDamage(n,kill,head){
   DMG.timer=setTimeout(()=>{t.className='';void t.offsetWidth;t.innerHTML='TOTAL <b>'+DMG.sum+'</b>'+(kill?' · ELIMINADO':'');t.className='done';DMG.sum=0;},kill?150:900);
 }
 function sysChat(t){chatLine(esc(t),'sys');}
-function announce(t,s){const a=$('cMsg'),b=$('cSub');a.textContent=t;b.textContent=s||'';[a,b].forEach(e=>{e.classList.remove('show');void e.offsetWidth;e.classList.add('show');});}
+function announce(t,s){if(TACTIL&&s)s=s.replace(/Hacé click para (jugar|seguir jugando|volver al juego)/,'');const a=$('cMsg'),b=$('cSub');a.textContent=t;b.textContent=s||'';[a,b].forEach(e=>{e.classList.remove('show');void e.offsetWidth;e.classList.add('show');});}
 

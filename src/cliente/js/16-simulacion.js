@@ -22,7 +22,8 @@ function updMe(dt){
     return;}
   let f=0,s=0;
   const free=!chatOpen&&$('shop').hidden;
-  if(free){if(keys.KeyW||keys.ArrowUp)f+=1;if(keys.KeyS||keys.ArrowDown)f-=1;if(keys.KeyD)s+=1;if(keys.KeyA)s-=1;if(keys.ArrowLeft)me.yaw+=dt*2.4;if(keys.ArrowRight)me.yaw-=dt*2.4;}
+  if(free){if(keys.KeyW||keys.ArrowUp)f+=1;if(keys.KeyS||keys.ArrowDown)f-=1;if(keys.KeyD)s+=1;if(keys.KeyA)s-=1;if(keys.ArrowLeft)me.yaw+=dt*2.4;if(keys.ArrowRight)me.yaw-=dt*2.4;
+    if(TC.on&&(TC.f||TC.s)){f=Math.max(-1,Math.min(1,f+TC.f));s=Math.max(-1,Math.min(1,s+TC.s));}}   // palanca táctil (analógica)
   const sy=Math.sin(me.yaw),cyw=Math.cos(me.yaw);
   const wx=-sy*f+cyw*s,wz=-cyw*f-sy*s;
   const jumpKey=free&&!!keys.Space;

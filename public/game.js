@@ -1962,6 +1962,9 @@ function buildSantuario() {
     A(62, 0, 9, 66, 1.3, 10, 'crate'); A(84, 0, 13, 85, 1.3, 17, 'crate'); A(40, 0, 8, 41, 1.3, 12, 'crate');
     /* ---- frente de la fortaleza: tres portones con barrera y dos generadores cada uno ---- */
     wall(Math.min(sx * 112, sx * 114), -48, Math.max(sx * 112, sx * 114), 48, 0, 18, GATES.map(g => D(g[0], g[1], 0, 6)), 'wall');
+    // campo permanente por encima del muro: nadie del equipo rival entra saltando, con cohetes o caminando por el borde del mapa.
+    // La ÚNICA entrada es un portón con la barrera caída (este campo no tiene generadores y no cae nunca: i = 250)
+    A(112, 6, -49, 114, 70, 49, 'clip', { bar: { team, lane: -1, i: 250, down: false }, nonav: 1 });
     GATES.forEach((g, lane) => {
       const i = bars.length, mid = (g[0] + g[1]) / 2;
       A(112, 0, g[0], 114, 6, g[1], 'clip', { bar: { team, lane, i, down: false } });
@@ -2989,6 +2992,7 @@ class Game {
       if (this.mode.maps.includes(arg)) { this.bcast({ t: 'ev', e: 'sys', m: p.name + ' cambió el mapa a ' + MAPS[arg].name }); this.restart(arg); }
       else say('Mapas de ' + this.mode.name + ': ' + this.mode.maps.join(', '));
     }
+    else if (cmd === 'tiempo' && (!this.o.online || this.o.dev) && /^\d+$/.test(arg || '')) { this.left = +arg; this.sendScores(); }   // prueba: deja N segundos de partida (para ver la tormenta o el fin por tiempo)
     else if (cmd === 'restart') { this.bcast({ t: 'ev', e: 'sys', m: p.name + ' reinició la partida' }); this.restart(); }
     else say('Comandos: /echar NOMBRE · /bots N · /bots auto · /skill 0-3 · ' + (this.mode.ctf ? '/caplimit N' : '/fraglimit N') + ' · /map ' + this.mode.maps.join('|') + ' · /restart');
   }

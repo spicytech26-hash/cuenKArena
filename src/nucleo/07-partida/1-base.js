@@ -326,6 +326,7 @@ class Game {
       if (this.mode.maps.includes(arg)) { this.bcast({ t: 'ev', e: 'sys', m: p.name + ' cambió el mapa a ' + MAPS[arg].name }); this.restart(arg); }
       else say('Mapas de ' + this.mode.name + ': ' + this.mode.maps.join(', '));
     }
+    else if (cmd === 'tiempo' && (!this.o.online || this.o.dev) && /^\d+$/.test(arg || '')) { this.left = +arg; this.sendScores(); }   // prueba: deja N segundos de partida (para ver la tormenta o el fin por tiempo)
     else if (cmd === 'restart') { this.bcast({ t: 'ev', e: 'sys', m: p.name + ' reinició la partida' }); this.restart(); }
     else say('Comandos: /echar NOMBRE · /bots N · /bots auto · /skill 0-3 · ' + (this.mode.ctf ? '/caplimit N' : '/fraglimit N') + ' · /map ' + this.mode.maps.join('|') + ' · /restart');
   }

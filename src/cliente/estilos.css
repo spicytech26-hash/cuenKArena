@@ -1059,7 +1059,8 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
    El mapita trabaja en coordenadas del mundo: el viewBox lo pone el cliente con los
    límites del mapa, así el círculo y el puntito del jugador van derecho sin convertir nada.
    ===================================================================== */
-#stmtint{background:radial-gradient(ellipse at center,rgba(255,40,20,0) 28%,rgba(190,12,8,.62));opacity:0}
+#stmtint{background:radial-gradient(ellipse at center,rgba(255,40,20,.12) 18%,rgba(190,12,8,.78));opacity:0}
+#stmnear{background:radial-gradient(ellipse at center,rgba(255,170,40,0) 45%,rgba(255,120,20,.6));opacity:0}
 #stmBox{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));
   display:flex;align-items:center;gap:9px;padding:6px 12px 7px 8px;
   background:linear-gradient(135deg,transparent 9px,rgba(12,20,17,.84) 9.5px);
@@ -1096,3 +1097,56 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 #domMap{position:fixed;left:12px;top:40%;width:320px;height:96px;border:1px solid #000;box-shadow:0 3px 0 #000;pointer-events:none;image-rendering:pixelated}
 @media (min-width:1700px){#domBox{top:calc(8px + env(safe-area-inset-top,0px))}}
 @media (max-width:900px){#domBox .dside{min-width:150px}#domBox .lane s{display:none}#domMap{width:200px;height:60px;top:auto;bottom:calc(150px + env(safe-area-inset-bottom,0px))}}
+
+/* ---------- Celulares y tablets: controles táctiles (15b-tactil.js) ---------- */
+#tc{position:fixed;inset:0;z-index:3;pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+#tc button{position:absolute;display:grid;place-items:center;border:2px solid rgba(255,255,255,.55);background:rgba(10,10,14,.38);color:#fff;font:700 11px/1 var(--mono);letter-spacing:.06em;border-radius:50%;padding:0;touch-action:none;-webkit-user-select:none;user-select:none}
+#tc button.ap{background:rgba(255,180,60,.55);border-color:#fff;transform:scale(.94)}
+#tc button.on{background:rgba(60,200,255,.5)}
+#tcFire{width:88px;height:88px;right:calc(22px + env(safe-area-inset-right,0px));bottom:calc(64px + env(safe-area-inset-bottom,0px));background:rgba(200,30,20,.42)!important;border-width:3px!important}
+#tcFire::after{content:"";width:34px;height:34px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 6px rgba(255,255,255,.25)}
+#tcJump{width:64px;height:64px;right:calc(120px + env(safe-area-inset-right,0px));bottom:calc(26px + env(safe-area-inset-bottom,0px))}
+#tcDuck{width:56px;height:56px;right:calc(194px + env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+#tcRel{width:52px;height:52px;right:calc(124px + env(safe-area-inset-right,0px));bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+#tcSwap{width:56px;height:56px;right:calc(26px + env(safe-area-inset-right,0px));bottom:calc(164px + env(safe-area-inset-bottom,0px))}
+#tcAim{width:52px;height:52px;right:calc(94px + env(safe-area-inset-right,0px));bottom:calc(168px + env(safe-area-inset-bottom,0px))}
+#tcUse{width:46px;height:46px;right:calc(188px + env(safe-area-inset-right,0px));bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+#tcTop{position:absolute;right:calc(8px + env(safe-area-inset-right,0px));top:calc(6px + env(safe-area-inset-top,0px));display:flex;gap:6px}
+#tcTop button{position:static;border-radius:6px;height:30px;padding:0 9px;font-size:10px;border-width:1px}
+#tcStick{position:absolute;width:116px;height:116px;margin:-58px 0 0 -58px;border-radius:50%;border:2px solid rgba(255,255,255,.4);background:rgba(10,10,14,.25);left:calc(96px + env(safe-area-inset-left,0px));top:auto;bottom:calc(40px + env(safe-area-inset-bottom,0px));pointer-events:none;opacity:.45}
+#tcStick.on{opacity:1;bottom:auto}
+#tcKnob{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;background:rgba(255,255,255,.55);border:2px solid #fff}
+#tcResume{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:70;padding:12px 26px;font:700 15px/1 var(--mono);letter-spacing:.12em;color:#fff;background:#b3140f;border:2px solid #fff;border-radius:6px;box-shadow:0 4px 0 #000}
+#giro{display:none}
+/* con controles táctiles el HUD se corre de donde van los dedos y deja pasar los toques */
+body.tactil #hud>*:not(#tc):not(#chat):not(#cards){pointer-events:none}
+body.tactil #cards,body.tactil #cards .ccard{pointer-events:auto}
+body.tactil #slots,body.tactil #shopHint,body.tactil #kickHint,body.tactil #mapHint,body.tactil #speed,body.tactil #tPingBox+.stat{display:none!important}
+body.tactil #feed{top:calc(102px + env(safe-area-inset-top,0px));font-size:11px;max-width:36vw}
+body.tactil #chat{bottom:auto;top:calc(56px + env(safe-area-inset-top,0px));width:min(230px,27vw);font-size:10px;opacity:.9}
+body.tactil #chat #chatLog>*:nth-last-child(n+4){display:none}
+body.tactil #chatIn{font-size:16px}
+body.tactil #top{gap:4px;max-width:54vw;transform:scale(.8);transform-origin:left top}
+body.tactil #bar{transform:translateX(-50%) scale(.72);transform-origin:center bottom;bottom:calc(4px + env(safe-area-inset-bottom,0px))}
+body.tactil #stmBox{right:auto;left:50%;transform:translateX(-50%) scale(.85);bottom:auto;top:calc(42px + env(safe-area-inset-top,0px))}
+body.tactil #domBox{top:calc(40px + env(safe-area-inset-top,0px));transform:translateX(-50%) scale(.74);transform-origin:center top}
+body.tactil #domBox .lane s{display:none}
+body.tactil #domMap{left:auto;right:calc(8px + env(safe-area-inset-right,0px));top:calc(42px + env(safe-area-inset-top,0px));width:176px;height:53px;opacity:.9}
+#shopX{display:none}
+body.tactil #shopX{display:block;position:fixed;right:calc(10px + env(safe-area-inset-right,0px));top:calc(8px + env(safe-area-inset-top,0px));z-index:5;padding:10px 16px;font:700 13px/1 var(--mono);letter-spacing:.1em;color:#fff;background:#b3140f;border:2px solid #fff;border-radius:6px}
+body.tactil #crwBox,body.tactil #ctfBox{transform:translateX(-50%) scale(.8);transform-origin:center top}
+body.tactil #deathBox{transform:scale(.8)}
+body.tactil #center{top:22%}
+body.tactil #menu{overflow-y:auto;-webkit-overflow-scrolling:touch}
+body.tactil #shop,body.tactil #inter,body.tactil #kickMenu,body.tactil #mapMenu{overflow-y:auto;-webkit-overflow-scrolling:touch}
+@media (max-height:480px){body.tactil .interbox{transform:scale(.8);transform-origin:center top}}
+@media (orientation:portrait){body.tactil #giro{display:flex;position:fixed;inset:0;z-index:200;background:#0a0806;color:#fff;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;font-family:var(--mono)}
+  body.tactil #giro b{font-size:26px;letter-spacing:.08em}body.tactil #giro span{font-size:13px;color:#b8ad9a}
+  body.tactil #giro::before{content:"";width:54px;height:92px;border:4px solid #fff;border-radius:10px;animation:giro 1.6s ease-in-out infinite}}
+@keyframes giro{0%,20%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+
+/* la tormenta: el cartel va arriba de las ranuras de armas (antes se pisaban) y es más grande */
+#stmBox{bottom:calc(104px + env(safe-area-inset-bottom,0px));transform:scale(1.25);transform-origin:right bottom;border:1px solid #ff5a2a;box-shadow:0 0 18px rgba(255,60,20,.45)}
+#stmBox #stmC{fill:rgba(255,60,30,.22);stroke-width:2.4}
+body.tactil #killRow{left:auto;right:calc(8px + env(safe-area-inset-right,0px));top:calc(42px + env(safe-area-inset-top,0px));transform:scale(.72);transform-origin:right top}
+body.tactil #killRow~#feed,body.tactil #feed{top:calc(100px + env(safe-area-inset-top,0px))}

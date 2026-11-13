@@ -1,4 +1,6 @@
 <title>CuenkArena</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" as="script" crossorigin>
 <link rel="preload" href="game.js" as="script">
@@ -10,9 +12,26 @@
 </style>
 
 <canvas id="c"></canvas>
-<div id="flash" class="ov"></div><div id="pflash" class="ov"></div><div id="qtint" class="ov"></div><div id="lavatint" class="ov"></div><div id="stmtint" class="ov"></div>
+<div id="flash" class="ov"></div><div id="pflash" class="ov"></div><div id="qtint" class="ov"></div><div id="lavatint" class="ov"></div><div id="stmtint" class="ov"></div><div id="stmnear" class="ov"></div>
 <div id="nvig"></div><div id="ngrain"></div>
 <div id="hud" hidden>
+  <div id="tc" hidden>
+    <div id="tcStick"><i id="tcKnob"></i></div>
+    <button type="button" data-tc="fire" id="tcFire" aria-label="Disparar"></button>
+    <button type="button" data-tc="jump" id="tcJump">SALTO</button>
+    <button type="button" data-tc="duck" id="tcDuck">AGACH</button>
+    <button type="button" data-tc="rel" id="tcRel">REC</button>
+    <button type="button" data-tc="swap" id="tcSwap">ARMA</button>
+    <button type="button" data-tc="aim" id="tcAim" hidden>MIRA</button>
+    <button type="button" data-tc="use" id="tcUse">E</button>
+    <div id="tcTop">
+      <button type="button" data-tc="luz" id="tcLuz" hidden>LUZ</button>
+      <button type="button" data-tc="shop" id="tcShop">TIENDA</button>
+      <button type="button" data-tc="tab" id="tcTab">TABLA</button>
+      <button type="button" data-tc="chat" id="tcChat">CHAT</button>
+      <button type="button" data-tc="menu" id="tcMenu">II</button>
+    </div>
+  </div>
   <div id="fpsBox" hidden></div>
   <div id="xh"></div><div id="hitm"></div><div id="dmgdir"></div>
   <div id="speed">VEL <b id="spdV">0</b> u/s</div>
@@ -109,7 +128,7 @@
   </div>
 </div>
 <div id="wheel" hidden></div>
-<div id="shop" hidden>
+<div id="shop" hidden><button type="button" id="shopX">CERRAR</button>
   <div class="shopbox">
     <aside class="vend" aria-label="El Mercader del Umbral">
       <svg viewBox="0 0 300 440" role="img" aria-label="Un mercader encapuchado con muchos ojos y tentáculos">
@@ -149,6 +168,8 @@
     </section>
   </div>
 </div>
+<button type="button" id="tcResume" hidden>VOLVER AL JUEGO</button>
+<div id="giro"><b>Girá el celular</b><span>CuenkArena se juega en horizontal</span></div>
 <div id="menu" class="go">
   <canvas id="mFx" aria-hidden="true"></canvas>
   <div class="mmoon" aria-hidden="true"></div>

@@ -122,6 +122,32 @@ if (!solo || solo === 'santuario') try {
     return !ve || 'hay línea de visión a través de la barrera rival';
   });
 
+  prueba('la única entrada a la fortaleza es un portón con la barrera caída (ni por arriba del muro)', () => {
+    const { g, d, azul } = nueva(), M = C.MAPS.santuario;
+    // por arriba del muro (y = 30) y por el borde del mapa (z = 48,5, encima del muro perimetral): campo permanente
+    for (const [y, z] of [[30, 0], [19, -20], [14, 48.5], [14, -48.5], [60, 30]]) {
+      let o = C.setPasa(1); const h = C.raycast(g.W, 100, y, z, 1, 0, 0, 40); C.setPasa(o);
+      if (!h || !h.b.bar || h.t > 12.1) return 'un rival pasa por arriba del muro en y = ' + y + ', z = ' + z;
+      o = C.setPasa(0); const libre = C.raycast(g.W, 100, y, z, 1, 0, 0, 40); C.setPasa(o);
+      if (libre && libre.b.bar) return 'el campo de arriba frena al defensor';
+    }
+    azul.s = { x: 111, y: 20, z: 0, vx: 12, vy: 9, vz: 0, on: false, tm: 1 };
+    for (let k = 0; k < 80; k++) C.pmove(g.W, azul.s, { wx: 1, wz: 0 }, dt);
+    if (azul.s.x > 112) return 'un rival en el aire a 20 m cruzó el muro';
+    // tirar todas las barreras no apaga el campo de arriba
+    d.gens.forEach((q, i) => { if (q.team === 0) while (q.hp > 0) g.domHit(azul, 'g', i, 200, false); });
+    const o = C.setPasa(1), h = C.raycast(g.W, 100, 30, 0, 1, 0, 0, 40), puerta = C.raycast(g.W, 100, 2, 0, 1, 0, 0, 16); C.setPasa(o);
+    if (!h || !h.b.bar) return 'con las barreras caídas se abrió también el campo de arriba';
+    if (puerta) return 'con la barrera del centro caída el portón sigue cerrado';
+    // cada barrera tiene sus 2 generadores pegados a sus dos extremos, del lado de afuera
+    for (const [i, b] of M.bars.entries()) {
+      const gs = M.gens.filter(q => q.team === b.team && q.lane === b.lane), lados = gs.map(q => Math.sign(q.z - b.z));
+      if (gs.length !== 2 || lados[0] === lados[1]) return 'la barrera ' + (i + 1) + ' no tiene un generador en cada extremo';
+      for (const q of gs) if (Math.abs(Math.abs(q.z - b.z) - b.w / 2) > 3 || Math.abs(q.x) >= Math.abs(b.x)) return 'un generador de la barrera ' + (i + 1) + ' no está pegado a su extremo, del lado atacante';
+    }
+    return true;
+  });
+
   prueba('ni disparos ni explosiones dañan la barrera: solo los generadores', () => {
     const { g, d, azul } = nueva();
     g.domBlast(azul, 111.5, 2, 0, 4.5, 60, .75, null);   // explosión pegada a la barrera, lejos de los generadores

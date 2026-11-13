@@ -34,7 +34,7 @@ $('mLimit').addEventListener('click',e=>{const v=e.target.dataset&&e.target.data
 $('mLimitN').addEventListener('change',e=>setLimit(e.target.value,false));
 $('pLimit').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v)setLimit(v,true);});
 $('pLimitN').addEventListener('change',e=>setLimit(e.target.value,true));
-function resumeGame(){paused=false;hideMenu();if(document.fullscreenElement&&navigator.keyboard&&navigator.keyboard.lock)navigator.keyboard.lock(LOCK_KEYS).catch(()=>{});lockPointer();setTimeout(()=>{if(inGame&&$('menu').hidden&&document.pointerLockElement!==canvas)announce('','Hacé click para seguir jugando');},250);}
+function resumeGame(){paused=false;hideMenu();if(TACTIL){tcLandscape();return;}if(document.fullscreenElement&&navigator.keyboard&&navigator.keyboard.lock)navigator.keyboard.lock(LOCK_KEYS).catch(()=>{});lockPointer();setTimeout(()=>{if(inGame&&$('menu').hidden&&document.pointerLockElement!==canvas)announce('','Hacé click para seguir jugando');},250);}
 document.addEventListener('pointerlockerror',()=>{if(inGame&&$('menu').hidden)announce('','Hacé click para seguir jugando');});
 // asistente de inicio: (solo práctica) cantidad de bots → modo → mapa. Online: modo → mapa (solo si la sala está vacía)
 let pickOnline=true;

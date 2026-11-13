@@ -1,4 +1,6 @@
 <title>CuenkArena</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" as="script" crossorigin>
 <link rel="preload" href="game.js" as="script">
@@ -1067,7 +1069,8 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
    El mapita trabaja en coordenadas del mundo: el viewBox lo pone el cliente con los
    límites del mapa, así el círculo y el puntito del jugador van derecho sin convertir nada.
    ===================================================================== */
-#stmtint{background:radial-gradient(ellipse at center,rgba(255,40,20,0) 28%,rgba(190,12,8,.62));opacity:0}
+#stmtint{background:radial-gradient(ellipse at center,rgba(255,40,20,.12) 18%,rgba(190,12,8,.78));opacity:0}
+#stmnear{background:radial-gradient(ellipse at center,rgba(255,170,40,0) 45%,rgba(255,120,20,.6));opacity:0}
 #stmBox{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));
   display:flex;align-items:center;gap:9px;padding:6px 12px 7px 8px;
   background:linear-gradient(135deg,transparent 9px,rgba(12,20,17,.84) 9.5px);
@@ -1104,12 +1107,82 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 #domMap{position:fixed;left:12px;top:40%;width:320px;height:96px;border:1px solid #000;box-shadow:0 3px 0 #000;pointer-events:none;image-rendering:pixelated}
 @media (min-width:1700px){#domBox{top:calc(8px + env(safe-area-inset-top,0px))}}
 @media (max-width:900px){#domBox .dside{min-width:150px}#domBox .lane s{display:none}#domMap{width:200px;height:60px;top:auto;bottom:calc(150px + env(safe-area-inset-bottom,0px))}}
+
+/* ---------- Celulares y tablets: controles táctiles (15b-tactil.js) ---------- */
+#tc{position:fixed;inset:0;z-index:3;pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+#tc button{position:absolute;display:grid;place-items:center;border:2px solid rgba(255,255,255,.55);background:rgba(10,10,14,.38);color:#fff;font:700 11px/1 var(--mono);letter-spacing:.06em;border-radius:50%;padding:0;touch-action:none;-webkit-user-select:none;user-select:none}
+#tc button.ap{background:rgba(255,180,60,.55);border-color:#fff;transform:scale(.94)}
+#tc button.on{background:rgba(60,200,255,.5)}
+#tcFire{width:88px;height:88px;right:calc(22px + env(safe-area-inset-right,0px));bottom:calc(64px + env(safe-area-inset-bottom,0px));background:rgba(200,30,20,.42)!important;border-width:3px!important}
+#tcFire::after{content:"";width:34px;height:34px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 6px rgba(255,255,255,.25)}
+#tcJump{width:64px;height:64px;right:calc(120px + env(safe-area-inset-right,0px));bottom:calc(26px + env(safe-area-inset-bottom,0px))}
+#tcDuck{width:56px;height:56px;right:calc(194px + env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+#tcRel{width:52px;height:52px;right:calc(124px + env(safe-area-inset-right,0px));bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+#tcSwap{width:56px;height:56px;right:calc(26px + env(safe-area-inset-right,0px));bottom:calc(164px + env(safe-area-inset-bottom,0px))}
+#tcAim{width:52px;height:52px;right:calc(94px + env(safe-area-inset-right,0px));bottom:calc(168px + env(safe-area-inset-bottom,0px))}
+#tcUse{width:46px;height:46px;right:calc(188px + env(safe-area-inset-right,0px));bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+#tcTop{position:absolute;right:calc(8px + env(safe-area-inset-right,0px));top:calc(6px + env(safe-area-inset-top,0px));display:flex;gap:6px}
+#tcTop button{position:static;border-radius:6px;height:30px;padding:0 9px;font-size:10px;border-width:1px}
+#tcStick{position:absolute;width:116px;height:116px;margin:-58px 0 0 -58px;border-radius:50%;border:2px solid rgba(255,255,255,.4);background:rgba(10,10,14,.25);left:calc(96px + env(safe-area-inset-left,0px));top:auto;bottom:calc(40px + env(safe-area-inset-bottom,0px));pointer-events:none;opacity:.45}
+#tcStick.on{opacity:1;bottom:auto}
+#tcKnob{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;background:rgba(255,255,255,.55);border:2px solid #fff}
+#tcResume{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:70;padding:12px 26px;font:700 15px/1 var(--mono);letter-spacing:.12em;color:#fff;background:#b3140f;border:2px solid #fff;border-radius:6px;box-shadow:0 4px 0 #000}
+#giro{display:none}
+/* con controles táctiles el HUD se corre de donde van los dedos y deja pasar los toques */
+body.tactil #hud>*:not(#tc):not(#chat):not(#cards){pointer-events:none}
+body.tactil #cards,body.tactil #cards .ccard{pointer-events:auto}
+body.tactil #slots,body.tactil #shopHint,body.tactil #kickHint,body.tactil #mapHint,body.tactil #speed,body.tactil #tPingBox+.stat{display:none!important}
+body.tactil #feed{top:calc(102px + env(safe-area-inset-top,0px));font-size:11px;max-width:36vw}
+body.tactil #chat{bottom:auto;top:calc(56px + env(safe-area-inset-top,0px));width:min(230px,27vw);font-size:10px;opacity:.9}
+body.tactil #chat #chatLog>*:nth-last-child(n+4){display:none}
+body.tactil #chatIn{font-size:16px}
+body.tactil #top{gap:4px;max-width:54vw;transform:scale(.8);transform-origin:left top}
+body.tactil #bar{transform:translateX(-50%) scale(.72);transform-origin:center bottom;bottom:calc(4px + env(safe-area-inset-bottom,0px))}
+body.tactil #stmBox{right:auto;left:50%;transform:translateX(-50%) scale(.85);bottom:auto;top:calc(42px + env(safe-area-inset-top,0px))}
+body.tactil #domBox{top:calc(40px + env(safe-area-inset-top,0px));transform:translateX(-50%) scale(.74);transform-origin:center top}
+body.tactil #domBox .lane s{display:none}
+body.tactil #domMap{left:auto;right:calc(8px + env(safe-area-inset-right,0px));top:calc(42px + env(safe-area-inset-top,0px));width:176px;height:53px;opacity:.9}
+#shopX{display:none}
+body.tactil #shopX{display:block;position:fixed;right:calc(10px + env(safe-area-inset-right,0px));top:calc(8px + env(safe-area-inset-top,0px));z-index:5;padding:10px 16px;font:700 13px/1 var(--mono);letter-spacing:.1em;color:#fff;background:#b3140f;border:2px solid #fff;border-radius:6px}
+body.tactil #crwBox,body.tactil #ctfBox{transform:translateX(-50%) scale(.8);transform-origin:center top}
+body.tactil #deathBox{transform:scale(.8)}
+body.tactil #center{top:22%}
+body.tactil #menu{overflow-y:auto;-webkit-overflow-scrolling:touch}
+body.tactil #shop,body.tactil #inter,body.tactil #kickMenu,body.tactil #mapMenu{overflow-y:auto;-webkit-overflow-scrolling:touch}
+@media (max-height:480px){body.tactil .interbox{transform:scale(.8);transform-origin:center top}}
+@media (orientation:portrait){body.tactil #giro{display:flex;position:fixed;inset:0;z-index:200;background:#0a0806;color:#fff;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;font-family:var(--mono)}
+  body.tactil #giro b{font-size:26px;letter-spacing:.08em}body.tactil #giro span{font-size:13px;color:#b8ad9a}
+  body.tactil #giro::before{content:"";width:54px;height:92px;border:4px solid #fff;border-radius:10px;animation:giro 1.6s ease-in-out infinite}}
+@keyframes giro{0%,20%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+
+/* la tormenta: el cartel va arriba de las ranuras de armas (antes se pisaban) y es más grande */
+#stmBox{bottom:calc(104px + env(safe-area-inset-bottom,0px));transform:scale(1.25);transform-origin:right bottom;border:1px solid #ff5a2a;box-shadow:0 0 18px rgba(255,60,20,.45)}
+#stmBox #stmC{fill:rgba(255,60,30,.22);stroke-width:2.4}
+body.tactil #killRow{left:auto;right:calc(8px + env(safe-area-inset-right,0px));top:calc(42px + env(safe-area-inset-top,0px));transform:scale(.72);transform-origin:right top}
+body.tactil #killRow~#feed,body.tactil #feed{top:calc(100px + env(safe-area-inset-top,0px))}
 </style>
 
 <canvas id="c"></canvas>
-<div id="flash" class="ov"></div><div id="pflash" class="ov"></div><div id="qtint" class="ov"></div><div id="lavatint" class="ov"></div><div id="stmtint" class="ov"></div>
+<div id="flash" class="ov"></div><div id="pflash" class="ov"></div><div id="qtint" class="ov"></div><div id="lavatint" class="ov"></div><div id="stmtint" class="ov"></div><div id="stmnear" class="ov"></div>
 <div id="nvig"></div><div id="ngrain"></div>
 <div id="hud" hidden>
+  <div id="tc" hidden>
+    <div id="tcStick"><i id="tcKnob"></i></div>
+    <button type="button" data-tc="fire" id="tcFire" aria-label="Disparar"></button>
+    <button type="button" data-tc="jump" id="tcJump">SALTO</button>
+    <button type="button" data-tc="duck" id="tcDuck">AGACH</button>
+    <button type="button" data-tc="rel" id="tcRel">REC</button>
+    <button type="button" data-tc="swap" id="tcSwap">ARMA</button>
+    <button type="button" data-tc="aim" id="tcAim" hidden>MIRA</button>
+    <button type="button" data-tc="use" id="tcUse">E</button>
+    <div id="tcTop">
+      <button type="button" data-tc="luz" id="tcLuz" hidden>LUZ</button>
+      <button type="button" data-tc="shop" id="tcShop">TIENDA</button>
+      <button type="button" data-tc="tab" id="tcTab">TABLA</button>
+      <button type="button" data-tc="chat" id="tcChat">CHAT</button>
+      <button type="button" data-tc="menu" id="tcMenu">II</button>
+    </div>
+  </div>
   <div id="fpsBox" hidden></div>
   <div id="xh"></div><div id="hitm"></div><div id="dmgdir"></div>
   <div id="speed">VEL <b id="spdV">0</b> u/s</div>
@@ -1206,7 +1279,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
   </div>
 </div>
 <div id="wheel" hidden></div>
-<div id="shop" hidden>
+<div id="shop" hidden><button type="button" id="shopX">CERRAR</button>
   <div class="shopbox">
     <aside class="vend" aria-label="El Mercader del Umbral">
       <svg viewBox="0 0 300 440" role="img" aria-label="Un mercader encapuchado con muchos ojos y tentáculos">
@@ -1246,6 +1319,8 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
     </section>
   </div>
 </div>
+<button type="button" id="tcResume" hidden>VOLVER AL JUEGO</button>
+<div id="giro"><b>Girá el celular</b><span>CuenkArena se juega en horizontal</span></div>
 <div id="menu" class="go">
   <canvas id="mFx" aria-hidden="true"></canvas>
   <div class="mmoon" aria-hidden="true"></div>
@@ -1481,6 +1556,9 @@ const GG=C.GG,TEAMS=C.TEAMS;
 
 /* =================== AJUSTES =================== */
 const S={view:'fp',shoulder:1,tpd:1,sens:1,sensZ:1,fov:95,vol:.5,music:.45,invY:false,hop:true,name:'',skin:{c:C.COLORS[0],v:'#2be6ff',a:0},bots:5,skill:1,fl:20,map:'represa',q:1,merc:true,mred:false,mode:'arena',tdmLimit:50,fs:true,showImg:true,mira:{s:'cruz',c:'#ffffff',z:1}};
+// pantalla táctil (celular o tablet): controles en pantalla (15b-tactil.js) y, la primera vez, calidad Liviana
+const TACTIL=(()=>{try{return matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>0&&/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);}catch(e){return false;}})();
+try{if(TACTIL&&!localStorage.getItem('cuenk_settings')){S.q=0;S.bots=4;}}catch(e){}
 try{const saved=JSON.parse(localStorage.getItem('cuenk_settings')||'{}');if(saved.color&&!saved.skin)saved.skin={c:saved.color,v:'#ffffff',a:0};Object.assign(S,saved);}catch(e){}
 if(S.map==='sagrado'||S.map==='salvaje')S.map='panymanteca';
 // mapa del editor: se juega solo en esta pestaña; si el mapa guardado ya no existe se vuelve a La Represa
@@ -3927,24 +4005,42 @@ function updCrown(dt){
    acá se calcula todo con el reloj del servidor y las mismas cuentas del núcleo (C.stormR y
    C.stormDmg), así cliente y servidor nunca se van a discutir dónde está el borde.
    i = [arranque, centro x, centro z, radio inicial, radio final, achique, daño inicial, daño final] */
-const STM={i:null,muro:null,geos:[],mats:[],av:0};
-const SMOD={ALTO:80,SEG:64,OP:.17,OP2:.3};   // alto del muro, segmentos del círculo y opacidades
+const STM={i:null,muro:null,geos:[],mats:[],av:0,tex:null};
+const SMOD={ALTO:90,SEG:72,OP:.62,OP2:.2,BAJO:-14};   // alto del muro, segmentos del círculo, opacidad del muro y del resplandor, y desde dónde arranca
 
+// textura del muro: cortina rojo oscuro con vetas y rayos claros (se repite alrededor y corre hacia arriba)
+function stormTex(){
+  if(STM.tex)return STM.tex;
+  const t=new THREE.CanvasTexture(cv(256,256,(g)=>{
+    const gr=g.createLinearGradient(0,0,0,256);gr.addColorStop(0,'#3a0508');gr.addColorStop(.5,'#8a0c0c');gr.addColorStop(1,'#3a0508');g.fillStyle=gr;g.fillRect(0,0,256,256);
+    for(let k=0;k<90;k++){g.fillStyle='rgba('+(160+rnd()*95|0)+','+(20+rnd()*60|0)+',20,'+(.12+rnd()*.3)+')';const x=rnd()*256,w=2+rnd()*10;g.fillRect(x,0,w,256);}
+    for(let k=0;k<7;k++){g.strokeStyle='rgba(255,'+(190+rnd()*60|0)+',150,.95)';g.lineWidth=1.5+rnd()*2;g.beginPath();let x=rnd()*256;g.moveTo(x,0);for(let y=0;y<=256;y+=16){x+=(rnd()-.5)*30;g.lineTo(x,y);}g.stroke();}
+  }));
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;return STM.tex=t;
+}
 function stormEnsure(){
   if(STM.muro)return;
   const g=new THREE.CylinderGeometry(1,1,SMOD.ALTO,SMOD.SEG,1,true);
-  const m=new THREE.MeshBasicMaterial({color:0xff2a1a,transparent:true,opacity:SMOD.OP,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
-  STM.geos=[g];STM.mats=[m];
-  STM.muro=new THREE.Mesh(g,m);STM.muro.visible=false;scene.add(STM.muro);
+  // el muro de verdad: opaco a medias y SIN mezcla aditiva (con aditiva contra el cielo claro casi no se veía)
+  const m=new THREE.MeshBasicMaterial({map:stormTex(),transparent:true,opacity:SMOD.OP,depthWrite:false,side:THREE.DoubleSide,fog:false});
+  const g2=new THREE.CylinderGeometry(1,1,SMOD.ALTO,SMOD.SEG,1,true);
+  const m2=new THREE.MeshBasicMaterial({color:0xff3a14,transparent:true,opacity:SMOD.OP2,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,side:THREE.DoubleSide,fog:false});   // sin prueba de profundidad: el resplandor se ve A TRAVÉS de las paredes (en los mapas cerrados el muro quedaba tapado)
+  // línea brillante en el piso: se ve dónde está el borde aunque el muro quede detrás de una pared
+  const g3=new THREE.RingGeometry(.988,1.012,128);g3.rotateX(-Math.PI/2);
+  const m3=new THREE.MeshBasicMaterial({color:0xffd24a,transparent:true,opacity:.95,side:THREE.DoubleSide,fog:false,depthWrite:false});
+  STM.geos=[g,g2,g3];STM.mats=[m,m2,m3];
+  STM.muro=new THREE.Mesh(g,m);STM.muro.renderOrder=2;STM.muro.visible=false;scene.add(STM.muro);
+  STM.glow=new THREE.Mesh(g2,m2);STM.glow.renderOrder=3;STM.muro.add(STM.glow);
+  STM.aro=new THREE.Mesh(g3,m3);STM.aro.renderOrder=3;STM.aro.visible=false;scene.add(STM.aro);
   // el mapita del HUD trabaja directo en coordenadas del mundo: el viewBox son los límites del mapa
   const b=W&&W.bounds?W.bounds:{x0:-50,x1:50,z0:-50,z1:50};
   const sv=$('stmSvg');if(sv)sv.setAttribute('viewBox',b.x0+' '+b.z0+' '+(b.x1-b.x0)+' '+(b.z1-b.z0));
 }
 function clearStorm(){
   STM.i=null;STM.av=0;
-  if(STM.muro){scene.remove(STM.muro);STM.geos.forEach(o=>o.dispose());STM.mats.forEach(o=>o.dispose());STM.geos=[];STM.mats=[];STM.muro=null;}
+  if(STM.muro){scene.remove(STM.muro);if(STM.aro)scene.remove(STM.aro);STM.aro=null;STM.geos.forEach(o=>o.dispose());STM.mats.forEach(o=>o.dispose());STM.geos=[];STM.mats=[];STM.muro=null;}
   const b=$('stmBox');if(b)b.hidden=true;
-  setOp('stmtint',0);
+  setOp('stmtint',0);setOp('stmnear',0);
 }
 function stormSet(i){
   if(!i){clearStorm();return;}
@@ -3976,16 +4072,22 @@ function updStorm(dt){
   }
   stormEnsure();
   const i=STM.i,ahora=serverNow(),t=ahora-i[0],activa=t>=0,r=C.stormR(i,ahora);
-  // --- el muro ---
-  STM.muro.visible=activa;
-  if(activa){
-    STM.muro.position.set(i[1],SMOD.ALTO/2-14,i[2]);
-    STM.muro.scale.set(r,1,r);
-    STM.mats[0].opacity=SMOD.OP+Math.sin(G.time*2.2)*.04;
-  }
-  // --- viñeta roja cuando estás afuera ---
-  const d=Math.hypot(me.s.x-i[1],me.s.z-i[2]),afuera=activa&&me.alive&&d>r;
-  setOp('stmtint',afuera?.42+Math.sin(G.time*5)*.12:0);
+  // --- el muro: ya se ve durante el aviso (quieto y más tenue) y después se cierra ---
+  const d=Math.hypot(me.s.x-i[1],me.s.z-i[2]),afuera=activa&&me.alive&&d>r,borde=r-d;   // borde: metros que te faltan para tocar el muro (negativo = afuera)
+  STM.muro.visible=STM.aro.visible=true;
+  STM.muro.position.set(i[1],SMOD.ALTO/2+SMOD.BAJO,i[2]);STM.muro.scale.set(r,1,r);
+  const tx=STM.tex;tx.repeat.set(Math.max(6,Math.round(r*6.2832/26)),3);tx.offset.y=(G.time*.22)%1;tx.offset.x=(G.time*.012)%1;
+  const lat=.5+.5*Math.sin(G.time*(activa?5:9));
+  STM.mats[0].opacity=activa?SMOD.OP+lat*.1:.3+lat*.18;
+  // el resplandor atraviesa paredes: apenas se nota lejos del borde y se enciende cuando el muro se te viene encima
+  const cercaK=Math.max(0,Math.min(1,1-borde/30));
+  STM.mats[1].opacity=(activa?.04+SMOD.OP2*cercaK:.04)*(.7+lat*.5)+(activa&&Math.random()<.03?.12:0);   // y cada tanto un relámpago
+  STM.aro.position.set(i[1],camera.position.y-1.45,i[2]);STM.aro.scale.set(r,1,r);STM.mats[2].opacity=.6+lat*.4;
+  // chispas subiendo por el muro cerca tuyo
+  if(activa&&Math.abs(borde)<45){const a0=Math.atan2(me.s.z-i[2],me.s.x-i[1]);for(let k=0;k<2;k++){const a=a0+(Math.random()-.5)*Math.min(1.2,50/Math.max(r,1));emit(sparks,i[1]+Math.cos(a)*r,camera.position.y-1.4+Math.random()*7,i[2]+Math.sin(a)*r,R(1.5),4+Math.random()*7,R(1.5),.8,1,.35+Math.random()*.4,.12,-2);}}
+  // --- viñeta roja: fuerte cuando estás afuera, y un aviso suave cuando el muro está por alcanzarte ---
+  setOp('stmtint',afuera?.55+Math.sin(G.time*5)*.15:0);
+  setOp('stmnear',activa&&me.alive&&!afuera&&borde<9?(1-borde/9)*.55*(.7+.3*lat):0);
   // --- el HUD: mapita con el círculo y el contador ---
   if(box.hidden)box.hidden=false;
   box.classList.toggle('afuera',afuera);
@@ -3999,10 +4101,10 @@ function updStorm(dt){
     setTxt('stmSub','en '+Math.max(0,Math.ceil(-t))+' s');
   }else if(t<i[5]){
     setTxt('stmWho',afuera?'¡SALÍ DE LA TORMENTA!':'ZONA SEGURA');
-    setTxt('stmSub',Math.round(r)+' m · se cierra en '+Math.max(0,Math.ceil(i[5]-t))+' s'+(afuera?' · '+Math.round(C.stormDmg(i,ahora))+' HP/s':''));
+    setTxt('stmSub',(afuera?'volvé '+Math.ceil(-borde)+' m · '+Math.round(C.stormDmg(i,ahora))+' HP/s':'el borde está a '+Math.max(0,Math.floor(borde))+' m')+' · se cierra en '+Math.max(0,Math.ceil(i[5]-t))+' s');
   }else{
     setTxt('stmWho',afuera?'¡SALÍ DE LA TORMENTA!':'ZONA FINAL');
-    setTxt('stmSub',Math.round(r)+' m'+(afuera?' · '+Math.round(C.stormDmg(i,ahora))+' HP/s':''));
+    setTxt('stmSub',afuera?'volvé '+Math.ceil(-borde)+' m · '+Math.round(C.stormDmg(i,ahora))+' HP/s':'el borde está a '+Math.max(0,Math.floor(borde))+' m');
   }
 }
 /* ---------- Captura el dominio: bosses, generadores, barreras, avisos, HUD y minimapa ----------
@@ -4418,7 +4520,7 @@ function startGame(isOnline,mode,auto){
       showMenu();toast(wasOk?'Se cortó la conexión con el servidor':'No se pudo conectar al servidor');});
   }else{net=new LocalNet(mode);join();}
   inGame=true;paused=false;$('bLeave').hidden=false;$('tPingBox').hidden=!isOnline;
-  hideMenu();lockPointer();
+  hideMenu();if(!TACTIL)lockPointer();else tcLandscape();
 }
 function leaveGame(){
   if(net){net.close();net=null;}renderVote(null);C.setPasa(-1);
@@ -4725,7 +4827,7 @@ function showDamage(n,kill,head){
   DMG.timer=setTimeout(()=>{t.className='';void t.offsetWidth;t.innerHTML='TOTAL <b>'+DMG.sum+'</b>'+(kill?' · ELIMINADO':'');t.className='done';DMG.sum=0;},kill?150:900);
 }
 function sysChat(t){chatLine(esc(t),'sys');}
-function announce(t,s){const a=$('cMsg'),b=$('cSub');a.textContent=t;b.textContent=s||'';[a,b].forEach(e=>{e.classList.remove('show');void e.offsetWidth;e.classList.add('show');});}
+function announce(t,s){if(TACTIL&&s)s=s.replace(/Hacé click para (jugar|seguir jugando|volver al juego)/,'');const a=$('cMsg'),b=$('cSub');a.textContent=t;b.textContent=s||'';[a,b].forEach(e=>{e.classList.remove('show');void e.offsetWidth;e.classList.add('show');});}
 
 /* =================== PROYECTILES =================== */
 const rocketGeo=new THREE.CylinderGeometry(.06,.08,.5,8);rocketGeo.rotateX(Math.PI/2);
@@ -5689,6 +5791,101 @@ function openMapMenu(){
 function closeMapMenu(silent){if(!mapMenuOpen())return;$('mapMenu').hidden=true;if(!silent&&inGame){lockPointer();SFX.ui();}}
 function mapPick(id){if(!net)return;net.send({t:'mapchg',m:id});closeMapMenu(true);SFX.ui();if(inGame)announce('','Hacé click para volver al juego');}
 $('mapMenu').addEventListener('mousedown',e=>{if(e.target===$('mapMenu'))closeMapMenu(true);});
+/* =================== CONTROLES TÁCTILES (celulares y tablets) ===================
+   Se prenden solos en pantallas táctiles (TACTIL, ver 00-inicio-ajustes.js) o al primer toque.
+   Mitad izquierda: palanca flotante para moverse (analógica). Mitad derecha: arrastrar para mirar.
+   Botones: disparar (mantener; arrastrando también se apunta), saltar, agacharse/deslizar, recargar,
+   cambiar de arma, mira, agarrar (E), tienda, tabla, chat y pausa. No hace falta bloquear el mouse.
+   Todo termina en las mismas variables que usa el teclado (keys, mouseDown, me.yaw…): el juego no distingue. */
+const TC={on:false,f:0,s:0,stick:null,look:new Map(),btn:new Map(),SENS:2.3,R:58};
+function tcOn(){
+  if(TC.on)return;TC.on=true;document.body.classList.add('tactil');
+  $('tc').hidden=false;tcSync();
+}
+function tcSync(){
+  if(!TC.on)return;
+  const W_=WEAPONS[me.w]||{};
+  $('tcAim').hidden=!W_.scope;$('tcShop').hidden=!(C.MODES[MODE]&&C.MODES[MODE].shop);$('tcLuz').hidden=!NIGHT;
+  $('tcAim').classList.toggle('on',!!me.scope);
+  $('tcResume').hidden=!(inGame&&!$('menu').hidden);
+}
+const tcFree=()=>inGame&&$('menu').hidden&&$('shop').hidden&&!chatOpen&&$('inter').hidden&&!kickOpen()&&!mapMenuOpen();
+// qué hace cada botón al apretar (d = true) y al soltar
+const TCB={
+  fire:d=>{mouseDown=d&&me.alive;if(d&&!me.alive)spClick();},
+  jump:d=>{keys.Space=d;if(d&&!me.alive)spSpace();},
+  duck:d=>{keys.KeyC=d;},
+  rel:d=>{if(d)startReload(me.w);},
+  swap:d=>{if(d){cycleWeapon(1);tcSync();}},
+  aim:d=>{if(d&&me.alive&&WEAPONS[me.w].scope){me.scope=!me.scope;me.scopeHold=0;SFX.ui();tcSync();}},
+  use:d=>{if(d)wheelKey(true,false);else wheelKey(false);},
+  shop:d=>{if(d)openShop();},
+  tab:d=>{if(d){const b=$('board');b.hidden=!b.hidden;if(!b.hidden)renderBoard();}},
+  chat:d=>{if(d)openChat();},
+  luz:d=>{if(d)nightToggle();},
+  menu:d=>{if(d)openPause();}
+};
+function tcStickSet(t){
+  const st=TC.stick,dx=t.clientX-st.x,dy=t.clientY-st.y,l=Math.hypot(dx,dy),k=l>TC.R?TC.R/l:1;
+  const nx=dx*k/TC.R,ny=dy*k/TC.R,dead=.14,m=Math.hypot(nx,ny);
+  TC.s=m<dead?0:nx;TC.f=m<dead?0:-ny;
+  $('tcKnob').style.transform='translate('+(dx*k)+'px,'+(dy*k)+'px)';
+}
+function tcLook(dx,dy){
+  if(!me.alive){spLook(dx*1.4,dy*1.4);return;}
+  const sc=me.scope&&WEAPONS[me.w].scope?Math.tan((WEAPONS[me.w].zoom||22)*Math.PI/360)/Math.tan(S.fov*Math.PI/360)*(S.sensZ>0?S.sensZ:1):1;
+  const k=.0022*S.sens*TC.SENS*sc;me.yaw-=dx*k;me.pitch=Math.max(-1.55,Math.min(1.55,me.pitch-dy*k*(S.invY?-1:1)));
+}
+function tcStart(e){
+  tcOn();
+  if(!inGame)return;
+  e.preventDefault();
+  for(const t of e.changedTouches){
+    const el=document.elementFromPoint(t.clientX,t.clientY),b=el&&el.closest&&el.closest('[data-tc]'),id=t.identifier;
+    if(b){const k=b.dataset.tc;TC.btn.set(id,{k,b,x:t.clientX,y:t.clientY});b.classList.add('ap');if(k==='menu'||tcFree()||k==='tab')TCB[k](true);if(k==='fire')TC.look.set(id,{x:t.clientX,y:t.clientY});continue;}
+    if(!tcFree())continue;
+    if(t.clientX<innerWidth*.42&&!TC.stick){
+      TC.stick={id,x:t.clientX,y:t.clientY};const p=$('tcStick');p.style.left=t.clientX+'px';p.style.top=t.clientY+'px';p.classList.add('on');tcStickSet(t);
+    }else{TC.look.set(id,{x:t.clientX,y:t.clientY,t0:performance.now(),mv:0});}
+  }
+}
+function tcMove(e){
+  if(!inGame)return;
+  e.preventDefault();
+  for(const t of e.changedTouches){
+    const id=t.identifier;
+    if(TC.stick&&TC.stick.id===id){tcStickSet(t);continue;}
+    const l=TC.look.get(id);
+    if(l){const dx=t.clientX-l.x,dy=t.clientY-l.y;l.x=t.clientX;l.y=t.clientY;l.mv=(l.mv||0)+Math.abs(dx)+Math.abs(dy);if(tcFree())tcLook(dx,dy);}
+  }
+}
+function tcEnd(e){
+  for(const t of e.changedTouches){
+    const id=t.identifier;
+    if(TC.stick&&TC.stick.id===id){TC.stick=null;TC.f=TC.s=0;$('tcStick').classList.remove('on');$('tcKnob').style.transform='';}
+    const b=TC.btn.get(id);if(b){TC.btn.delete(id);b.b.classList.remove('ap');TCB[b.k](false);}
+    const l=TC.look.get(id);
+    if(l){TC.look.delete(id);if(!b&&!me.alive&&inGame&&l.mv<12&&performance.now()-l.t0<350)spClick();}   // muerto: un toque corto pasa a mirar a otro jugador
+  }
+  if(inGame)e.preventDefault();
+}
+{
+  const L=$('tc');
+  L.addEventListener('touchstart',tcStart,{passive:false});L.addEventListener('touchmove',tcMove,{passive:false});
+  L.addEventListener('touchend',tcEnd,{passive:false});L.addEventListener('touchcancel',tcEnd,{passive:false});
+  L.addEventListener('contextmenu',e=>e.preventDefault());
+  // el primer toque en cualquier lado prende los controles (por si el navegador no avisó que la pantalla es táctil)
+  addEventListener('touchstart',()=>tcOn(),{passive:true,once:true});
+  if(TACTIL)tcOn();
+  // en la pausa y fuera de la partida el menú es HTML normal; este botón vuelve al juego sin teclado
+  $('tcResume').addEventListener('click',()=>{resumeGame();tcSync();});
+  $('shopX').addEventListener('click',()=>closeShop());
+  // las cartas de mejora se eligen tocándolas
+  $('cardsBody').addEventListener('click',e=>{const c=e.target.closest('.ccard');if(c&&cardsOpen())pickCard(+c.dataset.i);});
+  // pantalla completa y apaisado al entrar a la partida (donde el navegador lo permite)
+  setInterval(()=>{if(TC.on)tcSync();},400);
+}
+function tcLandscape(){if(!TC.on)return;try{if(screen.orientation&&screen.orientation.lock)screen.orientation.lock('landscape').catch(()=>{});}catch(e){}}
 /* =================== SIMULACIÓN LOCAL =================== */
 // impulso por matar deslizándote: velocidad que se suma, tope, multiplicador de la velocidad máxima y duración (s)
 const KB={ADD:4,MAX:18,FAST:1.3,T:2.5};
@@ -5713,7 +5910,8 @@ function updMe(dt){
     return;}
   let f=0,s=0;
   const free=!chatOpen&&$('shop').hidden;
-  if(free){if(keys.KeyW||keys.ArrowUp)f+=1;if(keys.KeyS||keys.ArrowDown)f-=1;if(keys.KeyD)s+=1;if(keys.KeyA)s-=1;if(keys.ArrowLeft)me.yaw+=dt*2.4;if(keys.ArrowRight)me.yaw-=dt*2.4;}
+  if(free){if(keys.KeyW||keys.ArrowUp)f+=1;if(keys.KeyS||keys.ArrowDown)f-=1;if(keys.KeyD)s+=1;if(keys.KeyA)s-=1;if(keys.ArrowLeft)me.yaw+=dt*2.4;if(keys.ArrowRight)me.yaw-=dt*2.4;
+    if(TC.on&&(TC.f||TC.s)){f=Math.max(-1,Math.min(1,f+TC.f));s=Math.max(-1,Math.min(1,s+TC.s));}}   // palanca táctil (analógica)
   const sy=Math.sin(me.yaw),cyw=Math.cos(me.yaw);
   const wx=-sy*f+cyw*s,wz=-cyw*f-sy*s;
   const jumpKey=free&&!!keys.Space;
@@ -6894,7 +7092,7 @@ $('mLimit').addEventListener('click',e=>{const v=e.target.dataset&&e.target.data
 $('mLimitN').addEventListener('change',e=>setLimit(e.target.value,false));
 $('pLimit').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v)setLimit(v,true);});
 $('pLimitN').addEventListener('change',e=>setLimit(e.target.value,true));
-function resumeGame(){paused=false;hideMenu();if(document.fullscreenElement&&navigator.keyboard&&navigator.keyboard.lock)navigator.keyboard.lock(LOCK_KEYS).catch(()=>{});lockPointer();setTimeout(()=>{if(inGame&&$('menu').hidden&&document.pointerLockElement!==canvas)announce('','Hacé click para seguir jugando');},250);}
+function resumeGame(){paused=false;hideMenu();if(TACTIL){tcLandscape();return;}if(document.fullscreenElement&&navigator.keyboard&&navigator.keyboard.lock)navigator.keyboard.lock(LOCK_KEYS).catch(()=>{});lockPointer();setTimeout(()=>{if(inGame&&$('menu').hidden&&document.pointerLockElement!==canvas)announce('','Hacé click para seguir jugando');},250);}
 document.addEventListener('pointerlockerror',()=>{if(inGame&&$('menu').hidden)announce('','Hacé click para seguir jugando');});
 // asistente de inicio: (solo práctica) cantidad de bots → modo → mapa. Online: modo → mapa (solo si la sala está vacía)
 let pickOnline=true;

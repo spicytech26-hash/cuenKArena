@@ -70,6 +70,7 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `js/14b-cartas.js` | **cartas de mejora**: el texto de las cartas en HTML por encima de la escena del mercader (`openCards`/`pickCard`), frases del mercader, mazo de abajo a la izquierda, chispas del fuego |
 | `js/14c-mercader.js` | **El Mercader del Umbral en 3D**: escena aparte dibujada encima del juego (`drawMerc` al final de `frame`), hecho con primitivas (manto, capucha, seis ojos, barba de tentáculos, manos, farol con luz, neblina). Tiempos y posiciones en la constante `MERC`; se apaga con `S.merc`, se calma con `S.mred` y no existe en calidad Liviana (`S.q`) |
 | `js/15-entrada.js` | teclado, mouse, menú de echar (Y) |
+| `js/15b-tactil.js` | **controles táctiles** (celulares y tablets): palanca flotante a la izquierda, arrastrar a la derecha para mirar y botones (`TCB`). Se prenden solos con `TACTIL` (`00-inicio-ajustes.js`) o al primer toque; el HUD se reacomoda con `body.tactil` en `estilos.css`. No usan el bloqueo del mouse |
 | `js/16-simulacion.js` | movimiento propio e interpolación de los demás |
 | `js/17-hud.js` | HUD, fila de líderes por bajas (`renderKillRow`, solo Arena y Gungame) y **El Grimorio del Umbral** (`renderGrimorio`): las cartas que tiene el jugador, abajo del tablero (Tab) |
 | `js/18-camara.js` | cámara, arma en mano y jugadores remotos (`updRemote`) |
@@ -101,7 +102,8 @@ Reemplazó a Captura la bandera (`MODE_ALIAS` manda `ctf` a `dominio`). Rojo (es
 - **Bots**: `domObjective` los reparte por carril (`id % 3`), `domBotTarget` les da a qué estructura tirar, `domDanger` los saca de los ataques avisados. La navegación es una sola; las barreras cerradas se prohíben por equipo en `dijkstra(nav, inicio, ban)`.
 - **Red**: `dm` (estado completo) en `welcome`, `start`, `sc` y `end`; en el snapshot solo lo que cambió (`bs`, `gh`, `ob`); avisos `dom`. Suma unos 0,1 KB/s por jugador.
 - **Bosses**: no hay `.glb`; están hechos en código a partir de las imágenes. Son fijos (giran, no caminan). El núcleo del pecho es una esfera (`CORE_R`) que solo cuenta de frente.
-- **Comandos de prueba** (práctica, u online con `DEV=1`): `/gen 1-12`, `/barrera 1-6` (1-3 rojas, 4-6 azules; norte, centro, sur), `/boss rojo|azul 0-100`, `/tiempo SEGUNDOS`, `/ir rojo|azul|centro|1-12`.
+- **La fortaleza está sellada**: además de las 3 barreras hay un campo permanente (`bar.i = 250`, sin generadores) sobre todo el muro, hasta 70 m. La única entrada para el rival es un portón con la barrera caída.
+- **Comandos de prueba** (práctica, u online con `DEV=1`): `/gen 1-12`, `/barrera 1-6` (1-3 rojas, 4-6 azules; norte, centro, sur), `/boss rojo|azul 0-100`, `/tiempo SEGUNDOS` (este anda en todos los modos: sirve para ver la tormenta de Arena), `/ir rojo|azul|centro|1-12`.
 - **Pruebas**: sección 6 de `herramientas/probar.js`.
 
 ## Tareas comunes

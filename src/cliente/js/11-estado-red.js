@@ -91,7 +91,7 @@ function startGame(isOnline,mode,auto){
       showMenu();toast(wasOk?'Se cortó la conexión con el servidor':'No se pudo conectar al servidor');});
   }else{net=new LocalNet(mode);join();}
   inGame=true;paused=false;$('bLeave').hidden=false;$('tPingBox').hidden=!isOnline;
-  hideMenu();lockPointer();
+  hideMenu();if(!TACTIL)lockPointer();else tcLandscape();
 }
 function leaveGame(){
   if(net){net.close();net=null;}renderVote(null);C.setPasa(-1);

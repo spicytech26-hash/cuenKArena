@@ -140,7 +140,7 @@ function renderAcct(){if(typeof renderCombos==='function'){lkAdding=false;render
     box.innerHTML=medalSVG(ACC.nivel,56)+'<div><div class="an">'+esc(ACC.nombre)+'</div><div class="al">Nivel '+ACC.nivel+' · '+md.name+'</div><div class="xpbar"><i style="width:'+pct+'%"></i></div><div class="ax">'+(ACC.falta?ACC.en+' / '+ACC.falta+' XP para el nivel '+(ACC.nivel+1):'Nivel máximo')+' · '+ACC.kills+' bajas · '+ACC.partidas+' partidas</div></div><button type="button" class="linkbtn" id="bLogout">Cerrar sesión</button>';
     $('bLogout').addEventListener('click',logout);
   }else{
-    box.innerHTML='<div id="gBtn"></div><p class="note">Iniciá sesión con Google para guardar tu personaje, tu mira y tu nivel. La experiencia se gana en las partidas online.</p>';
+    box.innerHTML='<div id="gBtn"></div><div class="note"><div class="acTit">Cuenta</div>Guardá tu personaje, tu mira y tu nivel. La experiencia se gana jugando online.</div>';
     if(window.google&&google.accounts&&google.accounts.id)google.accounts.id.renderButton($('gBtn'),{theme:'filled_black',size:'large',text:'signin_with',shape:'rectangular',locale:'es'});
   }
 }
@@ -163,9 +163,17 @@ function acctSave(now){
 function logout(){ACC=null;ACCTOK=null;try{localStorage.removeItem('cuenk_tok');}catch(e){}if(window.google&&google.accounts&&google.accounts.id)google.accounts.id.disableAutoSelect();renderAcct();}
 function onGoogleCredential(resp){
   fetch('/auth/google',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:resp.credential})}).then(r=>r.json()).then(j=>{
-    if(!j.token){$('netTxt').textContent='No se pudo iniciar sesión: '+(j.error||'error');return;}
+    if(!j.token){acctError(j.error);return;}
     ACCTOK=j.token;try{localStorage.setItem('cuenk_tok',ACCTOK);}catch(e){}applyProfile(j.perfil,true);SFX.ui();
-  }).catch(()=>{$('netTxt').textContent='No se pudo iniciar sesión';});
+  }).catch(()=>acctError());
+}
+// error de inicio de sesión: un mensaje que se entienda (el detalle técnico queda en la consola) y otro intento
+function acctError(det){
+  if(det)console.warn('inicio de sesión:',det);
+  const caido=!det||/ENOTFOUND|ECONN|timeout|supabase|5\d\d|fetch/i.test(det);
+  const msg=caido?'El servidor de cuentas no respondió. Probá de nuevo en un momento.':'No se pudo iniciar sesión ('+det+').';
+  const box=$('acctBox');let n=box&&box.querySelector('.note');
+  if(n){n.classList.add('err');n.innerHTML='<div class="acTit">Cuenta</div>'+esc(msg);}else $('netTxt').textContent=msg;
 }
 function initAccounts(){
   if(!/^https?:$/.test(location.protocol))return;

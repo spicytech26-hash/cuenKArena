@@ -1171,3 +1171,21 @@ body.tactil #killRow~#feed,body.tactil #feed{top:calc(100px + env(safe-area-inse
 /* versión del build, abajo a la derecha del menú */
 #buildVer{position:fixed;right:8px;bottom:6px;font:11px monospace;color:#fff;opacity:.45;pointer-events:none;z-index:50}
 body.ingame #buildVer{display:none}
+
+/* ===== Cuenta y nivel en el menú nuevo: panel oscuro con filo rojo y esquina cortada, como el de los controles ===== */
+#menu #acctBox{position:relative;background:rgba(10,4,12,.66);border:0;padding:12px 16px 12px 16px;gap:10px 14px;flex-wrap:wrap;box-sizing:border-box;width:100%;
+  box-shadow:inset 0 0 0 2px #000,inset 0 0 0 3px rgba(212,18,15,.3);clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,0 100%);animation:panIn .5s ease-out .7s backwards}
+#menu #acctBox::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--blood)}
+#menu #acctBox .an{font-size:24px;letter-spacing:.04em;color:var(--bone,#efe4d6)}
+#menu #acctBox .al{font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:var(--blood)}
+#menu #acctBox>div:not(#gBtn):not(.note){flex:1;min-width:0}
+#menu #acctBox>svg{flex:none}
+#menu #acctBox .xpbar{width:100%;height:7px;background:rgba(0,0,0,.6);border:0;box-shadow:inset 0 0 0 1px rgba(212,18,15,.35);margin-top:7px}
+#menu #acctBox .xpbar i{background:linear-gradient(90deg,#8e0d0a,var(--blood) 70%,#ff5a3c);box-shadow:0 0 8px rgba(224,38,27,.6)}
+#menu #acctBox .ax{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#8f8077}
+#menu #acctBox .linkbtn{position:absolute;top:10px;right:20px;margin:0;font-size:11px;letter-spacing:.2em;text-transform:uppercase;text-decoration:none;color:#8f8077;border-bottom:1px solid rgba(212,18,15,.45)}
+#menu #acctBox .linkbtn:hover{color:var(--blood)}
+#menu #acctBox .note{font-family:var(--mono);font-size:11.5px;line-height:1.6;color:#8f8077;flex:1 1 100%;min-width:0}
+#menu #acctBox .note.err{color:#ff6a50}
+#menu #acctBox #gBtn{flex:none;filter:saturate(.8)}
+#menu #acctBox .acTit{font-family:var(--mono);font-size:10px;letter-spacing:.35em;color:var(--blood);text-transform:uppercase;margin-bottom:4px}

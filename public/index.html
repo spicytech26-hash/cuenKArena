@@ -3,7 +3,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" as="script" crossorigin>
-<link rel="preload" href="game.js?v=14b134ed" as="script">
+<link rel="preload" href="game.js?v=ccc41ecf" as="script">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -1181,6 +1181,24 @@ body.tactil #killRow~#feed,body.tactil #feed{top:calc(100px + env(safe-area-inse
 /* versión del build, abajo a la derecha del menú */
 #buildVer{position:fixed;right:8px;bottom:6px;font:11px monospace;color:#fff;opacity:.45;pointer-events:none;z-index:50}
 body.ingame #buildVer{display:none}
+
+/* ===== Cuenta y nivel en el menú nuevo: panel oscuro con filo rojo y esquina cortada, como el de los controles ===== */
+#menu #acctBox{position:relative;background:rgba(10,4,12,.66);border:0;padding:12px 16px 12px 16px;gap:10px 14px;flex-wrap:wrap;box-sizing:border-box;width:100%;
+  box-shadow:inset 0 0 0 2px #000,inset 0 0 0 3px rgba(212,18,15,.3);clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,0 100%);animation:panIn .5s ease-out .7s backwards}
+#menu #acctBox::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--blood)}
+#menu #acctBox .an{font-size:24px;letter-spacing:.04em;color:var(--bone,#efe4d6)}
+#menu #acctBox .al{font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:var(--blood)}
+#menu #acctBox>div:not(#gBtn):not(.note){flex:1;min-width:0}
+#menu #acctBox>svg{flex:none}
+#menu #acctBox .xpbar{width:100%;height:7px;background:rgba(0,0,0,.6);border:0;box-shadow:inset 0 0 0 1px rgba(212,18,15,.35);margin-top:7px}
+#menu #acctBox .xpbar i{background:linear-gradient(90deg,#8e0d0a,var(--blood) 70%,#ff5a3c);box-shadow:0 0 8px rgba(224,38,27,.6)}
+#menu #acctBox .ax{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#8f8077}
+#menu #acctBox .linkbtn{position:absolute;top:10px;right:20px;margin:0;font-size:11px;letter-spacing:.2em;text-transform:uppercase;text-decoration:none;color:#8f8077;border-bottom:1px solid rgba(212,18,15,.45)}
+#menu #acctBox .linkbtn:hover{color:var(--blood)}
+#menu #acctBox .note{font-family:var(--mono);font-size:11.5px;line-height:1.6;color:#8f8077;flex:1 1 100%;min-width:0}
+#menu #acctBox .note.err{color:#ff6a50}
+#menu #acctBox #gBtn{flex:none;filter:saturate(.8)}
+#menu #acctBox .acTit{font-family:var(--mono);font-size:10px;letter-spacing:.35em;color:var(--blood);text-transform:uppercase;margin-bottom:4px}
 </style>
 
 <canvas id="c"></canvas>
@@ -1563,9 +1581,9 @@ body.ingame #buildVer{display:none}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin></script>
 <script>/* "Probar en práctica" desde el editor de mapas (editor.html): index.html?editor carga el mapa que dejó guardado el editor */
 if(/[?&]editor\b/.test(location.search)){try{self.CK_MAPA_EDITOR=JSON.parse(localStorage.getItem('cuenk_mapa_editor')||'null');}catch(e){}}</script>
-<script src="game.js?v=14b134ed"></script>
-<script>console.log("%cCuenkArena build 14b134ed","color:#ff7a20;font-weight:bold");</script>
-<div id="buildVer">build 14b134ed</div>
+<script src="game.js?v=ccc41ecf"></script>
+<script>console.log("%cCuenkArena build ccc41ecf","color:#ff7a20;font-weight:bold");</script>
+<div id="buildVer">build ccc41ecf</div>
 <script>
 (function(){
 'use strict';
@@ -7266,7 +7284,7 @@ function renderAcct(){if(typeof renderCombos==='function'){lkAdding=false;render
     box.innerHTML=medalSVG(ACC.nivel,56)+'<div><div class="an">'+esc(ACC.nombre)+'</div><div class="al">Nivel '+ACC.nivel+' · '+md.name+'</div><div class="xpbar"><i style="width:'+pct+'%"></i></div><div class="ax">'+(ACC.falta?ACC.en+' / '+ACC.falta+' XP para el nivel '+(ACC.nivel+1):'Nivel máximo')+' · '+ACC.kills+' bajas · '+ACC.partidas+' partidas</div></div><button type="button" class="linkbtn" id="bLogout">Cerrar sesión</button>';
     $('bLogout').addEventListener('click',logout);
   }else{
-    box.innerHTML='<div id="gBtn"></div><p class="note">Iniciá sesión con Google para guardar tu personaje, tu mira y tu nivel. La experiencia se gana en las partidas online.</p>';
+    box.innerHTML='<div id="gBtn"></div><div class="note"><div class="acTit">Cuenta</div>Guardá tu personaje, tu mira y tu nivel. La experiencia se gana jugando online.</div>';
     if(window.google&&google.accounts&&google.accounts.id)google.accounts.id.renderButton($('gBtn'),{theme:'filled_black',size:'large',text:'signin_with',shape:'rectangular',locale:'es'});
   }
 }
@@ -7289,9 +7307,17 @@ function acctSave(now){
 function logout(){ACC=null;ACCTOK=null;try{localStorage.removeItem('cuenk_tok');}catch(e){}if(window.google&&google.accounts&&google.accounts.id)google.accounts.id.disableAutoSelect();renderAcct();}
 function onGoogleCredential(resp){
   fetch('/auth/google',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:resp.credential})}).then(r=>r.json()).then(j=>{
-    if(!j.token){$('netTxt').textContent='No se pudo iniciar sesión: '+(j.error||'error');return;}
+    if(!j.token){acctError(j.error);return;}
     ACCTOK=j.token;try{localStorage.setItem('cuenk_tok',ACCTOK);}catch(e){}applyProfile(j.perfil,true);SFX.ui();
-  }).catch(()=>{$('netTxt').textContent='No se pudo iniciar sesión';});
+  }).catch(()=>acctError());
+}
+// error de inicio de sesión: un mensaje que se entienda (el detalle técnico queda en la consola) y otro intento
+function acctError(det){
+  if(det)console.warn('inicio de sesión:',det);
+  const caido=!det||/ENOTFOUND|ECONN|timeout|supabase|5\d\d|fetch/i.test(det);
+  const msg=caido?'El servidor de cuentas no respondió. Probá de nuevo en un momento.':'No se pudo iniciar sesión ('+det+').';
+  const box=$('acctBox');let n=box&&box.querySelector('.note');
+  if(n){n.classList.add('err');n.innerHTML='<div class="acTit">Cuenta</div>'+esc(msg);}else $('netTxt').textContent=msg;
 }
 function initAccounts(){
   if(!/^https?:$/.test(location.protocol))return;

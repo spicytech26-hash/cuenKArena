@@ -171,7 +171,8 @@ const DOM = {
   },
   ORBS: { n: 3, dmg: 28, speed: 15, turn: 2.4, life: 6, r: 1.3 },   // proyectiles teledirigidos de la salva
   ZONES_RAGE: 3,        // al abrirse un carril el boss castiga la entrada con esta cantidad de zonas
-  ALERT_EVERY: 12,      // cada cuánto se repite el aviso "están atacando a tu boss"
+  ALERT_EVERY: 12,      // cada cuánto se repite el aviso "están atacando a tu boss" (y el del generador)
+  AVISOS: [300, 120, 60, 30],   // segundos que quedan en los que el locutor avisa
   // aparición
   SPAWN_INV: 3,         // segundos de invulnerabilidad al aparecer
   FWD_SPAWN: true,      // reaparición adelantada a mitad del carril que tu equipo ya abrió

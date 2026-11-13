@@ -44,6 +44,17 @@ function renderKillRow(){
   if(v!==krCache.v){krCache.v=v;box.innerHTML=v;}
   box.hidden=false;
 }
+/* Columna "Objetivos" de Captura el dominio: generadores rotos, barreras tiradas, daño al boss y
+   minions bajados. s[15] = [gen, barreras, daño al boss, minions]; si el servidor es viejo, no viene. */
+function objCel(s){
+  const o=s[15]||[0,0,0,0],mil=n=>n>=1000?(n/1000).toFixed(1).replace('.0','')+'k':String(n|0);
+  const p=[];
+  if(o[0])p.push('<b>'+o[0]+'</b><i>gen</i>');
+  if(o[1])p.push('<b>'+o[1]+'</b><i>rutas</i>');
+  if(o[2])p.push('<b>'+mil(o[2])+'</b><i>boss</i>');
+  if(o[3])p.push('<b>'+o[3]+'</b><i>minions</i>');
+  return '<td class="objd">'+(p.length?p.join('<s>·</s>'):'<span class="nada">–</span>')+'</td>';
+}
 function renderBoard(){
   const tl=Math.max(0,timeLeft),gg=MODE==='gungame',ctf=MODE==='dominio',tm=teamsMode();
   $('bTitle').textContent=C.MODES[MODE].name+' · '+W.name;
@@ -54,7 +65,7 @@ function renderBoard(){
   // en los modos con corona, al lado del total se ve cuántos puntos vinieron de ella
   const cpt=s=>crown&&s[13]?'<span class="crwpt" title="'+s[13]+' de la corona · '+(s[14]||0)+' s con ella">\u265b '+s[13]+'</span>':'';
   const row=(s,i)=>'<tr class="'+(s[0]===myId?'me':'')+'"><td>'+(i+1)+'</td><td>'+(s[11]>0?medalSVG(s[11],20):'')+'<span class="sw" style="background:'+esc(s[6])+'"></span>'+esc(s[1])+(s[5]?'<span class="tag">bot</span>':'')+'</td><td>'+s[2]+cpt(s)+'</td><td>'+s[3]+'</td>'+
-    (gg?'<td>'+Math.min(GG.length,(s[8]||0)+1)+' · '+WEAPONS[GG[Math.min(GG.length-1,s[8]||0)]].name+'</td>':ctf?'<td>'+(s[10]||0)+'</td>':'<td class="cash">¤ '+(s[7]||0)+'</td>')+
+    (gg?'<td>'+Math.min(GG.length,(s[8]||0)+1)+' · '+WEAPONS[GG[Math.min(GG.length-1,s[8]||0)]].name+'</td>':ctf?objCel(s):'<td class="cash">¤ '+(s[7]||0)+'</td>')+
     '<td>'+(s[5]||!online?'–':s[4]||'–')+'</td></tr>';
   if(tm)$('bBody').innerHTML=[0,1].map(t=>'<tr class="team"><td></td><td colspan="5" style="color:'+TEAMS[t].c+'">Equipo '+TEAMS[t].name+' · '+TS[t]+'</td></tr>'+scores.filter(s=>s[9]===t).map(row).join('')).join('');
   else $('bBody').innerHTML=scores.map(row).join('');

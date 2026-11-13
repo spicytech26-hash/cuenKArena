@@ -7,6 +7,7 @@
    5. todos los botiquines y escudos se pueden agarrar
    6. Captura el dominio: barreras, bloqueo por equipo, núcleo del boss, fin de partida y desempates
    7. Rifle de plasma: curva de daño por carga, instakill solo al máximo, techo de carga y cooldown
+   8. Avisos del locutor, estadísticas de objetivos en el tablero y puestos de reabastecimiento
    Uso:  node herramientas/probar.js            (todo)
          node herramientas/probar.js lacuenca   (solo ese mapa) */
 'use strict';
@@ -404,6 +405,85 @@ if (!solo || solo === 'santuario') try {
     finally { C.setPasa(o); }
   });
 } catch (e) { mal('Rifle de plasma: ' + (e && e.stack || e)); }
+
+console.log('8. Avisos, estadísticas y puestos de reabastecimiento');
+if (!solo || solo === 'santuario') try {
+  const D3 = C.DOM, dt = 1 / 40, MS3 = C.MAPS.santuario;
+  const prueba = (nombre, f) => { try { const r = f(); if (r === true) ok(nombre); else mal(nombre + (r ? ': ' + r : '')); } catch (e) { mal(nombre + ': ' + (e && e.stack || e)); } };
+  // partida con los avisos ('ev' de tipo 'dom') guardados
+  const conAvisos = () => {
+    const g = new C.Game({ mode: 'dominio', bots: 0 }), avisos = [], ps = [];
+    for (let i = 0; i < 2; i++) { const id = g.addClient(m => { if (m.t === 'ev' && m.e === 'dom' && !avisos.includes(m)) avisos.push(m); }); g.onMessage(id, { t: 'join', name: 'p' + i }); ps.push(g.players.get(id)); }
+    return { g, d: g.dom, avisos, rojo: ps.find(q => q.team === 0), azul: ps.find(q => q.team === 1) };
+  };
+
+  prueba('cada carril tiene su puesto de reabastecimiento del lado del atacante', () => {
+    for (const team of [0, 1]) for (const lane of [0, 1, 2]) {
+      const gs = MS3.gens.filter(g => g.team === team && g.lane === lane);
+      if (gs.length !== 2) return 'el carril ' + lane + ' no tiene sus dos generadores';
+      const z = (gs[0].z + gs[1].z) / 2, fuera = Math.abs(gs[0].x) - 13;
+      const cerca = MS3.items.filter(it => Math.abs(Math.abs(it.x) - fuera) < 3 && Math.abs(it.z - z) < 4 && Math.sign(it.x) === Math.sign(gs[0].x));
+      if (!cerca.length) return 'al carril ' + C.DOM.LANES[lane] + ' del equipo ' + team + ' le falta el puesto';
+      if (!cerca.some(it => it.type === 'health')) return 'el puesto del carril ' + C.DOM.LANES[lane] + ' no tiene botiquín';
+      if (!cerca.some(it => C.ITEMS[it.type] && C.ITEMS[it.type].ammo)) return 'el puesto del carril ' + C.DOM.LANES[lane] + ' no tiene munición';
+    }
+    return true;
+  });
+
+  prueba('avisa cuando atacan un generador, y solo al equipo que lo defiende', () => {
+    const { g, d, avisos, azul } = conAvisos();
+    g.domHit(azul, 'g', 2, 100, false);
+    const a = avisos.filter(m => m.a === 'genalert');
+    if (a.length !== 1) return 'salieron ' + a.length + ' avisos y tendría que salir 1';
+    if (a[0].b !== d.gens[2].team) return 'el aviso no dice de qué equipo es el generador';
+    if (!(a[0].hp > 90 && a[0].hp < 100)) return 'el aviso trae mal la vida que le queda (' + a[0].hp + '%)';
+    g.domHit(azul, 'g', 2, 100, false);
+    if (avisos.filter(m => m.a === 'genalert').length !== 1) return 'repitió el aviso sin esperar';
+    g.time += D3.ALERT_EVERY + .1; g.domHit(azul, 'g', 2, 100, false);
+    return avisos.filter(m => m.a === 'genalert').length === 2 || 'no volvió a avisar pasado el intervalo';
+  });
+
+  prueba('avisa una sola vez que el boss entró en furia', () => {
+    const { g, d, avisos, azul } = conAvisos();
+    d.boss[0].hp = D3.BOSS_HP * D3.ENRAGE + D3.HIT_CAP / 2;
+    for (let k = 0; k < 10; k++) g.tick(dt);
+    if (avisos.some(m => m.a === 'furia')) return 'avisó antes de tiempo';
+    g.domHit(azul, 'b', 0, D3.HIT_CAP, false);
+    for (let k = 0; k < 40; k++) g.tick(dt);
+    const n = avisos.filter(m => m.a === 'furia').length;
+    if (n !== 1) return 'salieron ' + n + ' avisos de furia';
+    for (let k = 0; k < 200; k++) g.tick(dt);
+    return avisos.filter(m => m.a === 'furia').length === 1 || 'lo repitió en los cuadros siguientes';
+  });
+
+  prueba('el locutor canta los minutos que quedan', () => {
+    const { g, avisos } = conAvisos();
+    for (const n of D3.AVISOS) {
+      g.left = n + .02;
+      for (let k = 0; k < 4; k++) g.tick(dt);
+      if (!avisos.some(m => m.a === 'tiempo' && m.n === n)) return 'no avisó que quedaban ' + n + ' s';
+    }
+    const rep = D3.AVISOS.map(n => avisos.filter(m => m.a === 'tiempo' && m.n === n).length);
+    return rep.every(q => q === 1) || 'repitió algún aviso de tiempo: ' + rep.join(',');
+  });
+
+  prueba('el tablero muestra los objetivos de cada jugador: generadores, rutas, daño al boss y minions', () => {
+    const { g, d, azul } = conAvisos();
+    for (let k = 0; k < 2; k++) g.domHit(azul, 'b', 0, 250, false);   // el daño por golpe está topeado
+    while (d.gens[2].hp > 0) g.domHit(azul, 'g', 2, 200, false);
+    while (d.gens[3].hp > 0) g.domHit(azul, 'g', 3, 200, false);   // con los dos cae la barrera
+    const m = d.mins.find(q => q.team === 0 && q.hp > 0);
+    if (m) while (m.hp > 0) g.domMinDamage(m, 20, azul);
+    const fila = g.scores().find(s => s[0] === azul.id), o = fila && fila[15];
+    if (!o) return 'la fila del tablero no trae el detalle de objetivos';
+    if (o[0] !== 2) return 'dice ' + o[0] + ' generadores y rompió 2';
+    if (o[1] !== 1) return 'dice ' + o[1] + ' rutas abiertas y abrió 1';
+    if (Math.abs(o[2] - 500) > 1) return 'dice ' + o[2] + ' de daño al boss y le hizo 500 en dos golpes';
+    if (m && o[3] !== 1) return 'dice ' + o[3] + ' minions y bajó 1';
+    const rojo2 = g.scores().find(s => s[0] !== azul.id);
+    return rojo2[15][0] === 0 || 'le anotó objetivos al que no hizo nada';
+  });
+} catch (e) { mal('Avisos y estadísticas: ' + (e && e.stack || e)); }
 
 console.log(fallas ? '\n' + fallas + ' problema(s).' : '\nTodo bien.');
 process.exit(fallas ? 1 : 0);

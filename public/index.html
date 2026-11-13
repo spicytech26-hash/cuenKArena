@@ -1169,6 +1169,13 @@ body.tactil #killRow~#feed,body.tactil #feed{top:calc(100px + env(safe-area-inse
 #cargaRing .fg{stroke:#49d6ff;stroke-dasharray:264;stroke-dashoffset:264;filter:drop-shadow(0 0 4px #49d6ff)}
 #cargaRing.full .fg{stroke:#fff;filter:drop-shadow(0 0 7px #8ef0ff);animation:blink .18s steps(2) infinite}
 #cargaRing.sobra .fg{stroke:#ff5a3c;filter:drop-shadow(0 0 7px #ff7a33)}
+
+/* detalle de objetivos en el tablero de Captura el dominio */
+#board td.objd{white-space:nowrap;font-size:12px}
+#board td.objd b{font-weight:700}
+#board td.objd i{font-style:normal;opacity:.55;margin-left:3px}
+#board td.objd s{text-decoration:none;opacity:.35;margin:0 5px}
+#board td.objd .nada{opacity:.3}
 </style>
 
 <canvas id="c"></canvas>
@@ -4136,7 +4143,7 @@ function updStorm(dt){
    rápidos en el snapshot (`bs` bosses, `gh` vida de generadores, `ob` orbes) y lo demás por avisos `dom`.
    Los bosses están hechos en código a partir de las imágenes de referencia (no hay .glb): pocas mallas
    unidas por pieza rígida y animación procedural (brazos, cadenas, halo, capa). De lejos se apaga lo fino. */
-const DM={on:false,g:[],b:[],h:[0,0],gens:[],bars:[],boss:[],orbs:new Map(),zones:[],grp:null,mmT:0,hudKey:'',bg:null,veins:null,alertT:0};
+const DM={on:false,g:[],b:[],h:[0,0],gens:[],bars:[],boss:[],orbs:new Map(),zones:[],grp:null,mmT:0,hudKey:'',bg:null,veins:null,alertT:0,genT:0};
 const DCOL=[0xff7a20,0x2fb8ff],DCSS=['#ff8a2a','#3fa7ff'],DNAME=['ROJO','AZUL'];   // en este modo el rojo se ve naranja, como en el arte del mapa
 const DLOD={BOSS:95,GEN:150,BAR:210};   // a más de estos metros se simplifica u oculta
 const dmV=new THREE.Vector3();
@@ -4343,6 +4350,20 @@ function domEvent(m){
       else feedLine('<i>la barrera '+C.DOM.LANES[b.lane]+' '+DNAME[b.team].toLowerCase()+' volvió a levantarse</i>');
       break;}
     case 'alert': if(mine(m.b)&&G.time-DM.alertT>6){DM.alertT=G.time;announce('ATACAN A TU BOSS','volvé a defenderlo');SFX.domAlert();}break;
+    // están rompiendo un generador tuyo: solo lo escucha el que lo defiende
+    case 'genalert':{const g=W.gens[m.i];if(!g||!mine(m.b))break;
+      if(G.time-DM.genT>5){DM.genT=G.time;announce('ATACAN UN GENERADOR','ruta '+C.DOM.LANES[g.lane]+' · le queda '+m.hp+'%');SFX.domAlert();}
+      break;}
+    // el boss entró en furia: lo escuchan los dos equipos
+    case 'furia':{const o=DM.boss[m.b];if(o)o.pain=.35;
+      announce(mine(m.b)?'TU BOSS ESTÁ EN FURIA':'EL BOSS '+DNAME[m.b]+' ESTÁ EN FURIA',mine(m.b)?'aguantá: pega más seguido':'cuidado: ataca más seguido');
+      SFX.domFuria();break;}
+    // cuánto queda, con quién va ganando por vida del boss
+    case 'tiempo':{const pc=i=>Math.ceil(100*(DM.h[i]||0)/C.DOM.BOSS_HP),t0=pc(0),t1=pc(1),yo=myTeam<0?0:myTeam;
+      const voy=t0===t1?'van parejos':(t1<t0)===(yo===0)?'van ganando':'van perdiendo';
+      announce(m.n>=60?'QUEDAN '+Math.round(m.n/60)+(m.n>=120?' MINUTOS':' MINUTO'):'ÚLTIMOS '+m.n+' SEGUNDOS',
+        myTeam<0?'boss rojo '+t0+'% · boss azul '+t1+'%':voy+' · boss rival al '+(yo?t0:t1)+'%');
+      SFX.domTick(m.n);break;}
     case 'bossdown':{const o=DM.boss[m.b];if(o){o.dead=.001;o.atk=0;o.tell.visible=false;o.beam.visible=false;fxExplosion(o.x,o.y+9.6,o.z);fxExplosion(o.x,o.y+5,o.z);SFX.domDeath(vAt(o.x,o.y+8,o.z));}
       feedLine((m.n?'<b style="color:'+DCSS[1-m.b]+'">'+esc(m.n)+'</b> <i>mató al</i> ':'<i>cayó el</i> ')+'<b style="color:'+DCSS[m.b]+'">BOSS '+DNAME[m.b]+'</b>',m.id===myId);break;}
     case 'atk':{const o=DM.boss[m.b];if(!o)break;o.atk=m.k;o.ph=1;o.t2=o.dur=m.t||1;o.tgt=m.id||0;if(m.y!=null)o.yawT=m.y;SFX.domWarn(vAt(o.x,o.y+8,o.z),m.k);break;}
@@ -4540,6 +4561,8 @@ Object.assign(SFX,{
   domBlink:v=>{if(v<=0)return;[0,.09,.18,.27].forEach(d=>tn({type:'square',f0:1250,f1:950,dur:.05,vol:.07*v,delay:d}));},
   domBar:v=>{const k=Math.max(.35,v);tn({type:'sawtooth',f0:900,f1:50,dur:1.1,vol:.22*k});nz({dur:1,f0:7000,f1:200,type:'bandpass',q:.8,vol:.6*k});tn({type:'sine',f0:60,f1:30,dur:.9,vol:.5*k,delay:.15});},
   domAlert:()=>{[0,.22,.44].forEach(d=>tn({type:'square',f0:740,f1:520,dur:.16,vol:.13,delay:d}));},
+  domFuria:()=>{tn({type:'sawtooth',f0:220,f1:70,dur:1.3,vol:.22});nz({dur:1.1,f0:900,f1:90,vol:.5});[0,.26,.52].forEach(d=>tn({type:'square',f0:420,f1:300,dur:.14,vol:.12,delay:d}));},
+  domTick:n=>{const g=n<=30?[0,.2,.4,.6]:[0,.3];g.forEach((d,i)=>tn({type:'square',f0:n<=30?900:640,f1:n<=30?660:520,dur:.1,vol:.12,delay:d}));},
   domDeath:v=>{const k=Math.max(.4,v);tn({type:'sawtooth',f0:300,f1:24,dur:2.4,vol:.3*k});nz({dur:2.2,f0:3000,f1:50,vol:.9*k});[0,.3,.7,1.2].forEach(d=>tn({type:'sine',f0:80,f1:30,dur:.5,vol:.5*k,delay:d}));}
 });
 /* ---------- Minions defensores (cliente) ----------
@@ -6344,6 +6367,17 @@ function renderKillRow(){
   if(v!==krCache.v){krCache.v=v;box.innerHTML=v;}
   box.hidden=false;
 }
+/* Columna "Objetivos" de Captura el dominio: generadores rotos, barreras tiradas, daño al boss y
+   minions bajados. s[15] = [gen, barreras, daño al boss, minions]; si el servidor es viejo, no viene. */
+function objCel(s){
+  const o=s[15]||[0,0,0,0],mil=n=>n>=1000?(n/1000).toFixed(1).replace('.0','')+'k':String(n|0);
+  const p=[];
+  if(o[0])p.push('<b>'+o[0]+'</b><i>gen</i>');
+  if(o[1])p.push('<b>'+o[1]+'</b><i>rutas</i>');
+  if(o[2])p.push('<b>'+mil(o[2])+'</b><i>boss</i>');
+  if(o[3])p.push('<b>'+o[3]+'</b><i>minions</i>');
+  return '<td class="objd">'+(p.length?p.join('<s>·</s>'):'<span class="nada">–</span>')+'</td>';
+}
 function renderBoard(){
   const tl=Math.max(0,timeLeft),gg=MODE==='gungame',ctf=MODE==='dominio',tm=teamsMode();
   $('bTitle').textContent=C.MODES[MODE].name+' · '+W.name;
@@ -6354,7 +6388,7 @@ function renderBoard(){
   // en los modos con corona, al lado del total se ve cuántos puntos vinieron de ella
   const cpt=s=>crown&&s[13]?'<span class="crwpt" title="'+s[13]+' de la corona · '+(s[14]||0)+' s con ella">\u265b '+s[13]+'</span>':'';
   const row=(s,i)=>'<tr class="'+(s[0]===myId?'me':'')+'"><td>'+(i+1)+'</td><td>'+(s[11]>0?medalSVG(s[11],20):'')+'<span class="sw" style="background:'+esc(s[6])+'"></span>'+esc(s[1])+(s[5]?'<span class="tag">bot</span>':'')+'</td><td>'+s[2]+cpt(s)+'</td><td>'+s[3]+'</td>'+
-    (gg?'<td>'+Math.min(GG.length,(s[8]||0)+1)+' · '+WEAPONS[GG[Math.min(GG.length-1,s[8]||0)]].name+'</td>':ctf?'<td>'+(s[10]||0)+'</td>':'<td class="cash">¤ '+(s[7]||0)+'</td>')+
+    (gg?'<td>'+Math.min(GG.length,(s[8]||0)+1)+' · '+WEAPONS[GG[Math.min(GG.length-1,s[8]||0)]].name+'</td>':ctf?objCel(s):'<td class="cash">¤ '+(s[7]||0)+'</td>')+
     '<td>'+(s[5]||!online?'–':s[4]||'–')+'</td></tr>';
   if(tm)$('bBody').innerHTML=[0,1].map(t=>'<tr class="team"><td></td><td colspan="5" style="color:'+TEAMS[t].c+'">Equipo '+TEAMS[t].name+' · '+TS[t]+'</td></tr>'+scores.filter(s=>s[9]===t).map(row).join('')).join('');
   else $('bBody').innerHTML=scores.map(row).join('');

@@ -1159,3 +1159,10 @@ body.tactil #killRow~#feed,body.tactil #feed{top:calc(100px + env(safe-area-inse
 #cargaRing .fg{stroke:#49d6ff;stroke-dasharray:264;stroke-dashoffset:264;filter:drop-shadow(0 0 4px #49d6ff)}
 #cargaRing.full .fg{stroke:#fff;filter:drop-shadow(0 0 7px #8ef0ff);animation:blink .18s steps(2) infinite}
 #cargaRing.sobra .fg{stroke:#ff5a3c;filter:drop-shadow(0 0 7px #ff7a33)}
+
+/* detalle de objetivos en el tablero de Captura el dominio */
+#board td.objd{white-space:nowrap;font-size:12px}
+#board td.objd b{font-weight:700}
+#board td.objd i{font-style:normal;opacity:.55;margin-left:3px}
+#board td.objd s{text-decoration:none;opacity:.35;margin:0 5px}
+#board td.objd .nada{opacity:.3}

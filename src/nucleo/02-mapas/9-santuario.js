@@ -214,6 +214,20 @@ function buildSantuario() {
         gens.push({ team, lane, x: sx * XG, y: L.y, z: zg, atk });
         lights.push({ x: sx * XG, y: L.y + 4, z: zg, c: luz, i: 1.1, d: 15 });
       }
+      /* puesto de reabastecimiento del carril, del lado del atacante: si gastaste todo rompiendo los
+         generadores no tenés que volver hasta tu base. Tarima con respaldo que te cubre del portón. */
+      const rx = XG - 13, muni = ['slugs', 'bullets', 'shells'][lane];
+      A(rx - 3, L.y, L.z - 3.4, rx + 3, L.y + .4, L.z + 3.4, 'tiles');                  // tarima
+      A(rx + 2, L.y + .4, L.z - 3.4, rx + 3.2, L.y + 2.2, L.z + 3.4, 'brick');          // parapeto que te tapa de los generadores
+      A(rx - 3, L.y + .4, L.z - 3.6, rx + 3.2, L.y + 2.6, L.z - 3, 'brick', D_); A(rx - 3, L.y + .4, L.z + 3, rx + 3.2, L.y + 2.6, L.z + 3.6, 'brick', D_);
+      A(rx - 3.4, L.y + 2.4, L.z - 3.8, rx + 3.4, L.y + 2.8, L.z + 3.8, 'metal', D_);   // techito
+      caj_(rx - 1.8, L.z - 2.2, L.y + .4, 1.4, 1.2, 1.4); caj_(rx - 1.8, L.z + 2.2, L.y + .4, 1.4, 1, 1.4, 'crate');
+      barril(sx * (rx + 1.2), L.z + 2.4, L.y + .4); cano(sx * (rx + 2.6), L.z, L.y + 1.9, 6.2, 'z', .18);
+      lights.push({ x: sx * rx, y: L.y + 2.3, z: L.z, c: 0x9fe8ff, i: .9, d: 11 });
+      deco.push({ t: 'glow', x: sx * rx, y: L.y + 2.2, z: L.z, c: 0x8fe4ff, s: 1.1 });
+      I('health', sx * rx, L.y + .5, L.z + 1.4);
+      I(muni, sx * rx, L.y + .5, L.z - 1.4);
+      if (lane === 1) I('armor', sx * (rx - .4), L.y + .5, L.z);
     });
 
     /* ---------- FORTALEZA ---------- */

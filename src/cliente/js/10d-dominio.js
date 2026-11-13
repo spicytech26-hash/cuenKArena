@@ -4,7 +4,7 @@
    rápidos en el snapshot (`bs` bosses, `gh` vida de generadores, `ob` orbes) y lo demás por avisos `dom`.
    Los bosses están hechos en código a partir de las imágenes de referencia (no hay .glb): pocas mallas
    unidas por pieza rígida y animación procedural (brazos, cadenas, halo, capa). De lejos se apaga lo fino. */
-const DM={on:false,g:[],b:[],h:[0,0],gens:[],bars:[],boss:[],orbs:new Map(),zones:[],grp:null,mmT:0,hudKey:'',bg:null,veins:null,alertT:0};
+const DM={on:false,g:[],b:[],h:[0,0],gens:[],bars:[],boss:[],orbs:new Map(),zones:[],grp:null,mmT:0,hudKey:'',bg:null,veins:null,alertT:0,genT:0};
 const DCOL=[0xff7a20,0x2fb8ff],DCSS=['#ff8a2a','#3fa7ff'],DNAME=['ROJO','AZUL'];   // en este modo el rojo se ve naranja, como en el arte del mapa
 const DLOD={BOSS:95,GEN:150,BAR:210};   // a más de estos metros se simplifica u oculta
 const dmV=new THREE.Vector3();
@@ -211,6 +211,20 @@ function domEvent(m){
       else feedLine('<i>la barrera '+C.DOM.LANES[b.lane]+' '+DNAME[b.team].toLowerCase()+' volvió a levantarse</i>');
       break;}
     case 'alert': if(mine(m.b)&&G.time-DM.alertT>6){DM.alertT=G.time;announce('ATACAN A TU BOSS','volvé a defenderlo');SFX.domAlert();}break;
+    // están rompiendo un generador tuyo: solo lo escucha el que lo defiende
+    case 'genalert':{const g=W.gens[m.i];if(!g||!mine(m.b))break;
+      if(G.time-DM.genT>5){DM.genT=G.time;announce('ATACAN UN GENERADOR','ruta '+C.DOM.LANES[g.lane]+' · le queda '+m.hp+'%');SFX.domAlert();}
+      break;}
+    // el boss entró en furia: lo escuchan los dos equipos
+    case 'furia':{const o=DM.boss[m.b];if(o)o.pain=.35;
+      announce(mine(m.b)?'TU BOSS ESTÁ EN FURIA':'EL BOSS '+DNAME[m.b]+' ESTÁ EN FURIA',mine(m.b)?'aguantá: pega más seguido':'cuidado: ataca más seguido');
+      SFX.domFuria();break;}
+    // cuánto queda, con quién va ganando por vida del boss
+    case 'tiempo':{const pc=i=>Math.ceil(100*(DM.h[i]||0)/C.DOM.BOSS_HP),t0=pc(0),t1=pc(1),yo=myTeam<0?0:myTeam;
+      const voy=t0===t1?'van parejos':(t1<t0)===(yo===0)?'van ganando':'van perdiendo';
+      announce(m.n>=60?'QUEDAN '+Math.round(m.n/60)+(m.n>=120?' MINUTOS':' MINUTO'):'ÚLTIMOS '+m.n+' SEGUNDOS',
+        myTeam<0?'boss rojo '+t0+'% · boss azul '+t1+'%':voy+' · boss rival al '+(yo?t0:t1)+'%');
+      SFX.domTick(m.n);break;}
     case 'bossdown':{const o=DM.boss[m.b];if(o){o.dead=.001;o.atk=0;o.tell.visible=false;o.beam.visible=false;fxExplosion(o.x,o.y+9.6,o.z);fxExplosion(o.x,o.y+5,o.z);SFX.domDeath(vAt(o.x,o.y+8,o.z));}
       feedLine((m.n?'<b style="color:'+DCSS[1-m.b]+'">'+esc(m.n)+'</b> <i>mató al</i> ':'<i>cayó el</i> ')+'<b style="color:'+DCSS[m.b]+'">BOSS '+DNAME[m.b]+'</b>',m.id===myId);break;}
     case 'atk':{const o=DM.boss[m.b];if(!o)break;o.atk=m.k;o.ph=1;o.t2=o.dur=m.t||1;o.tgt=m.id||0;if(m.y!=null)o.yawT=m.y;SFX.domWarn(vAt(o.x,o.y+8,o.z),m.k);break;}
@@ -408,5 +422,7 @@ Object.assign(SFX,{
   domBlink:v=>{if(v<=0)return;[0,.09,.18,.27].forEach(d=>tn({type:'square',f0:1250,f1:950,dur:.05,vol:.07*v,delay:d}));},
   domBar:v=>{const k=Math.max(.35,v);tn({type:'sawtooth',f0:900,f1:50,dur:1.1,vol:.22*k});nz({dur:1,f0:7000,f1:200,type:'bandpass',q:.8,vol:.6*k});tn({type:'sine',f0:60,f1:30,dur:.9,vol:.5*k,delay:.15});},
   domAlert:()=>{[0,.22,.44].forEach(d=>tn({type:'square',f0:740,f1:520,dur:.16,vol:.13,delay:d}));},
+  domFuria:()=>{tn({type:'sawtooth',f0:220,f1:70,dur:1.3,vol:.22});nz({dur:1.1,f0:900,f1:90,vol:.5});[0,.26,.52].forEach(d=>tn({type:'square',f0:420,f1:300,dur:.14,vol:.12,delay:d}));},
+  domTick:n=>{const g=n<=30?[0,.2,.4,.6]:[0,.3];g.forEach((d,i)=>tn({type:'square',f0:n<=30?900:640,f1:n<=30?660:520,dur:.1,vol:.12,delay:d}));},
   domDeath:v=>{const k=Math.max(.4,v);tn({type:'sawtooth',f0:300,f1:24,dur:2.4,vol:.3*k});nz({dur:2.2,f0:3000,f1:50,vol:.9*k});[0,.3,.7,1.2].forEach(d=>tn({type:'sine',f0:80,f1:30,dur:.5,vol:.5*k,delay:d}));}
 });

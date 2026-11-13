@@ -35,6 +35,7 @@
       const g = d.gens[i]; if (!g || g.hp <= 0 || g.team === att.team) return 0;
       const real = Math.min(g.hp, amt); g.hp -= real; d.dirtyG.add(i);
       this.domPay(att, real, false);
+      if (this.time - (g.alertT == null ? -99 : g.alertT) > DOM.ALERT_EVERY) { g.alertT = this.time; this.domEv({ a: 'genalert', i, b: g.team, hp: Math.round(100 * g.hp / DOM.GEN_HP) }); }
       if (att.send) att.send({ t: 'ev', e: 'hit', id: -1 - i, n: Math.round(real), k: g.hp <= 0 ? 1 : 0, h: 0 });
       if (g.hp <= 0) this.domGenDown(i, att);
       return real;
@@ -50,13 +51,14 @@
   }
   domPay(att, real, boss) {
     this.dom.stat[att.team].dmg += real; att.dmg = (att.dmg || 0) + real;
+    if (boss) att.bdmg = (att.bdmg || 0) + real;
     att.domAcc = (att.domAcc || 0) + real;
     if (att.domAcc >= DOM.PAY.STEP) { const n = Math.floor(att.domAcc / DOM.PAY.STEP); att.domAcc -= n * DOM.PAY.STEP; this.credit(att, n * (boss ? DOM.PAY.BOSS_HIT : DOM.PAY.GEN_HIT), boss ? 'daño al boss' : 'daño al generador'); }
   }
   domGenDown(i, att) {
     const d = this.dom, g = d.gens[i];
     g.hp = 0; d.stat[1 - g.team].gens++;
-    if (att) { att.caps++; this.credit(att, DOM.PAY.GEN, 'generador destruido'); }
+    if (att) { att.caps++; att.gens = (att.gens || 0) + 1; this.credit(att, DOM.PAY.GEN, 'generador destruido'); }
     this.domEv({ a: 'gen', i, id: att ? att.id : 0, n: att ? att.name : '', first: d.first[g.team] ? 0 : 1 });
     d.first[g.team] = true;
     const bi = d.bars.findIndex(b => b.team === g.team && b.lane === g.lane), bar = d.bars[bi];
@@ -73,6 +75,7 @@
     d.ban = [null, null];
     if (fell) {
       d.stat[1 - bar.team].bars++;
+      if (att) att.bars = (att.bars || 0) + 1;
       for (const q of this.players.values()) if (q.joined && q.team === 1 - bar.team) this.credit(q, q === att ? DOM.PAY.BAR : DOM.PAY.BAR_TEAM, 'ruta ' + DOM.LANES[bar.lane] + ' abierta');
       d.boss[bar.team].rage = bar.lane;
     }
@@ -163,10 +166,15 @@
     for (const b of d.boss) { const prev = setPasa(b.team); try { this.tickBoss(b, dt); } finally { setPasa(prev); } if (this.state !== 'play') return; }
     this.tickOrbs(dt); if (this.state !== 'play') return;
     this.tickZones(dt);
+    // avisos de tiempo: faltan 5 minutos, 2, 1 y los últimos 30 segundos
+    if (!d.avisoT) d.avisoT = {};
+    for (const n of DOM.AVISOS) if (this.left <= n && !d.avisoT[n]) { d.avisoT[n] = 1; this.domEv({ a: 'tiempo', n }); }
     for (let i = 0; i < d.bars.length; i++) { const bar = d.bars[i]; if (bar.st === 2 && bar.t > 0) { bar.t -= dt; if (bar.t <= 0) { d.gens.forEach((g, k) => { if (g.team === bar.team && g.lane === bar.lane) { g.hp = DOM.GEN_HP; d.dirtyG.add(k); } }); this.domBarSet(i, 0, null); } } }
   }
   tickBoss(b, dt) {
     const d = this.dom; if (b.hp <= 0) return;
+    // entra en furia al bajar del umbral de vida: se avisa una sola vez, a los dos equipos
+    if (!b.furia && b.hp / DOM.BOSS_HP < DOM.ENRAGE) { b.furia = 1; this.domEv({ a: 'furia', b: b.team }); }
     b.think -= dt;
     if (b.think <= 0) { b.think = .25; b.seen = this.domTargets(b); }
     const ts = b.seen.filter(t => t.alive && t.team !== b.team);

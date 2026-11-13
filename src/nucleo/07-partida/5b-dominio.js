@@ -84,14 +84,15 @@
   }
   domBossDown(t, att) {
     const d = this.dom, b = d.boss[t];
-    b.hp = 0; b.atk = 0; b.ph = 0; d.win = 1 - t; d.why = 'boss';
+    b.hp = 0; b.atk = 0; b.ph = 0; 
+    d.win = 1 - t; 
+    d.why = 'boss';
     
-    // Forzamos la parada inmediata del motor y asignamos el ganador globalmente
+    // Forzamos el estado de fin de partida y ganador para Dominio
     this.state = 'end';
     this.winner = 1 - t;
     this.left = 0;
 
-    // Aislamos los eventos y los pagos para que un error acá no impida que termine la partida
     try {
       if (att) { 
         att.caps += 3; 
@@ -100,10 +101,11 @@
       }
       this.domEv({ a: 'bossdown', b: t, id: att ? att.id : 0, n: att ? att.name : '' });
     } catch(e) {
-      console.error("Error silencioso evitado al procesar la muerte del boss:", e);
+      console.error("Error al procesar la muerte del boss:", e);
     }
     
-    this.endMatch();
+    // Transmitimos directamente el cierre a todos los clientes conectados
+    this.bcast({ t: 'end', winner: this.winner, why: d.why, summary: this.domSummary() });
   }
   /* quién gana: el que mató al boss rival. Por tiempo: el que más vida porcentual le sacó al boss rival;
      después más barreras tiradas, más generadores rotos, más daño total y cantidad de bajas. Si todo empata, -1. */
@@ -116,7 +118,7 @@
       [s[0].bars, s[1].bars, 'barreras'], 
       [s[0].gens, s[1].gens, 'generadores'], 
       [Math.round(s[0].dmg), Math.round(s[1].dmg), 'daño'],
-      [s[0].kills, s[1].kills, 'bajas'] // Ahora las kills se toman en cuenta de forma oficial
+      [s[0].kills, s[1].kills, 'bajas']
     ];
     for (const [a, b, why] of cmp) if (Math.abs(a - b) > 1e-9) { d.why = why; return a > b ? 0 : 1; }
     d.why = 'empate'; return -1;

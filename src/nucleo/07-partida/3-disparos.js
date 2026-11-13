@@ -24,12 +24,17 @@
     const W_ = WEAPONS[w];
     const ns = !!W_.scope && !m.sc; // arma con mira disparada sin apuntar
     if (W_.type === 'proj') { this.spawnProj(p, w, o, d); this.projs[this.projs.length - 1].ns = ns; return; }
+    const pasa = setPasa(p.team);
+    try { this.humanHits(p, m, w, W_, o, d, ns); } finally { setPasa(pasa); }
+  }
+  humanHits(p, m, w, W_, o, d, ns) {
     this.bcast({ t: 'ev', e: 'shot', id: p.id, w, o: r3a(o), d: r3a(d) }, p.id);
     this.curNS = ns;
     const claims = Array.isArray(m.h) ? m.h.slice(0, 16) : [];
     const done = new Set();
     for (const c of claims) {
       if (!Array.isArray(c)) continue;
+      if (c[0] < 0) { if (!done.has(c[0])) { done.add(c[0]); this.domClaim(p, o, d, c[0] | 0, clamp(c[1] | 0, 0, W_.pel), c[2] | 0, W_); } continue; }   // generador o boss
       const t = this.players.get(c[0] | 0); if (!t || !t.alive || t === p || done.has(t.id)) continue;
       done.add(t.id);
       const n = clamp(c[1] | 0, 0, W_.pel), hs = clamp(c[2] | 0, 0, n); if (!n) continue;
@@ -72,14 +77,15 @@
   }
   trace(o, d, range, shooter, pierce) {
     const wall = raycast(this.W, o[0], o[1], o[2], d[0], d[1], d[2], range);
-    const wt = wall ? wall.t : range, hits = [];
+    const wt = wall ? wall.t : range; let hits = [];
     for (const t of this.players.values()) {
       if (!t.alive || t === shooter || !t.joined) continue;
       const h = rayPlayer(t.s.x, t.s.y, t.s.z, o[0], o[1], o[2], d[0], d[1], d[2], t.s.crouch);
       if (h && h.t < wt) hits.push({ p: t, t: h.t, head: h.head });
     }
     hits.sort((a, b) => a.t - b.t);
-    return { wt, n: wall ? wall.n : null, hits: pierce ? hits : hits.slice(0, 1) };
+    hits = pierce ? hits : hits.slice(0, 1);
+    return { wt, n: wall ? wall.n : null, hits, st: this.dom && wall && !(hits.length && !pierce) ? this.domStruct(o, d, wall) : null };
   }
   botFire(p, w, o, d) {
     if (!this.canFire(p, w)) return;
@@ -87,7 +93,11 @@
     const W_ = WEAPONS[w];
     if (W_.type === 'proj') { this.spawnProj(p, w, o, d); return; }
     this.bcast({ t: 'ev', e: 'shot', id: p.id, w, o: r3a(o), d: r3a(d) });
-    const acc = new Map();
+    const pasa = setPasa(p.team);
+    try { this.botHits(p, w, W_, o, d); } finally { setPasa(pasa); }
+  }
+  botHits(p, w, W_, o, d) {
+    const acc = new Map(), sacc = new Map();
     for (let i = 0; i < W_.pel; i++) {
       let dd = d;
       if (W_.spread) {
@@ -99,11 +109,13 @@
       }
       const tr = this.trace(o, dd, W_.range || 300, p, W_.type === 'rail');
       for (const h of tr.hits) { const a = acc.get(h.p) || { n: 0, hs: 0 }; a.n++; if (h.head) a.hs++; acc.set(h.p, a); }
+      if (tr.st) { const k = tr.st.kind + tr.st.i + (tr.st.core ? 'c' : ''), a = sacc.get(k) || { st: tr.st, dmg: 0 }; a.dmg += W_.dmg * falloff(W_, tr.wt); sacc.set(k, a); }
     }
     for (const [t, a] of acc) {
       const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? W_.dmg * (a.hs ? 1.5 : 1) : W_.head ? W_.dmg * (a.hs ? W_.head : 1) : (a.n + a.hs) * W_.dmg * falloff(W_, Math.hypot(t.s.x - o[0], t.s.y + 1 - o[1], t.s.z - o[2]));
       this.damage(t, dmg * this.mult(p) * this.skill().dmg, p, w, d, .05, 'frag');
     }
+    for (const a of sacc.values()) this.domHit(p, a.st.kind, a.st.i, a.dmg * this.mult(p) * this.skill().dmg, a.st.core);
   }
   spawnProj(p, w, o, d) {
     const W_ = WEAPONS[w], v = projLaunch(w, d);
@@ -117,7 +129,8 @@
       const pr = this.projs[i]; if (!pr) continue;
       const ox = pr.x, oy = pr.y, oz = pr.z;
       pr.age += dt;
-      const res = projStep(this.W, pr, dt);
+      const own_ = this.players.get(pr.own), pasa = setPasa(own_ ? own_.team : -1);
+      let res; try { res = projStep(this.W, pr, dt); } finally { setPasa(pasa); }
       const dx = pr.x - ox, dy = pr.y - oy, dz = pr.z - oz, L = Math.hypot(dx, dy, dz);
       let direct = null, bt = Infinity;
       if (L > 1e-6) {
@@ -128,11 +141,20 @@
         }
       }
       if (direct) { pr.x = ox + dx / L * bt; pr.y = oy + dy / L * bt; pr.z = oz + dz / L * bt; this.explode(pr, direct); this.projs.splice(i, 1); }
-      else if (res && res.boom) { this.explode(pr, null); this.projs.splice(i, 1); }
+      else if (res && res.boom) { pr.st = this.dom && res.b ? this.domStruct([ox, oy, oz], L > 1e-6 ? [dx / L, dy / L, dz / L] : [0, -1, 0], { b: res.b, t: L }) : null; this.explode(pr, null); this.projs.splice(i, 1); }
     }
   }
   explode(pr, direct) {
-    const W_ = WEAPONS[pr.w], own = this.players.get(pr.own);
+    const own = this.players.get(pr.own), pasa = setPasa(own ? own.team : -1);
+    try { this.explode0(pr, direct, own); } finally { setPasa(pasa); }
+  }
+  explode0(pr, direct, own) {
+    const W_ = WEAPONS[pr.w];
+    if (this.dom && own) {   // generadores y bosses: impacto directo y daño de área
+      if (pr.st && W_.direct) this.domHit(own, pr.st.kind, pr.st.i, W_.direct * pr.q, pr.st.core);
+      if (W_.rad) this.domBlast(own, pr.x, pr.y, pr.z, W_.rad, W_.dmg * pr.q, W_.sfall || .6, pr.st && W_.direct ? pr.st : null);
+      if (!this.live()) return;
+    }
     if (direct && W_.direct) {
       const sp = Math.hypot(pr.v[0], pr.v[1], pr.v[2]) || 1;
       if (pr.k === 'bullet' && own) this.huntReward(own, direct, pr);
@@ -178,6 +200,7 @@
       if (f.tick > 0) continue;
       f.tick = f.every;
       const own = this.players.get(f.own);
+      if (this.dom && own) { this.domBlast(own, f.x, f.y + .5, f.z, f.r, f.hit, 0, null); if (!this.live()) return; }
       for (const t of this.players.values()) {
         if (!t.alive || !t.joined) continue;
         if (Math.hypot(t.s.x - f.x, t.s.z - f.z) > f.r || t.s.y < f.y - 1 || t.s.y > f.y + 1.6) continue;

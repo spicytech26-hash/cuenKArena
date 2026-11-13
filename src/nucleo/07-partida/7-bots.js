@@ -42,7 +42,7 @@
     const ai = p.ai, nav = this.nav;
     const start = findNode(nav, p.s.x, p.s.y, p.s.z);
     if (!start) { ai.path = null; return; }
-    const dj = dijkstra(nav, start.id);
+    const dj = dijkstra(nav, start.id, this.domBan(p.team));
     let goal = null, best = -1;
     const t = ai.tgt ? this.players.get(ai.tgt) : null;
     const obj = this.objective(p);
@@ -97,6 +97,7 @@
       if (sp) return { x: sp.x, y: sp.y, z: sp.z, pri: 160 };
     }
     const cr = this.crownObjective(p); if (cr) return cr;
+    if (this.dom) return this.domObjective(p);
     if (!this.mode.teams || this.flags.length < 2 || p.team < 0) return null;
     const own = this.flags[p.team], enemy = this.flags[1 - p.team], home = this.W.flags[p.team];
     if (enemy.st === 1 && enemy.by === p.id) return { x: home.x, y: home.y, z: home.z, pri: 200 };
@@ -131,6 +132,8 @@
       const t = this.findTarget(p);
       if (t) { if (t.id !== ai.tgt) { ai.seeT = 0; ai.replan = Math.min(ai.replan, .2); } ai.tgt = t.id; ai.last = [t.s.x, t.s.y, t.s.z]; ai.lostT = 3; }
       else if (ai.tgt) { ai.tgt = 0; ai.replan = 0; }
+      ai.st = !t && this.dom ? this.domBotTarget(p) : null;   // sin rivales a la vista: le tira al generador o al boss
+      if (this.dom && (ai.dodge == null || Math.random() < .05)) ai.dodge = Math.random() < DOM.BOT_DODGE[Math.max(0, Math.min(3, this.o.botSkill | 0))];
     }
     if (ai.replan <= 0 && s.on) { if (this.planBudget > 0) { this.planBudget--; ai.replan = .7 + Math.random() * .5; this.planBot(p); } else ai.replan = .03; }
     const tgt = ai.tgt ? this.players.get(ai.tgt) : null;
@@ -187,6 +190,7 @@
       const fx = s.x + wx * 1.2, fz = s.z + wz * 1.2;
       if (s.on && !nav.nodeAt(fx, s.y, fz)) { wx = -wx * .3; wz = -wz * .3; }
     }
+    if (this.dom && ai.dodge) { const dg = this.domDanger(p); if (dg) { const ax = s.x - dg.x, az = s.z - dg.z, al = Math.hypot(ax, az) || 1; wx = ax / al; wz = az / al; } }   // sale del área de un ataque avisado
     const was = s.on;
     pmove(this.W, s, zg ? { wx, wz, jump: false, up: zg.up, crouch: zg.cr } : { wx, wz, jump }, dt);
     const landed = was !== s.on && s.on;
@@ -220,6 +224,14 @@
       if (ai.seeT > sk.react && Math.abs(dy) < .12 + 1 / (dist + 1) && this.canFire(p, w) && this.time - p.lastFire >= W_.rate * sk.fire) {
         if (W_.type !== 'proj' || dist > 3) this.botFire(p, w, [ex, ey, ez], dirFromAngles(p.yaw, p.pitch));
       }
+    } else if (ai.st) {   // Captura el dominio: apunta y dispara a la estructura
+      const q = ai.st, ex = s.x, ey = s.y + K.EYE, ez = s.z, dist = Math.hypot(q.x - ex, q.y - ey, q.z - ez);
+      const w = this.chooseWeapon(p, Math.max(dist, 8)); if (w !== p.w) { p.w = w; p.lastFire = Math.max(p.lastFire, this.time - WEAPONS[w].rate * .5); }
+      const W_ = WEAPONS[w], ty = q.y + (W_.proj === 'grenade' ? dist * .06 : 0);
+      const wantYaw = Math.atan2(-(q.x - ex), -(q.z - ez)), wantPitch = Math.atan2(ty - ey, Math.hypot(q.x - ex, q.z - ez));
+      let dy = wantYaw - p.yaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
+      const mt = sk.turn * dt; p.yaw += clamp(dy, -mt, mt); p.pitch += clamp(wantPitch - p.pitch, -mt, mt);
+      if (Math.abs(dy) < .06 && Math.abs(wantPitch - p.pitch) < .06 && !W_.melee && this.canFire(p, w) && this.time - p.lastFire >= W_.rate * sk.fire) this.botFire(p, w, [ex, ey, ez], dirFromAngles(p.yaw, p.pitch));
     } else {
       const sp = Math.hypot(s.vx, s.vz);
       if (sp > 1) { const want = Math.atan2(-s.vx, -s.vz); let dy = want - p.yaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2; p.yaw += clamp(dy, -6 * dt, 6 * dt); }

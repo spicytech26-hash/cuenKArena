@@ -110,14 +110,58 @@ const MODES = {
              desc: 'Todos contra todos. Cada baja da créditos para la tienda (B). Buscá la corona: cada 15 s con ella puesta valen 1 punto y ¤ 300. En el último minuto la zona se achica.' },
   gungame: { name: 'Gungame', maps: ['represa', 'panymanteca', 'lacuenca', 'cuartotramo'], shop: false, gg: true,
              desc: 'Cada baja te da la siguiente arma de la lista. Munición infinita, sin tienda. Si te matan con cuchillo bajás un nivel. Gana el primero en hacer las 20 bajas; la última es con cuchillo.' },
-  tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca', 'cuartotramo'], shop: true, cards: true, teams: true, tdm: true, minPlayers: 4,
+  tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca', 'cuartotramo', 'puente'], shop: true, cards: true, teams: true, tdm: true, minPlayers: 4,
              desc: 'Rojo contra azul: cada baja suma para tu equipo hasta llegar al límite que elijan. Online arranca cuando hay 4 jugadores; mientras tanto, calentamiento.' },
   snipers: { name: 'Francotiradores', maps: ['fuertes'], shop: false, teams: true, tk: true, snipers: true, inf: true, timelimit: 360, teamLimit: 30,
              desc: 'Rojo contra azul con francotirador y cuchillo nomás: el francotirador mata de un tiro y con el cuchillo en la mano corrés más rápido. Racha de 6 bajas: escopeta doble. Sin tienda y sin mira hasta que apuntás.' },
-  ctf:     { name: 'Captura la bandera', maps: ['puente'], shop: true, cards: true, teams: true, ctf: true,
-             desc: 'Rojo contra azul. Robá la bandera rival y llevala hasta tu base. Gana el primer equipo en capturarla 3 veces.' }
+  // reemplaza a Captura la bandera (el id nuevo es `dominio`; El Puente pasó a Team Deathmatch)
+  dominio: { name: 'Captura el dominio', maps: ['santuario'], shop: true, cards: true, teams: true, dom: true, timelimit: 900,
+             desc: 'Rojo contra azul. Cada equipo tiene un boss en su fortaleza, detrás de tres barreras. Rompé los dos generadores de una barrera para abrir esa ruta, entrá y matá al boss rival. Si a los 15 minutos siguen vivos los dos, gana el que más lo lastimó.' }
 };
 const MODE_IDS = Object.keys(MODES);
+const MODE_ALIAS = { ctf: 'dominio' };   // ajustes guardados y salas viejas que todavía piden Captura la bandera
+
+/* ---------- Captura el dominio: todo lo que se balancea está acá ----------
+   Dos fortalezas con un boss cada una. Cada carril (norte, centro, sur) entra por un portón sellado con una
+   barrera de campo de fuerza que alimentan 2 generadores. Las reglas están en 07-partida/5b-dominio.js. */
+const DOM = {
+  TIME: 900,            // duración máxima de la partida, en segundos (15 minutos). Es el `timelimit` del modo
+  LANES: ['norte', 'centro', 'sur'],
+  // generadores y barreras
+  GEN_HP: 1500,         // vida de cada generador
+  BAR_NEED: 2,          // cuántos generadores de la barrera hay que romper para que caiga (1 = con uno basta)
+  BAR_REARM: 0,         // segundos hasta que una barrera caída se vuelve a levantar con sus generadores (0 = queda abierta para siempre)
+  HIT_CAP: 260,         // tope de daño de un solo impacto a un generador o al boss (el rifle de caza no los borra de un tiro)
+  // boss
+  BOSS_HP: 20000,       // vida de cada boss
+  BOSS_H: 14,           // altura del boss en metros (un jugador mide 1,8)
+  BOSS_R: 2,            // medio ancho del cuerpo (la caja que recibe los tiros mide 2·R de lado)
+  CORE_Y: 9.6,          // altura del núcleo del pecho
+  CORE_FWD: 1.5,        // cuánto sobresale el núcleo hacia adelante
+  CORE_R: 1.15,         // radio del núcleo (punto débil)
+  CORE_MULT: 2,         // el núcleo recibe el doble
+  BOSS_SEE: 48,         // hasta dónde ve y ataca
+  BOSS_TURN: 1.6,       // qué tan rápido gira (radianes por segundo)
+  WARN: 1,              // aviso antes de cada ataque, en segundos
+  GCD: [1.6, 2.8],      // descanso entre ataques (mínimo, máximo)
+  ENRAGE: .35,          // con menos de esta fracción de vida ataca más seguido…
+  ENRAGE_CD: .65,       // …descansando este factor
+  LASH: { r: 18, cos: .45, dmg: 55, kick: 9 },            // boss rojo: latigazo de cadenas en abanico hacia adelante
+  GRAB: { range: 42, dmg: 20, pull: 30 },                 // boss rojo: agarre que arrastra a un jugador hacia él
+  PULSE: { r: 16, dmg: 50, kick: 13 },                    // boss azul: pulso de energía alrededor
+  ORBS: { n: 3, dmg: 28, speed: 15, turn: 2.4, life: 6, r: 1.3 },   // boss azul: proyectiles teledirigidos desde el halo
+  ZONE: { r: 7, dmg: 70, warn: 1.3, kick: 8 },            // los dos: círculo en el piso que explota
+  RAGE_ZONES: 3,        // al abrirse un carril el boss castiga la entrada con esta cantidad de zonas
+  ALERT_EVERY: 12,      // cada cuánto se repite el aviso "están atacando a tu boss"
+  // aparición
+  SPAWN_INV: 3,         // segundos de invulnerabilidad al aparecer
+  FWD_SPAWN: true,      // reaparición adelantada a mitad del carril que tu equipo ya abrió
+  // créditos y puntos
+  PAY: { STEP: 200, GEN_HIT: 30, BOSS_HIT: 40, GEN: 300, BAR: 500, BAR_TEAM: 200, BOSS_KILL: 1000 },   // cada STEP de daño paga GEN_HIT o BOSS_HIT
+  // bots
+  BOT_DODGE: [0, .5, .85, 1],   // probabilidad de esquivar un ataque avisado, por dificultad (Fácil a Pesadilla)
+  BOT_DEF: 4                    // uno de cada BOT_DEF bots se queda a defender
+};
 
 /* ---------- Cartas de mejora (estilo roguelike) ----------
    Solo en los modos con `cards` (Arena, Team Deathmatch y Captura la bandera).
@@ -1865,6 +1909,95 @@ function buildPyramid() {
     theme: { sky: 'halloween', tex: 'ruina', ambiente: 'piramide', fog: 0x0c0818, fogD: .006, amb: 0x5a4a90, ambI: .48, hemi: [0x6a58a8, 0x3a2a58, .52], sun: true, sunC: 0x9a88c0, sunI: .4, sunPos: [0, 60, 50], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
 }
 MAPDEFS.pyramid = buildPyramid;
+/* ---------- El Santuario Dual (Captura el dominio) ----------
+   El mapa más grande del juego: 320 × 96 m, simétrico respecto de x = 0. Azul al oeste (x < 0), rojo al este (x > 0).
+   De punta a punta: fortaleza · barreras y generadores · tierra de nadie (cañón con río) · barreras · fortaleza.
+   Tres carriles: norte (terraza alta a 6 m y puente alto), centro (puente largo y plaza con el punto de poder)
+   y sur (túnel bajo tierra a -6 m que cruza el cañón por un tubo).
+   `u` es la distancia al centro: cada mitad se arma una vez y se espeja con sx. */
+function buildSantuario() {
+  const { lava, spawns, lights, add, wall, D, face, I, finish } = mapKit();
+  const tspawns = [[], []], fspawns = [[], []], gens = [], bars = [], bosses = [], bossPts = [[], []], defPts = [[], []], deco = [];
+  const GATES = [[-40, -30], [-5, 5], [31, 41]];   // portones norte, centro y sur (z0, z1)
+  /* ---- bordes, cañón y río ---- */
+  add(-161, -16, -49, 161, 13, -48, 'wall'); add(-161, -16, 48, 161, 13, 49, 'wall');
+  add(-34, -16, -48, 34, -15, 48, 'rock');
+  lava.push({ min: [-34, -15, -48], max: [34, -12.5, 48], dps: 999, water: 1 });
+  /* ---- plaza neutral con el punto de poder ---- */
+  add(-14, -16, -14, 14, 0, 14, 'floor');
+  add(-2, 0, -2, 2, .4, 2, 'metal'); I('quad', 0, .4, 0);
+  for (const [x, z] of [[-8, -8], [8, -8], [-8, 8], [8, 8]]) add(x - 1, 0, z - 1, x + 1, 5, z + 1, 'wall');
+  add(-3, 0, -11, 3, 1.3, -10, 'crate'); add(-3, 0, 10, 3, 1.3, 11, 'crate'); add(-12, 0, -5, -11, 1.3, -2, 'crate'); add(11, 0, 2, 12, 1.3, 5, 'crate');
+  I('health', 0, 0, -12); I('health', 0, 0, 12);
+  /* ---- los tres cruces del cañón ---- */
+  add(-34, -1, -4, -14, 0, 4, 'floor'); add(14, -1, -4, 34, 0, 4, 'floor');   // centro: puente largo
+  add(-40, 5, -40, 40, 6, -32, 'floor'); I('mega', 0, 6, -36);                  // norte: puente alto
+  add(-34, -7, 30, 34, -6, 42, 'floor');                                        // sur: tubo
+  add(-34, -6, 29, 34, -1.5, 30, 'metal'); add(-34, -6, 42, 34, -1.5, 43, 'metal'); add(-34, -1.5, 29, 34, -1, 43, 'metal');
+  I('armorH', 0, -6, 36);
+  lights.push({ x: 0, y: 5, z: 0, c: 0xfff0c0, i: 1.4, d: 30 }, { x: 0, y: -3, z: 36, c: 0xffb060, i: 1, d: 26 }, { x: 0, y: 9, z: -36, c: 0xc0d0ff, i: 1, d: 26 });
+  for (const sx of [1, -1]) {
+    const team = sx > 0 ? 0 : 1, col = team ? 0x3a8bff : 0xff7a20;
+    const A = (u0, y0, z0, u1, y1, z1, mat, ex) => add(sx * u0, y0, z0, sx * u1, y1, z1, mat, ex);
+    const P = (u, y, z) => ({ x: sx * u, y, z });
+    /* ---- suelo ---- */
+    A(34, -16, -48, 160, 0, 24, 'floor'); A(102, -16, 24, 160, 0, 48, 'floor');
+    A(160, -16, -49, 161, 18, 49, 'wall');
+    /* ---- carril sur: túnel (piso a -6) con la superficie arriba ---- */
+    A(34, -16, 24, 90, -6, 48, 'concrete');
+    A(34, -6, 24, 90, 0, 30, 'rock'); A(34, -6, 42, 90, 0, 48, 'rock'); A(34, -1.5, 30, 90, 0, 42, 'floor');
+    A(90, -16, 24, 102, 0, 30, 'rock'); A(90, -16, 42, 102, 0, 48, 'rock');
+    A(90, -16, 30, 102, 0, 42, 'floor', { ramp: { axis: 'x', dir: sx, lo: -6, hi: 0 } });   // sale a la superficie frente al portón sur
+    A(60, -6, 35, 62, -1.5, 37, 'wall'); A(76, -6, 33, 77, -4.6, 36, 'crate'); A(46, -6, 36, 47, -4.6, 39, 'crate');
+    A(56, 0, 34, 59, 3, 38, 'wall'); A(78, 0, 30, 81, 3, 34, 'wall'); A(68, 0, 43, 72, 1.3, 44, 'crate');
+    lights.push({ x: sx * 50, y: -2.5, z: 36, c: 0xffb060, i: 1, d: 24 }, { x: sx * 75, y: -2.5, z: 36, c: col, i: 1, d: 24 });
+    /* ---- carril norte: terraza a 6 m ---- */
+    A(40, 0, -48, 100, 6, -24, 'rock');
+    A(100, 0, -40, 110, 6, -30, 'floor', { ramp: { axis: 'x', dir: -sx, lo: 0, hi: 6 } });   // baja al portón norte
+    A(56, 0, -24, 66, 6, -12, 'floor', { ramp: { axis: 'z', dir: -1, lo: 0, hi: 6 } });        // sube desde el carril del centro
+    A(60, 6, -40, 63, 9, -36, 'wall'); A(82, 6, -34, 85, 8.5, -30, 'wall'); A(72, 6, -46, 76, 7.3, -45, 'crate'); A(48, 6, -31, 49, 7.3, -27, 'crate');
+    /* ---- carril del centro ---- */
+    A(44, 0, 22, 64, 5, 24, 'wall'); A(72, 0, 22, 96, 5, 24, 'wall');
+    A(48, 0, -7, 51, 4, 1, 'wall'); A(74, 0, -1, 77, 4, 7, 'wall'); A(92, 0, -9, 95, 3, -4, 'wall');
+    A(62, 0, 9, 66, 1.3, 10, 'crate'); A(84, 0, 13, 85, 1.3, 17, 'crate'); A(40, 0, 8, 41, 1.3, 12, 'crate');
+    /* ---- frente de la fortaleza: tres portones con barrera y dos generadores cada uno ---- */
+    wall(Math.min(sx * 112, sx * 114), -48, Math.max(sx * 112, sx * 114), 48, 0, 18, GATES.map(g => D(g[0], g[1], 0, 6)), 'wall');
+    GATES.forEach((g, lane) => {
+      const i = bars.length, mid = (g[0] + g[1]) / 2;
+      A(112, 0, g[0], 114, 6, g[1], 'clip', { bar: { team, lane, i, down: false } });
+      bars.push({ team, lane, x: sx * 113, y: 0, z: mid, w: g[1] - g[0], h: 6 });
+      defPts[team].push(P(118, 0, mid));
+      for (const za of [g[0] - 3, g[1] + 1]) {
+        A(107, 0, za, 109, 3.2, za + 2, 'clip', { gen: gens.length });
+        // desde dónde se lo ataca: la terraza (norte), el carril (centro) o los costados de la rampa (sur)
+        const atk = lane === 0 ? P(97, 6, za + 1 < mid ? -43 : -27) : lane === 1 ? P(94, 0, za + 1) : P(94, 0, za + 1 < mid ? 27 : 45);
+        gens.push({ team, lane, x: sx * 108, y: 0, z: za + 1, atk });
+        if (lane) A(102, 0, za - .5, 103, 1.2, za + 2.5, 'crate');   // algo de cobertura para el que lo defiende
+      }
+      lights.push({ x: sx * 110, y: 5, z: mid, c: col, i: 1.3, d: 26 });
+    });
+    /* ---- fortaleza: muro que tapa al boss, sala del boss y apariciones ---- */
+    A(122, 0, -22, 124, 18, 22, 'wall');
+    A(140, 0, -2, 144, DOM.BOSS_H, 2, 'clip', { boss: team });
+    bosses[team] = { x: sx * 142, y: 0, z: 0, yaw: face(sx * 142, 0, 0, 0) };
+    bossPts[team].push(P(130, 0, -28), P(130, 0, 28));
+    A(148, 0, -46, 149, 5, -24, 'wall'); A(148, 0, 24, 149, 5, 46, 'wall');
+    A(132, 0, -40, 135, 3, -36, 'wall'); A(132, 0, 36, 135, 3, 40, 'wall'); A(128, 0, -14, 129, 1.3, -10, 'crate'); A(128, 0, 10, 129, 1.3, 14, 'crate');
+    for (const z of [-42, -37, -32, -27, 27, 32, 37, 42]) tspawns[team].push({ x: sx * 154, y: 0, z, yaw: face(sx * 154, z, 0, z) });
+    // reaparición adelantada: a mitad del carril rival que tu equipo ya abrió (del lado del otro equipo)
+    fspawns[1 - team] = [P(72, 6, -38), P(68, 0, 15), P(70, 0, 37)].map(p => ({ x: p.x, y: p.y, z: p.z, yaw: face(p.x, p.z, sx * 160, p.z) }));
+    lights.push({ x: sx * 142, y: 10, z: 0, c: col, i: 1.6, d: 34 }, { x: sx * 154, y: 4, z: -34, c: 0xffe0b0, i: 1, d: 20 }, { x: sx * 154, y: 4, z: 34, c: 0xffe0b0, i: 1, d: 20 });
+    /* ---- ítems ---- */
+    I('health', sx * 100, 0, -20); I('health', sx * 100, 0, 18); I('health', sx * 118, 0, -14); I('health', sx * 118, 0, 14);
+    I('armor', sx * 70, 6, -44); I('w8', sx * 90, 6, -45); I('w3', sx * 60, -6, 32); I('w5', sx * 80, 0, 3);
+    I('bullets', sx * 150, 0, -22); I('shells', sx * 150, 0, 22); I('rockets', sx * 118, 0, 0); I('slugs', sx * 66, 0, 40);
+    deco.push({ t: 'glow', x: sx * 142, y: 16, z: 0, c: col, s: 6 });
+  }
+  spawns.push(...tspawns[0], ...tspawns[1]);
+  return finish({ id: 'santuario', name: 'dom1 · El Santuario Dual', bounds: { x0: -161, x1: 161, z0: -49, z1: 49 }, tspawns, fspawns, gens, bars, bosses, bossPts, defPts, deco,
+    theme: { sky: 'halloween', tex: 'ruina', fog: 0x0e1420, fogD: .0038, amb: 0x7080a8, ambI: .62, hemi: [0x8aa0d8, 0x40301c, .6], sun: true, sunC: 0xc8d4ff, sunI: .5, sunPos: [10, 70, 40], shadowRes: 4096, shBias: -.0004, shNormal: .08, shFar: 320 } });
+}
+MAPDEFS.santuario = buildSantuario;
 const MAPS = {};
 for (const id in MAPDEFS) MAPS[id] = MAPDEFS[id]();
 // "Probar en práctica" desde el editor: la página deja el mapa en self.CK_MAPA_EDITOR antes de cargar el juego
@@ -1918,12 +2051,19 @@ function topAt(b, x0, z0, x1, z1) {
   else { const L = b.max[2] - b.min[2]; t = r.dir > 0 ? (Math.min(z1, b.max[2]) - b.min[2]) / L : (b.max[2] - Math.max(z0, b.min[2])) / L; }
   return r.lo + (r.hi - r.lo) * clamp(t, 0, 1);
 }
+/* Barreras de campo de fuerza (Captura el dominio): son bloques con `bar: { team, lane, i, down }`.
+   Frenan a todo lo que no sea del equipo dueño: cuerpos, balas y proyectiles. PASA dice para qué equipo se está
+   calculando ahora (-1 = nadie pasa, -2 = pasan todos: así se arma la navegación). El movimiento lo toma solo
+   de `s.tm`; para disparos y líneas de visión se fija con setPasa(), que devuelve el valor anterior para restaurarlo. */
+let PASA = -1;
+function setPasa(t) { const o = PASA; PASA = t == null ? -1 : t; return o; }
+const barOpen = b => b.bar.down || PASA === -2 || b.bar.team === PASA;
 const overlapXZ = (b, x0, z0, x1, z1) => b.min[0] < x1 && b.max[0] > x0 && b.min[2] < z1 && b.max[2] > z0;
 
 function solidAt(W, x, y, z, r, h) {
   const x0 = x - r, x1 = x + r, z0 = z - r, z1 = z + r;
   for (const b of W.brushes) {
-    if (b.nc || !overlapXZ(b, x0, z0, x1, z1)) continue;
+    if (b.nc || (b.bar && barOpen(b)) || !overlapXZ(b, x0, z0, x1, z1)) continue;
     if (b.min[1] >= y + h - EPS) continue;
     if (topAt(b, x0, z0, x1, z1) <= y + EPS) continue;
     return true;
@@ -1936,7 +2076,7 @@ function stepAxis(W, s, ax, d) {
   const x0 = nx - r, x1 = nx + r, z0 = nz - r, z1 = nz + r;
   let rise = 0;
   for (const b of W.brushes) {
-    if (b.nc || !overlapXZ(b, x0, z0, x1, z1)) continue;
+    if (b.nc || (b.bar && barOpen(b)) || !overlapXZ(b, x0, z0, x1, z1)) continue;
     if (b.min[1] >= s.y + H - EPS) continue;
     const top = topAt(b, x0, z0, x1, z1);
     if (top <= s.y + EPS) continue;
@@ -1956,7 +2096,7 @@ function stepY(W, s, h, wasOn) {
   if (s.vy <= 0) {
     let ground = -Infinity, gb = null;
     for (const b of W.brushes) {
-      if (b.nc || !overlapXZ(b, x0, z0, x1, z1)) continue;
+      if (b.nc || (b.bar && barOpen(b)) || !overlapXZ(b, x0, z0, x1, z1)) continue;
       const top = topAt(b, x0, z0, x1, z1);
       if (top <= s.y + .02 && top > ground) { ground = top; gb = b; }
     }
@@ -1970,7 +2110,7 @@ function stepY(W, s, h, wasOn) {
   } else {
     let ceil = Infinity;
     for (const b of W.brushes) {
-      if (b.nc || !overlapXZ(b, x0, z0, x1, z1)) continue;
+      if (b.nc || (b.bar && barOpen(b)) || !overlapXZ(b, x0, z0, x1, z1)) continue;
       if (b.min[1] >= s.y + H - .02 && b.min[1] < ceil) ceil = b.min[1];
     }
     if (ny + H > ceil) { s.y = ceil - H; s.vy = 0; } else s.y = ny;
@@ -2048,6 +2188,10 @@ function inZeroG(W, s) {
   return false;
 }
 function pmove(W, s, cmd, dt) {
+  const prev = PASA; PASA = s.tm == null ? -1 : s.tm;
+  try { return pmove0(W, s, cmd, dt); } finally { PASA = prev; }
+}
+function pmove0(W, s, cmd, dt) {
   if (W.movers.length) carry(W, s);
   crouchUpdate(W, s, !!cmd.crouch);
   const steps = Math.max(1, Math.ceil(dt / (1 / 120) - 1e-6)), h = dt / steps;
@@ -2197,21 +2341,21 @@ function slab(b, ox, oy, oz, ix, iy, iz, maxT) {
 }
 const inv = v => Math.abs(v) < 1e-9 ? Infinity : 1 / v;
 function raycast(W, ox, oy, oz, dx, dy, dz, maxT) {
-  let best = maxT, n = null;
+  let best = maxT, n = null, hb = null;
   const ix = inv(dx), iy = inv(dy), iz = inv(dz);
   for (const b of W.brushes) {
-    if (b.nc || slab(b, ox, oy, oz, ix, iy, iz, best) < 0) continue;
+    if (b.nc || (b.bar && barOpen(b)) || slab(b, ox, oy, oz, ix, iy, iz, best) < 0) continue;
     const h = rayBrush(b, ox, oy, oz, dx, dy, dz);
-    if (h && h.t < best) { best = h.t; n = h.n; }
+    if (h && h.t < best) { best = h.t; n = h.n; hb = b; }
   }
-  return n ? { t: best, n } : null;
+  return n ? { t: best, n, b: hb } : null;   // b: el bloque golpeado (para saber si fue un generador o un boss)
 }
 // línea de visión: alcanza con que algo la corte (no hace falta buscar el más cercano)
 function los(W, ax, ay, az, bx, by, bz) {
   const dx = bx - ax, dy = by - ay, dz = bz - az, d = Math.hypot(dx, dy, dz) || 1e-6, L = d - .05;
   const ux = dx / d, uy = dy / d, uz = dz / d, ix = inv(ux), iy = inv(uy), iz = inv(uz);
   for (const b of W.brushes) {
-    if (b.nc || slab(b, ax, ay, az, ix, iy, iz, L) < 0) continue;
+    if (b.nc || (b.bar && barOpen(b)) || slab(b, ax, ay, az, ix, iy, iz, L) < 0) continue;
     const h = rayBrush(b, ax, ay, az, ux, uy, uz);
     if (h && h.t < L) return false;
   }
@@ -2255,7 +2399,7 @@ function projStep(W, p, dt) {
     if (h) {
       const t = Math.max(0, h.t - .06);
       p.x += dx / L * t; p.y += dy / L * t; p.z += dz / L * t;
-      if (p.k === 'rocket' || p.k === 'bullet' || p.k === 'molotov') return { boom: true, n: h.n };
+      if (p.k === 'rocket' || p.k === 'bullet' || p.k === 'molotov') return { boom: true, n: h.n, b: h.b };
       const n = h.n, dot = p.v[0] * n[0] + p.v[1] * n[1] + p.v[2] * n[2];
       p.v[0] -= 2 * dot * n[0]; p.v[1] -= 2 * dot * n[1]; p.v[2] -= 2 * dot * n[2];
       const damp = n[1] > .7 ? .45 : .6;
@@ -2273,12 +2417,13 @@ function projStep(W, p, dt) {
 const NAVS = {};
 function inLava(W, x, y, z) { for (const l of W.lava) if (x > l.min[0] && x < l.max[0] && z > l.min[2] && z < l.max[2] && y < l.max[1] + .05 && y > l.min[1] - .5) return true; return false; }
 function airtime(dy) { const disc = K.JUMP * K.JUMP - 2 * K.GRAV * dy; if (disc < 0) return 0; return (K.JUMP + Math.sqrt(disc)) / K.GRAV; }
-function buildNav(W) {
+function buildNav(W) { const prev = setPasa(-2); try { return buildNav0(W); } finally { setPasa(prev); } }   // las barreras no cuentan: se prohíben por equipo al buscar el camino
+function buildNav0(W) {
   const X0 = Math.floor(W.bounds.x0), Z0 = Math.floor(W.bounds.z0), NX = Math.ceil(W.bounds.x1) - X0, NZ = Math.ceil(W.bounds.z1) - Z0;
   const cells = new Array(NX * NZ), nodes = [];
   // bloques agrupados por columna (x) para no recorrer todo el mapa en cada celda: el armado tarda varias veces menos
   const cols = [];
-  for (let cx = 0; cx < NX; cx++) { const qx = X0 + cx + .5 + .013; cols.push(W.brushes.filter(b => !b.nc && !b.mover && !b.nonav && b.min[0] < qx && b.max[0] > qx)); }
+  for (let cx = 0; cx < NX; cx++) { const qx = X0 + cx + .5 + .013; cols.push(W.brushes.filter(b => !b.nc && !b.mover && !b.nonav && !b.bar && b.min[0] < qx && b.max[0] > qx)); }
   for (let cz = 0; cz < NZ; cz++) for (let cx = 0; cx < NX; cx++) {
     const px = X0 + cx + .5, pz = Z0 + cz + .5, tops = [];
     for (const b of cols[cx]) {
@@ -2379,7 +2524,10 @@ function buildNav(W) {
   let k = 0;
   nodes.forEach((n, i) => { off[i] = k; n.l.forEach(l => { to[k] = l[0]; cost[k] = l[1]; k++; }); });
   off[N] = k;
-  return { X0, Z0, NX, NZ, cells, nodes, at, nodeAt, off, to, cost, zlev };
+  // nodos que quedan dentro de una barrera (Captura el dominio): bar[nodo] = barrera + 1
+  const bar = new Uint8Array(N);
+  for (const b of W.brushes) if (b.bar) for (const n of nodes) if (n.x > b.min[0] && n.x < b.max[0] && n.z > b.min[2] && n.z < b.max[2] && n.y > b.min[1] - .6 && n.y < b.max[1]) bar[n.id] = b.bar.i + 1;
+  return { X0, Z0, NX, NZ, cells, nodes, at, nodeAt, off, to, cost, zlev, bar };
 }
 function getNav(W) { W = W || WORLD; if (!NAVS[W.id]) NAVS[W.id] = buildNav(W); return NAVS[W.id]; }
 function findNode(nav, x, y, z) {
@@ -2396,12 +2544,13 @@ function findNode(nav, x, y, z) {
     }
   return best;
 }
-function dijkstra(nav, start) {
+// ban (opcional): ban[barrera + 1] = 1 si esa barrera está cerrada para el que busca el camino
+function dijkstra(nav, start, ban) {
   // los arreglos se reutilizan entre búsquedas (menos basura = menos pausas del recolector)
   const N = nav.nodes.length;
   if (!nav._dist) { nav._dist = new Float64Array(N); nav._prev = new Int32Array(N); nav._hk = new Float64Array(1024); nav._hv = new Int32Array(1024); }
   const dist = nav._dist.fill(Infinity), prev = nav._prev.fill(-1);
-  const off = nav.off, to = nav.to, cost = nav.cost;
+  const off = nav.off, to = nav.to, cost = nav.cost, bar = nav.bar;
   let cap = nav._hk.length, hk = nav._hk, hv = nav._hv, size = 0;
   const push = (i, d) => {
     if (size === cap) { cap *= 2; const a = new Float64Array(cap), b = new Int32Array(cap); a.set(hk); b.set(hv); hk = nav._hk = a; hv = nav._hv = b; }
@@ -2419,7 +2568,7 @@ function dijkstra(nav, start) {
       hk[c] = kd; hv[c] = kv;
     }
     if (d > dist[i]) continue;
-    for (let e = off[i], ee = off[i + 1]; e < ee; e++) { const nd = d + cost[e], j = to[e]; if (nd < dist[j]) { dist[j] = nd; prev[j] = i; push(j, nd); } }
+    for (let e = off[i], ee = off[i + 1]; e < ee; e++) { const nd = d + cost[e], j = to[e]; if (ban && bar[j] && ban[bar[j]]) continue; if (nd < dist[j]) { dist[j] = nd; prev[j] = i; push(j, nd); } }
   }
   return { dist, prev };
 }
@@ -2515,13 +2664,14 @@ const SHOP_BY_ID = {}; SHOP.forEach(it => SHOP_BY_ID[it.id] = it);
 class Game {
   constructor(o) {
     this.o = Object.assign({ fraglimit: 20, timelimit: 600, caplimit: 3, bots: null, botFill: 0, botSkill: 1, online: false, maxPlayers: 16, map: null, rotate: true, mode: 'arena' }, o || {});
+    if (MODE_ALIAS[this.o.mode]) this.o.mode = MODE_ALIAS[this.o.mode];
     if (!MODES[this.o.mode]) this.o.mode = 'arena';
     this.mode = MODES[this.o.mode];
     if (this.mode.timelimit) this.o.timelimit = this.mode.timelimit;   // la Arena dura 6 minutos, online y en práctica
     this.shards = []; this.sid = 1; this.crown = null; this.storm = null; this.mapVotes = new Map(); this.voteOpts = null;
     this.players = new Map(); this.nextId = 1; this.projs = []; this.fires = []; this.pid = 1; this.vote = null; this.mvote = null; this.bans = new Map(); this.kickN = new Map();
     this.time = 0; this.snapT = 0; this.scT = 0; this.botT = 0; this.state = 'play'; this.left = this.o.timelimit; this.interT = 0;
-    this.ts = [0, 0]; this.flags = []; this.countT = 0;
+    this.ts = [0, 0]; this.flags = []; this.countT = 0; this.dom = null;
     if (this.mode.minPlayers && this.o.online) this.state = 'lobby';
     this.o.map = mapId(this.o.map);
     this.setMap(this.mode.maps.includes(this.o.map) ? this.o.map : this.mode.maps[0]);
@@ -2532,7 +2682,7 @@ class Game {
     const off = t => !!this.mode.gg && t !== 'health'; // en gungame no hay armas ni munición tiradas (cada arma se gana con bajas), pero sí botiquines
     this.items = this.W.items.map((it, i) => ({ i, type: it.type, base: it.type, x: it.x, y: it.y, z: it.z, off: off(it.type), up: !off(it.type), t: 0 }));
     this.projs.length = 0; this.fires = [];
-    this.resetFlags();
+    this.resetFlags(); this.domSetup();
     updateMovers(this.W, this.time);
   }
   resetFlags() {
@@ -2614,7 +2764,7 @@ class Game {
         if (this.mode.teams) this.setTeam(p, this.pickTeam(p));
         p.joined = true; p.joinT = this.time; p.rkills = 0; p.dmg = 0; p.bestLife = 0;
         if (this.mode.tdm && this.o.online && this.humanCount(false) <= 1 && Number.isInteger(m.fl) && m.fl >= 5 && m.fl <= 500) this.o.fraglimit = m.fl;
-        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts, cd: p.cards.slice(), sh: this.shards.map(s => [s.id, r3(s.x), r3(s.y), r3(s.z), r2(s.t)]), cw: this.crownState(), st: this.stormInfo(), mv: this.voteState() });
+        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts, cd: p.cards.slice(), sh: this.shards.map(s => [s.id, r3(s.x), r3(s.y), r3(s.z), r2(s.t)]), cw: this.crownState(), st: this.stormInfo(), mv: this.voteState(), dm: this.domState() });
         this.bcast({ t: 'ev', e: 'join', id, n: p.name, c: p.color, s: p.skin, tm: p.team }, id);
         this.spawn(p); this.botT = 0; this.sendScores();
         break;
@@ -2623,6 +2773,7 @@ class Game {
         if (!p.joined || !p.alive) return;
         const a = m.p, v = m.v;
         if (!Array.isArray(a) || a.length !== 3 || !a.every(Number.isFinite)) return;
+        if (this.dom && this.domBlocked(p, a)) return;   // quiso cruzar una barrera rival: no se le acepta la posición
         p.s.x = clamp(a[0], -260, 260); p.s.y = clamp(a[1], -40, 60); p.s.z = clamp(a[2], -260, 260);   // el mapa ancho y el agua llegan más allá de ±60
         if (Array.isArray(v) && v.length === 3 && v.every(Number.isFinite)) { p.s.vx = clamp(v[0], -80, 80); p.s.vy = clamp(v[1], -80, 80); p.s.vz = clamp(v[2], -80, 80); }
         if (Number.isFinite(m.y)) p.yaw = m.y; if (Number.isFinite(m.x)) p.pitch = clamp(m.x, -1.6, 1.6);
@@ -2663,6 +2814,18 @@ class Game {
       case 'mapchg': this.startMapVote(p, String(m.m || '')); break;
       case 'mapvote': this.castMapVote(p, String(m.m || '')); break;
     }
+  }
+  // Captura el dominio: el cliente manda su posición; si el tramo cruza una barrera rival activa se lo devuelve a donde estaba
+  domBlocked(p, a) {
+    const dx = a[0] - p.s.x, dy = a[1] - p.s.y, dz = a[2] - p.s.z, L = Math.hypot(dx, dy, dz);
+    if (L < 1e-4 || L > 12) return false;   // los saltos grandes son reapariciones o teletransportes
+    for (const b of this.W.brushes) {
+      if (!b.bar || b.bar.down || b.bar.team === p.team) continue;
+      if (slab(b, p.s.x, p.s.y + .9, p.s.z, inv(dx / L), inv(dy / L), inv(dz / L), L) < 0) continue;
+      if (p.send) p.send({ t: 'ev', e: 'fix', p: r3a([p.s.x, p.s.y, p.s.z]) });
+      return true;
+    }
+    return false;
   }
   // E: cambiar tu arma principal por la que está tirada al lado (como en CS); al reaparecer volvés a tener la comprada
   grab(p) {
@@ -2807,6 +2970,7 @@ class Game {
   command(p, txt) {
     const parts = txt.slice(1).split(/\s+/), cmd = parts[0], arg = cmd === 'map' ? mapId(parts[1]) : parts[1];
     const say = s => p.send && p.send({ t: 'ev', e: 'sys', m: s });
+    if (this.domCommand(p, cmd, parts.slice(1))) return;
     if (cmd === 'kick' || cmd === 'echar') {
       const q = parts.slice(1).join(' ').toLowerCase(), t = [...this.players.values()].find(x => x.joined && !x.bot && x.name.toLowerCase() === q) || [...this.players.values()].find(x => x.joined && !x.bot && q && x.name.toLowerCase().startsWith(q));
       if (!t) return say('Uso: /echar NOMBRE (o desde el menú de pausa)');
@@ -2833,7 +2997,9 @@ class Game {
   pickSpawn(p) {
     const alive = [...this.players.values()].filter(q => q.alive && (!this.mode.teams || !p || q.team !== p.team));
     let list = this.mode.teams && p && p.team >= 0 && this.W.tspawns ? this.W.tspawns[p.team] : this.W.spawns;
-    if (this.stormOn() && this.storm) list = this.stormSpawns(list);   // con la tormenta, solo apariciones dentro del círculo
+    if (this.stormOn() && this.storm) list = this.stormSpawns(list);
+    // Captura el dominio: si tu equipo ya abrió un carril rival, también se puede aparecer a mitad de ese carril
+    if (this.dom && DOM.FWD_SPAWN && p && p.team >= 0 && this.W.fspawns) { const fw = this.dom.bars.filter(b => b.team !== p.team && b.st === 2).map(b => this.W.fspawns[p.team][b.lane]); if (fw.length) list = list.concat(fw); }   // con la tormenta, solo apariciones dentro del círculo
     const scored = list.map(sp => {
       let d = 1e9; for (const q of alive) d = Math.min(d, Math.hypot(q.s.x - sp.x, q.s.y - sp.y, q.s.z - sp.z));
       return { sp, d: d + Math.random() * 6 };
@@ -2864,7 +3030,7 @@ class Game {
   fillMags(p) { p.mag = {}; p.relT = {}; WEAPONS.forEach((W_, i) => { if (W_.mag) p.mag[i] = W_.mag; }); }
   spawn(p) {
     const sp = this.pickSpawn(p);
-    p.s = { x: sp.x, y: sp.y, z: sp.z, vx: 0, vy: 0, vz: 0, on: true };
+    p.s = { x: sp.x, y: sp.y, z: sp.z, vx: 0, vy: 0, vz: 0, on: true, tm: p.team };   // tm: el equipo, para las barreras (04-fisica.js)
     p.yaw = sp.yaw; p.pitch = 0; p.hp = 100; p.w = 1; p.quadT = 0; p.megaT = 0; p.lifeT0 = this.time;
     if (p.bot && this.mode.shop) this.botShop(p);
     this.loadout(p);
@@ -2964,12 +3130,17 @@ class Game {
     const W_ = WEAPONS[w];
     const ns = !!W_.scope && !m.sc; // arma con mira disparada sin apuntar
     if (W_.type === 'proj') { this.spawnProj(p, w, o, d); this.projs[this.projs.length - 1].ns = ns; return; }
+    const pasa = setPasa(p.team);
+    try { this.humanHits(p, m, w, W_, o, d, ns); } finally { setPasa(pasa); }
+  }
+  humanHits(p, m, w, W_, o, d, ns) {
     this.bcast({ t: 'ev', e: 'shot', id: p.id, w, o: r3a(o), d: r3a(d) }, p.id);
     this.curNS = ns;
     const claims = Array.isArray(m.h) ? m.h.slice(0, 16) : [];
     const done = new Set();
     for (const c of claims) {
       if (!Array.isArray(c)) continue;
+      if (c[0] < 0) { if (!done.has(c[0])) { done.add(c[0]); this.domClaim(p, o, d, c[0] | 0, clamp(c[1] | 0, 0, W_.pel), c[2] | 0, W_); } continue; }   // generador o boss
       const t = this.players.get(c[0] | 0); if (!t || !t.alive || t === p || done.has(t.id)) continue;
       done.add(t.id);
       const n = clamp(c[1] | 0, 0, W_.pel), hs = clamp(c[2] | 0, 0, n); if (!n) continue;
@@ -3012,14 +3183,15 @@ class Game {
   }
   trace(o, d, range, shooter, pierce) {
     const wall = raycast(this.W, o[0], o[1], o[2], d[0], d[1], d[2], range);
-    const wt = wall ? wall.t : range, hits = [];
+    const wt = wall ? wall.t : range; let hits = [];
     for (const t of this.players.values()) {
       if (!t.alive || t === shooter || !t.joined) continue;
       const h = rayPlayer(t.s.x, t.s.y, t.s.z, o[0], o[1], o[2], d[0], d[1], d[2], t.s.crouch);
       if (h && h.t < wt) hits.push({ p: t, t: h.t, head: h.head });
     }
     hits.sort((a, b) => a.t - b.t);
-    return { wt, n: wall ? wall.n : null, hits: pierce ? hits : hits.slice(0, 1) };
+    hits = pierce ? hits : hits.slice(0, 1);
+    return { wt, n: wall ? wall.n : null, hits, st: this.dom && wall && !(hits.length && !pierce) ? this.domStruct(o, d, wall) : null };
   }
   botFire(p, w, o, d) {
     if (!this.canFire(p, w)) return;
@@ -3027,7 +3199,11 @@ class Game {
     const W_ = WEAPONS[w];
     if (W_.type === 'proj') { this.spawnProj(p, w, o, d); return; }
     this.bcast({ t: 'ev', e: 'shot', id: p.id, w, o: r3a(o), d: r3a(d) });
-    const acc = new Map();
+    const pasa = setPasa(p.team);
+    try { this.botHits(p, w, W_, o, d); } finally { setPasa(pasa); }
+  }
+  botHits(p, w, W_, o, d) {
+    const acc = new Map(), sacc = new Map();
     for (let i = 0; i < W_.pel; i++) {
       let dd = d;
       if (W_.spread) {
@@ -3039,11 +3215,13 @@ class Game {
       }
       const tr = this.trace(o, dd, W_.range || 300, p, W_.type === 'rail');
       for (const h of tr.hits) { const a = acc.get(h.p) || { n: 0, hs: 0 }; a.n++; if (h.head) a.hs++; acc.set(h.p, a); }
+      if (tr.st) { const k = tr.st.kind + tr.st.i + (tr.st.core ? 'c' : ''), a = sacc.get(k) || { st: tr.st, dmg: 0 }; a.dmg += W_.dmg * falloff(W_, tr.wt); sacc.set(k, a); }
     }
     for (const [t, a] of acc) {
       const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? W_.dmg * (a.hs ? 1.5 : 1) : W_.head ? W_.dmg * (a.hs ? W_.head : 1) : (a.n + a.hs) * W_.dmg * falloff(W_, Math.hypot(t.s.x - o[0], t.s.y + 1 - o[1], t.s.z - o[2]));
       this.damage(t, dmg * this.mult(p) * this.skill().dmg, p, w, d, .05, 'frag');
     }
+    for (const a of sacc.values()) this.domHit(p, a.st.kind, a.st.i, a.dmg * this.mult(p) * this.skill().dmg, a.st.core);
   }
   spawnProj(p, w, o, d) {
     const W_ = WEAPONS[w], v = projLaunch(w, d);
@@ -3057,7 +3235,8 @@ class Game {
       const pr = this.projs[i]; if (!pr) continue;
       const ox = pr.x, oy = pr.y, oz = pr.z;
       pr.age += dt;
-      const res = projStep(this.W, pr, dt);
+      const own_ = this.players.get(pr.own), pasa = setPasa(own_ ? own_.team : -1);
+      let res; try { res = projStep(this.W, pr, dt); } finally { setPasa(pasa); }
       const dx = pr.x - ox, dy = pr.y - oy, dz = pr.z - oz, L = Math.hypot(dx, dy, dz);
       let direct = null, bt = Infinity;
       if (L > 1e-6) {
@@ -3068,11 +3247,20 @@ class Game {
         }
       }
       if (direct) { pr.x = ox + dx / L * bt; pr.y = oy + dy / L * bt; pr.z = oz + dz / L * bt; this.explode(pr, direct); this.projs.splice(i, 1); }
-      else if (res && res.boom) { this.explode(pr, null); this.projs.splice(i, 1); }
+      else if (res && res.boom) { pr.st = this.dom && res.b ? this.domStruct([ox, oy, oz], L > 1e-6 ? [dx / L, dy / L, dz / L] : [0, -1, 0], { b: res.b, t: L }) : null; this.explode(pr, null); this.projs.splice(i, 1); }
     }
   }
   explode(pr, direct) {
-    const W_ = WEAPONS[pr.w], own = this.players.get(pr.own);
+    const own = this.players.get(pr.own), pasa = setPasa(own ? own.team : -1);
+    try { this.explode0(pr, direct, own); } finally { setPasa(pasa); }
+  }
+  explode0(pr, direct, own) {
+    const W_ = WEAPONS[pr.w];
+    if (this.dom && own) {   // generadores y bosses: impacto directo y daño de área
+      if (pr.st && W_.direct) this.domHit(own, pr.st.kind, pr.st.i, W_.direct * pr.q, pr.st.core);
+      if (W_.rad) this.domBlast(own, pr.x, pr.y, pr.z, W_.rad, W_.dmg * pr.q, W_.sfall || .6, pr.st && W_.direct ? pr.st : null);
+      if (!this.live()) return;
+    }
     if (direct && W_.direct) {
       const sp = Math.hypot(pr.v[0], pr.v[1], pr.v[2]) || 1;
       if (pr.k === 'bullet' && own) this.huntReward(own, direct, pr);
@@ -3118,6 +3306,7 @@ class Game {
       if (f.tick > 0) continue;
       f.tick = f.every;
       const own = this.players.get(f.own);
+      if (this.dom && own) { this.domBlast(own, f.x, f.y + .5, f.z, f.r, f.hit, 0, null); if (!this.live()) return; }
       for (const t of this.players.values()) {
         if (!t.alive || !t.joined) continue;
         if (Math.hypot(t.s.x - f.x, t.s.z - f.z) > f.r || t.s.y < f.y - 1 || t.s.y > f.y + 1.6) continue;
@@ -3140,6 +3329,7 @@ class Game {
   /* ---- daño y muertes ---- */
   damage(t, amt, att, w, dir, ks, how) {
     if (!t.alive || !this.live() || amt <= 0) return;
+    if (this.dom && this.time - t.spawnT < DOM.SPAWN_INV && how !== 'void' && how !== 'water') return;   // recién aparecido: invulnerable un momento
     if (this.mode.teams && att && att !== t && att.team === t.team) return; // sin fuego amigo
     if (att && att !== t && hasCard(att, 'carnicero')) amt *= CARD_FX.DMG;   // carta Carnicero
     if (hasCard(t, 'coraza')) amt *= CARD_FX.ARMOR;                          // carta Coraza
@@ -3186,7 +3376,7 @@ class Game {
         this.bcast({ t: 'ev', e: 'crw', a: 'regi', id: att.id, n: att.name, v: v.name, pts: CROWN.KILL_PTS });
       }
       this.checkCard(att);
-    } else if (how !== 'storm') v.kills--;   // la tormenta no le da puntos a nadie, pero tampoco te resta
+    } else if (how !== 'storm' && how !== 'boss') v.kills--;   // la tormenta no le da puntos a nadie, pero tampoco te resta
     v.streak = 0; v.burnT = 0;
     this.dropCarried(v);
     const ns = !!(this.curNS && k && k !== v.id && w != null && WEAPONS[w] && WEAPONS[w].scope);
@@ -3347,6 +3537,326 @@ class Game {
     }
   }
 
+  /* =====================================================================
+     CAPTURA EL DOMINIO — solo los modos con `dom` (constantes en DOM, 01-datos.js)
+     Todo es del servidor: generadores, barreras, bosses, ataques y quién gana. El cliente solo dibuja.
+     this.dom = { gens, bars, boss, orbs, zones, stat } ; stat[equipo] = lo que ESE equipo le rompió al rival.
+     Estado de una barrera: 0 activa · 1 debilitada (cayó un generador) · 2 caída.
+     Ataques del boss (b.atk): 1 latigazo · 2 agarre · 3 pulso · 4 orbes · 5 zona.
+     ===================================================================== */
+  domSetup() {
+    this.dom = null;
+    const M = MAPS[this.W.id];
+    if (!this.mode.dom || !M.bars) return;
+    // cada partida tiene su copia de las barreras: el estado no se comparte entre salas
+    this.W = Object.assign({}, M, { brushes: M.brushes.map(b => b.bar ? Object.assign({}, b, { bar: Object.assign({}, b.bar, { down: false }) }) : b) });
+    this.dom = {
+      gens: M.gens.map(g => ({ team: g.team, lane: g.lane, x: g.x, y: g.y, z: g.z, atk: g.atk, hp: DOM.GEN_HP })),
+      bars: M.bars.map(b => ({ team: b.team, lane: b.lane, st: 0, t: 0 })),
+      boss: M.bosses.map((b, t) => ({ team: t, x: b.x, y: b.y, z: b.z, yaw: b.yaw, yaw0: b.yaw, hp: DOM.BOSS_HP, atk: 0, t: 0, cd: 4, tgt: 0, p: null, think: 0, seen: [], rage: -1, alertT: -99, hurtBy: 0 })),
+      orbs: [], zones: [], oid: 1, stat: [{ bars: 0, gens: 0, dmg: 0 }, { bars: 0, gens: 0, dmg: 0 }], first: [false, false], dirtyG: new Set(), bsKey: '', win: null, why: '', ban: [null, null]
+    };
+  }
+  domState() { const d = this.dom; return d ? { g: d.gens.map(g => Math.ceil(g.hp)), b: d.bars.map(b => b.st), h: d.boss.map(b => Math.ceil(b.hp)) } : null; }
+  domEv(m) { m.t = 'ev'; m.e = 'dom'; this.bcast(m); }
+  // qué barreras tiene cerradas un equipo (para la navegación de los bots)
+  domBan(team) {
+    const d = this.dom; if (!d) return null;
+    if (!d.ban[team]) { const a = new Uint8Array(d.bars.length + 1); d.bars.forEach((b, i) => { if (b.team !== team && b.st < 2) a[i + 1] = 1; }); d.ban[team] = a; }
+    return d.ban[team];
+  }
+  // daño a un generador ('g') o a un boss ('b'). Devuelve lo que de verdad le sacó
+  domHit(att, kind, i, amt, core) {
+    const d = this.dom; if (!d || this.state !== 'play' || !att || att.team < 0 || !(amt > 0)) return 0;
+    amt = Math.min(amt, DOM.HIT_CAP * this.mult(att));
+    if (hasCard(att, 'carnicero')) amt *= CARD_FX.DMG;
+    if (kind === 'g') {
+      const g = d.gens[i]; if (!g || g.hp <= 0 || g.team === att.team) return 0;
+      const real = Math.min(g.hp, amt); g.hp -= real; d.dirtyG.add(i);
+      this.domPay(att, real, false);
+      if (att.send) att.send({ t: 'ev', e: 'hit', id: -1 - i, n: Math.round(real), k: g.hp <= 0 ? 1 : 0, h: 0 });
+      if (g.hp <= 0) this.domGenDown(i, att);
+      return real;
+    }
+    const b = d.boss[i]; if (!b || b.hp <= 0 || b.team === att.team) return 0;
+    if (core) amt *= DOM.CORE_MULT;
+    const real = Math.min(b.hp, amt); b.hp -= real; b.hurtBy = att.id;
+    this.domPay(att, real, true);
+    if (att.send) att.send({ t: 'ev', e: 'hit', id: -101 - i, n: Math.round(real), k: b.hp <= 0 ? 1 : 0, h: core ? 1 : 0 });
+    if (this.time - b.alertT > DOM.ALERT_EVERY) { b.alertT = this.time; this.domEv({ a: 'alert', b: i }); }
+    if (b.hp <= 0) this.domBossDown(i, att);
+    return real;
+  }
+  domPay(att, real, boss) {
+    this.dom.stat[att.team].dmg += real; att.dmg = (att.dmg || 0) + real;
+    att.domAcc = (att.domAcc || 0) + real;
+    if (att.domAcc >= DOM.PAY.STEP) { const n = Math.floor(att.domAcc / DOM.PAY.STEP); att.domAcc -= n * DOM.PAY.STEP; this.credit(att, n * (boss ? DOM.PAY.BOSS_HIT : DOM.PAY.GEN_HIT), boss ? 'daño al boss' : 'daño al generador'); }
+  }
+  domGenDown(i, att) {
+    const d = this.dom, g = d.gens[i];
+    g.hp = 0; d.stat[1 - g.team].gens++;
+    if (att) { att.caps++; this.credit(att, DOM.PAY.GEN, 'generador destruido'); }
+    this.domEv({ a: 'gen', i, id: att ? att.id : 0, n: att ? att.name : '', first: d.first[g.team] ? 0 : 1 });
+    d.first[g.team] = true;
+    const bi = d.bars.findIndex(b => b.team === g.team && b.lane === g.lane), bar = d.bars[bi];
+    if (!bar || bar.st === 2) return;
+    const dead = d.gens.filter(q => q.team === g.team && q.lane === g.lane && q.hp <= 0).length;
+    this.domBarSet(bi, dead >= DOM.BAR_NEED ? 2 : 1, att);
+    this.sendScores();
+  }
+  domBarSet(bi, st, att) {
+    const d = this.dom, bar = d.bars[bi]; if (!bar || bar.st === st) return;
+    const fell = st === 2 && bar.st !== 2;
+    bar.st = st; bar.t = fell ? DOM.BAR_REARM : 0;
+    for (const b of this.W.brushes) if (b.bar && b.bar.i === bi) b.bar.down = st === 2;
+    d.ban = [null, null];
+    if (fell) {
+      d.stat[1 - bar.team].bars++;
+      for (const q of this.players.values()) if (q.joined && q.team === 1 - bar.team) this.credit(q, q === att ? DOM.PAY.BAR : DOM.PAY.BAR_TEAM, 'ruta ' + DOM.LANES[bar.lane] + ' abierta');
+      d.boss[bar.team].rage = bar.lane;
+    }
+    for (const q of this.players.values()) if (q.bot && q.ai) q.ai.replan = 0;
+    this.domEv({ a: 'bar', i: bi, st, n: att ? att.name : '' });
+  }
+  domBossDown(t, att) {
+    const d = this.dom, b = d.boss[t];
+    b.hp = 0; b.atk = 0; d.win = 1 - t; d.why = 'boss';
+    if (att) { att.caps += 3; this.credit(att, DOM.PAY.BOSS_KILL, 'mataste al boss'); }
+    this.domEv({ a: 'bossdown', b: t, id: att ? att.id : 0, n: att ? att.name : '' });
+    this.endMatch();
+  }
+  /* quién gana: el que mató al boss rival. Por tiempo: el que más vida porcentual le sacó al boss rival;
+     después más barreras tiradas, más generadores rotos y más daño total. Si todo empata, -1. */
+  domWinner() {
+    const d = this.dom; if (!d) return -1;
+    if (d.win != null) return d.win;
+    const s = d.stat, cmp = [[d.boss[0].hp / DOM.BOSS_HP, d.boss[1].hp / DOM.BOSS_HP, 'vida del boss'], [s[1].bars, s[0].bars, 'barreras'], [s[1].gens, s[0].gens, 'generadores'], [Math.round(s[1].dmg), Math.round(s[0].dmg), 'daño']];
+    // en cada fila: [valor del equipo 0, valor del equipo 1]; gana el que tiene MENOS (vida propia que le queda / lo que le rompieron)
+    for (const [a, b, why] of cmp) if (Math.abs(a - b) > 1e-9) { d.why = why; return a < b ? 1 : 0; }
+    d.why = 'empate'; return -1;
+  }
+  domSummary() { const d = this.dom; return d ? { why: d.why, hp: d.boss.map(b => Math.round(100 * b.hp / DOM.BOSS_HP)), bars: d.stat.map(s => s.bars), gens: d.stat.map(s => s.gens), dmg: d.stat.map(s => Math.round(s.dmg)) } : null; }
+  // qué golpeó un disparo: un generador o un boss (con o sin núcleo). o/d: origen y dirección; h: resultado de raycast
+  domStruct(o, d, h) {
+    const dm = this.dom; if (!dm || !h || !h.b) return null;
+    if (h.b.gen != null) return { kind: 'g', i: h.b.gen, core: false };
+    if (h.b.boss != null) return { kind: 'b', i: h.b.boss, core: this.domCore(dm.boss[h.b.boss], o, d, h.t, 1) };
+    return null;
+  }
+  // ¿el rayo pasa por el núcleo? Solo cuenta de frente (el núcleo está en el pecho)
+  domCore(b, o, d, t, tol) {
+    const f = dirFromAngles(b.yaw, 0);
+    if (d[0] * f[0] + d[2] * f[2] > -.15) return false;
+    const c = raySphere(o[0], o[1], o[2], d[0], d[1], d[2], b.x + f[0] * DOM.CORE_FWD, b.y + DOM.CORE_Y, b.z + f[2] * DOM.CORE_FWD, DOM.CORE_R * tol);
+    return c >= 0 && c < t + 3;
+  }
+  // un jugador dice que le pegó a un generador (-1-i) o a un boss (-101-equipo): se valida con el mundo del servidor
+  domClaim(p, o, d, id, n, hs, W_) {
+    const dm = this.dom; if (!dm) return;
+    const h = raycast(this.W, o[0], o[1], o[2], d[0], d[1], d[2], (W_.range || 300) + 3);
+    const boss = id <= -101, i = boss ? -101 - id : -1 - id;
+    // tolerancia: los perdigones se abren y el cliente apunta con su propio reloj; alcanza con que el tiro vaya a la estructura
+    let ok = !!(h && h.b && (boss ? h.b.boss === i : h.b.gen === i));
+    if (!ok) {
+      const c = boss ? dm.boss[i] : dm.gens[i]; if (!c) return;
+      const cy = c.y + (boss ? DOM.BOSS_H / 2 : 1.6), cx = c.x - o[0], cz = c.z - o[2], pr = cx * d[0] + (cy - o[1]) * d[1] + cz * d[2];
+      if (pr < 0) return;
+      const px = cx - d[0] * pr, py = (cy - o[1]) - d[1] * pr, pz = cz - d[2] * pr;
+      if (Math.hypot(px, pz) > (boss ? DOM.BOSS_R : 1) + 1 + pr * .1 || Math.abs(py) > (boss ? DOM.BOSS_H / 2 : 1.6) + 1 + pr * .1) return;
+      const far = h ? h.t : 1e9;   // nada macizo antes de llegar (una barrera rival frena el tiro)
+      if (far < pr - (boss ? DOM.BOSS_R : 1) * 1.5 - 1) return;
+      ok = true;
+    }
+    const core = boss && hs > 0 && this.domCore(dm.boss[i], o, d, h ? h.t : 1e9, 1.5);
+    const dist = h ? h.t : 0;
+    const dmg = W_.melee ? W_.dmg : W_.type === 'rail' ? W_.dmg : W_.head ? W_.dmg : n * W_.dmg * falloff(W_, dist);
+    this.domHit(p, boss ? 'b' : 'g', i, dmg * this.mult(p), core);
+  }
+  // explosiones y fuego: daño de área a generadores y bosses rivales
+  domBlast(own, x, y, z, rad, dmg, sfall, skip) {
+    const dm = this.dom; if (!dm || !own || rad <= 0) return;
+    const bd = (c, hx, hy) => Math.hypot(Math.max(0, Math.abs(x - c.x) - hx), Math.max(0, c.y - y, y - (c.y + hy)), Math.max(0, Math.abs(z - c.z) - hx));
+    dm.gens.forEach((g, i) => { if (g.hp <= 0 || g.team === own.team || (skip && skip.kind === 'g' && skip.i === i)) return; const ds = bd(g, 1, 3.2); if (ds < rad) this.domHit(own, 'g', i, dmg * (1 - sfall * ds / rad), false); });
+    dm.boss.forEach((b, i) => { if (b.hp <= 0 || b.team === own.team || (skip && skip.kind === 'b' && skip.i === i)) return; const ds = bd(b, DOM.BOSS_R, DOM.BOSS_H); if (ds < rad) this.domHit(own, 'b', i, dmg * (1 - sfall * ds / rad), false); });
+  }
+  /* ---- bosses ---- */
+  domTargets(b) {
+    const out = [];
+    for (const t of this.players.values()) {
+      if (!t.alive || !t.joined || t.team === b.team || t.team < 0) continue;
+      if (Math.hypot(t.s.x - b.x, t.s.z - b.z) > DOM.BOSS_SEE) continue;
+      if (!los(this.W, b.x, b.y + DOM.CORE_Y, b.z, t.s.x, t.s.y + 1, t.s.z) && !los(this.W, b.x, b.y + DOM.BOSS_H - 1, b.z, t.s.x, t.s.y + 1.6, t.s.z)) continue;
+      out.push(t);
+    }
+    return out;
+  }
+  tickDom(dt) {
+    const d = this.dom; if (!d || this.state !== 'play') return;
+    for (const b of d.boss) { const prev = setPasa(b.team); try { this.tickBoss(b, dt); } finally { setPasa(prev); } if (this.state !== 'play') return; }
+    this.tickOrbs(dt); if (this.state !== 'play') return;
+    this.tickZones(dt);
+    for (let i = 0; i < d.bars.length; i++) { const bar = d.bars[i]; if (bar.st === 2 && bar.t > 0) { bar.t -= dt; if (bar.t <= 0) { d.gens.forEach((g, k) => { if (g.team === bar.team && g.lane === bar.lane) { g.hp = DOM.GEN_HP; d.dirtyG.add(k); } }); this.domBarSet(i, 0, null); } } }
+  }
+  tickBoss(b, dt) {
+    const d = this.dom; if (b.hp <= 0) return;
+    b.think -= dt;
+    if (b.think <= 0) { b.think = .25; b.seen = this.domTargets(b); }
+    const ts = b.seen.filter(t => t.alive);
+    if (b.atk) {   // avisando: no gira, así el ataque se puede esquivar
+      b.t -= dt;
+      if (b.t <= 0) { const k = b.atk; b.atk = 0; b.cd = (DOM.GCD[0] + Math.random() * (DOM.GCD[1] - DOM.GCD[0])) * (b.hp < DOM.ENRAGE * DOM.BOSS_HP ? DOM.ENRAGE_CD : 1); this.domResolve(b, k); }
+      return;
+    }
+    if (b.rage >= 0) {   // se abrió un carril: castiga la entrada
+      const g = MAPS[this.W.id].defPts[b.team][b.rage]; b.rage = -1;
+      if (g) for (let k = 0; k < DOM.RAGE_ZONES; k++) this.domZone(b, g.x + (Math.random() - .5) * 8, g.y, g.z + (k - (DOM.RAGE_ZONES - 1) / 2) * 6, DOM.ZONE.warn + k * .5);
+      this.domEv({ a: 'atk', b: b.team, k: 6, t: 1.5 });
+    }
+    let tg = ts.find(t => t.id === b.hurtBy) || ts.find(t => t.id === b.tgt) || null;
+    if (!tg) for (const t of ts) if (!tg || Math.hypot(t.s.x - b.x, t.s.z - b.z) < Math.hypot(tg.s.x - b.x, tg.s.z - b.z)) tg = t;
+    b.tgt = tg ? tg.id : 0;
+    const want = tg ? Math.atan2(-(tg.s.x - b.x), -(tg.s.z - b.z)) : b.yaw0;
+    let dy = want - b.yaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
+    b.yaw += clamp(dy, -DOM.BOSS_TURN * dt, DOM.BOSS_TURN * dt);
+    b.cd -= dt;
+    if (b.cd > 0 || !tg) return;
+    const dist = Math.hypot(tg.s.x - b.x, tg.s.z - b.z), near = b.team === 0 ? 1 : 3, far = b.team === 0 ? 2 : 4, nr = b.team === 0 ? DOM.LASH.r : DOM.PULSE.r, r = Math.random();
+    const k = dist < nr * .9 ? (r < .6 ? near : r < .8 ? 5 : far) : (r < .55 ? far : 5);
+    b.atk = k; b.t = k === 5 ? .7 : DOM.WARN; b.p = [tg.s.x, tg.s.y, tg.s.z];
+    if (k === 1) b.yaw = want;   // el latigazo sale hacia donde estaba el blanco al avisar
+    if (k === 5) this.domZone(b, tg.s.x, tg.s.y, tg.s.z, DOM.ZONE.warn);
+    this.domEv({ a: 'atk', b: b.team, k, t: r2(b.t), id: tg.id, y: r2(b.yaw) });
+  }
+  domZone(b, x, y, z, warn) {
+    const fl = raycast(this.W, x, y + 1, z, 0, -1, 0, 12), fy = fl ? y + 1 - fl.t : y;
+    this.dom.zones.push({ team: b.team, x, y: fy, z, r: DOM.ZONE.r, t: warn });
+    this.domEv({ a: 'zone', b: b.team, p: r3a([x, fy, z]), r: DOM.ZONE.r, t: r2(warn) });
+  }
+  domHurt(b, t, amt, dir, kick) { this.damage(t, amt, null, null, dir, kick / amt, 'boss'); }
+  domResolve(b, k) {
+    const d = this.dom, hy = b.y + DOM.CORE_Y;
+    const vis = t => los(this.W, b.x, hy, b.z, t.s.x, t.s.y + 1, t.s.z) || los(this.W, b.x, b.y + DOM.BOSS_H - 1, b.z, t.s.x, t.s.y + 1.6, t.s.z);
+    const foes = [...this.players.values()].filter(t => t.alive && t.joined && t.team >= 0 && t.team !== b.team);
+    if (k === 1 || k === 3) {
+      const A = k === 1 ? DOM.LASH : DOM.PULSE, f = dirFromAngles(b.yaw, 0);
+      for (const t of foes) {
+        const dx = t.s.x - b.x, dz = t.s.z - b.z, dl = Math.hypot(dx, dz) || 1;
+        if (dl > A.r || Math.abs(t.s.y - b.y) > 8) continue;
+        if (k === 1 && (dx * f[0] + dz * f[2]) / dl < A.cos) continue;
+        if (!vis(t)) continue;
+        this.domHurt(b, t, A.dmg, [dx / dl * .8, .6, dz / dl * .8], A.kick);
+        if (this.state !== 'play') return;
+      }
+    } else if (k === 2) {
+      const t = this.players.get(b.tgt);
+      if (t && t.alive && t.team !== b.team && Math.hypot(t.s.x - b.x, t.s.z - b.z) <= DOM.GRAB.range && vis(t)) {
+        const dx = b.x - t.s.x, dz = b.z - t.s.z, dl = Math.hypot(dx, dz) || 1, pull = Math.min(DOM.GRAB.pull, 6 + dl * .9);
+        this.domHurt(b, t, DOM.GRAB.dmg, [dx / dl * .93, .36, dz / dl * .93], pull);
+        this.domEv({ a: 'grab', b: b.team, id: t.id });
+      }
+    } else if (k === 4) {
+      const ts = foes.filter(t => Math.hypot(t.s.x - b.x, t.s.z - b.z) <= DOM.BOSS_SEE && vis(t));
+      if (ts.length) for (let i = 0; i < DOM.ORBS.n; i++) {
+        const a = b.yaw + (i - (DOM.ORBS.n - 1) / 2) * .9, f = dirFromAngles(a, .5);
+        d.orbs.push({ id: d.oid++, team: b.team, x: b.x + f[0] * 2.5, y: b.y + DOM.BOSS_H - .5, z: b.z + f[2] * 2.5, vx: f[0] * DOM.ORBS.speed, vy: f[1] * DOM.ORBS.speed, vz: f[2] * DOM.ORBS.speed, tgt: ts[i % ts.length].id, life: DOM.ORBS.life });
+      }
+    }
+    this.domEv({ a: 'fx', b: b.team, k });
+  }
+  tickOrbs(dt) {
+    const d = this.dom, O = DOM.ORBS;
+    for (let i = d.orbs.length - 1; i >= 0; i--) {
+      const o = d.orbs[i], t = this.players.get(o.tgt); o.life -= dt;
+      let gone = o.life <= 0, hit = null;
+      if (!gone && t && t.alive) {
+        const dx = t.s.x - o.x, dy = t.s.y + 1 - o.y, dz = t.s.z - o.z, dl = Math.hypot(dx, dy, dz) || 1;
+        if (dl < O.r) hit = t;
+        else { o.vx += dx / dl * O.turn * O.speed * dt; o.vy += dy / dl * O.turn * O.speed * dt; o.vz += dz / dl * O.turn * O.speed * dt; const vl = Math.hypot(o.vx, o.vy, o.vz) || 1; o.vx *= O.speed / vl; o.vy *= O.speed / vl; o.vz *= O.speed / vl; }
+      }
+      if (!gone && !hit) {
+        const L = O.speed * dt, prev = setPasa(o.team), h = raycast(this.W, o.x, o.y, o.z, o.vx / O.speed, o.vy / O.speed, o.vz / O.speed, L + .3); setPasa(prev);
+        if (h) gone = true; else { o.x += o.vx * dt; o.y += o.vy * dt; o.z += o.vz * dt; }
+      }
+      if (hit || gone) {
+        d.orbs.splice(i, 1);
+        this.domEv({ a: 'orbx', id: o.id, p: r3a([o.x, o.y, o.z]) });
+        if (hit) { this.damage(hit, O.dmg, null, null, [o.vx / O.speed, .2, o.vz / O.speed], .1, 'boss'); if (this.state !== 'play') return; }
+      }
+    }
+  }
+  tickZones(dt) {
+    const d = this.dom, Z = DOM.ZONE;
+    for (let i = d.zones.length - 1; i >= 0; i--) {
+      const z = d.zones[i]; z.t -= dt; if (z.t > 0) continue;
+      d.zones.splice(i, 1);
+      this.domEv({ a: 'zx', p: r3a([z.x, z.y, z.z]), r: z.r, b: z.team });
+      for (const t of this.players.values()) {
+        if (!t.alive || !t.joined || t.team === z.team || t.team < 0) continue;
+        const dx = t.s.x - z.x, dz = t.s.z - z.z, dl = Math.hypot(dx, dz);
+        if (dl > z.r || Math.abs(t.s.y - z.y) > 3.5) continue;
+        this.damage(t, Z.dmg, null, null, [dl ? dx / dl * .5 : 0, .85, dl ? dz / dl * .5 : 0], Z.kick / Z.dmg, 'boss');
+        if (this.state !== 'play') return;
+      }
+    }
+  }
+  /* ---- bots ---- */
+  // a qué estructura le puede tirar este bot ahora (la tiene que ver)
+  domBotTarget(p) {
+    const d = this.dom; if (!d || p.team < 0 || this.state !== 'play') return null;
+    const ex = p.s.x, ey = p.s.y + K.EYE, ez = p.s.z, range = Math.max(40, this.skill().range);
+    const prev = setPasa(p.team);
+    try {
+      const see = (x, y, z, test) => { const dx = x - ex, dy = y - ey, dz = z - ez, dl = Math.hypot(dx, dy, dz); if (dl > range || dl < .5) return false; const h = raycast(this.W, ex, ey, ez, dx / dl, dy / dl, dz / dl, dl + 3); return !!(h && h.b && test(h.b)); };
+      const b = d.boss[1 - p.team];
+      if (b.hp > 0) { const f = dirFromAngles(b.yaw, 0), cx = b.x + f[0] * DOM.CORE_FWD, cz = b.z + f[2] * DOM.CORE_FWD; for (const y of [DOM.CORE_Y, 5, 2]) if (see(y === DOM.CORE_Y ? cx : b.x, b.y + y, y === DOM.CORE_Y ? cz : b.z, q => q.boss === b.team)) return { x: y === DOM.CORE_Y ? cx : b.x, y: b.y + y, z: y === DOM.CORE_Y ? cz : b.z }; }
+      let best = null, bd = 1e9;
+      d.gens.forEach((g, i) => { if (g.hp <= 0 || g.team === p.team) return; const ds = Math.hypot(g.x - ex, g.z - ez); if (ds < bd && see(g.x, g.y + 1.8, g.z, q => q.gen === i)) { bd = ds; best = { x: g.x, y: g.y + 1.8, z: g.z }; } });
+      return best;
+    } finally { setPasa(prev); }
+  }
+  // de dónde hay que salir corriendo: zonas avisadas y el alcance del latigazo o del pulso mientras el boss avisa
+  domDanger(p) {
+    const d = this.dom; if (!d) return null;
+    for (const z of d.zones) if (z.team !== p.team && Math.hypot(p.s.x - z.x, p.s.z - z.z) < z.r + 1.5) return z;
+    const b = d.boss[1 - p.team];
+    if (b.hp > 0 && (b.atk === 1 || b.atk === 3) && Math.hypot(p.s.x - b.x, p.s.z - b.z) < (b.atk === 1 ? DOM.LASH.r : DOM.PULSE.r) + 2) return b;
+    return null;
+  }
+  // los atacantes se reparten por los tres carriles (id % 3); uno de cada DOM.BOT_DEF se queda a defender
+  domObjective(p) {
+    const d = this.dom, M = MAPS[this.W.id], me = p.team, en = 1 - me; if (!d || me < 0) return null;
+    const lane = p.id % 3, far = (q, r) => Math.hypot(p.s.x - q.x, p.s.z - q.z) > r;
+    if (p.id % DOM.BOT_DEF === DOM.BOT_DEF - 1) {
+      // defiende el portón con el generador más lastimado; si ya no queda ninguno, la sala del boss
+      let bi = -1, low = 1e9;
+      d.gens.forEach(g => { if (g.team !== me || g.hp <= 0) return; const bar = d.bars.find(b => b.team === me && b.lane === g.lane); if (bar && bar.st < 2 && g.hp < low) { low = g.hp; bi = g.lane; } });
+      const q = bi >= 0 ? M.defPts[me][bi] : M.bossPts[me][p.id % 2];
+      return far(q, 9) ? { x: q.x, y: q.y, z: q.z, pri: 60 } : null;
+    }
+    const open = d.bars.filter(b => b.team === en && b.st === 2);
+    if (open.length) { const q = M.bossPts[en][p.id % 2]; return far(q, 5) ? { x: q.x, y: q.y, z: q.z, pri: 100 } : null; }
+    let gs = d.gens.filter(g => g.team === en && g.hp > 0 && g.lane === lane);
+    if (!gs.length) gs = d.gens.filter(g => g.team === en && g.hp > 0);
+    if (!gs.length) return null;
+    const hurt = gs.find(g => g.hp < DOM.GEN_HP), g = hurt || gs[(p.id >> 2) % gs.length];   // todos al que ya está roto a medias
+    return far(g.atk, 2.5) ? { x: g.atk.x, y: g.atk.y, z: g.atk.z, pri: 100 } : null;
+  }
+  /* ---- comandos de prueba (solo en práctica, o en un servidor arrancado con dev) ---- */
+  domCommand(p, cmd, args) {
+    const d = this.dom, say = s => p.send && p.send({ t: 'ev', e: 'sys', m: s });
+    if (!d) return false;
+    if (!['gen', 'barrera', 'boss', 'tiempo', 'dom'].includes(cmd)) return false;
+    if (this.o.online && !this.o.dev) { say('Los comandos de prueba son solo para la práctica'); return true; }
+    const n = parseInt(args[0], 10), fake = { team: 0, name: p.name, id: p.id, caps: 0, dmg: 0, send: null };
+    if (cmd === 'gen' && n >= 1 && n <= d.gens.length) { const g = d.gens[n - 1]; if (g.hp > 0) { fake.team = 1 - g.team; d.dirtyG.add(n - 1); this.domGenDown(n - 1, fake); } }
+    else if (cmd === 'barrera' && n >= 1 && n <= d.bars.length) { const bar = d.bars[n - 1]; fake.team = 1 - bar.team; d.gens.forEach((g, i) => { if (g.team === bar.team && g.lane === bar.lane && g.hp > 0) { d.dirtyG.add(i); this.domGenDown(i, fake); } }); }
+    else if (cmd === 'boss' && /^(rojo|azul)$/.test(args[0] || '') && Number.isFinite(+args[1])) { const t = args[0] === 'rojo' ? 0 : 1, b = d.boss[t]; b.hp = clamp(+args[1], 0, 100) / 100 * DOM.BOSS_HP; if (b.hp <= 0) { fake.team = 1 - t; this.domBossDown(t, fake); } }
+    else if (cmd === 'tiempo' && n >= 0) this.left = n;
+    else say('Prueba: /gen 1-12 · /barrera 1-6 (1-3 rojas, 4-6 azules: norte, centro, sur) · /boss rojo|azul 0-100 · /tiempo SEGUNDOS');
+    this.sendScores();
+    return true;
+  }
+
   /* ---- partida ---- */
   scores() {
     const gg = this.mode.gg;
@@ -3354,7 +3864,7 @@ class Game {
       .sort((a, b) => (gg ? b.lvl - a.lvl : 0) || (this.mode.teams ? b.caps - a.caps : 0) || b.kills - a.kills || (this.mode.crown ? b.ctime - a.ctime : 0) || a.deaths - b.deaths)
       .map(p => [p.id, p.name, p.kills, p.deaths, p.bot ? 0 : p.ping, p.bot ? 1 : 0, p.color, p.cr, p.lvl, p.team, p.caps, p.plvl, Math.round(p.dmg || 0), p.cpts || 0, Math.round(p.ctime || 0)]);
   }
-  sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, st: this.state, map: this.W.id, mode: this.o.mode, ts: this.ts, fs: this.flagState(), cd: Math.ceil(this.countT), hn: this.humanCount(false), mp: this.mode.minPlayers || 0, cw: this.crownState(), iu: this.items.map(it => it.up ? 1 : 0).join('') }); }   // iu: qué ítems están en pie; el cliente se resincroniza cada segundo, así un botiquín nunca queda "desaparecido" por un aviso perdido
+  sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, st: this.state, map: this.W.id, mode: this.o.mode, ts: this.ts, fs: this.flagState(), cd: Math.ceil(this.countT), hn: this.humanCount(false), mp: this.mode.minPlayers || 0, cw: this.crownState(), dm: this.domState(), iu: this.items.map(it => it.up ? 1 : 0).join('') }); }   // iu: qué ítems están en pie; el cliente se resincroniza cada segundo, así un botiquín nunca queda "desaparecido" por un aviso perdido
   endMatch() {
     if (this.state !== 'play') return;
     this.state = 'inter'; this.interT = 25;
@@ -3365,11 +3875,12 @@ class Game {
     this.voteOpts = this.o.rotate && ms.length > 1 ? ms.slice() : null;
     const next = this.voteOpts ? null : this.W.id;
     this.nextMap = next;
+    // equipo ganador: en Captura el dominio lo dicen los bosses; en el resto, el marcador
+    const wt = !this.mode.teams ? -1 : this.dom ? this.domWinner() : this.ts[0] === this.ts[1] ? -1 : this.ts[0] > this.ts[1] ? 0 : 1;
     let w = l.length ? l[0][1] : '';
-    if (this.mode.teams) w = this.ts[0] === this.ts[1] ? '' : 'EQUIPO ' + TEAMS[this.ts[0] > this.ts[1] ? 0 : 1].name.toUpperCase();
+    if (this.mode.teams) w = wt < 0 ? '' : 'EQUIPO ' + TEAMS[wt].name.toUpperCase();
     // experiencia para los que tienen cuenta
     if (this.o.onXP) {
-      const wt = this.mode.teams ? (this.ts[0] === this.ts[1] ? -1 : this.ts[0] > this.ts[1] ? 0 : 1) : -1;
       for (const p of this.players.values()) {
         if (!p.joined || p.bot || !p.acct) continue;
         const won = this.mode.teams ? p.team === wt : !!(l.length && l[0][0] === p.id);
@@ -3377,7 +3888,8 @@ class Game {
         if (xp > 0) this.o.onXP(p, xp, { kills: p.rkills, partida: 1, victoria: won ? 1 : 0 });
       }
     }
-    this.bcast({ t: 'end', l, w, wt: this.mode.teams ? (this.ts[0] === this.ts[1] ? -1 : this.ts[0] > this.ts[1] ? 0 : 1) : -1, ts: this.ts, next, nextName: next ? MAPS[next].name : '', mv: this.voteState(), secs: this.interT });
+    if (this.dom) { this.dom.orbs.length = 0; this.dom.zones.length = 0; }
+    this.bcast({ t: 'end', l, w, wt, dw: this.domSummary(), dm: this.domState(), ts: this.ts, next, nextName: next ? MAPS[next].name : '', mv: this.voteState(), secs: this.interT });
     this.projs.length = 0;
   }
   // resultado de la votación: el más votado; empate entre los más votados o sin votos → al azar
@@ -3404,11 +3916,11 @@ class Game {
     if (this.crown) { this.crown = null; this.bcast({ t: 'ev', e: 'crw', a: 'off' }); }
     if (this.storm) { this.storm = null; this.bcast({ t: 'ev', e: 'stm', a: 'off' }); }
     const id = mapId || this.nextMap || this.W.id; this.nextMap = null;
-    if (id !== this.W.id) this.setMap(id); else this.resetFlags();
+    if (id !== this.W.id) this.setMap(id); else { this.resetFlags(); this.domSetup(); }
     this.state = 'play'; this.left = this.o.timelimit; this.projs.length = 0;
     if (this.mode.minPlayers && this.o.online && this.humanCount(false) < this.mode.minPlayers) this.state = 'lobby';
     for (const it of this.items) { it.up = !it.off; it.t = 0; it.type = it.base; }
-    this.bcast({ t: 'start', map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), tm: this.time, fs: this.flagState(), ts: this.ts });
+    this.bcast({ t: 'start', map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), tm: this.time, fs: this.flagState(), ts: this.ts, dm: this.domState() });
     for (const p of this.players.values()) if (p.joined) {
       p.ready = false; p.kills = 0; p.deaths = 0; p.cr = ECON.START; p.unl = OW0(); p.eq = 1; p.perk = { ar: 0, am: 0 }; p.cards = []; p.cof = null; p.cofT = 0; p.burnT = 0; p.streak = 0; p.lvl = 0; p.caps = 0; p.rkills = 0; p.cpts = 0; p.ctime = 0; p.stormT = 0; p.dmg = 0; p.bestLife = 0; p.lifeT0 = p.alive ? this.time : null; p.joinT = this.time; p.dirty = true;
       this.spawn(p);
@@ -3489,7 +4001,7 @@ class Game {
     }
     if (this.mvote) { this.mvT = (this.mvT || 0) - dt; if (this.mvT <= 0) { this.mvT = 1; this.checkMapVote(); if (this.mvote) this.sendVote(); } }
     if (this.vote) { this.voteT = (this.voteT || 0) - dt; if (this.voteT <= 0) { this.voteT = 1; this.checkVote(); if (this.vote) this.sendVote(); } }
-    if (this.live()) { this.tickProjs(dt); this.tickFires(dt); this.tickItems(dt); this.tickShards(dt); this.tickBurn(dt); if (this.mode.cards) this.tickCards(dt); if (this.mode.crown) this.tickCrown(dt); if (this.mode.storm) this.tickStorm(dt); if (this.flags.length && this.state === 'play') this.tickFlags(dt); }
+    if (this.live()) { this.tickProjs(dt); this.tickFires(dt); this.tickItems(dt); this.tickShards(dt); this.tickBurn(dt); if (this.mode.cards) this.tickCards(dt); if (this.mode.crown) this.tickCrown(dt); if (this.mode.storm) this.tickStorm(dt); if (this.flags.length && this.state === 'play') this.tickFlags(dt); if (this.dom) this.tickDom(dt); }
     this.snapT -= dt;
     if (this.snapT <= 1e-6) { this.snapT += .05; if (this.snapT < 0) this.snapT = 0; this.snapshot(); }
     this.scT -= dt;
@@ -3502,7 +4014,14 @@ class Game {
       ps.push([p.id, r2(p.s.x), r2(p.s.y), r2(p.s.z), r2(p.yaw), r2(p.pitch), p.w, (p.alive ? 1 : 0) | (p.quadT > 0 ? 2 : 0) | (p.s.on ? 4 : 0) | (p.s.crouch ? 8 : 0) | (p.s.slide ? 16 : 0), r2(p.s.vx), r2(p.s.vy), r2(p.s.vz)]);
       if (p.bot && p.ai && this.flags.length && !p.alive) p.ai.path = null;
     }
-    this.bcast({ t: 'sn', tm: Math.round(this.time * 1000) / 1000, ps });
+    const sn = { t: 'sn', tm: Math.round(this.time * 1000) / 1000, ps };
+    if (this.dom) {   // Captura el dominio: solo viaja lo que cambió (vida y giro de los bosses, vida de generadores, orbes)
+      const d = this.dom, bs = d.boss.map(b => [Math.ceil(b.hp), r2(b.yaw), b.atk]), key = bs.join();
+      if (key !== d.bsKey) { d.bsKey = key; sn.bs = bs; }
+      if (d.dirtyG.size) { sn.gh = [...d.dirtyG].map(i => [i, Math.ceil(d.gens[i].hp)]); d.dirtyG.clear(); }
+      if (d.orbs.length) sn.ob = d.orbs.map(o => [o.id, r2(o.x), r2(o.y), r2(o.z), o.team]);
+    }
+    this.bcast(sn);
     for (const p of this.players.values()) {
       if (p.bot || !p.send || !p.joined || !p.dirty) continue;
       p.dirty = false;
@@ -3828,7 +4347,7 @@ class Game {
     const ai = p.ai, nav = this.nav;
     const start = findNode(nav, p.s.x, p.s.y, p.s.z);
     if (!start) { ai.path = null; return; }
-    const dj = dijkstra(nav, start.id);
+    const dj = dijkstra(nav, start.id, this.domBan(p.team));
     let goal = null, best = -1;
     const t = ai.tgt ? this.players.get(ai.tgt) : null;
     const obj = this.objective(p);
@@ -3883,6 +4402,7 @@ class Game {
       if (sp) return { x: sp.x, y: sp.y, z: sp.z, pri: 160 };
     }
     const cr = this.crownObjective(p); if (cr) return cr;
+    if (this.dom) return this.domObjective(p);
     if (!this.mode.teams || this.flags.length < 2 || p.team < 0) return null;
     const own = this.flags[p.team], enemy = this.flags[1 - p.team], home = this.W.flags[p.team];
     if (enemy.st === 1 && enemy.by === p.id) return { x: home.x, y: home.y, z: home.z, pri: 200 };
@@ -3917,6 +4437,8 @@ class Game {
       const t = this.findTarget(p);
       if (t) { if (t.id !== ai.tgt) { ai.seeT = 0; ai.replan = Math.min(ai.replan, .2); } ai.tgt = t.id; ai.last = [t.s.x, t.s.y, t.s.z]; ai.lostT = 3; }
       else if (ai.tgt) { ai.tgt = 0; ai.replan = 0; }
+      ai.st = !t && this.dom ? this.domBotTarget(p) : null;   // sin rivales a la vista: le tira al generador o al boss
+      if (this.dom && (ai.dodge == null || Math.random() < .05)) ai.dodge = Math.random() < DOM.BOT_DODGE[Math.max(0, Math.min(3, this.o.botSkill | 0))];
     }
     if (ai.replan <= 0 && s.on) { if (this.planBudget > 0) { this.planBudget--; ai.replan = .7 + Math.random() * .5; this.planBot(p); } else ai.replan = .03; }
     const tgt = ai.tgt ? this.players.get(ai.tgt) : null;
@@ -3973,6 +4495,7 @@ class Game {
       const fx = s.x + wx * 1.2, fz = s.z + wz * 1.2;
       if (s.on && !nav.nodeAt(fx, s.y, fz)) { wx = -wx * .3; wz = -wz * .3; }
     }
+    if (this.dom && ai.dodge) { const dg = this.domDanger(p); if (dg) { const ax = s.x - dg.x, az = s.z - dg.z, al = Math.hypot(ax, az) || 1; wx = ax / al; wz = az / al; } }   // sale del área de un ataque avisado
     const was = s.on;
     pmove(this.W, s, zg ? { wx, wz, jump: false, up: zg.up, crouch: zg.cr } : { wx, wz, jump }, dt);
     const landed = was !== s.on && s.on;
@@ -4006,6 +4529,14 @@ class Game {
       if (ai.seeT > sk.react && Math.abs(dy) < .12 + 1 / (dist + 1) && this.canFire(p, w) && this.time - p.lastFire >= W_.rate * sk.fire) {
         if (W_.type !== 'proj' || dist > 3) this.botFire(p, w, [ex, ey, ez], dirFromAngles(p.yaw, p.pitch));
       }
+    } else if (ai.st) {   // Captura el dominio: apunta y dispara a la estructura
+      const q = ai.st, ex = s.x, ey = s.y + K.EYE, ez = s.z, dist = Math.hypot(q.x - ex, q.y - ey, q.z - ez);
+      const w = this.chooseWeapon(p, Math.max(dist, 8)); if (w !== p.w) { p.w = w; p.lastFire = Math.max(p.lastFire, this.time - WEAPONS[w].rate * .5); }
+      const W_ = WEAPONS[w], ty = q.y + (W_.proj === 'grenade' ? dist * .06 : 0);
+      const wantYaw = Math.atan2(-(q.x - ex), -(q.z - ez)), wantPitch = Math.atan2(ty - ey, Math.hypot(q.x - ex, q.z - ez));
+      let dy = wantYaw - p.yaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
+      const mt = sk.turn * dt; p.yaw += clamp(dy, -mt, mt); p.pitch += clamp(wantPitch - p.pitch, -mt, mt);
+      if (Math.abs(dy) < .06 && Math.abs(wantPitch - p.pitch) < .06 && !W_.melee && this.canFire(p, w) && this.time - p.lastFire >= W_.rate * sk.fire) this.botFire(p, w, [ex, ey, ez], dirFromAngles(p.yaw, p.pitch));
     } else {
       const sp = Math.hypot(s.vx, s.vz);
       if (sp > 1) { const want = Math.atan2(-s.vx, -s.vz); let dy = want - p.yaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2; p.yaw += clamp(dy, -6 * dt, 6 * dt); }
@@ -4020,5 +4551,5 @@ class Game {
   }
 }
 
-return { PRIMARY, primaryOf, censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, CARDS, CARD_BY, CARD_AT, CARD_MAX, CARD_FX, hasCard, CROWN, STORM, stormR, stormDmg, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, EMBLEMS, SKILL, topAt, pmove, inZeroG, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
+return { PRIMARY, primaryOf, censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, MODE_ALIAS, DOM, setPasa, CARDS, CARD_BY, CARD_AT, CARD_MAX, CARD_FX, hasCard, CROWN, STORM, stormR, stormDmg, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, EMBLEMS, SKILL, topAt, pmove, inZeroG, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
 });

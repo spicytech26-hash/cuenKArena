@@ -1,13 +1,14 @@
 class Game {
   constructor(o) {
     this.o = Object.assign({ fraglimit: 20, timelimit: 600, caplimit: 3, bots: null, botFill: 0, botSkill: 1, online: false, maxPlayers: 16, map: null, rotate: true, mode: 'arena' }, o || {});
+    if (MODE_ALIAS[this.o.mode]) this.o.mode = MODE_ALIAS[this.o.mode];
     if (!MODES[this.o.mode]) this.o.mode = 'arena';
     this.mode = MODES[this.o.mode];
     if (this.mode.timelimit) this.o.timelimit = this.mode.timelimit;   // la Arena dura 6 minutos, online y en práctica
     this.shards = []; this.sid = 1; this.crown = null; this.storm = null; this.mapVotes = new Map(); this.voteOpts = null;
     this.players = new Map(); this.nextId = 1; this.projs = []; this.fires = []; this.pid = 1; this.vote = null; this.mvote = null; this.bans = new Map(); this.kickN = new Map();
     this.time = 0; this.snapT = 0; this.scT = 0; this.botT = 0; this.state = 'play'; this.left = this.o.timelimit; this.interT = 0;
-    this.ts = [0, 0]; this.flags = []; this.countT = 0;
+    this.ts = [0, 0]; this.flags = []; this.countT = 0; this.dom = null;
     if (this.mode.minPlayers && this.o.online) this.state = 'lobby';
     this.o.map = mapId(this.o.map);
     this.setMap(this.mode.maps.includes(this.o.map) ? this.o.map : this.mode.maps[0]);
@@ -18,7 +19,7 @@ class Game {
     const off = t => !!this.mode.gg && t !== 'health'; // en gungame no hay armas ni munición tiradas (cada arma se gana con bajas), pero sí botiquines
     this.items = this.W.items.map((it, i) => ({ i, type: it.type, base: it.type, x: it.x, y: it.y, z: it.z, off: off(it.type), up: !off(it.type), t: 0 }));
     this.projs.length = 0; this.fires = [];
-    this.resetFlags();
+    this.resetFlags(); this.domSetup();
     updateMovers(this.W, this.time);
   }
   resetFlags() {
@@ -100,7 +101,7 @@ class Game {
         if (this.mode.teams) this.setTeam(p, this.pickTeam(p));
         p.joined = true; p.joinT = this.time; p.rkills = 0; p.dmg = 0; p.bestLife = 0;
         if (this.mode.tdm && this.o.online && this.humanCount(false) <= 1 && Number.isInteger(m.fl) && m.fl >= 5 && m.fl <= 500) this.o.fraglimit = m.fl;
-        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts, cd: p.cards.slice(), sh: this.shards.map(s => [s.id, r3(s.x), r3(s.y), r3(s.z), r2(s.t)]), cw: this.crownState(), st: this.stormInfo(), mv: this.voteState() });
+        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts, cd: p.cards.slice(), sh: this.shards.map(s => [s.id, r3(s.x), r3(s.y), r3(s.z), r2(s.t)]), cw: this.crownState(), st: this.stormInfo(), mv: this.voteState(), dm: this.domState() });
         this.bcast({ t: 'ev', e: 'join', id, n: p.name, c: p.color, s: p.skin, tm: p.team }, id);
         this.spawn(p); this.botT = 0; this.sendScores();
         break;
@@ -109,6 +110,7 @@ class Game {
         if (!p.joined || !p.alive) return;
         const a = m.p, v = m.v;
         if (!Array.isArray(a) || a.length !== 3 || !a.every(Number.isFinite)) return;
+        if (this.dom && this.domBlocked(p, a)) return;   // quiso cruzar una barrera rival: no se le acepta la posición
         p.s.x = clamp(a[0], -260, 260); p.s.y = clamp(a[1], -40, 60); p.s.z = clamp(a[2], -260, 260);   // el mapa ancho y el agua llegan más allá de ±60
         if (Array.isArray(v) && v.length === 3 && v.every(Number.isFinite)) { p.s.vx = clamp(v[0], -80, 80); p.s.vy = clamp(v[1], -80, 80); p.s.vz = clamp(v[2], -80, 80); }
         if (Number.isFinite(m.y)) p.yaw = m.y; if (Number.isFinite(m.x)) p.pitch = clamp(m.x, -1.6, 1.6);
@@ -149,6 +151,18 @@ class Game {
       case 'mapchg': this.startMapVote(p, String(m.m || '')); break;
       case 'mapvote': this.castMapVote(p, String(m.m || '')); break;
     }
+  }
+  // Captura el dominio: el cliente manda su posición; si el tramo cruza una barrera rival activa se lo devuelve a donde estaba
+  domBlocked(p, a) {
+    const dx = a[0] - p.s.x, dy = a[1] - p.s.y, dz = a[2] - p.s.z, L = Math.hypot(dx, dy, dz);
+    if (L < 1e-4 || L > 12) return false;   // los saltos grandes son reapariciones o teletransportes
+    for (const b of this.W.brushes) {
+      if (!b.bar || b.bar.down || b.bar.team === p.team) continue;
+      if (slab(b, p.s.x, p.s.y + .9, p.s.z, inv(dx / L), inv(dy / L), inv(dz / L), L) < 0) continue;
+      if (p.send) p.send({ t: 'ev', e: 'fix', p: r3a([p.s.x, p.s.y, p.s.z]) });
+      return true;
+    }
+    return false;
   }
   // E: cambiar tu arma principal por la que está tirada al lado (como en CS); al reaparecer volvés a tener la comprada
   grab(p) {
@@ -293,6 +307,7 @@ class Game {
   command(p, txt) {
     const parts = txt.slice(1).split(/\s+/), cmd = parts[0], arg = cmd === 'map' ? mapId(parts[1]) : parts[1];
     const say = s => p.send && p.send({ t: 'ev', e: 'sys', m: s });
+    if (this.domCommand(p, cmd, parts.slice(1))) return;
     if (cmd === 'kick' || cmd === 'echar') {
       const q = parts.slice(1).join(' ').toLowerCase(), t = [...this.players.values()].find(x => x.joined && !x.bot && x.name.toLowerCase() === q) || [...this.players.values()].find(x => x.joined && !x.bot && q && x.name.toLowerCase().startsWith(q));
       if (!t) return say('Uso: /echar NOMBRE (o desde el menú de pausa)');

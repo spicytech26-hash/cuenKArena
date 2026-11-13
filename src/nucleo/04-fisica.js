@@ -8,12 +8,19 @@ function topAt(b, x0, z0, x1, z1) {
   else { const L = b.max[2] - b.min[2]; t = r.dir > 0 ? (Math.min(z1, b.max[2]) - b.min[2]) / L : (b.max[2] - Math.max(z0, b.min[2])) / L; }
   return r.lo + (r.hi - r.lo) * clamp(t, 0, 1);
 }
+/* Barreras de campo de fuerza (Captura el dominio): son bloques con `bar: { team, lane, i, down }`.
+   Frenan a todo lo que no sea del equipo dueño: cuerpos, balas y proyectiles. PASA dice para qué equipo se está
+   calculando ahora (-1 = nadie pasa, -2 = pasan todos: así se arma la navegación). El movimiento lo toma solo
+   de `s.tm`; para disparos y líneas de visión se fija con setPasa(), que devuelve el valor anterior para restaurarlo. */
+let PASA = -1;
+function setPasa(t) { const o = PASA; PASA = t == null ? -1 : t; return o; }
+const barOpen = b => b.bar.down || PASA === -2 || b.bar.team === PASA;
 const overlapXZ = (b, x0, z0, x1, z1) => b.min[0] < x1 && b.max[0] > x0 && b.min[2] < z1 && b.max[2] > z0;
 
 function solidAt(W, x, y, z, r, h) {
   const x0 = x - r, x1 = x + r, z0 = z - r, z1 = z + r;
   for (const b of W.brushes) {
-    if (b.nc || !overlapXZ(b, x0, z0, x1, z1)) continue;
+    if (b.nc || (b.bar && barOpen(b)) || !overlapXZ(b, x0, z0, x1, z1)) continue;
     if (b.min[1] >= y + h - EPS) continue;
     if (topAt(b, x0, z0, x1, z1) <= y + EPS) continue;
     return true;
@@ -26,7 +33,7 @@ function stepAxis(W, s, ax, d) {
   const x0 = nx - r, x1 = nx + r, z0 = nz - r, z1 = nz + r;
   let rise = 0;
   for (const b of W.brushes) {
-    if (b.nc || !overlapXZ(b, x0, z0, x1, z1)) continue;
+    if (b.nc || (b.bar && barOpen(b)) || !overlapXZ(b, x0, z0, x1, z1)) continue;
     if (b.min[1] >= s.y + H - EPS) continue;
     const top = topAt(b, x0, z0, x1, z1);
     if (top <= s.y + EPS) continue;
@@ -46,7 +53,7 @@ function stepY(W, s, h, wasOn) {
   if (s.vy <= 0) {
     let ground = -Infinity, gb = null;
     for (const b of W.brushes) {
-      if (b.nc || !overlapXZ(b, x0, z0, x1, z1)) continue;
+      if (b.nc || (b.bar && barOpen(b)) || !overlapXZ(b, x0, z0, x1, z1)) continue;
       const top = topAt(b, x0, z0, x1, z1);
       if (top <= s.y + .02 && top > ground) { ground = top; gb = b; }
     }
@@ -60,7 +67,7 @@ function stepY(W, s, h, wasOn) {
   } else {
     let ceil = Infinity;
     for (const b of W.brushes) {
-      if (b.nc || !overlapXZ(b, x0, z0, x1, z1)) continue;
+      if (b.nc || (b.bar && barOpen(b)) || !overlapXZ(b, x0, z0, x1, z1)) continue;
       if (b.min[1] >= s.y + H - .02 && b.min[1] < ceil) ceil = b.min[1];
     }
     if (ny + H > ceil) { s.y = ceil - H; s.vy = 0; } else s.y = ny;
@@ -138,6 +145,10 @@ function inZeroG(W, s) {
   return false;
 }
 function pmove(W, s, cmd, dt) {
+  const prev = PASA; PASA = s.tm == null ? -1 : s.tm;
+  try { return pmove0(W, s, cmd, dt); } finally { PASA = prev; }
+}
+function pmove0(W, s, cmd, dt) {
   if (W.movers.length) carry(W, s);
   crouchUpdate(W, s, !!cmd.crouch);
   const steps = Math.max(1, Math.ceil(dt / (1 / 120) - 1e-6)), h = dt / steps;
@@ -287,21 +298,21 @@ function slab(b, ox, oy, oz, ix, iy, iz, maxT) {
 }
 const inv = v => Math.abs(v) < 1e-9 ? Infinity : 1 / v;
 function raycast(W, ox, oy, oz, dx, dy, dz, maxT) {
-  let best = maxT, n = null;
+  let best = maxT, n = null, hb = null;
   const ix = inv(dx), iy = inv(dy), iz = inv(dz);
   for (const b of W.brushes) {
-    if (b.nc || slab(b, ox, oy, oz, ix, iy, iz, best) < 0) continue;
+    if (b.nc || (b.bar && barOpen(b)) || slab(b, ox, oy, oz, ix, iy, iz, best) < 0) continue;
     const h = rayBrush(b, ox, oy, oz, dx, dy, dz);
-    if (h && h.t < best) { best = h.t; n = h.n; }
+    if (h && h.t < best) { best = h.t; n = h.n; hb = b; }
   }
-  return n ? { t: best, n } : null;
+  return n ? { t: best, n, b: hb } : null;   // b: el bloque golpeado (para saber si fue un generador o un boss)
 }
 // línea de visión: alcanza con que algo la corte (no hace falta buscar el más cercano)
 function los(W, ax, ay, az, bx, by, bz) {
   const dx = bx - ax, dy = by - ay, dz = bz - az, d = Math.hypot(dx, dy, dz) || 1e-6, L = d - .05;
   const ux = dx / d, uy = dy / d, uz = dz / d, ix = inv(ux), iy = inv(uy), iz = inv(uz);
   for (const b of W.brushes) {
-    if (b.nc || slab(b, ax, ay, az, ix, iy, iz, L) < 0) continue;
+    if (b.nc || (b.bar && barOpen(b)) || slab(b, ax, ay, az, ix, iy, iz, L) < 0) continue;
     const h = rayBrush(b, ax, ay, az, ux, uy, uz);
     if (h && h.t < L) return false;
   }
@@ -345,7 +356,7 @@ function projStep(W, p, dt) {
     if (h) {
       const t = Math.max(0, h.t - .06);
       p.x += dx / L * t; p.y += dy / L * t; p.z += dz / L * t;
-      if (p.k === 'rocket' || p.k === 'bullet' || p.k === 'molotov') return { boom: true, n: h.n };
+      if (p.k === 'rocket' || p.k === 'bullet' || p.k === 'molotov') return { boom: true, n: h.n, b: h.b };
       const n = h.n, dot = p.v[0] * n[0] + p.v[1] * n[1] + p.v[2] * n[2];
       p.v[0] -= 2 * dot * n[0]; p.v[1] -= 2 * dot * n[1]; p.v[2] -= 2 * dot * n[2];
       const damp = n[1] > .7 ? .45 : .6;

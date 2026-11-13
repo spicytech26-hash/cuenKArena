@@ -1,6 +1,7 @@
   /* ---- daño y muertes ---- */
   damage(t, amt, att, w, dir, ks, how) {
     if (!t.alive || !this.live() || amt <= 0) return;
+    if (this.dom && this.time - t.spawnT < DOM.SPAWN_INV && how !== 'void' && how !== 'water') return;   // recién aparecido: invulnerable un momento
     if (this.mode.teams && att && att !== t && att.team === t.team) return; // sin fuego amigo
     if (att && att !== t && hasCard(att, 'carnicero')) amt *= CARD_FX.DMG;   // carta Carnicero
     if (hasCard(t, 'coraza')) amt *= CARD_FX.ARMOR;                          // carta Coraza
@@ -47,7 +48,7 @@
         this.bcast({ t: 'ev', e: 'crw', a: 'regi', id: att.id, n: att.name, v: v.name, pts: CROWN.KILL_PTS });
       }
       this.checkCard(att);
-    } else if (how !== 'storm') v.kills--;   // la tormenta no le da puntos a nadie, pero tampoco te resta
+    } else if (how !== 'storm' && how !== 'boss') v.kills--;   // la tormenta no le da puntos a nadie, pero tampoco te resta
     v.streak = 0; v.burnT = 0;
     this.dropCarried(v);
     const ns = !!(this.curNS && k && k !== v.id && w != null && WEAPONS[w] && WEAPONS[w].scope);

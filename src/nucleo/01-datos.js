@@ -98,14 +98,58 @@ const MODES = {
              desc: 'Todos contra todos. Cada baja da créditos para la tienda (B). Buscá la corona: cada 15 s con ella puesta valen 1 punto y ¤ 300. En el último minuto la zona se achica.' },
   gungame: { name: 'Gungame', maps: ['represa', 'panymanteca', 'lacuenca', 'cuartotramo'], shop: false, gg: true,
              desc: 'Cada baja te da la siguiente arma de la lista. Munición infinita, sin tienda. Si te matan con cuchillo bajás un nivel. Gana el primero en hacer las 20 bajas; la última es con cuchillo.' },
-  tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca', 'cuartotramo'], shop: true, cards: true, teams: true, tdm: true, minPlayers: 4,
+  tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca', 'cuartotramo', 'puente'], shop: true, cards: true, teams: true, tdm: true, minPlayers: 4,
              desc: 'Rojo contra azul: cada baja suma para tu equipo hasta llegar al límite que elijan. Online arranca cuando hay 4 jugadores; mientras tanto, calentamiento.' },
   snipers: { name: 'Francotiradores', maps: ['fuertes'], shop: false, teams: true, tk: true, snipers: true, inf: true, timelimit: 360, teamLimit: 30,
              desc: 'Rojo contra azul con francotirador y cuchillo nomás: el francotirador mata de un tiro y con el cuchillo en la mano corrés más rápido. Racha de 6 bajas: escopeta doble. Sin tienda y sin mira hasta que apuntás.' },
-  ctf:     { name: 'Captura la bandera', maps: ['puente'], shop: true, cards: true, teams: true, ctf: true,
-             desc: 'Rojo contra azul. Robá la bandera rival y llevala hasta tu base. Gana el primer equipo en capturarla 3 veces.' }
+  // reemplaza a Captura la bandera (el id nuevo es `dominio`; El Puente pasó a Team Deathmatch)
+  dominio: { name: 'Captura el dominio', maps: ['santuario'], shop: true, cards: true, teams: true, dom: true, timelimit: 900,
+             desc: 'Rojo contra azul. Cada equipo tiene un boss en su fortaleza, detrás de tres barreras. Rompé los dos generadores de una barrera para abrir esa ruta, entrá y matá al boss rival. Si a los 15 minutos siguen vivos los dos, gana el que más lo lastimó.' }
 };
 const MODE_IDS = Object.keys(MODES);
+const MODE_ALIAS = { ctf: 'dominio' };   // ajustes guardados y salas viejas que todavía piden Captura la bandera
+
+/* ---------- Captura el dominio: todo lo que se balancea está acá ----------
+   Dos fortalezas con un boss cada una. Cada carril (norte, centro, sur) entra por un portón sellado con una
+   barrera de campo de fuerza que alimentan 2 generadores. Las reglas están en 07-partida/5b-dominio.js. */
+const DOM = {
+  TIME: 900,            // duración máxima de la partida, en segundos (15 minutos). Es el `timelimit` del modo
+  LANES: ['norte', 'centro', 'sur'],
+  // generadores y barreras
+  GEN_HP: 1500,         // vida de cada generador
+  BAR_NEED: 2,          // cuántos generadores de la barrera hay que romper para que caiga (1 = con uno basta)
+  BAR_REARM: 0,         // segundos hasta que una barrera caída se vuelve a levantar con sus generadores (0 = queda abierta para siempre)
+  HIT_CAP: 260,         // tope de daño de un solo impacto a un generador o al boss (el rifle de caza no los borra de un tiro)
+  // boss
+  BOSS_HP: 20000,       // vida de cada boss
+  BOSS_H: 14,           // altura del boss en metros (un jugador mide 1,8)
+  BOSS_R: 2,            // medio ancho del cuerpo (la caja que recibe los tiros mide 2·R de lado)
+  CORE_Y: 9.6,          // altura del núcleo del pecho
+  CORE_FWD: 1.5,        // cuánto sobresale el núcleo hacia adelante
+  CORE_R: 1.15,         // radio del núcleo (punto débil)
+  CORE_MULT: 2,         // el núcleo recibe el doble
+  BOSS_SEE: 48,         // hasta dónde ve y ataca
+  BOSS_TURN: 1.6,       // qué tan rápido gira (radianes por segundo)
+  WARN: 1,              // aviso antes de cada ataque, en segundos
+  GCD: [1.6, 2.8],      // descanso entre ataques (mínimo, máximo)
+  ENRAGE: .35,          // con menos de esta fracción de vida ataca más seguido…
+  ENRAGE_CD: .65,       // …descansando este factor
+  LASH: { r: 18, cos: .45, dmg: 55, kick: 9 },            // boss rojo: latigazo de cadenas en abanico hacia adelante
+  GRAB: { range: 42, dmg: 20, pull: 30 },                 // boss rojo: agarre que arrastra a un jugador hacia él
+  PULSE: { r: 16, dmg: 50, kick: 13 },                    // boss azul: pulso de energía alrededor
+  ORBS: { n: 3, dmg: 28, speed: 15, turn: 2.4, life: 6, r: 1.3 },   // boss azul: proyectiles teledirigidos desde el halo
+  ZONE: { r: 7, dmg: 70, warn: 1.3, kick: 8 },            // los dos: círculo en el piso que explota
+  RAGE_ZONES: 3,        // al abrirse un carril el boss castiga la entrada con esta cantidad de zonas
+  ALERT_EVERY: 12,      // cada cuánto se repite el aviso "están atacando a tu boss"
+  // aparición
+  SPAWN_INV: 3,         // segundos de invulnerabilidad al aparecer
+  FWD_SPAWN: true,      // reaparición adelantada a mitad del carril que tu equipo ya abrió
+  // créditos y puntos
+  PAY: { STEP: 200, GEN_HIT: 30, BOSS_HIT: 40, GEN: 300, BAR: 500, BAR_TEAM: 200, BOSS_KILL: 1000 },   // cada STEP de daño paga GEN_HIT o BOSS_HIT
+  // bots
+  BOT_DODGE: [0, .5, .85, 1],   // probabilidad de esquivar un ataque avisado, por dificultad (Fácil a Pesadilla)
+  BOT_DEF: 4                    // uno de cada BOT_DEF bots se queda a defender
+};
 
 /* ---------- Cartas de mejora (estilo roguelike) ----------
    Solo en los modos con `cards` (Arena, Team Deathmatch y Captura la bandera).

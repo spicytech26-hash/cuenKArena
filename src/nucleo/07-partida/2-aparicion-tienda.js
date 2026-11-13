@@ -2,7 +2,9 @@
   pickSpawn(p) {
     const alive = [...this.players.values()].filter(q => q.alive && (!this.mode.teams || !p || q.team !== p.team));
     let list = this.mode.teams && p && p.team >= 0 && this.W.tspawns ? this.W.tspawns[p.team] : this.W.spawns;
-    if (this.stormOn() && this.storm) list = this.stormSpawns(list);   // con la tormenta, solo apariciones dentro del círculo
+    if (this.stormOn() && this.storm) list = this.stormSpawns(list);
+    // Captura el dominio: si tu equipo ya abrió un carril rival, también se puede aparecer a mitad de ese carril
+    if (this.dom && DOM.FWD_SPAWN && p && p.team >= 0 && this.W.fspawns) { const fw = this.dom.bars.filter(b => b.team !== p.team && b.st === 2).map(b => this.W.fspawns[p.team][b.lane]); if (fw.length) list = list.concat(fw); }   // con la tormenta, solo apariciones dentro del círculo
     const scored = list.map(sp => {
       let d = 1e9; for (const q of alive) d = Math.min(d, Math.hypot(q.s.x - sp.x, q.s.y - sp.y, q.s.z - sp.z));
       return { sp, d: d + Math.random() * 6 };
@@ -33,7 +35,7 @@
   fillMags(p) { p.mag = {}; p.relT = {}; WEAPONS.forEach((W_, i) => { if (W_.mag) p.mag[i] = W_.mag; }); }
   spawn(p) {
     const sp = this.pickSpawn(p);
-    p.s = { x: sp.x, y: sp.y, z: sp.z, vx: 0, vy: 0, vz: 0, on: true };
+    p.s = { x: sp.x, y: sp.y, z: sp.z, vx: 0, vy: 0, vz: 0, on: true, tm: p.team };   // tm: el equipo, para las barreras (04-fisica.js)
     p.yaw = sp.yaw; p.pitch = 0; p.hp = 100; p.w = 1; p.quadT = 0; p.megaT = 0; p.lifeT0 = this.time;
     if (p.bot && this.mode.shop) this.botShop(p);
     this.loadout(p);

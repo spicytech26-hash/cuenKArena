@@ -4,12 +4,13 @@
 const NAVS = {};
 function inLava(W, x, y, z) { for (const l of W.lava) if (x > l.min[0] && x < l.max[0] && z > l.min[2] && z < l.max[2] && y < l.max[1] + .05 && y > l.min[1] - .5) return true; return false; }
 function airtime(dy) { const disc = K.JUMP * K.JUMP - 2 * K.GRAV * dy; if (disc < 0) return 0; return (K.JUMP + Math.sqrt(disc)) / K.GRAV; }
-function buildNav(W) {
+function buildNav(W) { const prev = setPasa(-2); try { return buildNav0(W); } finally { setPasa(prev); } }   // las barreras no cuentan: se prohíben por equipo al buscar el camino
+function buildNav0(W) {
   const X0 = Math.floor(W.bounds.x0), Z0 = Math.floor(W.bounds.z0), NX = Math.ceil(W.bounds.x1) - X0, NZ = Math.ceil(W.bounds.z1) - Z0;
   const cells = new Array(NX * NZ), nodes = [];
   // bloques agrupados por columna (x) para no recorrer todo el mapa en cada celda: el armado tarda varias veces menos
   const cols = [];
-  for (let cx = 0; cx < NX; cx++) { const qx = X0 + cx + .5 + .013; cols.push(W.brushes.filter(b => !b.nc && !b.mover && !b.nonav && b.min[0] < qx && b.max[0] > qx)); }
+  for (let cx = 0; cx < NX; cx++) { const qx = X0 + cx + .5 + .013; cols.push(W.brushes.filter(b => !b.nc && !b.mover && !b.nonav && !b.bar && b.min[0] < qx && b.max[0] > qx)); }
   for (let cz = 0; cz < NZ; cz++) for (let cx = 0; cx < NX; cx++) {
     const px = X0 + cx + .5, pz = Z0 + cz + .5, tops = [];
     for (const b of cols[cx]) {
@@ -110,7 +111,10 @@ function buildNav(W) {
   let k = 0;
   nodes.forEach((n, i) => { off[i] = k; n.l.forEach(l => { to[k] = l[0]; cost[k] = l[1]; k++; }); });
   off[N] = k;
-  return { X0, Z0, NX, NZ, cells, nodes, at, nodeAt, off, to, cost, zlev };
+  // nodos que quedan dentro de una barrera (Captura el dominio): bar[nodo] = barrera + 1
+  const bar = new Uint8Array(N);
+  for (const b of W.brushes) if (b.bar) for (const n of nodes) if (n.x > b.min[0] && n.x < b.max[0] && n.z > b.min[2] && n.z < b.max[2] && n.y > b.min[1] - .6 && n.y < b.max[1]) bar[n.id] = b.bar.i + 1;
+  return { X0, Z0, NX, NZ, cells, nodes, at, nodeAt, off, to, cost, zlev, bar };
 }
 function getNav(W) { W = W || WORLD; if (!NAVS[W.id]) NAVS[W.id] = buildNav(W); return NAVS[W.id]; }
 function findNode(nav, x, y, z) {
@@ -127,12 +131,13 @@ function findNode(nav, x, y, z) {
     }
   return best;
 }
-function dijkstra(nav, start) {
+// ban (opcional): ban[barrera + 1] = 1 si esa barrera está cerrada para el que busca el camino
+function dijkstra(nav, start, ban) {
   // los arreglos se reutilizan entre búsquedas (menos basura = menos pausas del recolector)
   const N = nav.nodes.length;
   if (!nav._dist) { nav._dist = new Float64Array(N); nav._prev = new Int32Array(N); nav._hk = new Float64Array(1024); nav._hv = new Int32Array(1024); }
   const dist = nav._dist.fill(Infinity), prev = nav._prev.fill(-1);
-  const off = nav.off, to = nav.to, cost = nav.cost;
+  const off = nav.off, to = nav.to, cost = nav.cost, bar = nav.bar;
   let cap = nav._hk.length, hk = nav._hk, hv = nav._hv, size = 0;
   const push = (i, d) => {
     if (size === cap) { cap *= 2; const a = new Float64Array(cap), b = new Int32Array(cap); a.set(hk); b.set(hv); hk = nav._hk = a; hv = nav._hv = b; }
@@ -150,7 +155,7 @@ function dijkstra(nav, start) {
       hk[c] = kd; hv[c] = kv;
     }
     if (d > dist[i]) continue;
-    for (let e = off[i], ee = off[i + 1]; e < ee; e++) { const nd = d + cost[e], j = to[e]; if (nd < dist[j]) { dist[j] = nd; prev[j] = i; push(j, nd); } }
+    for (let e = off[i], ee = off[i + 1]; e < ee; e++) { const nd = d + cost[e], j = to[e]; if (ban && bar[j] && ban[bar[j]]) continue; if (nd < dist[j]) { dist[j] = nd; prev[j] = i; push(j, nd); } }
   }
   return { dist, prev };
 }

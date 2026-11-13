@@ -165,8 +165,10 @@ function onGoogleCredential(resp){
   fetch('/auth/google',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:resp.credential})}).then(r=>r.json()).then(j=>{
     if(!j.token){acctError(j.error);return;}
     ACCTOK=j.token;try{localStorage.setItem('cuenk_tok',ACCTOK);}catch(e){}applyProfile(j.perfil,true);SFX.ui();
+    if(j.provisorio)sysNote('La base de cuentas se está reiniciando: entraste igual y lo que ganes se suma a tu perfil cuando vuelva.');
   }).catch(()=>acctError());
 }
+function sysNote(msg){const n=$('netTxt');if(n)n.textContent=msg;}
 // error de inicio de sesión: un mensaje que se entienda (el detalle técnico queda en la consola) y otro intento
 function acctError(det){
   if(det)console.warn('inicio de sesión:',det);

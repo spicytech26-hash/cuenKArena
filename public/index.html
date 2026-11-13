@@ -3,7 +3,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" as="script" crossorigin>
-<link rel="preload" href="game.js?v=ccc41ecf" as="script">
+<link rel="preload" href="game.js?v=d8505a0b" as="script">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -1581,9 +1581,9 @@ body.ingame #buildVer{display:none}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin></script>
 <script>/* "Probar en práctica" desde el editor de mapas (editor.html): index.html?editor carga el mapa que dejó guardado el editor */
 if(/[?&]editor\b/.test(location.search)){try{self.CK_MAPA_EDITOR=JSON.parse(localStorage.getItem('cuenk_mapa_editor')||'null');}catch(e){}}</script>
-<script src="game.js?v=ccc41ecf"></script>
-<script>console.log("%cCuenkArena build ccc41ecf","color:#ff7a20;font-weight:bold");</script>
-<div id="buildVer">build ccc41ecf</div>
+<script src="game.js?v=d8505a0b"></script>
+<script>console.log("%cCuenkArena build d8505a0b","color:#ff7a20;font-weight:bold");</script>
+<div id="buildVer">build d8505a0b</div>
 <script>
 (function(){
 'use strict';
@@ -7309,8 +7309,10 @@ function onGoogleCredential(resp){
   fetch('/auth/google',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:resp.credential})}).then(r=>r.json()).then(j=>{
     if(!j.token){acctError(j.error);return;}
     ACCTOK=j.token;try{localStorage.setItem('cuenk_tok',ACCTOK);}catch(e){}applyProfile(j.perfil,true);SFX.ui();
+    if(j.provisorio)sysNote('La base de cuentas se está reiniciando: entraste igual y lo que ganes se suma a tu perfil cuando vuelva.');
   }).catch(()=>acctError());
 }
+function sysNote(msg){const n=$('netTxt');if(n)n.textContent=msg;}
 // error de inicio de sesión: un mensaje que se entienda (el detalle técnico queda en la consola) y otro intento
 function acctError(det){
   if(det)console.warn('inicio de sesión:',det);

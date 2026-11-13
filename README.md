@@ -10,7 +10,7 @@ Al tocar **Jugar online** (o **Práctica con bots**) elegís el modo. Cada modo 
 - **Arena**: todos contra todos en La Represa, Humita, La Cuenca, El Cuarto Tramo, Skatenight y Pyramid, con créditos y tienda. Cada partida dura **5 minutos** (online y en práctica) y **gana el que más frags haga**: ya no hay límite de frags que la corte antes. Con **cartas de mejora** (ver más abajo).
 - **Gungame**: todos arrancan con la ametralladora y cada baja te da la siguiente arma de una lista de 20 niveles (armas fuertes primero, pistola, riel y francotirador al final, cuchillo en el último). Munición infinita, sin tienda y sin nada tirado en el mapa (ni armas, ni vida, ni blindaje). Además de la del nivel tenés siempre el cuchillo: si te matás solo, o te matan con cuchillo, bajás un nivel. Gana el primero en hacer la baja número 20.
 - **Team Deathmatch** (con **cartas de mejora**): rojo contra azul, cada baja suma para el equipo hasta llegar al límite. Online la sala espera a tener **4 jugadores** (mientras tanto hay calentamiento y las bajas no cuentan) y arranca con una cuenta regresiva. El límite de bajas lo elige el primero en entrar desde la pantalla de modos, y se puede cambiar desde el menú (Esc) mientras esperan.
-- **Captura la bandera** (con **cartas de mejora**): rojo (Posadas) contra azul (Encarnación) en **ctf1 · El Puente**. Robá la bandera rival del fortín enemigo y llevala hasta el pedestal de tu base (cuenta aunque tu bandera esté robada). Si matan al que la lleva, la bandera queda tirada 20 segundos: si la toca su equipo vuelve a la base. Gana el primer equipo en capturarla 3 veces (se cambia con `/caplimit N`). No hay fuego amigo y los equipos se equilibran solos con los bots.
+- **Captura el dominio** (con **cartas de mejora**): rojo contra azul en **dom1 · El Santuario Dual**, el mapa más grande del juego (320 × 96 m). Cada equipo tiene un **boss** de 14 metros en su fortaleza, detrás de tres **barreras de campo de fuerza** (rutas norte, centro y sur). Cada barrera vive de **dos generadores**: rompé los dos y esa ruta queda abierta. Entrá y matá al boss rival: la partida termina en ese instante. Si a los **15 minutos** siguen vivos los dos, gana el equipo que más lo lastimó (después desempatan barreras tiradas, generadores rotos y daño total). Las barreras frenan a los rivales y a sus disparos, pero tu equipo las cruza. El **núcleo del pecho** del boss recibe el doble de daño. Sus ataques avisan un segundo antes: el rojo tira un latigazo de cadenas y te agarra; el azul suelta un pulso y orbes que te persiguen; los dos marcan círculos en el piso que explotan. Reemplaza a Captura la bandera; El Puente ahora se juega en Team Deathmatch.
 
 ## Armas
 
@@ -171,7 +171,7 @@ Variables de entorno opcionales:
 | `TIMELIMIT` | 10 | Minutos por partida (la Arena siempre dura 6) |
 | `MAX_PLAYERS` | 16 | Jugadores máximos, contando bots |
 | `MAP` | represa | Mapa inicial de Arena: `represa` o `panymanteca` |
-| `CAPLIMIT` | 3 | Capturas para ganar en Captura la bandera |
+| `DEV` | – | Con `DEV=1` se habilitan online los comandos de prueba de Captura el dominio |
 | `GOOGLE_CLIENT_ID` | — | Activa el inicio de sesión con Google (ver *Cuentas*) |
 | `SUPABASE_URL` / `SUPABASE_KEY` | — | Dónde se guardan las cuentas (clave secreta, solo servidor) |
 | `SESSION_SECRET` | derivada | Clave para firmar las sesiones |

@@ -10,7 +10,7 @@ CuenkArena es un FPS estilo Quake 3 / TF2 que corre en el navegador (three.js r1
 1. **Una conversación por tarea.** Si el pedido cambia de tema, terminar lo que está y sugerir una conversación nueva.
 2. **Leer solo lo necesario.** Usá la tabla de abajo para ir directo al archivo, y `grep -n` para encontrar la línea antes de leer. Leé solo el pedazo que vas a cambiar.
 3. **Nunca leer ni editar `public/game.js` ni `public/index.html`**: se arman solos desde `src/`. Se edita `src/` y se corre `node herramientas/armar.js`.
-4. **Probar con `node herramientas/probar.js`** (unos 20 s, sin navegador): revisa el armado, la sintaxis del cliente, que cada mapa se arme, partidas con bots en todos los modos y que se agarren los botiquines. Con un mapa: `node herramientas/probar.js lacuenca`.
+4. **Probar con `node herramientas/probar.js`** (alrededor de un minuto, sin navegador): revisa el armado, la sintaxis del cliente, que cada mapa se arme, partidas con bots en todos los modos y que se agarren los botiquines. Con un mapa: `node herramientas/probar.js lacuenca`.
 5. **Sin capturas automáticas.** Las pruebas visuales las hace el usuario y manda una captura si algo se ve mal. Usá el navegador headless solo si el usuario lo pide o si no hay otra forma de encontrar un error.
 6. **Modelos 3D en archivos `.glb`**, no en código, cuando sea posible (ver "Modelos 3D" abajo). **Mapas con el editor** (`public/editor.html`) cuando sea posible.
 7. Respuestas cortas: qué cambió, qué probar y nada más.
@@ -25,7 +25,7 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `src/nucleo/00-encabezado.js` | apertura del módulo (UMD) |
 | `src/nucleo/01-datos.js` | física `K`, **`WEAPONS` (daño, cadencia, cargador)**, `ITEMS` (respawn), munición, `SHOP` (tienda y precios), `ECON`, **`MODES`** (modos y qué mapas usan; `cards` prende las cartas), **`CARDS`/`CARD_FX`** (cartas de mejora; cada carta lleva `stat` con sus números para el grimorio), gungame, equipos, XP, niveles y medallas |
 | `src/nucleo/02-kit-mapas.js` | `mapKit()` (`add`, `ramp`, `wall`, `stairs`, `mover`, `I`, `finish`), `MAPDEFS` y `mapFromData()` (mapas del editor) |
-| `src/nucleo/02-mapas/N-id.js` | **un archivo por mapa**: 1 represa, 2 humita (el id interno sigue siendo `panymanteca`, no cambiarlo: lo usan los ajustes guardados, la votación y `public/maps/panymanteca.jpg`), 3 lacuenca, 4 puente (CTF), 5 fuertes (francotiradores), 6 cuartotramo, 7 skatenight (de noche, con linternas), 8 pyramid (noche lovecraftiana sin linterna, 5 niveles con pozo de **gravedad cero**: `zerog` en el mapa + `inZeroG`/`ZG` en `04-fisica.js`; usa `navMaxY` para que los bots naveguen por encima de 12,5 m y `theme.ambiente:'piramide'` para su sonido). Cada uno termina con `MAPDEFS.id = función;` (el `id`, no el nombre del archivo) |
+| `src/nucleo/02-mapas/N-id.js` | **un archivo por mapa**: 1 represa, 2 humita (el id interno sigue siendo `panymanteca`, no cambiarlo: lo usan los ajustes guardados, la votación y `public/maps/panymanteca.jpg`), 3 lacuenca, 4 puente (era el de Captura la bandera; hoy se juega en Team Deathmatch), 5 fuertes (francotiradores), 6 cuartotramo, 7 skatenight (de noche, con linternas), 8 pyramid (noche lovecraftiana sin linterna, 5 niveles con pozo de **gravedad cero**: `zerog` en el mapa + `inZeroG`/`ZG` en `04-fisica.js`; usa `navMaxY` para que los bots naveguen por encima de 12,5 m y `theme.ambiente:'piramide'` para su sonido), 9 santuario (**El Santuario Dual**, el mapa de Captura el dominio: ver la sección de abajo). Cada uno termina con `MAPDEFS.id = función;` (el `id`, no el nombre del archivo) |
 | `src/nucleo/03-registro-mapas.js` | arma `MAPS`, apariciones seguras, alias de mapas viejos, plataformas móviles, mapa de prueba del editor |
 | `src/nucleo/04-fisica.js` | movimiento estilo Quake (`pmove`), saltadores, raycast, impactos a jugadores, proyectiles |
 | `src/nucleo/05-navegacion.js` | grafo de navegación de los bots (links tipo 5 = flotar por el pozo de gravedad cero de Pyramid; el bot los recorre con `zgSteer` en `7-bots.js`) |
@@ -34,9 +34,12 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `src/nucleo/07-partida/2-aparicion-tienda.js` | aparecer, equipo inicial, tienda, créditos |
 | `src/nucleo/07-partida/3-disparos.js` | disparos, proyectiles, **explosiones (daño de área)**, fuego de molotov |
 | `src/nucleo/07-partida/4-danio.js` | daño, blindaje, muertes, rachas, gungame. **Arena termina siempre por tiempo**: el corte por frags quedó detrás de la bandera `fragLimit` del modo (hoy ningún modo la prende); los modos por equipos usan `teamLimit` |
-| `src/nucleo/07-partida/5-banderas-items.js` | captura la bandera, **`give()` (qué da cada ítem)**, sifón, recoger ítems |
+| `src/nucleo/07-partida/5-banderas-items.js` | banderas (código viejo de Captura la bandera: quedó apagado, ningún modo lo prende), **`give()` (qué da cada ítem)**, sifón, recoger ítems |
 | `src/nucleo/07-partida/6-ciclo.js` | puntajes, fin de partida, votación de mapa, bots de relleno, `tick`, snapshot |
+| `src/nucleo/07-partida/5b-dominio.js` | **Captura el dominio**: generadores, barreras, bosses (IA y ataques), quién gana, bots del modo y comandos de prueba |
 | `src/nucleo/07-partida/6b-cartas.js` | **cartas de mejora** (roguelike): reparto a las 3, 7 y 12 bajas (`CARD_AT`), elección, fuego del toque ígneo y explosión al morir |
+| `src/nucleo/07-partida/6c-corona.js` | **La Corona** (Arena): aparición, quién la lleva, puntos y créditos |
+| `src/nucleo/07-partida/6d-tormenta.js` | **la tormenta del último minuto** (Arena): zona segura que se achica y daño afuera |
 | `src/nucleo/07-partida/7-bots.js` | inteligencia de los bots |
 | `src/nucleo/99-exportar.js` | lo que el módulo exporta |
 
@@ -57,6 +60,9 @@ Las piezas se pegan en orden alfabético; varias no son JS completo por sí sola
 | `js/09-armas-animacion.js` | manos, ayudas de animación (`VEV`, `H`, `VPR`, `VYAW`, `RH`), aplicar rigs, cuchillo, luces del arma |
 | `js/10-personaje-robot.js` | **personaje robot CUE-87** (hecho en código): `buildPlayer`, colores por parte (`c`, `ck`, `cp`, `cb`, `cl`, `c2`, `c3`, `v`, `em`, `ce`, `img`), esqueleto con cadera, columna, rodillas y pies, agarre del arma con dos manos (IK), animaciones (`rbAnimar`, `rbMuerte`), nivel de detalle (`rbLod`) y colores de las manos en primera persona (`vmSync`) |
 | `js/10-personajes-items.js` | modelo del jugador con piel, modelos de ítems (`buildItem`), sifón |
+| `js/10b-corona.js` | La Corona: modelo, haz de luz y avisos |
+| `js/10c-tormenta.js` | la tormenta: muro, viñeta y HUD |
+| `js/10d-dominio.js` | **Captura el dominio**: bosses en código con animación procedural (`buildBoss`, `updBoss`), generadores, barreras, arte del mapa (`dmArt`), avisos, HUD (`domHud`), minimapa (`domMap`) y sonidos `SFX.dom*` |
 | `js/11-estado-red.js` | estado del jugador `me`, `LocalNet` (práctica) y red online |
 | `js/12-mensajes.js` | mensajes del servidor (`onMsg`), chat, eventos |
 | `js/13-disparos.js` | proyectiles del lado del cliente, rocket jump, disparar |
@@ -84,6 +90,19 @@ El daño, la cadencia y el cargador de cada arma están en `WEAPONS` (`src/nucle
 - `public/editor.html`: editor de mapas (un solo archivo).
 - `public/modelos/modelos.json` + `.glb`: modelos 3D opcionales.
 - `README.md`: descripción del juego para jugadores; actualizarla cuando cambie algo que se ve en el juego.
+
+## Captura el dominio (modo `dominio`, mapa `santuario`)
+
+Reemplazó a Captura la bandera (`MODE_ALIAS` manda `ctf` a `dominio`). Rojo (este, se ve naranja) contra azul (oeste). Cada equipo tiene un **boss** de 14 m en su fortaleza, detrás de **3 barreras** de campo de fuerza (carriles norte, centro y sur) que alimentan **2 generadores** cada una. Se rompen los dos generadores, cae la barrera, se entra y se mata al boss: la partida termina en el acto. A los 15 minutos gana el que más vida porcentual le sacó al boss rival; después desempatan barreras tiradas, generadores rotos y daño total; si todo empata, empate.
+
+- **Todo se balancea en `DOM`** (`src/nucleo/01-datos.js`): `GEN_HP`, `BAR_NEED` (1 = con un generador basta), `BAR_REARM` (segundos para que la barrera vuelva; 0 = nunca), `BOSS_HP`, `BOSS_H`, `CORE_MULT`, `WARN`, `GCD`, los ataques (`LASH`, `GRAB`, `PULSE`, `ORBS`, `ZONE`), `SPAWN_INV`, `FWD_SPAWN`, `PAY` (créditos) y `BOT_DODGE`/`BOT_DEF`.
+- **Barreras en la física compartida** (`04-fisica.js`): son bloques `clip` con `bar: { team, lane, i, down }`. `PASA` dice para qué equipo se calcula; el movimiento lo toma de `s.tm` y los disparos de `setPasa(equipo)` (siempre restaurar el valor que devuelve). `raycast` devuelve también el bloque (`b`): así se sabe si un tiro dio en un generador (`b.gen`) o en un boss (`b.boss`).
+- **El mapa** (`02-mapas/9-santuario.js`, 320 × 96 m) declara `gens`, `bars`, `bosses`, `bossPts`, `defPts`, `tspawns` y `fspawns` (reaparición adelantada). Cada partida trabaja sobre una copia de las barreras (`domSetup`), así las salas no se pisan.
+- **Bots**: `domObjective` los reparte por carril (`id % 3`), `domBotTarget` les da a qué estructura tirar, `domDanger` los saca de los ataques avisados. La navegación es una sola; las barreras cerradas se prohíben por equipo en `dijkstra(nav, inicio, ban)`.
+- **Red**: `dm` (estado completo) en `welcome`, `start`, `sc` y `end`; en el snapshot solo lo que cambió (`bs`, `gh`, `ob`); avisos `dom`. Suma unos 0,1 KB/s por jugador.
+- **Bosses**: no hay `.glb`; están hechos en código a partir de las imágenes. Son fijos (giran, no caminan). El núcleo del pecho es una esfera (`CORE_R`) que solo cuenta de frente.
+- **Comandos de prueba** (práctica, u online con `DEV=1`): `/gen 1-12`, `/barrera 1-6` (1-3 rojas, 4-6 azules; norte, centro, sur), `/boss rojo|azul 0-100`, `/tiempo SEGUNDOS`, `/ir rojo|azul|centro|1-12`.
+- **Pruebas**: sección 6 de `herramientas/probar.js`.
 
 ## Tareas comunes
 

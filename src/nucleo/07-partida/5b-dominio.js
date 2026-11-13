@@ -91,9 +91,9 @@
   domWinner() {
     const d = this.dom; if (!d) return -1;
     if (d.win != null) return d.win;
-    const s = d.stat, cmp = [[d.boss[0].hp / DOM.BOSS_HP, d.boss[1].hp / DOM.BOSS_HP, 'vida del boss'], [s[1].bars, s[0].bars, 'barreras'], [s[1].gens, s[0].gens, 'generadores'], [Math.round(s[1].dmg), Math.round(s[0].dmg), 'daño']];
-    // en cada fila: [valor del equipo 0, valor del equipo 1]; gana el que tiene MENOS (vida propia que le queda / lo que le rompieron)
-    for (const [a, b, why] of cmp) if (Math.abs(a - b) > 1e-9) { d.why = why; return a < b ? 1 : 0; }
+    // por cada criterio, lo que logró cada equipo [rojo, azul]: gana el que tiene MÁS
+    const s = d.stat, cmp = [[1 - d.boss[1].hp / DOM.BOSS_HP, 1 - d.boss[0].hp / DOM.BOSS_HP, 'vida del boss'], [s[0].bars, s[1].bars, 'barreras'], [s[0].gens, s[1].gens, 'generadores'], [Math.round(s[0].dmg), Math.round(s[1].dmg), 'daño']];
+    for (const [a, b, why] of cmp) if (Math.abs(a - b) > 1e-9) { d.why = why; return a > b ? 0 : 1; }
     d.why = 'empate'; return -1;
   }
   domSummary() { const d = this.dom; return d ? { why: d.why, hp: d.boss.map(b => Math.round(100 * b.hp / DOM.BOSS_HP)), bars: d.stat.map(s => s.bars), gens: d.stat.map(s => s.gens), dmg: d.stat.map(s => Math.round(s.dmg)) } : null; }
@@ -306,14 +306,21 @@
   domCommand(p, cmd, args) {
     const d = this.dom, say = s => p.send && p.send({ t: 'ev', e: 'sys', m: s });
     if (!d) return false;
-    if (!['gen', 'barrera', 'boss', 'tiempo', 'dom'].includes(cmd)) return false;
+    if (!['gen', 'barrera', 'boss', 'tiempo', 'ir', 'dom'].includes(cmd)) return false;
     if (this.o.online && !this.o.dev) { say('Los comandos de prueba son solo para la práctica'); return true; }
     const n = parseInt(args[0], 10), fake = { team: 0, name: p.name, id: p.id, caps: 0, dmg: 0, send: null };
     if (cmd === 'gen' && n >= 1 && n <= d.gens.length) { const g = d.gens[n - 1]; if (g.hp > 0) { fake.team = 1 - g.team; d.dirtyG.add(n - 1); this.domGenDown(n - 1, fake); } }
     else if (cmd === 'barrera' && n >= 1 && n <= d.bars.length) { const bar = d.bars[n - 1]; fake.team = 1 - bar.team; d.gens.forEach((g, i) => { if (g.team === bar.team && g.lane === bar.lane && g.hp > 0) { d.dirtyG.add(i); this.domGenDown(i, fake); } }); }
     else if (cmd === 'boss' && /^(rojo|azul)$/.test(args[0] || '') && Number.isFinite(+args[1])) { const t = args[0] === 'rojo' ? 0 : 1, b = d.boss[t]; b.hp = clamp(+args[1], 0, 100) / 100 * DOM.BOSS_HP; if (b.hp <= 0) { fake.team = 1 - t; this.domBossDown(t, fake); } }
     else if (cmd === 'tiempo' && n >= 0) this.left = n;
-    else say('Prueba: /gen 1-12 · /barrera 1-6 (1-3 rojas, 4-6 azules: norte, centro, sur) · /boss rojo|azul 0-100 · /tiempo SEGUNDOS');
+    else if (cmd === 'ir' && p.alive) {   // teletransporte: frente a un boss, a la plaza o a un generador
+      const M = MAPS[this.W.id], a = args[0], t = a === 'rojo' ? 0 : a === 'azul' ? 1 : -1;
+      const q = t >= 0 ? { x: M.bosses[t].x + (t ? 1 : -1) * 16, y: 0, z: 0, yaw: M.bosses[t].yaw + Math.PI } : a === 'centro' ? { x: 0, y: .5, z: 6, yaw: 0 } : n >= 1 && n <= d.gens.length ? { x: d.gens[n - 1].atk.x, y: d.gens[n - 1].atk.y, z: d.gens[n - 1].atk.z, yaw: Math.atan2(-(d.gens[n - 1].x - d.gens[n - 1].atk.x), -(d.gens[n - 1].z - d.gens[n - 1].atk.z)) } : null;
+      if (!q) return say('Uso: /ir rojo · /ir azul · /ir centro · /ir 1-12 (generador)'), true;
+      p.s.x = q.x; p.s.y = q.y; p.s.z = q.z; p.s.vx = p.s.vy = p.s.vz = 0; p.yaw = q.yaw;
+      if (p.send) p.send({ t: 'ev', e: 'fix', p: [q.x, q.y, q.z], yaw: q.yaw });
+    }
+    else say('Prueba: /gen 1-12 · /barrera 1-6 (1-3 rojas, 4-6 azules: norte, centro, sur) · /boss rojo|azul 0-100 · /tiempo SEGUNDOS · /ir rojo|azul|centro|1-12');
     this.sendScores();
     return true;
   }

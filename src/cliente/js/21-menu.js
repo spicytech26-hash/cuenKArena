@@ -51,7 +51,7 @@ function openModePicker(isOnline){
   pickOnline=isOnline;saveName();WZ.rooms=null;
   ['settings','lockerPanel'].forEach(x=>$(x).hidden=true);['bSet','bLocker'].forEach(x=>$(x).setAttribute('aria-expanded','false'));
   $('modePanel').hidden=false;$('limitPanel').hidden=true;syncLimits();syncSettings();
-  $('modeNote').innerHTML=isOnline?'Cada modo es una sala aparte del servidor: entrás con los que estén jugando ese modo (si la sala está vacía, elegís el mapa). Team Deathmatch arranca cuando hay 4 jugadores; el primero en entrar elige las bajas para ganar. La dificultad elegida se aplica a los bots de la sala; cualquiera la puede cambiar después con <b>/skill 0-3</b> en el chat.':'Los bots se suman a tu partida. En Captura la bandera se reparten entre los dos equipos. La dificultad y los bots se pueden cambiar en plena partida desde Ajustes.';
+  $('modeNote').innerHTML=isOnline?'Cada modo es una sala aparte del servidor: entrás con los que estén jugando ese modo (si la sala está vacía, elegís el mapa). Team Deathmatch arranca cuando hay 4 jugadores; el primero en entrar elige las bajas para ganar. La dificultad elegida se aplica a los bots de la sala; cualquiera la puede cambiar después con <b>/skill 0-3</b> en el chat.':'Los bots se suman a tu partida. En Captura el dominio se reparten entre los dos equipos. La dificultad y los bots se pueden cambiar en plena partida desde Ajustes.';
   const grid=$('modeGrid');
   grid.innerHTML=C.MODE_IDS.map(id=>{const md=C.MODES[id];return '<button type="button" class="mcard" data-m="'+id+'" style="--bg:url(maps/'+md.maps[0]+'.jpg)"><span class="mn">'+md.name+'</span><span class="md">'+md.desc+'</span><span class="mp" id="mp_'+id+'"></span><span class="mm">'+md.maps.map(k=>esc(C.MAPS[k].name)).join(' · ')+'</span></button>';}).join('');
   wzShow(isOnline?'mode':'bots');
@@ -90,7 +90,7 @@ $('mapGrid').addEventListener('click',e=>{const b=e.target.closest('.mapcard');i
 $('mSkill').addEventListener('click',e=>{const v=e.target.dataset&&e.target.dataset.v;if(v==null)return;S.skill=+v;saveS();syncSettings();SFX.ui();});
 $('bOnline').addEventListener('click',()=>{if(inGame&&online){resumeGame();return;}openModePicker(true);});
 $('bOffline').addEventListener('click',()=>{openModePicker(false);});
-$('bLeave').addEventListener('click',()=>{leaveGame();$('mKick').textContent='Arena · Gungame · Team Deathmatch · Captura la bandera';$('bOnline').textContent='Jugar online';$('bOnline').disabled=!serverOK;$('bOffline').textContent='Práctica con bots';});
+$('bLeave').addEventListener('click',()=>{leaveGame();$('mKick').textContent='Arena · Gungame · Team Deathmatch · Captura el dominio';$('bOnline').textContent='Jugar online';$('bOnline').disabled=!serverOK;$('bOffline').textContent='Práctica con bots';});
 function togglePanel(btn,id){const p=$(id),open=p.hidden;['settings','lockerPanel','modePanel'].forEach(x=>$(x).hidden=true);['bSet','bLocker'].forEach(x=>$(x).setAttribute('aria-expanded','false'));p.hidden=!open;$(btn).setAttribute('aria-expanded',String(open));}
 $('bSet').addEventListener('click',()=>togglePanel('bSet','settings'));
 $('bLocker').addEventListener('click',()=>{togglePanel('bLocker','lockerPanel');lockerInit();syncLocker();lkAdding=false;renderCombos();});

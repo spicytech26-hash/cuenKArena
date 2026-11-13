@@ -72,7 +72,7 @@ function startGame(isOnline,mode,auto){
   if(!auto){clearTimeout(G.reT);G.reTry=0;}
   audioInit();if(AC&&AC.state==='suspended')AC.resume();
   leaveGame();
-  mode=C.MODES[mode]?mode:'arena';S.mode=mode;saveS();
+  mode=C.MODE_ALIAS[mode]||mode;mode=C.MODES[mode]?mode:'arena';S.mode=mode;saveS();
   goFullscreen();
   ['cMsg','cSub','crPop','pick'].forEach(id=>{$(id).classList.remove('show');});
   online=isOnline;myId=0;CLK.off=null;CLK.jit=.02;MODE=mode;myTeam=-1;FL=[];TS=[0,0];me.lvl=0;
@@ -94,7 +94,7 @@ function startGame(isOnline,mode,auto){
   hideMenu();lockPointer();
 }
 function leaveGame(){
-  if(net){net.close();net=null;}renderVote(null);
+  if(net){net.close();net=null;}renderVote(null);C.setPasa(-1);
   spEnd();
   inGame=false;me.alive=false;$('bLeave').hidden=true;$('hud').hidden=true;$('board').hidden=true;$('inter').hidden=true;closeShop(true);
   if(level)for(const o of level.items)o.g.visible=true;

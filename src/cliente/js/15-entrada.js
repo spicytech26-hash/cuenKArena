@@ -27,7 +27,7 @@ $('bStay').addEventListener('click',()=>{
   if(matchState==='inter'&&net){net.send({t:'ready'});$('bStay').disabled=true;$('bStay').textContent='¡Listo!';if(!online)$('interReady').textContent='Arrancando…';SFX.ui();return;}
   lockPointer();SFX.ui();
 });
-$('bQuit').addEventListener('click',()=>{leaveGame();$('mKick').textContent='Arena · Gungame · Team Deathmatch · Captura la bandera';$('bOnline').textContent='Jugar online';$('bOnline').disabled=!serverOK;$('bOffline').textContent='Práctica con bots';showMenu();});
+$('bQuit').addEventListener('click',()=>{leaveGame();$('mKick').textContent='Arena · Gungame · Team Deathmatch · Captura el dominio';$('bOnline').textContent='Jugar online';$('bOnline').disabled=!serverOK;$('bOffline').textContent='Práctica con bots';showMenu();});
 // los avisos con animación no se repiten al volver de la pausa
 ['cMsg','cSub','crPop','pick'].forEach(id=>$(id).addEventListener('animationend',()=>$(id).classList.remove('show')));
 canvas.addEventListener('mousedown',e=>{

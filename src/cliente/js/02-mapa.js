@@ -73,7 +73,7 @@ function updLightSlots(dt){
     sl.cur=Math.min(1,sl.cur+dt*5);l.intensity=v.intensity*sl.cur;}
 }
 function loadMap(id){
-  const M=C.MAPS[id]||C.MAPS.represa;clearShards();clearCrown();clearStorm();initLightSlots();for(const sl of lightSlots){sl.v=null;sl.l.intensity=0;}slotT=0;
+  const M=C.MAPS[id]||C.MAPS.represa;clearShards();clearCrown();clearStorm();for(const o of DM.orbs.values())scene.remove(o.g);for(const z of DM.zones)scene.remove(z.q);initLightSlots();for(const sl of lightSlots){sl.v=null;sl.l.intensity=0;}slotT=0;
   if(level){scene.remove(level.group);level.group.traverse(o=>{if(o.geometry)o.geometry.dispose();});}
   W=M;
   const group=new THREE.Group();scene.add(group);
@@ -117,7 +117,7 @@ function loadMap(id){
     const B=M.bounds,cx=(B.x0+B.x1)/2,cz=(B.z0+B.z1)/2,R=Math.max(B.x1-B.x0,B.z1-B.z0)*.62;
     const sp=th.sunPos||[-40,60,28];sun.position.set(cx+sp[0],sp[1],cz+sp[2]);sun.target.position.set(cx,0,cz);group.add(sun.target);
     sun.castShadow=S.sh!==0;sun.shadow.mapSize.set(th.shadowRes||2048,th.shadowRes||2048);
-    Object.assign(sun.shadow.camera,{left:-R,right:R,top:R,bottom:-R,near:5,far:160});sun.shadow.camera.updateProjectionMatrix();
+    Object.assign(sun.shadow.camera,{left:-R,right:R,top:R,bottom:-R,near:5,far:th.shFar||160});sun.shadow.camera.updateProjectionMatrix();
     sun.shadow.bias=th.shBias!=null?th.shBias:-.0006;sun.shadow.normalBias=th.shNormal!=null?th.shNormal:.04;L.sun=sun;group.add(sun);}
   // modo noche: 3 focos reales (el mío y los de los 2 rivales más cercanos); se mueven en updNight
   NIGHT=!!th.noche;$('shopHint').innerHTML=NIGHT?'B · TIENDA<br>G · LINTERNA':'B · TIENDA';document.body.classList.toggle('noche',NIGHT);   // viñeta y grano de película en los mapas de noche
@@ -154,7 +154,7 @@ function loadMap(id){
   }
   L.items=M.items.map(it=>{const g=buildItem(it.type);g.position.set(it.x,it.y+.6,it.z);group.add(g);return {g,it,ty:it.type,ph:Math.random()*6};});
   if(th.club)L.club=buildClub(group);
-  if(MODE==='ctf'&&M.flags)L.flags=M.flags.map((f,i)=>buildFlag(group,i,f));
+  domLoad(group,M);   // Captura el dominio: bosses, generadores, barreras y arte
   level=L;
   $('bTitle').textContent=M.name;
   warmShaders();

@@ -8,8 +8,9 @@
      BOT_SKILL=1 (0 fácil · 3 pesadilla)  FRAGLIMIT=20  TIMELIMIT=10 (minutos)
      MAX_PLAYERS=16  MAP=represa (mapa inicial de Arena)  CAPLIMIT=3
    Cuentas (opcional, ver cuentas.js): GOOGLE_CLIENT_ID  SUPABASE_URL  SUPABASE_KEY
-   Hay una sala por modo de juego (Arena, Gungame, Captura la bandera);
-   el cliente elige con /ws?mode=arena|gungame|ctf
+   Hay una sala por modo de juego (Arena, Gungame, Team Deathmatch, Francotiradores, Captura el dominio);
+   el cliente elige con /ws?mode=arena|gungame|tdm|snipers|dominio
+   DEV=1 habilita en online los comandos de prueba de Captura el dominio (/gen, /barrera, /boss, /tiempo)
    ===================================================================== */
 'use strict';
 const http = require('http');
@@ -17,7 +18,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const zlib = require('zlib');
-const { Game, MODES, MODE_IDS, MAPS, MAP_IDS, getNav } = require('./public/game.js');
+const { Game, MODES, MODE_IDS, MODE_ALIAS, MAPS, MAP_IDS, getNav } = require('./public/game.js');
 // la navegación de los bots de todos los mapas se arma al arrancar: si no, el servidor se congelaba
 // un par de segundos (para todos) cada vez que una partida pasaba a un mapa nuevo
 { const t0 = Date.now(); for (const id of MAP_IDS) getNav(MAPS[id]); console.log('Mapas listos en ' + (Date.now() - t0) + ' ms'); }
@@ -31,7 +32,7 @@ const games = {};
 const kickers = new Map(); // id de jugador → función que corta su conexión (para la votación)
 for (const mode of MODE_IDS) games[mode] = new Game({
   onKick: id => { const k = kickers.get(mode + ':' + id); if (k) k(); },
-  online: true, mode,
+  online: true, mode, dev: process.env.DEV === '1',
   map: mode === 'arena' ? (process.env.MAP || 'represa') : undefined,
   botFill: num(process.env.BOTS, 0),
   botSkill: num(process.env.BOT_SKILL, 1),
@@ -164,7 +165,7 @@ server.on('upgrade', (req, sock) => {
   const [route, query] = (req.url || '').split('?');
   if (route !== '/ws' || !key) { sock.destroy(); return; }
   const mode = (/(?:^|&)mode=([a-z]+)/.exec(query || '') || [])[1];
-  const game = games[mode] || games.arena;
+  const game = games[MODE_ALIAS[mode] || mode] || games.arena;   // los clientes viejos todavía piden ctf: van a Captura el dominio
   const accept = crypto.createHash('sha1').update(key + GUID).digest('base64');
   sock.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' + accept + '\r\n\r\n');
   const ws = new Socket(sock);

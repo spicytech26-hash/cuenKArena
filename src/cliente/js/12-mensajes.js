@@ -4,12 +4,13 @@ function onMsg(m){
     case 'welcome':
       myId=m.id;fragLimit=m.fl;timeLeft=m.tl;matchState=m.state;
       MODE=m.mode||'arena';myTeam=m.team!=null?m.team:-1;FL=m.fs||[];TS=m.ts||[0,0];capLimit=m.cl||5;
-      loadMap(m.map);applyMode();
+      C.setPasa(myTeam);me.s.tm=myTeam;   // las barreras de campo de fuerza dejan pasar solo a tu equipo
+      loadMap(m.map);applyMode();domSet(m.dm);
       if(typeof m.tm==='number'&&online)CLK.off=m.tm-performance.now()/1000-.05;
       m.roster.forEach(r=>{if(r[0]!==myId)ensurePlayer(r[0],r[1],r[2],r[3],r[4],r[5]);});
       syncItems(m);clearShards();clearCrown();clearStorm();setCrownState(m.cw);stormSet(m.st);resetCards();if(m.cd&&m.cd.length){me.cards=m.cd.slice();renderMyCards();}if(m.sh)for(const s of m.sh)addShard(s[0],s[1],s[2],s[3],s[1],s[2],s[3],s[4]);
       sysChat((online?'Conectado a '+location.host:'Práctica · '+S.bots+' bots')+' · '+C.MODES[MODE].name+' · '+W.name+(C.MODES[MODE].shop?' · B abre la tienda':''));
-      if(MODE==='ctf'&&myTeam>=0)announce('EQUIPO '+TEAMS[myTeam].name.toUpperCase(),'Robá la bandera rival y traela a tu base');
+      if(MODE==='dominio'&&myTeam>=0)announce('EQUIPO '+TEAMS[myTeam].name.toUpperCase(),'Rompé los generadores, abrí una ruta y matá al boss rival');
       else if(MODE==='tdm'&&myTeam>=0)announce('EQUIPO '+TEAMS[myTeam].name.toUpperCase(),m.state==='play'?'Cada baja suma para tu equipo':'Esperando jugadores · calentamiento');
       else if(MODE==='gungame')announce('GUNGAME','Cada baja te da el arma siguiente · '+GG.length+' niveles');
       else if(MODE==='snipers'&&myTeam>=0)announce('EQUIPO '+TEAMS[myTeam].name.toUpperCase(),'Francotirador de un tiro · cuchillo para correr · racha de 6: escopeta');
@@ -18,7 +19,7 @@ function onMsg(m){
     case 'vote': renderVote(m);break;
     case 'kicked': renderVote(null);leaveGame();showMenu();kickNotice(m);break;
     case 'spawn':
-      me.s={x:m.p[0],y:m.p[1],z:m.p[2],vx:0,vy:0,vz:0,on:true};me.yaw=m.yaw;me.pitch=0;me.alive=true;me.deadT=0;me.raise=1;me.hp=100;
+      me.s={x:m.p[0],y:m.p[1],z:m.p[2],vx:0,vy:0,vz:0,on:true,tm:myTeam};me.yaw=m.yaw;me.pitch=0;me.alive=true;me.deadT=0;me.raise=1;me.hp=100;
       if(m.ow)me.ow=m.ow.slice();if(m.am)me.am=Object.assign({},m.am);if(m.ar!=null)me.ar=m.ar;
       me.boostT=0;me.mag=fullMags();me.rel=0;me.scope=false;me.inspT=9;me.lastW=me.w===0?C.primaryOf(m.ow||me.ow):0;
       if(MODE==='gungame'&&m.w!=null)me.w=m.w;
@@ -45,6 +46,7 @@ function onMsg(m){
       if(CLK.off===null||sample>CLK.off)CLK.off=sample;else CLK.off+=(sample-CLK.off)*.003;
       const dev=CLK.off-sample;CLK.jit=CLK.jit*.92+dev*.08;
       CLK.delay=online?Math.min(.3,Math.max(.07,.055+CLK.jit*2.2)):.06;
+      domSnap(m);
       for(const r of m.ps){
         if(r[0]===myId)continue;
         const p=ensurePlayer(r[0]);
@@ -56,7 +58,8 @@ function onMsg(m){
     case 'sc':
       if(m.iu&&level)for(let i=0;i<m.iu.length;i++){const o=level.items[i];if(o){const u=m.iu[i]==='1';if(o.g.visible!==u)o.g.visible=u;}}
       scores=m.l;timeLeft=m.tl;fragLimit=m.fl;
-      if(m.cw!==undefined)setCrownState(m.cw);   // resincroniza la corona una vez por segundo
+      if(m.cw!==undefined)setCrownState(m.cw);
+      if(m.dm)domSet(m.dm);   // resincroniza la corona una vez por segundo
       if(m.st!==matchState&&m.st==='count')SFX.start();
       matchState=m.st;LOBBY={cd:m.cd||0,hn:m.hn||0,mp:m.mp||0};
       if(m.ts)TS=m.ts;if(m.fs)FL=m.fs;if(m.cl)capLimit=m.cl;
@@ -72,7 +75,7 @@ function onMsg(m){
         t.classList.remove('in');void t.offsetWidth;t.classList.add('in');}
       $('interT').style.color=teamsMode()&&m.wt>=0?TEAMS[m.wt].c:'';
       $('interS').textContent=m.mv?'':'Próximo mapa: '+(m.nextName||'');G.myMapVote=null;renderMapVote(m.mv);
-      renderEnd(m);
+      renderEnd(m);if(m.dm)domSet(m.dm);domEnd(m);
       if(online&&ACC){xpCard(ACC);if(G.pendXP){animXP(G.pendXP);G.pendXP=null;}}
       else $('interXP').innerHTML='<div class="xpNote">'+(online?(GCID?'Iniciá sesión con Google para ganar experiencia y subir de nivel':''):'En práctica no se gana experiencia')+'</div>';
       G.interEnd=performance.now()/1000+(m.secs||25);setTxt('interN',String(m.secs||25));
@@ -88,8 +91,8 @@ function onMsg(m){
       if(!document.pointerLockElement&&$('menu').hidden&&inGame){announce('¡ARRANCÓ!','Hacé click para jugar');}
       if(m.fs)FL=m.fs;if(m.ts)TS=m.ts;me.lvl=0;resetCards();
       if(m.map&&m.map!==W.id){loadMap(m.map);projs.forEach(p=>scene.remove(p.m));projs.length=0;}
-      syncItems(m);
-      announce(W.name.toUpperCase(),MODE==='ctf'?'primero a '+capLimit+' capturas':(MODE==='tdm'||MODE==='snipers')?'primer equipo en llegar a '+fragLimit+' bajas':MODE==='gungame'?'primero en completar los '+GG.length+' niveles':'gana el que más bajas haga');SFX.start();
+      syncItems(m);if(MODE==='dominio'){if(DM.on)domLoad(level.group,W);domSet(m.dm);}
+      announce(W.name.toUpperCase(),MODE==='dominio'?'matá al boss rival · 15 minutos':(MODE==='tdm'||MODE==='snipers')?'primer equipo en llegar a '+fragLimit+' bajas':MODE==='gungame'?'primero en completar los '+GG.length+' niveles':'gana el que más bajas haga');SFX.start();
       break;
     case 'pong': ping=Math.round(performance.now()-m.c);break;
     case 'xp': {
@@ -112,6 +115,8 @@ function onEvent(m){
       break;
     case 'flag': FL=m.fs;TS=m.ts;onFlag(m);break;
     case 'crw': crownEvent(m);break;
+    case 'dom': domEvent(m);break;
+    case 'fix': me.s.x=m.p[0];me.s.y=m.p[1];me.s.z=m.p[2];me.s.vx=me.s.vz=0;if(m.yaw!=null){me.yaw=m.yaw;me.pitch=0;me.s.vy=0;}break;   // el servidor no aceptó cruzar una barrera (o un /ir de prueba)
     case 'stm': stormEvent(m);break;
     case 'fire': fxFire(m);break;
     case 'grab': me.grabW=m.w;break;
@@ -211,6 +216,7 @@ function onKill(m){
   else if(m.how==='water')line=vn+' <i>se lo llevó el río</i>';
   else if(m.how==='void')line=vn+' <i>cayó al vacío</i>';
   else if(m.how==='storm')line=vn+' <i>se quedó en la tormenta</i>';
+  else if(m.how==='boss')line=vn+' <i>cayó ante el boss</i>';
   else if(!m.k||m.k===m.v)line=vn+' <i>se voló a sí mismo</i>';
   else if(m.ns)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>mató</i> <b class="ns">SIN USAR MIRA</b> <i>a</i> '+vn;
   else if(W_&&W_.melee)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>le entró a pelo a</i> '+vn;
@@ -220,7 +226,7 @@ function onKill(m){
   if(m.v===myId){
     me.alive=false;me.deadT=0;me.killer=m.k;me.respawnAsk=false;me.deathPos=[me.s.x,me.s.y,me.s.z];
     // "JUGADOR te ha eliminado" en grande, el arma abajo y "Cobrale venganza" en chico; si no fue un jugador, el motivo en grande
-    const env=m.how==='water'?'Te llevó el río':m.how==='lava'?'Te derretiste en la lava':m.how==='void'?'Caíste al vacío':m.how==='storm'?'Te comíó la tormenta':(!m.k||m.k===myId)?'Te volaste a vos mismo':'';
+    const env=m.how==='water'?'Te llevó el río':m.how==='lava'?'Te derretiste en la lava':m.how==='void'?'Caíste al vacío':m.how==='storm'?'Te comíó la tormenta':m.how==='boss'?'Te mató el boss':(!m.k||m.k===myId)?'Te volaste a vos mismo':'';
     if(env){$('deathBig').textContent=env;$('deathBy').textContent='';$('deathRev').textContent='Volvé más fuerte';}
     else{$('deathBig').innerHTML='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> te ha eliminado';$('deathBy').textContent=m.how==='fire'?'te prendió fuego':m.how==='cblast'?'explotó al morir':m.ns?'sin usar mira':W_?'con '+W_.name:'';$('deathRev').textContent='Cobrale venganza';}
     $('deathBox').hidden=false;$('deathBox').classList.remove('in');void $('deathBox').offsetWidth;$('deathBox').classList.add('in');$('deathHint').textContent='';

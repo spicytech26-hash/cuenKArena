@@ -45,11 +45,11 @@ function renderKillRow(){
   box.hidden=false;
 }
 function renderBoard(){
-  const tl=Math.max(0,timeLeft),gg=MODE==='gungame',ctf=MODE==='ctf',tm=teamsMode();
+  const tl=Math.max(0,timeLeft),gg=MODE==='gungame',ctf=MODE==='dominio',tm=teamsMode();
   $('bTitle').textContent=C.MODES[MODE].name+' · '+W.name;
-  const goal=ctf?'primero a '+capLimit+' capturas':MODE==='tdm'?'primer equipo a '+fragLimit+' bajas'+(matchState==='play'?'':' · esperando jugadores'):gg?'primero en completar '+GG.length+' niveles':'gana el que más bajas haga';
+  const goal=ctf?'matá al boss rival · si se acaba el tiempo gana el que más lo lastimó':MODE==='tdm'?'primer equipo a '+fragLimit+' bajas'+(matchState==='play'?'':' · esperando jugadores'):gg?'primero en completar '+GG.length+' niveles':'gana el que más bajas haga';
   $('bMeta').textContent=(online?'Online':'Práctica')+' · '+goal+' · quedan '+Math.floor(tl/60)+':'+String(tl%60).padStart(2,'0');
-  $('thX').textContent=gg?'Nivel':ctf?'Capturas':'Créditos';
+  $('thX').textContent=gg?'Nivel':ctf?'Objetivos':'Créditos';
   const crown=!!C.MODES[MODE].crown;
   // en los modos con corona, al lado del total se ve cuántos puntos vinieron de ella
   const cpt=s=>crown&&s[13]?'<span class="crwpt" title="'+s[13]+' de la corona · '+(s[14]||0)+' s con ella">\u265b '+s[13]+'</span>':'';
@@ -87,7 +87,7 @@ function renderGrimorio(){
 function applyMode(){
   const gg=MODE==='gungame',tm=teamsMode();
   $('tCrBox').hidden=!C.MODES[MODE].shop;$('shopHint').hidden=!C.MODES[MODE].shop;$('kickHint').hidden=!online;$('mapHint').hidden=C.MODES[MODE].maps.length<2;$('tLvlBox').hidden=!gg;$('tNextBox').hidden=!gg;
-  $('ctfBox').hidden=!tm;$('carry').hidden=true;$('tRank').parentElement.hidden=tm;$('lobbyBox').hidden=true;
+  $('ctfBox').hidden=!tm||MODE==='dominio';$('domBox').hidden=$('domMap').hidden=MODE!=='dominio';$('carry').hidden=true;$('tRank').parentElement.hidden=tm;$('lobbyBox').hidden=true;
   $('slots').innerHTML='';krCache.v='';grimCache='';renderMyCards();updateHUD();
 }
 

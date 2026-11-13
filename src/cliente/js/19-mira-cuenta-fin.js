@@ -79,11 +79,11 @@ function renderMapVote(v){
 function castMapVote(id){if(!net||matchState!=='inter')return;net.send({t:'mapvote',m:id});SFX.ui();}
 addEventListener('keydown',e=>{if($('inter').hidden||$('mapVote').hidden||chatOpen)return;const d=/^(?:Digit|Numpad)([1-9])$/.exec(e.code);if(d&&G.mvOpts&&G.mvOpts[d[1]-1]){e.preventDefault();castMapVote(G.mvOpts[d[1]-1]);}});
 function renderEnd(m){
-  const l=m.l||scores,gg=MODE==='gungame',ctf=MODE==='ctf',tm=teamsMode();
+  const l=m.l||scores,gg=MODE==='gungame',ctf=MODE==='dominio',tm=teamsMode();
   const pod=l.slice(0,3);
   $('interPod').innerHTML=tm?'':pod.map((s,i)=>'<div class="pod p'+(i+1)+'"><div class="pn">'+(s[11]>0?medalSVG(s[11],18)+' ':'')+esc(s[1])+'</div><div class="pb">'+(i+1)+'</div><div class="ps">'+(gg?'nivel '+Math.min(GG.length,(s[8]||0)+1):s[2]+' bajas')+'</div></div>').join('');
   const bestD=Math.max(1,...l.map(s=>s[12]||0)),bestK=Math.max(1,...l.map(s=>s[2]));
-  const xh=gg?'NIVEL':ctf?'CAPTURAS':'';
+  const xh=gg?'NIVEL':ctf?'OBJETIVOS':'';
   $('interTab').innerHTML='<thead><tr><th>#</th><th>JUGADOR</th><th>BAJAS</th><th>MUERTES</th><th>DAÑO</th><th>K/D</th>'+(xh?'<th>'+xh+'</th>':'')+'</tr></thead><tbody></tbody>';
   let k=0;const row=(s,i)=>'<tr class="r'+(s[0]===myId?' me':'')+'" style="animation-delay:'+(.05*k++)+'s"><td>'+(i+1)+'</td><td>'+(s[11]>0?medalSVG(s[11],18)+' ':'')+'<span class="sw" style="background:'+esc(s[6])+'"></span>'+esc(s[1])+(s[5]?'<span class="tag">bot</span>':'')+'</td>'
     +'<td'+(s[2]===bestK&&s[2]>0?' class="best"':'')+'>'+s[2]+'</td><td>'+s[3]+'</td><td class="dm'+((s[12]||0)===bestD?' best':'')+'">'+(s[12]||0)+'</td><td>'+(s[3]?(s[2]/s[3]).toFixed(2):s[2].toFixed(2))+'</td>'

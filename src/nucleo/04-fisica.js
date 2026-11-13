@@ -8,12 +8,89 @@ function topAt(b, x0, z0, x1, z1) {
   else { const L = b.max[2] - b.min[2]; t = r.dir > 0 ? (Math.min(z1, b.max[2]) - b.min[2]) / L : (b.max[2] - Math.max(z0, b.min[2])) / L; }
   return r.lo + (r.hi - r.lo) * clamp(t, 0, 1);
 }
+/* Barreras de campo de fuerza (Captura el dominio): son bloques con `bar: { team, lane, i, down }`.
+   Frenan a todo lo que no sea del equipo dueño: cuerpos, balas y proyectiles. PASA dice para qué equipo se está
+   calculando ahora (-1 = nadie pasa, -2 = pasan todos: así se arma la navegación). El movimiento lo toma solo
+   de `s.tm`; para disparos y líneas de visión se fija con setPasa(), que devuelve el valor anterior para restaurarlo. */
+let PASA = -1;
+function setPasa(t) { const o = PASA; PASA = t == null ? -1 : t; return o; }
+const barOpen = b => b.bar.down || PASA === -2 || b.bar.team === PASA;
 const overlapXZ = (b, x0, z0, x1, z1) => b.min[0] < x1 && b.max[0] > x0 && b.min[2] < z1 && b.max[2] > z0;
+
+/* ---------- índice espacial (rejilla de GC metros en XZ) ----------
+   El Santuario Dual tiene cientos de bloques y antes cada paso de cada jugador y cada disparo los recorría todos.
+   Cada celda guarda los índices de los bloques que la tocan; los móviles y los enormes (un piso entero) quedan
+   en `sueltos` y se prueban siempre. Se arma una vez por mapa y los índices sirven igual para la copia del mundo
+   que hace cada partida de Captura el dominio, porque el orden de los bloques no cambia.
+   gBox y gRay dejan los candidatos en SCR (sin repetidos): no se pueden anidar dos recorridos. */
+const GC = 8, GBIG = 48;
+function gridOf(W) {
+  if (W.gridx) return W.gridx;
+  const B = W.brushes;
+  let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
+  for (const b of B) { if (b.min[0] < x0) x0 = b.min[0]; if (b.min[2] < z0) z0 = b.min[2]; if (b.max[0] > x1) x1 = b.max[0]; if (b.max[2] > z1) z1 = b.max[2]; }
+  if (!B.length) { x0 = z0 = 0; x1 = z1 = 1; }
+  const NX = Math.max(1, Math.ceil((x1 - x0) / GC) + 1), NZ = Math.max(1, Math.ceil((z1 - z0) / GC) + 1);
+  const cells = new Array(NX * NZ), loose = [];
+  for (let i = 0; i < B.length; i++) {
+    const b = B[i];
+    const cx0 = Math.floor((b.min[0] - x0) / GC), cx1 = Math.floor((b.max[0] - x0) / GC);
+    const cz0 = Math.floor((b.min[2] - z0) / GC), cz1 = Math.floor((b.max[2] - z0) / GC);
+    if (b.nc) continue;   // decoración sin colisión: no entra al índice, así adornar el mapa no cuesta nada
+    if (b.mover || (cx1 - cx0 + 1) * (cz1 - cz0 + 1) > GBIG) { loose.push(i); continue; }
+    for (let cz = cz0; cz <= cz1; cz++) for (let cx = cx0; cx <= cx1; cx++) { const k = cx + cz * NX; (cells[k] || (cells[k] = [])).push(i); }
+  }
+  return W.gridx = { x0, z0, NX, NZ, cells, loose };
+}
+let SCR = new Int32Array(256), MARK = null, MARKW = null, MARKV = 0;
+function scrStart(W, G) {
+  if (MARKW !== W.brushes || MARK.length < W.brushes.length) { MARKW = W.brushes; MARK = new Int32Array(W.brushes.length); MARKV = 0; }
+  if (SCR.length < W.brushes.length) SCR = new Int32Array(W.brushes.length);
+  if (++MARKV > 2e9) { MARK.fill(0); MARKV = 1; }
+  let n = 0;
+  for (const i of G.loose) { MARK[i] = MARKV; SCR[n++] = i; }
+  return n;
+}
+function gCell(G, n, cx, cz) {
+  if (cx < 0 || cz < 0 || cx >= G.NX || cz >= G.NZ) return n;
+  const c = G.cells[cx + cz * G.NX];
+  if (c) for (let k = 0; k < c.length; k++) { const i = c[k]; if (MARK[i] !== MARKV) { MARK[i] = MARKV; SCR[n++] = i; } }
+  return n;
+}
+function gBox(W, x0, z0, x1, z1) {
+  const G = gridOf(W);
+  let n = scrStart(W, G);
+  const cx0 = Math.max(0, Math.floor((x0 - G.x0) / GC)), cx1 = Math.min(G.NX - 1, Math.floor((x1 - G.x0) / GC));
+  const cz0 = Math.max(0, Math.floor((z0 - G.z0) / GC)), cz1 = Math.min(G.NZ - 1, Math.floor((z1 - G.z0) / GC));
+  for (let cz = cz0; cz <= cz1; cz++) for (let cx = cx0; cx <= cx1; cx++) n = gCell(G, n, cx, cz);
+  return n;
+}
+// celdas que toca un rayo, caminándolas en orden (DDA en XZ)
+function gRay(W, ox, oz, dx, dz, maxT) {
+  const G = gridOf(W);
+  let n = scrStart(W, G);
+  let cx = Math.floor((ox - G.x0) / GC), cz = Math.floor((oz - G.z0) / GC);
+  const sx = dx > 1e-9 ? 1 : dx < -1e-9 ? -1 : 0, sz = dz > 1e-9 ? 1 : dz < -1e-9 ? -1 : 0;
+  const tdx = sx ? Math.abs(GC / dx) : Infinity, tdz = sz ? Math.abs(GC / dz) : Infinity;
+  let tmx = sx ? (G.x0 + (cx + (sx > 0 ? 1 : 0)) * GC - ox) / dx : Infinity;
+  let tmz = sz ? (G.z0 + (cz + (sz > 0 ? 1 : 0)) * GC - oz) / dz : Infinity;
+  if (tmx < 0) tmx = Infinity; if (tmz < 0) tmz = Infinity;
+  for (let guard = G.NX + G.NZ + 4; guard >= 0; guard--) {
+    n = gCell(G, n, cx, cz);
+    const t = tmx < tmz ? tmx : tmz;
+    if (!(t <= maxT)) break;
+    if (tmx < tmz) { cx += sx; tmx += tdx; } else { cz += sz; tmz += tdz; }
+    if ((cx < 0 && sx <= 0) || (cx >= G.NX && sx >= 0) || (cz < 0 && sz <= 0) || (cz >= G.NZ && sz >= 0)) break;
+  }
+  return n;
+}
 
 function solidAt(W, x, y, z, r, h) {
   const x0 = x - r, x1 = x + r, z0 = z - r, z1 = z + r;
-  for (const b of W.brushes) {
-    if (b.nc || !overlapXZ(b, x0, z0, x1, z1)) continue;
+  const N = gBox(W, x0, z0, x1, z1);
+  for (let k = 0; k < N; k++) {
+    const b = W.brushes[SCR[k]];
+    if (b.nc || (b.bar && barOpen(b)) || !overlapXZ(b, x0, z0, x1, z1)) continue;
     if (b.min[1] >= y + h - EPS) continue;
     if (topAt(b, x0, z0, x1, z1) <= y + EPS) continue;
     return true;
@@ -25,8 +102,10 @@ function stepAxis(W, s, ax, d) {
   const nx = ax === 0 ? s.x + d : s.x, nz = ax === 2 ? s.z + d : s.z, r = K.R, H = hOf(s);
   const x0 = nx - r, x1 = nx + r, z0 = nz - r, z1 = nz + r;
   let rise = 0;
-  for (const b of W.brushes) {
-    if (b.nc || !overlapXZ(b, x0, z0, x1, z1)) continue;
+  const N = gBox(W, x0, z0, x1, z1);
+  for (let k = 0; k < N; k++) {
+    const b = W.brushes[SCR[k]];
+    if (b.nc || (b.bar && barOpen(b)) || !overlapXZ(b, x0, z0, x1, z1)) continue;
     if (b.min[1] >= s.y + H - EPS) continue;
     const top = topAt(b, x0, z0, x1, z1);
     if (top <= s.y + EPS) continue;
@@ -43,10 +122,12 @@ function stepAxis(W, s, ax, d) {
 function stepY(W, s, h, wasOn) {
   const r = K.R, H = hOf(s), x0 = s.x - r, x1 = s.x + r, z0 = s.z - r, z1 = s.z + r;
   const ny = s.y + s.vy * h;
+  const N = gBox(W, x0, z0, x1, z1), CAND = [];
+  for (let k = 0; k < N; k++) CAND.push(W.brushes[SCR[k]]);   // copia: más abajo se llama a solidAt, que vuelve a usar SCR
   if (s.vy <= 0) {
     let ground = -Infinity, gb = null;
-    for (const b of W.brushes) {
-      if (b.nc || !overlapXZ(b, x0, z0, x1, z1)) continue;
+    for (const b of CAND) {
+      if (b.nc || (b.bar && barOpen(b)) || !overlapXZ(b, x0, z0, x1, z1)) continue;
       const top = topAt(b, x0, z0, x1, z1);
       if (top <= s.y + .02 && top > ground) { ground = top; gb = b; }
     }
@@ -59,8 +140,8 @@ function stepY(W, s, h, wasOn) {
     } else { s.y = ny; s.on = false; s.gb = null; }
   } else {
     let ceil = Infinity;
-    for (const b of W.brushes) {
-      if (b.nc || !overlapXZ(b, x0, z0, x1, z1)) continue;
+    for (const b of CAND) {
+      if (b.nc || (b.bar && barOpen(b)) || !overlapXZ(b, x0, z0, x1, z1)) continue;
       if (b.min[1] >= s.y + H - .02 && b.min[1] < ceil) ceil = b.min[1];
     }
     if (ny + H > ceil) { s.y = ceil - H; s.vy = 0; } else s.y = ny;
@@ -108,23 +189,112 @@ function crouchUpdate(W, s, want) {
     else if (!solidAt(W, s.x, s.y + .01, s.z, K.R, K.H)) s.crouch = false;           // no se para si no hay lugar arriba
   }
 }
+/* Zonas de gravedad cero (W.zerog = [{ min: [x, y, z], max: [x, y, z] }], hoy el pozo de Pyramid): adentro no hay gravedad, te vas
+   cayendo despacio hacia abajo y te movés libre: salto/Espacio sube, agacharse baja, y W mirando arriba o abajo te lleva para ahí.
+   Parado en el piso solo se activa si apretás para subir. */
+const ZG = { DRIFT: -4.5, VSPEED: 9.5, HSPEED: .7 };
+/* Movimiento avanzado (solo lo usa el cliente humano con cmd.mech; los bots siguen con el movimiento de siempre).
+   Stamina 0..1: deslizar gasta un poco, el doble salto gasta la mitad; el salto de pared es gratis. */
+const MV = {
+  SL_MIN: 5, SL_BOOST: 5.5, SL_MAX: 19, SL_END: 3, SL_FRIC: .65, SL_STEER: .7,    // deslizamiento (estilo Deadlock): velocidad mínima para arrancar, empujón, tope, velocidad a la que se corta, fricción, control
+  SL_START: 0, SL_DRAIN: 0,                                                      // el deslizamiento no gasta stamina
+  DJ_COST: .25, DJ_JUMP: 1.3,                                                    // doble salto: un cuarto de la barra, altura fija (siempre la misma)
+  WJ_UP: 1.1, WJ_OUT: 7, WJ_CD: .25, WJ_REACH: .14,                              // salto de pared: impulso arriba y hacia afuera, espera entre saltos, distancia a la pared
+  WJ_COST: .12, WJ_FAT: 1.25, WJ_LOSS: .18, WJ_MINUP: .6,                        // el primero es gratis; los siguientes dentro de 1,25 s gastan stamina y suben menos (fatiga)
+  REGEN: .22, REGEN_DELAY: .7, COYOTE: .09
+};
+// ¿hay una pared pegada al cuerpo? devuelve la normal (hacia afuera de la pared) o null
+function wallNormal(W, s) {
+  let nx = 0, nz = 0; const y = s.y + K.STEP + .1, h = (s.crouch ? K.HC : K.H) - K.STEP - .3, d = MV.WJ_REACH;
+  if (solidAt(W, s.x + d, y, s.z, K.R, h)) nx -= 1;
+  if (solidAt(W, s.x - d, y, s.z, K.R, h)) nx += 1;
+  if (solidAt(W, s.x, y, s.z + d, K.R, h)) nz -= 1;
+  if (solidAt(W, s.x, y, s.z - d, K.R, h)) nz += 1;
+  const l = Math.hypot(nx, nz); return l > 0 ? { x: nx / l, z: nz / l } : null;
+}
+function inZeroG(W, s) {
+  if (!W.zerog) return false;
+  const y = s.y + .9;
+  for (const z of W.zerog) if (s.x > z.min[0] && s.x < z.max[0] && s.z > z.min[2] && s.z < z.max[2] && y > z.min[1] && y < z.max[1]) return true;
+  return false;
+}
 function pmove(W, s, cmd, dt) {
+  const prev = PASA; PASA = s.tm == null ? -1 : s.tm;
+  try { return pmove0(W, s, cmd, dt); } finally { PASA = prev; }
+}
+function pmove0(W, s, cmd, dt) {
   if (W.movers.length) carry(W, s);
   crouchUpdate(W, s, !!cmd.crouch);
   const steps = Math.max(1, Math.ceil(dt / (1 / 120) - 1e-6)), h = dt / steps;
   let wx = cmd.wx || 0, wz = cmd.wz || 0;
   const wl = Math.hypot(wx, wz); let wish = 0;
   if (wl > 1e-4) { wish = K.MAXSPD * Math.min(1, wl); wx /= wl; wz /= wl; }
-  if (s.crouch && s.on) wish *= K.CROUCH_SPD;
+  if (s.crouch && s.on && !(cmd.mech && s.slide)) wish *= K.CROUCH_SPD;
   if (cmd.fast > 1) wish *= Math.min(1.5, cmd.fast);
-  const out = { jumped: false, landed: 0 };
+  const out = { jumped: false, landed: 0, zerog: false, slide: false, dj: false, wj: false };
+  const up = cmd.up !== undefined ? cmd.up : cmd.jump;
+  let mech = false;
+  if (cmd.mech) {
+    mech = true;
+    if (s.stam === undefined) { s.stam = 1; s.stT = 0; s.dj = false; s.slide = false; s.wjT = 0; s.offT = 0; s.didJump = false; s.upPrev = false; s.crPrev = false; s.wjN = 0; s.wjF = 0; }
+    const press = !!cmd.up && !s.upPrev, crPress = !!cmd.crouch && !s.crPrev;
+    s.upPrev = !!cmd.up; s.crPrev = !!cmd.crouch;
+    s.wjT = Math.max(0, s.wjT - dt); s.wjF = Math.max(0, (s.wjF || 0) - dt); if (s.wjF <= 0) s.wjN = 0; s.stT = Math.max(0, s.stT - dt);
+    if (s.on) { s.dj = false; s.didJump = false; s.offT = 0; } else s.offT += dt;
+    const zg = W.zerog && inZeroG(W, s);
+    // deslizamiento: Ctrl en el piso yendo rápido (solo arranca al apretar, no al llegar corriendo con Ctrl ya apretado)
+    if (!cmd.crouch || !s.on || zg) s.slide = false;
+    else if (crPress && !s.slide && Math.hypot(s.vx, s.vz) >= MV.SL_MIN) {
+      s.slide = true; s.stam = Math.max(0, s.stam - MV.SL_START); s.stT = MV.REGEN_DELAY;
+      const sp = Math.hypot(s.vx, s.vz), k = Math.min(MV.SL_MAX, sp + MV.SL_BOOST) / sp; s.vx *= k; s.vz *= k;
+    }
+    // acciones en el aire con un salto recién apretado
+    if (press && !s.on && !zg) {
+      const hsp = Math.hypot(s.vx, s.vz);
+      const wn = s.wjT <= 0 ? wallNormal(W, s) : null;
+      if (wn) {   // salto de pared: gratis; te empuja hacia afuera y conserva lo que llevabas a lo largo de la pared
+        const along = s.vx * -wn.z + s.vz * wn.x;
+        s.vx = wn.x * MV.WJ_OUT + -wn.z * along; s.vz = wn.z * MV.WJ_OUT + wn.x * along;
+        const n = s.wjN || 0, fat = Math.max(MV.WJ_MINUP, 1 - MV.WJ_LOSS * n);   // fatiga: cada salto seguido sube menos
+        if (n > 0) { s.stam = Math.max(0, s.stam - MV.WJ_COST); s.stT = MV.REGEN_DELAY; }   // sin stamina igual salta (sirve para escapar), pero con fatiga
+        s.vy = K.JUMP * MV.WJ_UP * fat; s.wjN = n + 1; s.wjF = MV.WJ_FAT; s.wjT = MV.WJ_CD; s.didJump = true; out.wj = n + 1;
+      } else if (!s.didJump && s.offT < MV.COYOTE) {   // recién te caíste del borde: cuenta como salto normal
+        s.vy = K.JUMP; s.didJump = true; out.jumped = true;
+      } else if (!s.dj && s.stam >= MV.DJ_COST - 1e-6) {   // doble salto: uno solo por vuelo (hasta tocar el piso), cuesta un cuarto de la barra
+        s.dj = true; s.stam -= MV.DJ_COST; s.stT = MV.REGEN_DELAY; s.vy = K.JUMP * MV.DJ_JUMP; out.dj = true;
+        if (wl > 1e-4) { const sp = Math.max(hsp, 5); s.vx = wx * sp; s.vz = wz * sp; }   // el doble salto reencauza hacia donde apuntás
+      }
+    }
+    // stamina: el deslizamiento gasta de a poco; se recupera pasado un ratito sin gastar
+    if (s.slide) { s.stam = Math.max(0, s.stam - MV.SL_DRAIN * dt); s.stT = MV.REGEN_DELAY; if (s.stam <= 0) s.slide = false; }
+    else if (s.stT <= 0) s.stam = Math.min(1, s.stam + MV.REGEN * dt);
+  }
   for (let i = 0; i < steps; i++) {
     const wasOn = s.on;
+    if (W.zerog && inZeroG(W, s) && (!s.on || up)) {
+      const upIn = clamp((up ? 1 : 0) - (cmd.crouch ? 1 : 0) + (cmd.wy || 0), -1, 1);
+      s.vy += ((upIn ? upIn * ZG.VSPEED : ZG.DRIFT) - s.vy) * Math.min(1, 5 * h);
+      const kh = Math.min(1, 3 * h);
+      s.vx += (wx * wish * ZG.HSPEED - s.vx) * kh; s.vz += (wz * wish * ZG.HSPEED - s.vz) * kh;
+      s.on = false;
+      stepAxis(W, s, 0, s.vx * h);
+      stepAxis(W, s, 2, s.vz * h);
+      stepY(W, s, h, false);
+      out.zerog = true;
+      continue;
+    }
     let jumpedNow = false;
     if (s.on) {
-      if (cmd.jump) { s.vy = K.JUMP; s.on = false; jumpedNow = out.jumped = true; }
-      else friction(s, h);
-      accelerate(s, wx, wz, wish, K.ACC, h, false);
+      if (cmd.jump) { s.vy = K.JUMP; s.on = false; jumpedNow = out.jumped = true; if (mech) { s.didJump = true; s.slide = false; } }
+      else if (mech && s.slide) {   // deslizando: casi sin fricción, y se corta cuando perdés la velocidad
+        const sp = Math.hypot(s.vx, s.vz), ctrl = Math.max(sp, K.STOP), ns = Math.max(0, sp - ctrl * MV.SL_FRIC * h) / (sp || 1);
+        s.vx *= ns; s.vz *= ns; out.slide = true;
+        if (Math.hypot(s.vx, s.vz) < MV.SL_END) s.slide = false;
+      } else friction(s, h);
+      if (mech && s.slide) {   // deslizando solo se puede doblar de costado: no se acelera hacia adelante, así el slide se va apagando
+        const sp = Math.hypot(s.vx, s.vz) || 1, ux = s.vx / sp, uz = s.vz / sp, al = wx * ux + wz * uz, sx = wx - al * ux, sz = wz - al * uz;
+        s.vx += sx * wish * MV.SL_STEER * h; s.vz += sz * wish * MV.SL_STEER * h;
+      } else accelerate(s, wx, wz, wish, K.ACC, h, false);
     } else accelerate(s, wx, wz, wish, K.AIRACC, h, true);
     s.vy -= K.GRAV * h;
     const preVy = s.vy;
@@ -202,21 +372,25 @@ function slab(b, ox, oy, oz, ix, iy, iz, maxT) {
 }
 const inv = v => Math.abs(v) < 1e-9 ? Infinity : 1 / v;
 function raycast(W, ox, oy, oz, dx, dy, dz, maxT) {
-  let best = maxT, n = null;
+  let best = maxT, n = null, hb = null;
   const ix = inv(dx), iy = inv(dy), iz = inv(dz);
-  for (const b of W.brushes) {
-    if (b.nc || slab(b, ox, oy, oz, ix, iy, iz, best) < 0) continue;
+  const N = gRay(W, ox, oz, dx, dz, maxT);
+  for (let k = 0; k < N; k++) {
+    const b = W.brushes[SCR[k]];
+    if (b.nc || (b.bar && barOpen(b)) || slab(b, ox, oy, oz, ix, iy, iz, best) < 0) continue;
     const h = rayBrush(b, ox, oy, oz, dx, dy, dz);
-    if (h && h.t < best) { best = h.t; n = h.n; }
+    if (h && h.t < best) { best = h.t; n = h.n; hb = b; }
   }
-  return n ? { t: best, n } : null;
+  return n ? { t: best, n, b: hb } : null;   // b: el bloque golpeado (para saber si fue un generador o un boss)
 }
 // línea de visión: alcanza con que algo la corte (no hace falta buscar el más cercano)
 function los(W, ax, ay, az, bx, by, bz) {
   const dx = bx - ax, dy = by - ay, dz = bz - az, d = Math.hypot(dx, dy, dz) || 1e-6, L = d - .05;
   const ux = dx / d, uy = dy / d, uz = dz / d, ix = inv(ux), iy = inv(uy), iz = inv(uz);
-  for (const b of W.brushes) {
-    if (b.nc || slab(b, ax, ay, az, ix, iy, iz, L) < 0) continue;
+  const N = gRay(W, ax, az, ux, uz, L);
+  for (let k = 0; k < N; k++) {
+    const b = W.brushes[SCR[k]];
+    if (b.nc || (b.bar && barOpen(b)) || slab(b, ax, ay, az, ix, iy, iz, L) < 0) continue;
     const h = rayBrush(b, ax, ay, az, ux, uy, uz);
     if (h && h.t < L) return false;
   }
@@ -260,7 +434,7 @@ function projStep(W, p, dt) {
     if (h) {
       const t = Math.max(0, h.t - .06);
       p.x += dx / L * t; p.y += dy / L * t; p.z += dz / L * t;
-      if (p.k === 'rocket' || p.k === 'bullet' || p.k === 'molotov') return { boom: true, n: h.n };
+      if (p.k === 'rocket' || p.k === 'bullet' || p.k === 'molotov') return { boom: true, n: h.n, b: h.b };
       const n = h.n, dot = p.v[0] * n[0] + p.v[1] * n[1] + p.v[2] * n[2];
       p.v[0] -= 2 * dot * n[0]; p.v[1] -= 2 * dot * n[1]; p.v[2] -= 2 * dot * n[2];
       const damp = n[1] > .7 ? .45 : .6;

@@ -1,6 +1,6 @@
 /* =================== ESTADO =================== */
 const me={s:{x:0,y:0,z:0,vx:0,vy:0,vz:0,on:true},yaw:0,pitch:0,alive:false,hp:100,ar:0,am:C.AMMO0(0),ow:[1,1,0,0,0,0,0,1,0],mag:{2:2},rel:0,relW:-1,scope:false,lvlSwitch:false,w:1,q:0,deadT:0,killer:0,lvl:0,
-  cr:C.ECON.START,unl:[1,1,0,0,0,0,0,1,0],eyeC:K.EYE,mt:9,mdir:1,ads:0,perk:{ar:0,am:0},cool:0,held:false,kick:0,raise:0,flash:0,bob:0,dip:0,roll:0,tilt:0,padT:0,stepT:0,lastW:0,heat:0};
+  cards:[],rkills:0,cr:C.ECON.START,unl:[1,1,0,0,0,0,0,1,0],eyeC:K.EYE,mt:9,mdir:1,ads:0,perk:{ar:0,am:0},cool:0,held:false,kick:0,raise:0,flash:0,bob:0,dip:0,roll:0,tilt:0,padT:0,stepT:0,lastW:0,heat:0};
 const players=new Map();
 let myId=0,net=null,online=false,inGame=false,paused=false,shake=0;
 let scores=[],timeLeft=600,fragLimit=20,matchState='play',ping=0;
@@ -24,7 +24,7 @@ function ensurePlayer(id,name,color,bot,skin,team){
   if(rebuild&&p.model){scene.remove(p.model.g);p.model=null;}
   if(!p.model&&id!==myId){
     // en equipos la armadura toma el color del equipo; visor y accesorio siguen siendo los tuyos
-    p.model=buildPlayer(teams?Object.assign({},p.skin,{c:p.color}):p.skin,p.name);p.model.g.visible=false;scene.add(p.model.g);
+    p.model=buildPlayer(teams?Object.assign({},p.skin,{c:p.color,ck:null,cp:null,cb:null,cl:null}):p.skin,p.name);p.model.g.visible=false;scene.add(p.model.g);
     if(teams&&p.team===myTeam&&p.model.tag){p.model.tag.material.depthTest=false;p.model.tag.renderOrder=10;}
   }
   return p;
@@ -38,8 +38,9 @@ function chatColor(id,name){const k=name||id;if(!chatCols.has(k))chatCols.set(k,
 const colorOf=id=>id===myId?(teamsMode()&&myTeam>=0?TEAMS[myTeam].c:S.skin.c):(players.get(id)||{}).color||'#eadcc4';
 
 /* =================== RED =================== */
+let pickedMap='';   // mapa elegido en el asistente de inicio (práctica); se usa una sola vez
 class LocalNet{
-  constructor(mode){const md=C.MODES[mode];this.game=new C.Game({online:false,mode,bots:S.bots,botSkill:S.skill,fraglimit:mode==='tdm'?S.tdmLimit:S.fl,timelimit:1200,map:md.maps.includes(S.map)?S.map:md.maps[0]});this.acc=0;this.id=this.game.addClient(m=>onMsg(m));}
+  constructor(mode){const md=C.MODES[mode],pm=pickedMap;pickedMap='';this.game=new C.Game({online:false,mode,bots:S.bots,botSkill:S.skill,fraglimit:mode==='tdm'?S.tdmLimit:S.fl,timelimit:1200,map:md.maps.includes(pm)?pm:md.maps.includes(S.map)?S.map:md.maps[0]});this.acc=0;this.id=this.game.addClient(m=>onMsg(m));}
   send(m){this.game.onMessage(this.id,m);}
   update(dt){if(paused)return;this.acc+=dt;let n=0;while(this.acc>=1/40&&n<3){this.game.tick(1/40);this.acc-=1/40;n++;}if(this.acc>1/40)this.acc=0;} // si un cuadro se atrasa, no se encadenan pasos extra
   close(){}
@@ -71,29 +72,31 @@ function startGame(isOnline,mode,auto){
   if(!auto){clearTimeout(G.reT);G.reTry=0;}
   audioInit();if(AC&&AC.state==='suspended')AC.resume();
   leaveGame();
-  mode=C.MODES[mode]?mode:'arena';S.mode=mode;saveS();
+  mode=C.MODE_ALIAS[mode]||mode;mode=C.MODES[mode]?mode:'arena';S.mode=mode;saveS();
   goFullscreen();
   ['cMsg','cSub','crPop','pick'].forEach(id=>{$(id).classList.remove('show');});
   online=isOnline;myId=0;CLK.off=null;CLK.jit=.02;MODE=mode;myTeam=-1;FL=[];TS=[0,0];me.lvl=0;
   players.forEach((p,id)=>removePlayer(id));projs.forEach(p=>scene.remove(p.m));projs.length=0;
   scores=[];$('feed').innerHTML='';$('chatLog').innerHTML='';
-  const join=()=>{net.send({t:'join',cid:CID,name:S.name,skin:S.skin,skill:S.skill,fl:S.tdmLimit,tok:isOnline&&ACC?ACCTOK:undefined});};
+  const join=()=>{net.send({t:'join',cid:CID,name:S.name,skin:S.skin,skill:S.skill,fl:S.tdmLimit,tok:isOnline&&ACC?ACCTOK:undefined});
+    // sala vacía: el mapa elegido en el asistente se pide una sola vez con el comando /map
+    if(isOnline&&G.pendMap){net.send({t:'chat',m:'/map '+G.pendMap});G.pendMap='';}};
   if(isOnline){
     const tries=G.reTry||0;G.reTry=0;
     net=new WSNet(wsURL+'?mode='+mode,()=>{G.reTry=0;join();},(wasOk)=>{
-      net=null;inGame=false;
+      net=null;inGame=false;document.body.classList.remove('ingame');
       // si se corta en medio de la partida (el servidor se reinicia al publicar una actualización), se reintenta solo
       if((wasOk||tries)&&tries<20){showMenu();toast('Se cortó la conexión · reconectando'+(tries?' (intento '+(tries+1)+')':'')+'…');
         clearTimeout(G.reT);G.reT=setTimeout(()=>{if(!inGame&&!$('menu').hidden){G.reTry=tries+1;startGame(true,mode,true);}},tries?3000:1200);return;}
       showMenu();toast(wasOk?'Se cortó la conexión con el servidor':'No se pudo conectar al servidor');});
   }else{net=new LocalNet(mode);join();}
-  inGame=true;paused=false;$('bLeave').hidden=false;$('tPingBox').hidden=!isOnline;
-  hideMenu();lockPointer();
+  inGame=true;paused=false;document.body.classList.add('ingame');$('bLeave').hidden=false;$('tPingBox').hidden=!isOnline;
+  hideMenu();if(!TACTIL)lockPointer();else tcLandscape();
 }
 function leaveGame(){
-  if(net){net.close();net=null;}renderVote(null);
+  if(net){net.close();net=null;}renderVote(null);C.setPasa(-1);
   spEnd();
-  inGame=false;me.alive=false;$('bLeave').hidden=true;$('hud').hidden=true;$('board').hidden=true;$('inter').hidden=true;closeShop(true);
+  inGame=false;document.body.classList.remove('ingame');me.alive=false;$('bLeave').hidden=true;$('hud').hidden=true;$('board').hidden=true;$('inter').hidden=true;closeShop(true);
   if(level)for(const o of level.items)o.g.visible=true;
 }
 // cartel flotante cuando te echan por votación (1ª vez: podés volver; 2ª: cuenta regresiva hasta que termina la partida)

@@ -1,4 +1,6 @@
 /* =================== SIMULACIÓN LOCAL =================== */
+// impulso por matar deslizándote: velocidad que se suma, tope, multiplicador de la velocidad máxima y duración (s)
+const KB={ADD:4,MAX:18,FAST:1.3,T:2.5};
 function updMe(dt){
   // aviso "E · agarrar" si hay un arma principal tirada al lado y no es la tuya
   G.grabT=(G.grabT||0)-dt;if(G.grabT<=0){G.grabT=.15;let txt='';
@@ -10,7 +12,7 @@ function updMe(dt){
       else if((o.ty==='armor'||o.ty==='armorH')&&me.ar>=100)txt='Blindaje lleno (100) · se agarra cuando te falta';
       if(txt)break;}
     const h=$('grabHint');if(h.dataset.t!==txt){h.dataset.t=txt;h.innerHTML=txt;h.hidden=!txt;}}
-  if(!me.alive){me.deadT+=dt;
+  if(!me.alive){if(WH.open)closeWheel(false);me.deadT+=dt;
     // como en TF2: unos segundos mirando al que te mató y reaparecés solo
     const left=Math.max(0,DEATH_T-me.deadT);
     spTick();
@@ -20,15 +22,22 @@ function updMe(dt){
     return;}
   let f=0,s=0;
   const free=!chatOpen&&$('shop').hidden;
-  if(free){if(keys.KeyW||keys.ArrowUp)f+=1;if(keys.KeyS||keys.ArrowDown)f-=1;if(keys.KeyD)s+=1;if(keys.KeyA)s-=1;if(keys.ArrowLeft)me.yaw+=dt*2.4;if(keys.ArrowRight)me.yaw-=dt*2.4;}
+  if(free){if(keys.KeyW||keys.ArrowUp)f+=1;if(keys.KeyS||keys.ArrowDown)f-=1;if(keys.KeyD)s+=1;if(keys.KeyA)s-=1;if(keys.ArrowLeft)me.yaw+=dt*2.4;if(keys.ArrowRight)me.yaw-=dt*2.4;
+    if(TC.on&&(TC.f||TC.s)){f=Math.max(-1,Math.min(1,f+TC.f));s=Math.max(-1,Math.min(1,s+TC.s));}}   // palanca táctil (analógica)
+  if(me.cg>0){const L=C.CARGA.LENTO;f*=L;s*=L;}   // cargando el plasma se camina un poco más lento
   const sy=Math.sin(me.yaw),cyw=Math.cos(me.yaw);
   const wx=-sy*f+cyw*s,wz=-cyw*f-sy*s;
   const jumpKey=free&&!!keys.Space;
   const jump=jumpKey&&(S.hop||!me.jumpHeld);
   const crouch=free&&!!(keys.ControlLeft||keys.ControlRight||keys.KeyC);
-  const r=C.pmove(W,me.s,{wx,wz,jump,crouch,fast:MODE==='snipers'&&me.w===7?1.3:1},dt);
+  const r=C.pmove(W,me.s,{wx,wz,jump,up:jumpKey,wy:f*Math.sin(me.pitch),crouch,mech:true,fast:(MODE==='snipers'&&me.w===7?1.3:1)*(me.boostT>0?KB.FAST:1)},dt);me.boostT=Math.max(0,(me.boostT||0)-dt);   // up/wy: en gravedad cero Espacio sube, agacharse baja y W mirando arriba o abajo te lleva para ahí
+  if(r.zerog&&!me.zg)SFX.zero(1);me.zg=r.zerog;
   me.jumpHeld=jumpKey;
   if(r.jumped)SFX.jump();
+  if(r.dj){SFX.dj();fxAire(me.s.x,me.s.y,me.s.z,.55,.8,1);me.fovPunch=(me.fovPunch||0)+3;}   // doble salto: gasta un cuarto de la barra
+  if(r.wj){SFX.wj();fxAire(me.s.x,me.s.y+.9,me.s.z,.9,.7,.5);me.fovPunch=(me.fovPunch||0)+(r.wj>1?1.5:3);}   // salto de pared: el primero es gratis, los seguidos cansan
+  if(r.slide&&!me.sliding){SFX.slide();me.fovPunch=(me.fovPunch||0)+5;}me.sliding=r.slide;
+  if(r.slide&&Math.random()<dt*40)emit(sparks,me.s.x+R(.3),me.s.y+.05,me.s.z+R(.3),R(1.5),.8+Math.random(),R(1.5),.25,.9,.8,.6,3);
   if(r.landed<-9){me.dip=Math.min(.25,-r.landed*.015);SFX.land(Math.min(1,-r.landed/20));}
   me.padT-=dt;
   const tr=C.triggers(W,me.s);
@@ -43,10 +52,12 @@ function updMe(dt){
   me.cool-=dt;me.heat=Math.max(0,me.heat-dt*1.5);
   if(!mouseDown)me.held=false;
   const W_=WEAPONS[me.w];
-  if(mouseDown&&me.cool<=0&&me.raise<.4&&!(W_.semi&&me.held)&&liveState()&&$('shop').hidden){fire();me.held=true;}
+  // plasma: el botón carga y el tiro sale al soltar (cargaTick, en 13-disparos.js)
+  if(W_.carga)cargaTick(dt,W_);
+  else if(mouseDown&&me.cool<=0&&me.raise<.4&&!(W_.semi&&me.held)&&liveState()&&$('shop').hidden){fire();me.held=true;}
   G.sendT-=dt;if(G.sendT<=0){G.sendT=1/30;sendState();}
 }
-function sendState(){if(net)net.send({t:'st',p:r3([me.s.x,me.s.y,me.s.z]),v:r3([me.s.vx,me.s.vy,me.s.vz]),y:Math.round(me.yaw*1000)/1000,x:Math.round(me.pitch*1000)/1000,w:me.w,o:me.s.on?1:0,c:me.s.crouch?1:0});}
+function sendState(){if(net)net.send({t:'st',p:r3([me.s.x,me.s.y,me.s.z]),v:r3([me.s.vx,me.s.vy,me.s.vz]),y:Math.round(me.yaw*1000)/1000,x:Math.round(me.pitch*1000)/1000,w:me.w,o:me.s.on?1:0,c:me.s.crouch?1:0,sl:me.s.slide?1:0});}
 
 /* ---------- jugadores remotos: interpolación con colchón adaptativo ---------- */
 const angLerp=(a,b,t)=>{let d=b-a;while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;return a+d*t;};
@@ -93,7 +104,7 @@ function updRemote(dt){
     const alive=!!(cur.fl&1);
     if(alive&&!p.alive){p.alive=true;p.gib=false;p.deadT=0;}
     if(!alive&&p.alive){p.alive=false;p.deadT=0;}
-    p.w=cur.w;p.quad=!!(cur.fl&2);p.onG=!!(cur.fl&4);p.crouch=!!(cur.fl&8);p.spd=Math.hypot(cur.vx,cur.vz);
+    p.vy=cur.vy||0;p.w=cur.w;p.quad=!!(cur.fl&2);p.onG=!!(cur.fl&4);p.crouch=!!(cur.fl&8);p.slide=!!(cur.fl&16);p.spd=Math.hypot(cur.vx,cur.vz);
     // el modelo mira a +z y en el juego yaw 0 mira a -z: hay que girarlo media vuelta
     m.g.position.set(p.x,p.y,p.z);m.g.rotation.y=p.yaw+Math.PI;
     // velocidad real a partir de cuánto se movió en pantalla (no depende de lo que mande el servidor)
@@ -101,32 +112,22 @@ function updRemote(dt){
     const ivx=(p.x-p.px)/Math.max(dt,1e-3),ivz=(p.z-p.pz)/Math.max(dt,1e-3);p.px=p.x;p.pz=p.z;
     const ks=Math.min(1,dt*10);p.vxs=(p.vxs||0)+(ivx-(p.vxs||0))*ks;p.vzs=(p.vzs||0)+(ivz-(p.vzs||0))*ks;
     if(p.alive){
-      m.g.visible=true;m.b.rotation.set(0,0,0);m.b.position.y=0;
-      const sp=Math.hypot(p.vxs,p.vzs),sy=Math.sin(p.yaw),cyw=Math.cos(p.yaw);
-      const fwd=-p.vxs*sy-p.vzs*cyw,side=p.vxs*cyw-p.vzs*sy;           // hacia adelante y hacia la derecha
-      const fr=sp>.3?fwd/sp:0,sr=sp>.3?side/sp:0;
-      p.phase+=dt*Math.min(sp,14)*1.9*(fwd<-.3?-1:1);
-      const amp=Math.min(1,sp/5)*.85,ph=Math.sin(p.phase);
-      if(p.onG){
-        m.legs[0].rotation.set(-ph*amp*Math.max(.35,Math.abs(fr)),0,ph*amp*sr*.5);
-        m.legs[1].rotation.set(ph*amp*Math.max(.35,Math.abs(fr)),0,-ph*amp*sr*.5);
-        m.b.position.y=Math.abs(Math.cos(p.phase))*amp*.07;
-        m.b.rotation.x=Math.max(-.12,Math.min(.18,fwd*.014));m.b.rotation.z=Math.max(-.12,Math.min(.12,-side*.01));
-      }else{m.legs[0].rotation.set(-.7,0,0);m.legs[1].rotation.set(.35,0,0);m.b.rotation.x=.08;}
-      if(p.crouch){m.b.position.y-=.55;m.legs[0].rotation.x-=.9;m.legs[1].rotation.x-=.5;m.b.rotation.x+=.18;}
-      m.armL.rotation.x=ph*amp*.8*(p.onG?1:0)-(p.onG?0:.6);m.armR.rotation.x=-p.pitch*.8-(p.fire>0?.25:0);m.head.rotation.x=-p.pitch*.5;
+      m.g.visible=true;
+      rbLod(m,Math.hypot(p.x-me.s.x,p.z-me.s.z)>22);
+      rbAnimar(m,p,dt);   // marcha, salto, agachado, retroceso, golpe y cambio de arma (ver 10-personaje-robot.js)
       p.fire=(p.fire||0)-dt;p.pain=(p.pain||0)-dt;
       const em=p.pain>0?0x803020:p.quad?0x5020a0:0;m.mats.forEach(mm=>mm.emissive.setHex(em));
       if(m.gun.userData.w!==p.w){m.gun.clear();m.gun.add(tpGun(p.w));m.gun.userData.w=p.w;}
-      if(m.tag)m.tag.visible=true;
-      if(placeBlob(nb,p.x,p.y,p.z,1))nb++;
+      let oculto=false;if(NIGHT)oculto=nightRemote(p,m,dt);else{if(m.tag)m.tag.visible=true;if(m.beam)nightHide(m);}
+      if(!oculto&&placeBlob(nb,p.x,p.y,p.z,1))nb++;
     }else{
-      p.deadT+=dt;if(m.tag)m.tag.visible=false;
+      p.deadT+=dt;if(m.tag)m.tag.visible=false;nightHide(m);
       if(p.gib)m.g.visible=false;
-      else{m.b.rotation.x=Math.max(-Math.PI/2,-p.deadT*5);m.b.position.y=p.deadT>2?Math.max(-.3,-(p.deadT-2)*.3):0;m.g.visible=p.deadT<5;
+      else{rbMuerte(m,p);m.g.visible=p.deadT<5;
         if(m.g.visible&&placeBlob(nb,p.x,p.y,p.z,Math.max(0,1-p.deadT/5)))nb++;}
     }
   }
+  if(TP.blend>.02&&me.alive&&placeBlob(nb,me.s.x,me.s.y,me.s.z,TP.blend))nb++;   // sombra propia en tercera persona
   for(let i=nb;i<blobs.length;i++)blobs[i].visible=false;
 }
 function updMovers(){

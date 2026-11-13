@@ -22,6 +22,7 @@ function updateHUD(){
     const carry=myTeam>=0&&FL[1-myTeam]&&FL[1-myTeam][0]===1&&FL[1-myTeam][1]===myId;
     $('carry').hidden=!(carry&&me.alive);if(carry)$('carry').style.background=TEAMS[1-myTeam].c;
   }
+  renderKillRow();
   const tl=Math.max(0,timeLeft);setTxt('tTime',Math.floor(tl/60)+':'+String(tl%60).padStart(2,'0'));
   setTxt('tPing',ping?ping+' ms':'–');
   $('quadChip').hidden=!(me.q>0&&me.alive);setTxt('quadT',String(me.q));
@@ -31,22 +32,73 @@ function updateHUD(){
   ws.forEach((w,k)=>{const d=sl.children[k],W_=WEAPONS[w],has=w>=0&&!!me.ow[w];d.hidden=!has;if(!has)return;
     d.children[1].textContent=W_.name;d.classList.add('own');d.classList.toggle('on',w===me.w);d.lastChild.textContent=W_.ammo&&!gg?me.am[W_.ammo]:'∞';});
 }
+/* ---- fila chica de líderes por bajas: solo Arena y Gungame (el resto ya tiene marcador de equipos) ---- */
+const krCache={v:''};
+function renderKillRow(){
+  const box=$('killRow'),on=inGame&&(MODE==='arena'||MODE==='gungame')&&scores.length>1;
+  if(!on){if(!box.hidden){box.hidden=true;box.innerHTML='';krCache.v='';}return;}
+  const mio=scores.findIndex(s=>s[0]===myId),l=scores.slice(0,3).map((s,i)=>[s,i+1]);
+  if(mio>=3)l.push([scores[mio],mio+1]);                      // si no estás en el podio, vas al final del renglón
+  const v='<span class="krt">Top<small>bajas</small></span>'+l.map(([s,pos])=>
+    '<span class="kr p'+Math.min(4,pos)+(s[0]===myId?' me':'')+'"><i>'+pos+'</i><b>'+esc(s[1])+'</b><u>'+s[2]+'</u></span>').join('');
+  if(v!==krCache.v){krCache.v=v;box.innerHTML=v;}
+  box.hidden=false;
+}
+/* Columna "Objetivos" de Captura el dominio: generadores rotos, barreras tiradas, daño al boss y
+   minions bajados. s[15] = [gen, barreras, daño al boss, minions]; si el servidor es viejo, no viene. */
+function objCel(s){
+  const o=s[15]||[0,0,0,0],mil=n=>n>=1000?(n/1000).toFixed(1).replace('.0','')+'k':String(n|0);
+  const p=[];
+  if(o[0])p.push('<b>'+o[0]+'</b><i>gen</i>');
+  if(o[1])p.push('<b>'+o[1]+'</b><i>rutas</i>');
+  if(o[2])p.push('<b>'+mil(o[2])+'</b><i>boss</i>');
+  if(o[3])p.push('<b>'+o[3]+'</b><i>minions</i>');
+  return '<td class="objd">'+(p.length?p.join('<s>·</s>'):'<span class="nada">–</span>')+'</td>';
+}
 function renderBoard(){
-  const tl=Math.max(0,timeLeft),gg=MODE==='gungame',ctf=MODE==='ctf',tm=teamsMode();
+  const tl=Math.max(0,timeLeft),gg=MODE==='gungame',ctf=MODE==='dominio',tm=teamsMode();
   $('bTitle').textContent=C.MODES[MODE].name+' · '+W.name;
-  const goal=ctf?'primero a '+capLimit+' capturas':MODE==='tdm'?'primer equipo a '+fragLimit+' bajas'+(matchState==='play'?'':' · esperando jugadores'):gg?'primero en completar '+GG.length+' niveles':'primero a '+fragLimit+' frags';
+  const goal=ctf?'matá al boss rival · si se acaba el tiempo gana el que más lo lastimó':MODE==='tdm'?'primer equipo a '+fragLimit+' bajas'+(matchState==='play'?'':' · esperando jugadores'):gg?'primero en completar '+GG.length+' niveles':'gana el que más bajas haga';
   $('bMeta').textContent=(online?'Online':'Práctica')+' · '+goal+' · quedan '+Math.floor(tl/60)+':'+String(tl%60).padStart(2,'0');
-  $('thX').textContent=gg?'Nivel':ctf?'Capturas':'Créditos';
-  const row=(s,i)=>'<tr class="'+(s[0]===myId?'me':'')+'"><td>'+(i+1)+'</td><td>'+(s[11]>0?medalSVG(s[11],20):'')+'<span class="sw" style="background:'+esc(s[6])+'"></span>'+esc(s[1])+(s[5]?'<span class="tag">bot</span>':'')+'</td><td>'+s[2]+'</td><td>'+s[3]+'</td>'+
-    (gg?'<td>'+Math.min(GG.length,(s[8]||0)+1)+' · '+WEAPONS[GG[Math.min(GG.length-1,s[8]||0)]].name+'</td>':ctf?'<td>'+(s[10]||0)+'</td>':'<td class="cash">¤ '+(s[7]||0)+'</td>')+
+  $('thX').textContent=gg?'Nivel':ctf?'Objetivos':'Créditos';
+  const crown=!!C.MODES[MODE].crown;
+  // en los modos con corona, al lado del total se ve cuántos puntos vinieron de ella
+  const cpt=s=>crown&&s[13]?'<span class="crwpt" title="'+s[13]+' de la corona · '+(s[14]||0)+' s con ella">\u265b '+s[13]+'</span>':'';
+  const row=(s,i)=>'<tr class="'+(s[0]===myId?'me':'')+'"><td>'+(i+1)+'</td><td>'+(s[11]>0?medalSVG(s[11],20):'')+'<span class="sw" style="background:'+esc(s[6])+'"></span>'+esc(s[1])+(s[5]?'<span class="tag">bot</span>':'')+'</td><td>'+s[2]+cpt(s)+'</td><td>'+s[3]+'</td>'+
+    (gg?'<td>'+Math.min(GG.length,(s[8]||0)+1)+' · '+WEAPONS[GG[Math.min(GG.length-1,s[8]||0)]].name+'</td>':ctf?objCel(s):'<td class="cash">¤ '+(s[7]||0)+'</td>')+
     '<td>'+(s[5]||!online?'–':s[4]||'–')+'</td></tr>';
   if(tm)$('bBody').innerHTML=[0,1].map(t=>'<tr class="team"><td></td><td colspan="5" style="color:'+TEAMS[t].c+'">Equipo '+TEAMS[t].name+' · '+TS[t]+'</td></tr>'+scores.filter(s=>s[9]===t).map(row).join('')).join('');
   else $('bBody').innerHTML=scores.map(row).join('');
+  renderGrimorio();
+}
+/* ---- El Grimorio del Umbral: las cartas que tenés, abajo del tablero (Tab) ---- */
+let grimCache='';
+function renderGrimorio(){
+  const box=$('grimorio'),on=!!(C.MODES[MODE]&&C.MODES[MODE].cards);
+  $('board').classList.toggle('congrim',on);
+  if(!on){if(!box.hidden){box.hidden=true;box.innerHTML='';}grimCache='';return;}
+  box.hidden=false;
+  const mias=me.cards||[],falta=C.CARD_AT[mias.length],clave=mias.join(',')+'|'+(falta==null?'-':Math.max(0,falta-(me.rkills||0)));
+  if(clave===grimCache)return;grimCache=clave;
+  const cuando=C.CARD_AT.map((n,i)=>'<i'+(i<mias.length?' class="ya"':'')+'>'+n+'</i>').join('<s>·</s>');
+  const ROMG=['I','II','III'];
+  const fichas=mias.map((id,i)=>{
+    const c=C.CARD_BY[id];if(!c)return '';
+    return '<div class="grc" style="--cc:'+c.c+'"><em>'+(ROMG[i]||i+1)+'</em>'+
+      '<span class="gric">'+cardIcon(c.ic)+'</span><b>'+esc(c.name)+'</b>'+
+      '<u>'+esc(c.stat||'')+'</u><p>'+esc(c.desc)+'</p></div>';
+  }).join('');
+  box.innerHTML='<div class="grhead"><b>El Grimorio del Umbral</b>'+
+    '<span class="grwhen">Surtido a las '+cuando+' bajas</span>'+
+    '<span class="grnote">Tres al azar, te quedás con una · máximo '+C.CARD_MAX+' por partida · duran hasta que termina</span>'+
+    '<span class="grnext">'+(falta==null?'mazo completo':'próxima en '+Math.max(0,falta-(me.rkills||0))+' baja'+(Math.max(0,falta-(me.rkills||0))===1?'':'s'))+'</span></div>'+
+    (fichas?'<div class="grgrid">'+fichas+'</div>'
+          :'<div class="grvacio">Todavía no tenés ninguna. La primera te la reparten a las <b>'+C.CARD_AT[0]+'</b> bajas.</div>');
 }
 function applyMode(){
   const gg=MODE==='gungame',tm=teamsMode();
-  $('tCrBox').hidden=!C.MODES[MODE].shop;$('shopHint').hidden=!C.MODES[MODE].shop;$('kickHint').hidden=!online;$('tLvlBox').hidden=!gg;$('tNextBox').hidden=!gg;
-  $('ctfBox').hidden=!tm;$('carry').hidden=true;$('tRank').parentElement.hidden=tm;$('lobbyBox').hidden=true;
-  $('slots').innerHTML='';updateHUD();
+  $('tCrBox').hidden=!C.MODES[MODE].shop;$('shopHint').hidden=!C.MODES[MODE].shop;$('kickHint').hidden=!online;$('mapHint').hidden=C.MODES[MODE].maps.length<2;$('tLvlBox').hidden=!gg;$('tNextBox').hidden=!gg;
+  $('ctfBox').hidden=!tm||MODE==='dominio';$('domBox').hidden=$('domMap').hidden=MODE!=='dominio';$('carry').hidden=true;$('tRank').parentElement.hidden=tm;$('lobbyBox').hidden=true;
+  $('slots').innerHTML='';krCache.v='';grimCache='';renderMyCards();updateHUD();
 }
 

@@ -4,12 +4,13 @@ function onMsg(m){
     case 'welcome':
       myId=m.id;fragLimit=m.fl;timeLeft=m.tl;matchState=m.state;
       MODE=m.mode||'arena';myTeam=m.team!=null?m.team:-1;FL=m.fs||[];TS=m.ts||[0,0];capLimit=m.cl||5;
-      loadMap(m.map);applyMode();
+      C.setPasa(myTeam);me.s.tm=myTeam;   // las barreras de campo de fuerza dejan pasar solo a tu equipo
+      loadMap(m.map);applyMode();domSet(m.dm);mnSet(m.mn);
       if(typeof m.tm==='number'&&online)CLK.off=m.tm-performance.now()/1000-.05;
       m.roster.forEach(r=>{if(r[0]!==myId)ensurePlayer(r[0],r[1],r[2],r[3],r[4],r[5]);});
-      syncItems(m);clearShards();if(m.sh)for(const s of m.sh)addShard(s[0],s[1],s[2],s[3],s[1],s[2],s[3],s[4]);
+      syncItems(m);clearShards();clearCrown();clearStorm();setCrownState(m.cw);stormSet(m.st);resetCards();if(m.cd&&m.cd.length){me.cards=m.cd.slice();renderMyCards();}if(m.sh)for(const s of m.sh)addShard(s[0],s[1],s[2],s[3],s[1],s[2],s[3],s[4]);
       sysChat((online?'Conectado a '+location.host:'Práctica · '+S.bots+' bots')+' · '+C.MODES[MODE].name+' · '+W.name+(C.MODES[MODE].shop?' · B abre la tienda':''));
-      if(MODE==='ctf'&&myTeam>=0)announce('EQUIPO '+TEAMS[myTeam].name.toUpperCase(),'Robá la bandera rival y traela a tu base');
+      if(MODE==='dominio'&&myTeam>=0)announce('EQUIPO '+TEAMS[myTeam].name.toUpperCase(),'Rompé los generadores, abrí una ruta y matá al boss rival');
       else if(MODE==='tdm'&&myTeam>=0)announce('EQUIPO '+TEAMS[myTeam].name.toUpperCase(),m.state==='play'?'Cada baja suma para tu equipo':'Esperando jugadores · calentamiento');
       else if(MODE==='gungame')announce('GUNGAME','Cada baja te da el arma siguiente · '+GG.length+' niveles');
       else if(MODE==='snipers'&&myTeam>=0)announce('EQUIPO '+TEAMS[myTeam].name.toUpperCase(),'Francotirador de un tiro · cuchillo para correr · racha de 6: escopeta');
@@ -18,11 +19,12 @@ function onMsg(m){
     case 'vote': renderVote(m);break;
     case 'kicked': renderVote(null);leaveGame();showMenu();kickNotice(m);break;
     case 'spawn':
-      me.s={x:m.p[0],y:m.p[1],z:m.p[2],vx:0,vy:0,vz:0,on:true};me.yaw=m.yaw;me.pitch=0;me.alive=true;me.deadT=0;me.raise=1;me.hp=100;
+      me.s={x:m.p[0],y:m.p[1],z:m.p[2],vx:0,vy:0,vz:0,on:true,tm:myTeam};me.yaw=m.yaw;me.pitch=0;me.alive=true;me.deadT=0;me.raise=1;me.hp=100;
       if(m.ow)me.ow=m.ow.slice();if(m.am)me.am=Object.assign({},m.am);if(m.ar!=null)me.ar=m.ar;
-      me.mag=fullMags();me.rel=0;me.scope=false;me.inspT=9;me.lastW=me.w===0?C.primaryOf(m.ow||me.ow):0;
+      me.boostT=0;me.mag=fullMags();me.rel=0;me.scope=false;me.inspT=9;me.lastW=me.w===0?C.primaryOf(m.ow||me.ow):0;
       if(MODE==='gungame'&&m.w!=null)me.w=m.w;
       else{me.w=[6,5,3,2,4,1].find(i=>me.ow[i]&&hasAmmo(i));if(me.w==null)me.w=0;}
+      if(!G.warm){G.warm=1;setTimeout(warmIcons,2500);}
       spEnd();
       $('deathBox').hidden=true;showWeapon();SFX.respawn(1);updateHUD();
       break;
@@ -31,6 +33,7 @@ function onMsg(m){
       me.hp=m.hp;me.ar=m.ar;me.am=Object.assign({},m.am);me.ow=m.ow.slice();me.q=m.q;
       if(m.cr!=null){me.cr=m.cr;me.unl=m.unl.slice();me.perk=Object.assign({},m.perk);}
       if(m.lvl!=null)me.lvl=m.lvl;
+      if(m.ck!=null&&m.ck!==me.rkills){me.rkills=m.ck;renderMyCards();}
       if(!m.al&&me.alive)me.alive=false;
       if(MODE==='gungame'&&(me.lvlSwitch||!me.ow[me.w])&&me.ow[GG[Math.min(me.lvl,GG.length-1)]]){me.lvlSwitch=false;const nw=GG[Math.min(me.lvl,GG.length-1)];if(nw!==me.w){me.w=nw;me.raise=1;me.scope=false;me.cool=Math.max(me.cool,.25);if(WEAPONS[nw].mag){me.mag[nw]=WEAPONS[nw].mag;me.rel=0;}showWeapon();}}
       else if(!me.ow[me.w]){const pr=C.primaryOf(me.ow),i=pr>=0?pr:me.ow.findIndex(Boolean);if(i>=0){me.lastW=me.w;me.w=i;me.raise=1;me.scope=false;me.cool=Math.max(me.cool,.25);showWeapon();}}
@@ -38,11 +41,13 @@ function onMsg(m){
       if(me.grabW!=null&&me.ow[me.grabW]&&me.alive){const g=me.grabW;me.grabW=null;selectWeapon(g,true);}
       updateHUD();if(!$('shop').hidden)renderShop();break;
     }
+    case 'mn': if(MODE==='dominio')mnSet(m.l);break;
     case 'sn': {
       const now=performance.now()/1000,sample=m.tm-now;
       if(CLK.off===null||sample>CLK.off)CLK.off=sample;else CLK.off+=(sample-CLK.off)*.003;
       const dev=CLK.off-sample;CLK.jit=CLK.jit*.92+dev*.08;
       CLK.delay=online?Math.min(.3,Math.max(.07,.055+CLK.jit*2.2)):.06;
+      domSnap(m);if(m.mn)mnSet(m.mn);
       for(const r of m.ps){
         if(r[0]===myId)continue;
         const p=ensurePlayer(r[0]);
@@ -52,7 +57,10 @@ function onMsg(m){
       break;
     }
     case 'sc':
+      if(m.iu&&level)for(let i=0;i<m.iu.length;i++){const o=level.items[i];if(o){const u=m.iu[i]==='1';if(o.g.visible!==u)o.g.visible=u;}}
       scores=m.l;timeLeft=m.tl;fragLimit=m.fl;
+      if(m.cw!==undefined)setCrownState(m.cw);
+      if(m.dm)domSet(m.dm);if(m.mn!==undefined)mnSet(m.mn);   // resincroniza una vez por segundo
       if(m.st!==matchState&&m.st==='count')SFX.start();
       matchState=m.st;LOBBY={cd:m.cd||0,hn:m.hn||0,mp:m.mp||0};
       if(m.ts)TS=m.ts;if(m.fs)FL=m.fs;if(m.cl)capLimit=m.cl;
@@ -62,10 +70,13 @@ function onMsg(m){
     case 'end':
       matchState='inter';scores=m.l;closeShop(true);
       spEnd();
-      $('interT').textContent=m.w?m.w+' GANA LA PARTIDA':teamsMode()?'EMPATE':'FIN DE LA PARTIDA';
+      {const t=$('interT');t.textContent='';const wn=document.createElement('span');wn.className='wn';
+        if(m.w){wn.textContent=m.w;const wv=document.createElement('span');wv.className='wv';wv.textContent='ha ganado';t.append(wn,wv);}   // "JUGADOR" en grande y "ha ganado" abajo
+        else{wn.textContent=teamsMode()?'EMPATE':'FIN DE LA PARTIDA';t.appendChild(wn);}
+        t.classList.remove('in');void t.offsetWidth;t.classList.add('in');}
       $('interT').style.color=teamsMode()&&m.wt>=0?TEAMS[m.wt].c:'';
       $('interS').textContent=m.mv?'':'Próximo mapa: '+(m.nextName||'');G.myMapVote=null;renderMapVote(m.mv);
-      renderEnd(m);
+      renderEnd(m);if(m.dm)domSet(m.dm);domEnd(m);
       if(online&&ACC){xpCard(ACC);if(G.pendXP){animXP(G.pendXP);G.pendXP=null;}}
       else $('interXP').innerHTML='<div class="xpNote">'+(online?(GCID?'Iniciá sesión con Google para ganar experiencia y subir de nivel':''):'En práctica no se gana experiencia')+'</div>';
       G.interEnd=performance.now()/1000+(m.secs||25);setTxt('interN',String(m.secs||25));
@@ -76,13 +87,13 @@ function onMsg(m){
     case 'ready': if(online)$('interReady').innerHTML='<b>'+m.n+'/'+m.of+'</b> jugadores listos';break;
     case 'mv': G.myMapVote=m.me;renderMapVote(m);break;
     case 'start':
-      clearShards();renderMapVote(null);
+      clearShards();clearCrown();clearStorm();renderMapVote(null);
       matchState='play';$('inter').hidden=true;$('board').hidden=true;$('bStay').disabled=false;$('bStay').textContent='Jugar de nuevo';
       if(!document.pointerLockElement&&$('menu').hidden&&inGame){announce('¡ARRANCÓ!','Hacé click para jugar');}
-      if(m.fs)FL=m.fs;if(m.ts)TS=m.ts;me.lvl=0;
+      if(m.fs)FL=m.fs;if(m.ts)TS=m.ts;me.lvl=0;resetCards();
       if(m.map&&m.map!==W.id){loadMap(m.map);projs.forEach(p=>scene.remove(p.m));projs.length=0;}
-      syncItems(m);
-      announce(W.name.toUpperCase(),MODE==='ctf'?'primero a '+capLimit+' capturas':(MODE==='tdm'||MODE==='snipers')?'primer equipo en llegar a '+fragLimit+' bajas':MODE==='gungame'?'primero en completar los '+GG.length+' niveles':'primero a '+fragLimit+' frags');SFX.start();
+      syncItems(m);if(MODE==='dominio'){if(DM.on)domLoad(level.group,W);domSet(m.dm);mnClear();mnSet(m.mn);}
+      announce(W.name.toUpperCase(),MODE==='dominio'?'matá al boss rival · 15 minutos':(MODE==='tdm'||MODE==='snipers')?'primer equipo en llegar a '+fragLimit+' bajas':MODE==='gungame'?'primero en completar los '+GG.length+' niveles':'gana el que más bajas haga');SFX.start();
       break;
     case 'pong': ping=Math.round(performance.now()-m.c);break;
     case 'xp': {
@@ -99,9 +110,21 @@ function onMsg(m){
 function onEvent(m){
   switch(m.e){
     case 'team': ensurePlayer(m.id,null,m.c,undefined,undefined,m.tm);feedLine('<b style="color:'+m.c+'">'+esc(nameOf(m.id))+'</b> <i>pasó al equipo '+TEAMS[m.tm].name.toLowerCase()+'</i>');break;
+    case 'boost':   // mataste deslizándote: empujón hacia donde ibas y velocidad máxima más alta unos segundos
+      if(me.alive){const s=me.s,sp=Math.hypot(s.vx,s.vz);if(sp>1){const k=Math.min(KB.MAX,sp+KB.ADD)/sp;s.vx*=k;s.vz*=k;}
+        me.boostT=KB.T;SFX.boost();fxAire(s.x,s.y+.1,s.z,1,.6,.2);announce('IMPULSO','kill deslizándote');}
+      break;
     case 'flag': FL=m.fs;TS=m.ts;onFlag(m);break;
+    case 'crw': crownEvent(m);break;
+    case 'dom': domEvent(m);mnEvent(m);break;
+    case 'fix': me.s.x=m.p[0];me.s.y=m.p[1];me.s.z=m.p[2];me.s.vx=me.s.vz=0;if(m.yaw!=null){me.yaw=m.yaw;me.pitch=0;me.s.vy=0;}break;   // el servidor no aceptó cruzar una barrera (o un /ir de prueba)
+    case 'stm': stormEvent(m);break;
     case 'fire': fxFire(m);break;
     case 'grab': me.grabW=m.w;break;
+    case 'cof': openCards(m);break;                       // te toca elegir carta
+    case 'card': onCardTaken(m);break;                     // carta confirmada por el servidor
+    case 'burn': addBurn(m.id,m.d);break;                  // carta Toque ígneo: se está quemando
+    case 'cblast': fxExplosion(m.p[0],m.p[1],m.p[2]);break;   // carta Carga mortal: el que murió explotó
     case 'unlock': announce('¡RACHA DE 6!','Desbloqueaste la escopeta doble · tecla 2');SFX.hunt();break;
     case 'gdirect': announce('¡GRANADA DIRECTA!',m.n?'+'+m.n+' ¤':'');SFX.hunt();break;
     case 'hunt': announce('¡TIRO DE CAZADOR!',m.d+' m'+(m.air?' · en pleno salto':'')+(m.n?' · +'+m.n+' ¤':''));SFX.hunt();break;
@@ -121,7 +144,7 @@ function onEvent(m){
       const end=[o[0]+d[0]*L,o[1]+d[1]*L,o[2]+d[2]*L];
       const gp=p&&p.model?gunTip(p):o;
       if(W_.melee){SFX[7](vAt(o[0],o[1],o[2]));if(p)p.fire=.2;break;}
-      if(m.w===6)fxRail(gp,end,p?new THREE.Color(p.color).getHex():0xa8e6ff);
+      if(m.w===6)fxRail(gp,end,p?new THREE.Color(p.color).getHex():0xa8e6ff,W_.carga?.45+(m.cg||0)/C.CARGA.MAX*1.7:1);
       else{fxTracer(gp,end);if(h)fxSparks(end[0]-d[0]*.05,end[1]-d[1]*.05,end[2]-d[2]*.05,h.n,W_.pel>1?8:5);}
       flashLight(gp[0],gp[1],gp[2],0xffaa50,.06);
       SFX[m.w](vAt(o[0],o[1],o[2]));
@@ -144,6 +167,7 @@ function onEvent(m){
       fxExplosion(m.p[0],m.p[1],m.p[2]);break;
     }
     case 'dmg':
+      TP.painT=.12;
       G.hurt=Math.min(1,G.hurt+m.n/40+.15);me.roll=(Math.random()<.5?-1:1)*Math.min(.1,m.n/200);
       if(m.k){me.s.vx+=m.k[0];me.s.vy+=m.k[1];me.s.vz+=m.k[2];if(m.k[1]>0)me.s.on=false;}
       if(m.from){G.dmgT=1;G.dmgAng=Math.atan2(-(m.from[0]-me.s.x),-(m.from[2]-me.s.z));}
@@ -162,8 +186,8 @@ function onEvent(m){
     }
     case 'buy': {
       const it=C.SHOP.find(s=>s.id===m.id);
-      if(m.ok){SFX.buy();shopMsg((it?it.name:'')+' comprado','ok');}
-      else{SFX.deny();shopMsg(m.why||'No se pudo comprar','bad');}
+      if(m.ok){SFX.buy();shopMsg((it?it.name:'')+(m.eq?' equipada':' comprado'),'ok');vendSay(m.eq?'eq':'buy');}
+      else{SFX.deny();shopMsg(m.why||'No se pudo comprar','bad');vendSay(/faltan/i.test(m.why||'')?'poor':'eq');}
       break;
     }
     case 'shard': for(const s of m.l)addShard(s[0],s[1],s[2],s[3],s[4],s[5],s[6]);break;
@@ -187,9 +211,14 @@ function onKill(m){
   const W_=m.w>=0?WEAPONS[m.w]:null;
   const vn='<b style="color:'+colorOf(m.v)+'">'+esc(nameOf(m.v))+'</b>';
   let line;
-  if(m.how==='lava')line=vn+' <i>se derritió en la lava</i>';
+  if(m.how==='fire'&&m.k&&m.k!==m.v)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>lo quemó vivo a</i> '+vn;
+  else if(m.how==='cblast'&&m.k&&m.k!==m.v)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>se lo llevó al explotar</i> '+vn;
+  else if(m.how==='lava')line=vn+' <i>se derritió en la lava</i>';
   else if(m.how==='water')line=vn+' <i>se lo llevó el río</i>';
   else if(m.how==='void')line=vn+' <i>cayó al vacío</i>';
+  else if(m.how==='storm')line=vn+' <i>se quedó en la tormenta</i>';
+  else if(m.how==='boss')line=vn+' <i>cayó ante el boss</i>';
+  else if(m.how==='minion')line=vn+' <i>lo bajaron los minions</i>';
   else if(!m.k||m.k===m.v)line=vn+' <i>se voló a sí mismo</i>';
   else if(m.ns)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>mató</i> <b class="ns">SIN USAR MIRA</b> <i>a</i> '+vn;
   else if(W_&&W_.melee)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>le entró a pelo a</i> '+vn;
@@ -198,14 +227,17 @@ function onKill(m){
   feedLine(line,m.k===myId||m.v===myId);
   if(m.v===myId){
     me.alive=false;me.deadT=0;me.killer=m.k;me.respawnAsk=false;me.deathPos=[me.s.x,me.s.y,me.s.z];
-    $('deathBy').textContent=m.how==='water'?'Te llevó el río':m.how==='lava'?'Te derretiste en la lava':m.how==='void'?'Caíste al vacío':(!m.k||m.k===myId)?'Te volaste a vos mismo':'Te eliminó '+nameOf(m.k)+(m.ns?' SIN USAR MIRA':W_?' con '+W_.name:'');
-    $('deathBox').hidden=false;$('deathHint').textContent='';
+    // "JUGADOR te ha eliminado" en grande, el arma abajo y "Cobrale venganza" en chico; si no fue un jugador, el motivo en grande
+    const env=m.how==='water'?'Te llevó el río':m.how==='lava'?'Te derretiste en la lava':m.how==='void'?'Caíste al vacío':m.how==='storm'?'Te comíó la tormenta':m.how==='boss'?'Te mató el boss':m.how==='minion'?'Te bajaron los minions':(!m.k||m.k===myId)?'Te volaste a vos mismo':'';
+    if(env){$('deathBig').textContent=env;$('deathBy').textContent='';$('deathRev').textContent='Volvé más fuerte';}
+    else{$('deathBig').innerHTML='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> te ha eliminado';$('deathBy').textContent=m.how==='fire'?'te prendió fuego':m.how==='cblast'?'explotó al morir':m.ns?'sin usar mira':W_?'con '+W_.name:'';$('deathRev').textContent='Cobrale venganza';}
+    $('deathBox').hidden=false;$('deathBox').classList.remove('in');void $('deathBox').offsetWidth;$('deathBox').classList.add('in');$('deathHint').textContent='';
     if(m.gib)fxGib(me.s.x,me.s.y,me.s.z);else fxBlood(me.s.x,me.s.y+1,me.s.z,20);
     SFX.die(1);
   }else{
     const p=players.get(m.v);
     if(p){p.alive=false;p.deadT=0;p.gib=!!m.gib;if(m.gib){fxGib(m.p[0],m.p[1],m.p[2]);if(p.model)p.model.g.visible=false;}else fxBlood(m.p[0],m.p[1]+1.1,m.p[2],18);SFX.die(vAt(m.p[0],m.p[1],m.p[2]));}
-    if(m.k===myId){const mine=scores.find(s=>s[0]===myId);announce(m.ns?'¡SIN MIRA! ELIMINASTE A '+nameOf(m.v).toUpperCase():'ELIMINASTE A '+nameOf(m.v).toUpperCase(),((mine?mine[2]:0)+1)+(MODE==='gungame'?' bajas':' frags'));SFX.frag();}
+    if(m.k===myId){const mine=scores.find(s=>s[0]===myId);announce(m.ns?'¡SIN MIRA! ELIMINASTE A '+nameOf(m.v).toUpperCase():'ELIMINASTE A '+nameOf(m.v).toUpperCase(),((mine?mine[2]:0)+1)+' bajas');SFX.frag();}
   }
 }
 function onFlag(m){
@@ -230,7 +262,7 @@ function onFlag(m){
 function onPickup(type){
   const inf=C.ITEMS[type];
   G.pick=.5;$('pick').textContent='Recogiste: '+inf.name+(inf.ammo&&inf.weapon==null?' +'+inf.n:'');$('pick').classList.remove('show');void $('pick').offsetWidth;$('pick').classList.add('show');
-  if(type==='quad'){SFX.quad();announce('DAÑO CUÁDRUPLE','30 segundos');}
+  if(type==='quad'){SFX.quad();announce('DAÑO TRIPLE','30 segundos');}
   else if(type==='mega')SFX.mega();else if(type==='armor'||type==='armorH')SFX.armor();else if(inf.weapon!=null)SFX.weapon();else SFX.pick();
 }
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -246,5 +278,5 @@ function showDamage(n,kill,head){
   DMG.timer=setTimeout(()=>{t.className='';void t.offsetWidth;t.innerHTML='TOTAL <b>'+DMG.sum+'</b>'+(kill?' · ELIMINADO':'');t.className='done';DMG.sum=0;},kill?150:900);
 }
 function sysChat(t){chatLine(esc(t),'sys');}
-function announce(t,s){const a=$('cMsg'),b=$('cSub');a.textContent=t;b.textContent=s||'';[a,b].forEach(e=>{e.classList.remove('show');void e.offsetWidth;e.classList.add('show');});}
+function announce(t,s){if(TACTIL&&s)s=s.replace(/Hacé click para (jugar|seguir jugando|volver al juego)/,'');const a=$('cMsg'),b=$('cSub');a.textContent=t;b.textContent=s||'';[a,b].forEach(e=>{e.classList.remove('show');void e.offsetWidth;e.classList.add('show');});}
 

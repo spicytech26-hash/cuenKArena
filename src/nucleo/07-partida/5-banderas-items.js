@@ -1,6 +1,7 @@
   /* ---- captura la bandera ---- */
   flagEv(a, f, p) { this.bcast({ t: 'ev', e: 'flag', a, f: f.team, id: p ? p.id : 0, n: p ? p.name : '', fs: this.flagState(), ts: this.ts }); }
   dropCarried(p) {
+    this.dropCrown(p);
     for (const f of this.flags) {
       if (f.st !== 1 || f.by !== p.id) continue;
       const hit = raycast(this.W, p.s.x, p.s.y + .5, p.s.z, 0, -1, 0, 30);

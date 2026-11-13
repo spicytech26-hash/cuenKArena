@@ -21,13 +21,13 @@ function mouseSpike(dx,dy){
 }
 // las sueltas de mouse que provoca el propio juego (abrir chat o tienda, fin de partida) no abren la pausa
 let selfUnlockT=0;function selfUnlock(){selfUnlockT=performance.now();if(document.pointerLockElement)document.exitPointerLock();}
-document.addEventListener('pointerlockchange',()=>{if(performance.now()-selfUnlockT<800)return;if(document.pointerLockElement!==canvas&&inGame&&$('menu').hidden&&!chatOpen&&$('shop').hidden&&!kickOpen()&&$('inter').hidden)openPause();});
+document.addEventListener('pointerlockchange',()=>{if(performance.now()-selfUnlockT<800)return;if(document.pointerLockElement!==canvas&&inGame&&$('menu').hidden&&!chatOpen&&$('shop').hidden&&!kickOpen()&&!mapMenuOpen()&&$('inter').hidden)openPause();});
 $('bStay').addEventListener('click',()=>{
   // en el fin de partida: avisa que estás listo; en práctica arranca otra al instante
   if(matchState==='inter'&&net){net.send({t:'ready'});$('bStay').disabled=true;$('bStay').textContent='¡Listo!';if(!online)$('interReady').textContent='Arrancando…';SFX.ui();return;}
   lockPointer();SFX.ui();
 });
-$('bQuit').addEventListener('click',()=>{leaveGame();$('mKick').textContent='Arena · Gungame · Team Deathmatch · Captura la bandera';$('bOnline').textContent='Jugar online';$('bOnline').disabled=!serverOK;$('bOffline').textContent='Práctica con bots';showMenu();});
+$('bQuit').addEventListener('click',()=>{leaveGame();$('mKick').textContent='Arena · Gungame · Team Deathmatch · Captura el dominio';$('bOnline').textContent='Jugar online';$('bOnline').disabled=!serverOK;$('bOffline').textContent='Práctica con bots';showMenu();});
 // los avisos con animación no se repiten al volver de la pausa
 ['cMsg','cSub','crPop','pick'].forEach(id=>$(id).addEventListener('animationend',()=>$(id).classList.remove('show')));
 canvas.addEventListener('mousedown',e=>{
@@ -44,9 +44,11 @@ canvas.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('mousemove',e=>{
   if(!inGame||document.pointerLockElement!==canvas)return;
   if(!me.alive){spLook(e.movementX,e.movementY);return;}
+  if(WH.open){wheelMove(e.movementX,e.movementY);return;}   // con la ruleta abierta el mouse elige arma
   if(mouseSpike(e.movementX,e.movementY))return;
   // con mira, la sensibilidad baja en proporción al zoom: el movimiento en pantalla se siente igual que sin mira
-  const sc=me.scope&&WEAPONS[me.w].scope?Math.tan((WEAPONS[me.w].zoom||22)*Math.PI/360)/Math.tan(S.fov*Math.PI/360):1;
+  // S.sensZ (Ajustes → Controles) es un multiplicador extra para la mira; 1 = como siempre
+  const sc=me.scope&&WEAPONS[me.w].scope?Math.tan((WEAPONS[me.w].zoom||22)*Math.PI/360)/Math.tan(S.fov*Math.PI/360)*(S.sensZ>0?S.sensZ:1):1;
   const k=.0022*S.sens*sc;me.yaw-=e.movementX*k;me.pitch=Math.max(-1.55,Math.min(1.55,me.pitch-e.movementY*k*(S.invY?-1:1)));
 });
 addEventListener('wheel',e=>{if(inGame&&$('menu').hidden&&$('shop').hidden&&!chatOpen&&Math.abs(e.deltaY)>2)cycleWeapon(e.deltaY>0?1:-1);},{passive:true});
@@ -80,24 +82,28 @@ function renderVote(m){
   if(!voteNow){b.hidden=true;return;}
   if(b.hidden){SFX.voteStart();voteMax=Math.max(m.left,1);}
   b.hidden=false;b.classList.toggle('me',m.me===2);
-  const tot=Math.max(m.need*2-1,m.y+m.n,1),pc=v=>Math.min(100,v/tot*100),nd=m.need/tot*100;
+  const map=m.kind==='map',tot=map?Math.max(m.need,m.y+m.n,1):Math.max(m.need*2-1,m.y+m.n,1),pc=v=>Math.min(100,v/tot*100),nd=map?100:m.need/tot*100;
   const row=(cls,lbl,k,v,on)=>'<div class="vrow '+cls+(on?' on':'')+'"><span>'+(k?'<span class="k">'+k+'</span>':'')+lbl+'</span><div class="vbar"><i style="width:'+pc(v)+'%"></i>'+(cls==='yes'?'<span class="need" style="left:'+nd+'%"></span>':'')+'</div><b style="color:#e8f2ff">'+v+'</b></div>';
   const foot=m.me===2?'<span style="color:#ff9a7a">¡Votan para echarte!</span>':m.me===1?'Votaste que sí':m.me===-1?'Votaste que no':'Apretá Y o N para votar';
   b.innerHTML='<div class="vt"><span>VOTACIÓN</span><span>'+m.left+' s</span></div><div class="vtime"><i style="width:'+(m.left/voteMax*100)+'%"></i></div>'
-    +'<div class="vq">¿Echar a <b>'+esc(m.name)+'</b>?</div><div class="vby">lo pidió '+esc(m.by)+' · hacen falta '+m.need+' sí</div>'
+    +'<div class="vq">'+(map?'¿Cambiar el mapa a <b>'+esc(m.name)+'</b>?':'¿Echar a <b>'+esc(m.name)+'</b>?')+'</div><div class="vby">lo pidió '+esc(m.by)+' · '+(map?'tienen que votar sí los '+m.need:'hacen falta '+m.need+' sí')+'</div>'
     +row('yes','Sí',m.me===0?'Y':'',m.y,m.me===1)+row('no','No',m.me===0?'N':'',m.n,m.me===-1)+'<div class="vfoot">'+foot+'</div>';
 }
 let chatDraft='';
 function openChat(){chatOpen=true;$('chat').classList.add('open');const i=$('chatIn');i.hidden=false;i.value=chatDraft;i.focus();for(const k in keys)keys[k]=false;mouseDown=false;selfUnlock();}
 // relock=false cuando el que cierra es un clic en el juego (ese mismo clic ya pide el mouse)
-function closeChat(send,relock=true){if(!chatOpen)return;const i=$('chatIn');const txt=i.value.trim();if(send&&txt&&net)net.send({t:'chat',m:txt});chatDraft=send?'':i.value;chatOpen=false;i.hidden=true;$('chat').classList.remove('open');i.blur();if(inGame&&relock)lockPointer();}
+function closeChat(send,relock=true){if(!chatOpen)return;const i=$('chatIn');const txt=i.value.trim();if(send&&txt==='/colisiones'){verColisiones();}else if(send&&txt&&net)net.send({t:'chat',m:txt});chatDraft=send?'':i.value;chatOpen=false;i.hidden=true;$('chat').classList.remove('open');i.blur();if(inGame&&relock)lockPointer();}
 // si el chat pierde el foco (clic afuera, Alt+Tab) se cierra solo: nunca te deja trabado
 $('chatIn').addEventListener('blur',()=>{if(chatOpen)setTimeout(()=>{if(chatOpen&&document.activeElement!==$('chatIn'))closeChat(false,false);},0);});
 $('chatIn').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();closeChat(true);}else if(e.key==='Escape'){e.preventDefault();closeChat(false,false);if(inGame)announce('','Hacé click para volver al juego');}});
 addEventListener('keydown',e=>{
   if(chatOpen){if(document.activeElement===$('chatIn'))return;closeChat(false);}
+  if(mapMenuOpen()){e.preventDefault();
+    if(e.code==='KeyY'||e.code==='Escape'){closeMapMenu(e.code==='Escape');if(e.code==='Escape'&&inGame)announce('','Hacé click para volver al juego');}
+    else{const d=/^(?:Digit|Numpad)([1-9])$/.exec(e.code);if(d&&mmList[d[1]-1])mapPick(mmList[d[1]-1]);}
+    return;}
   if(kickOpen()){e.preventDefault();
-    if(e.code==='KeyY'||(e.code==='Escape'&&!kmSel)){closeKick(e.code==='Escape');if(e.code==='Escape'&&inGame)announce('','Hacé click para volver al juego');}
+    if(e.code==='KeyK'||(e.code==='Escape'&&!kmSel)){closeKick(e.code==='Escape');if(e.code==='Escape'&&inGame)announce('','Hacé click para volver al juego');}
     else if(e.code==='Escape'){kmSel=0;renderKick();}
     else if(e.code==='Enter')kickSend();
     else{const d=/^(?:Digit|Numpad)([1-9])$/.exec(e.code);if(d&&kmList[d[1]-1])kickPick(kmList[d[1]-1][0]);}
@@ -111,23 +117,43 @@ addEventListener('keydown',e=>{
   // 1 arma principal · 2 pistola · 3 cuchillo · 4 molotov (en Gungame: 1 el arma del nivel, 3 el cuchillo)
   const ggW=MODE==='gungame'?me.ow.findIndex((v,i)=>v&&i!==7):-1;
   const n=MODE==='snipers'?{Digit1:8,Digit2:2,Digit3:7,Numpad1:8,Numpad2:2,Numpad3:7}[e.code]:MODE==='gungame'?{Digit1:ggW,Digit3:7,Numpad1:ggW,Numpad3:7}[e.code]:{Digit1:C.primaryOf(me.ow),Digit2:0,Digit3:7,Digit4:10,Numpad1:C.primaryOf(me.ow),Numpad2:0,Numpad3:7,Numpad4:10}[e.code];
-  if(e.code==='KeyE'&&!e.repeat&&net&&me.alive&&MODE!=='gungame')net.send({t:'grab'});
+  // mientras hay cartas para elegir, 1-2-3 eligen carta en vez de cambiar de arma
+  if(cardsOpen()&&!e.repeat){const d=/^(?:Digit|Numpad)([1-3])$/.exec(e.code);if(d){e.preventDefault();pickCard(+d[1]-1);return;}}
+  if(e.code==='KeyE')wheelKey(true,e.repeat);
   if(e.code==='KeyR')startReload(me.w);
   if(e.code==='KeyV')selectWeapon(7);if(n!==undefined&&n>=0)selectWeapon(n);
   if(e.code==='KeyG')selectWeapon(10);
-  // Y: si hay una votación sin tu voto, Y es "sí"; si no, abre el menú para echar a alguien
+  // Y: si hay una votación sin tu voto, Y es "sí" (N, "no"); si no, abre la lista para cambiar de mapa. K abre el menú para echar a alguien (online)
   if(voteNow&&voteNow.me===0&&(e.code==='KeyY'||e.code==='KeyN')&&!e.repeat){net.send({t:'vote',y:e.code==='KeyY'});SFX.ui();}
-  else if(e.code==='KeyY'&&!e.repeat&&online){e.preventDefault();openKick();}
+  else if(e.code==='KeyY'&&!e.repeat){e.preventDefault();openMapMenu();}
+  else if(e.code==='KeyK'&&!e.repeat&&online){e.preventDefault();openKick();}
   if(e.code==='KeyQ')quickSwitch();
   if(e.code==='KeyF'&&!e.repeat)inspect();
+  if(e.code==='KeyH'&&!e.repeat)tpAlternar();   // vista en primera / tercera persona
+  if(e.code==='KeyJ'&&!e.repeat)tpHombro();       // cambiar de hombro (tercera persona)
   if(e.code==='KeyB'&&!e.repeat){e.preventDefault();openShop();}
+  if(e.code==='KeyG'&&NIGHT){e.preventDefault();if(!e.repeat)nightToggle();}   // en los mapas con linterna (hoy solo Skatenight) la G prende y apaga la linterna; la T vuelve a abrir el chat
   if(e.code==='KeyT'||e.code==='Enter'){e.preventDefault();openChat();}
   if(e.code==='Tab'){$('board').hidden=false;renderBoard();}
   if(!online&&!e.repeat&&(e.code==='Equal'||e.code==='NumpadAdd'||e.key==='+'))changeBots(1);
   if(!online&&!e.repeat&&(e.code==='Minus'||e.code==='NumpadSubtract'||e.key==='-'))changeBots(-1);
 
 });
-addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Tab'&&matchState!=='inter')$('board').hidden=true;});
-addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouseDown=false;});
+addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyE')wheelKey(false);if(e.code==='Tab'&&matchState!=='inter')$('board').hidden=true;});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouseDown=false;WH.down=false;closeWheel(false);});
 function changeBots(d){S.bots=Math.max(0,Math.min(15,S.bots+d));saveS();syncSettings();if(net&&!online){net.send({t:'cfg',bots:S.bots});sysChat('Bots en la arena: '+S.bots);}}
 
+
+/* /colisiones: dibuja en wireframe todas las cajas con las que choca el jugador (rojo = sólido, cian = barrera,
+   amarillo = clip invisible). Lo que se ve y no tiene caja encima, se atraviesa. Otra vez /colisiones lo apaga. */
+let colWire=null;
+function verColisiones(){
+  if(colWire){scene.remove(colWire);colWire.geometry.dispose();colWire=null;sysChat('Colisiones: ocultas');return;}
+  const P=[],Cc=[],E=[[0,1],[1,3],[3,2],[2,0],[4,5],[5,7],[7,6],[6,4],[0,4],[1,5],[2,6],[3,7]];let n=0;
+  for(const b of W.brushes){if(b.nc)continue;n++;const a=b.min,c=b.max,col=b.bar?[0,1,1]:b.clip?[1,1,0]:[1,.2,.2];
+    const v=[];for(let k=0;k<8;k++)v.push([k&1?c[0]:a[0],k&2?c[1]:a[1],k&4?c[2]:a[2]]);
+    for(const [i,j] of E){P.push(...v[i],...v[j]);Cc.push(...col,...col);}}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('color',new THREE.Float32BufferAttribute(Cc,3));
+  colWire=new THREE.LineSegments(g,new THREE.LineBasicMaterial({vertexColors:true,depthTest:false,transparent:true,opacity:.7}));colWire.renderOrder=999;scene.add(colWire);
+  sysChat('Colisiones: '+n+' cajas sólidas · '+W.brushes.filter(b=>b.nc).length+' sin colisión');
+}

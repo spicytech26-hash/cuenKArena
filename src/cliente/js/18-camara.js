@@ -39,6 +39,7 @@ function updCamera(dt){
   const st=G.time*38;camera.position.set(me.s.x+Math.sin(st)*sh*.22,me.s.y+eye+Math.sin(st*1.31+1.7)*sh*.22,me.s.z+Math.sin(st*.87+3.1)*sh*.22);
   me.recP=(me.recP||0)*Math.exp(-dt*11);me.recY=(me.recY||0)*Math.exp(-dt*11);me.fovPunch=(me.fovPunch||0)*Math.exp(-dt*12);
   camera.rotation.set(me.pitch-me.kick*.025+me.recP,me.yaw+me.recY,me.tilt+me.roll+(me.alive?0:Math.min(.5,me.deadT*.6)));
+  tpCamara(dt);   // en tercera persona la cámara se corre atrás y al costado (ver 18-tercera-persona.js)
   const scoped=me.scope&&me.alive&&WEAPONS[me.w].scope,zoom=WEAPONS[me.w].zoom||22;
   const fov=(scoped?zoom:S.fov+Math.min(12,Math.max(0,Math.hypot(me.s.vx,me.s.vz)-11)*.8))+(me.fovPunch||0)*(scoped?.2:1);
   if(Math.abs(camera.fov-fov)>.05){camera.fov+=(fov-camera.fov)*Math.min(1,dt*(scoped?14:6));camera.updateProjectionMatrix();}
@@ -47,6 +48,7 @@ function updCamera(dt){
   sky.position.copy(camera.position);
 }
 function updViewmodel(dt){
+  vmSync();
   const i=me.w,g=vms[i],b=vmBase[i];
   me.kick=Math.max(0,me.kick-dt*(i===3?14:i===0?10:i===7?4:5));me.raise=Math.max(0,me.raise-dt*4);
   const hs=Math.hypot(me.s.vx,me.s.vz),mv=me.s.on?Math.min(1,hs/10):.3;
@@ -141,13 +143,15 @@ function updEffects(dt){
   setOp('qtint',me.q>0&&me.alive?.6+Math.sin(G.time*6)*.15:0);
   setOp('hitm',G.hitT>0?1:0);
   setOp('dmgdir',G.dmgT);if(G.dmgT>0)$('dmgdir').style.transform='rotate('+(-(G.dmgAng-me.yaw)).toFixed(3)+'rad)';
-  const sp=Math.round(Math.hypot(me.s.vx,me.s.vz)*32);setTxt('spdV',String(sp));$('speed').className=sp>500?'vfast':sp>360?'fast':'';
-  $('xh').hidden=!me.alive;
+  const sp=Math.round(Math.hypot(me.s.vx,me.s.vz)*32);setTxt('spdV',String(sp));{const st=me.s.stam===undefined?1:me.s.stam,e=$('stam');if(e._v!==st){e._v=st;e.firstChild.style.transform='scaleX('+st.toFixed(3)+')';e.classList.toggle('low',st<.25);e.classList.toggle('full',st>=.999);}}$('speed').className=sp>500?'vfast':sp>360?'fast':'';
+  $('xh').hidden=!me.alive;xhUpdate(dt);
   if(level){
     for(const o of level.items){if(!o.g.visible)continue;o.ph+=dt;o.g.rotation.y+=dt*1.6;o.g.position.y=o.it.y+.6+Math.sin(o.ph*2.2)*.12;}
     if(shards.size)updShards(dt);
     level.lavaTexs.forEach((t,i)=>{t.offset.x=(G.time*.04+i*.3)%1;t.offset.y=Math.sin(G.time*.35+i)*.06;});
     level.waterTexs.forEach(t=>{t.offset.x=(G.time*.035)%1;t.offset.y=Math.sin(G.time*.2)*.03;});
+    for(const q of portalAnim){q.g.rotation.y=Math.atan2(camera.position.x-q.g.position.x,camera.position.z-q.g.position.z);q.t1.rotation=G.time*1.1+q.ph;q.t2.rotation=-G.time*.8;q.pts.rotation.z=G.time*.45+q.ph;q.pts2.rotation.z=-G.time*.3+q.ph;q.pts.position.y=Math.sin(G.time*1.3+q.ph)*.1;q.m2.opacity=.72+.25*Math.sin(G.time*3+q.ph);}
+    for(const q of animTex){q.t.offset.x=(G.time*q.sx)%1;q.t.offset.y=(G.time*q.sy)%1;}
     const club=!!level.club;
     for(const pm of level.pads)if(Math.random()<dt*14)emit(sparks,pm.p.x+R(1.4),pm.p.y+.15,pm.p.z+R(1.4),0,2+Math.random()*3,0,.5,1,club?.25:.65,club?.85:.2,0);
     if(level.geysers)for(const gy of level.geysers){

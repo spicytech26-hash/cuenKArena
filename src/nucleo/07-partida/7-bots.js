@@ -1,18 +1,32 @@
+  // gravedad cero: lleva al bot a la altura yb del borde de un nivel (piso en yb) y, ya a esa altura, hacia (tx, tz). Antes de llegar se queda dentro del pozo.
+  zgSteer(s, yb, tx, tz) {
+    const zb = this.W.zerog[0], cx = (zb.min[0] + zb.max[0]) / 2, cz = (zb.min[2] + zb.max[2]) / 2, inZ = inZeroG(this.W, s);
+    const dy = s.y - yb;
+    let up = false, cr = false, gx = cx, gz = cz;
+    if (inZ) {
+      if (dy > 1.4) cr = true;                 // más arriba del borde: bajar
+      else { up = dy < .9; if (dy >= .35) { gx = tx; gz = tz; } }   // a la altura justa: salir de costado
+    }
+    const ax = gx - s.x, az = gz - s.z, al = Math.hypot(ax, az) || 1;
+    return { wx: ax / al, wz: az / al, up, cr };
+  }
   newAI() { return { think: 0, replan: 0, path: null, pi: 0, tgt: 0, seeT: 0, lostT: 0, last: null, strafe: Math.random() < .5 ? 1 : -1, strafeT: 1, stuckT: 0, bestD: 1e9, hurtBy: 0, hurtT: 0, aimErrX: 0, aimErrY: 0, errT: 0, hopT: 0, goal: null, flyT: 0, noLook: 0 }; }
   skill() { return SKILL[this.o.botSkill] || SKILL[1]; }
   findTarget(p) {
     let best = null, bd = 1e9; const sk = this.skill();
+    const skI = Math.max(0, Math.min(3, this.o.botSkill | 0));
+    const cw = this.crownOn() && this.crown && this.crown.by !== p.id ? this.crown.by : 0;   // el de la corona es el objetivo preferido
     const ex = p.s.x, ey = p.s.y + K.EYE, ez = p.s.z;
     for (const t of this.players.values()) {
       if (t === p || !t.alive || !t.joined || (this.mode.teams && t.team === p.team)) continue;
       const d = Math.hypot(t.s.x - ex, t.s.y + 1 - ey, t.s.z - ez);
       const hurt = p.ai.hurtT > 0 && p.ai.hurtBy === t.id;
-      if (d > sk.range && !hurt) continue;
+      if (d > (this.W.theme.noche ? Math.min(sk.range, 30) : sk.range) && !hurt) continue;   // de noche los bots tampoco ven de lejos
       // campo de visión según la dificultad, salvo que lo hayan atacado o estés encima
       const f = dirFromAngles(p.yaw, 0), dot = ((t.s.x - ex) * f[0] + (t.s.z - ez) * f[2]) / (Math.hypot(t.s.x - ex, t.s.z - ez) || 1);
       if (dot < sk.fov && !hurt && d > 4 && t.id !== p.ai.tgt) continue;
       if (!los(this.W, ex, ey, ez, t.s.x, t.s.y + 1.2, t.s.z)) continue;
-      const score = d - (p.ai.hurtBy === t.id && p.ai.hurtT > 0 ? 15 : 0) - (t.id === p.ai.tgt ? 8 : 0);
+      const score = d - (p.ai.hurtBy === t.id && p.ai.hurtT > 0 ? 15 : 0) - (t.id === p.ai.tgt ? 8 : 0) - (t.id === cw ? CROWN.BOT_AIM[skI] : 0);
       if (score < bd) { bd = score; best = t; }
     }
     return best;
@@ -28,7 +42,7 @@
     const ai = p.ai, nav = this.nav;
     const start = findNode(nav, p.s.x, p.s.y, p.s.z);
     if (!start) { ai.path = null; return; }
-    const dj = dijkstra(nav, start.id);
+    const dj = dijkstra(nav, start.id, this.domBan(p.team));
     let goal = null, best = -1;
     const t = ai.tgt ? this.players.get(ai.tgt) : null;
     const obj = this.objective(p);
@@ -47,6 +61,7 @@
     if (best < 99) {
       for (const it of this.items) {
         if (!it.up) continue;
+        if (this.W.zerog && inZeroG(this.W, { x: it.x, y: it.y, z: it.z })) continue;   // los ítems que flotan en gravedad cero no los buscan
         const n = findNode(nav, it.x, it.y + .2, it.z); if (!n || dj.dist[n.id] === Infinity) continue;
         const info = ITEMS[it.type]; let v = 0;
         if (it.type === 'quad') v = 6;
@@ -54,7 +69,11 @@
         else if (it.type === 'health') v = p.hp < 40 ? 5 : p.hp < 80 ? 2 : 0;
         else if (it.type === 'armorH') v = p.ar < 120 ? 4 : 0;
         else if (it.type === 'armor') v = p.ar < 80 ? 2.5 : 0;
-        else if (info.weapon != null) v = !p.ow[info.weapon] ? 4 + info.weapon * .3 : p.am[info.ammo] < AMMO_MAX[info.ammo] * .4 ? 1 : 0;
+        else if (info.weapon != null) {
+          // un arma principal nueva solo se levanta si tenés la escopeta de base (ver give()); si no, el bot se quedaba parado encima para siempre
+          const fresh = !p.ow[info.weapon], cur = primaryOf(p.ow);
+          v = fresh ? (isPrimary(info.weapon) && !this.mode.gg && cur !== -1 && cur !== 1 ? 0 : 4 + info.weapon * .3) : p.am[info.ammo] < AMMO_MAX[info.ammo] * .4 ? 1 : 0;
+        }
         else if (info.ammo) { const owns = WEAPONS.some((W_, i) => W_.ammo === info.ammo && p.ow[i]); v = owns && p.am[info.ammo] < AMMO_MAX[info.ammo] * .5 ? 1.2 : 0; }
         if (!v) continue;
         const sc = v / (1 + dj.dist[n.id] / 25);
@@ -73,6 +92,12 @@
   }
   // CTF: qué hace cada bot según el estado de las banderas y su rol (ataque/defensa)
   objective(p) {
+    if (this.stormOn() && this.outStorm(p.s.x, p.s.z)) {   // afuera de la zona segura no hay nada más importante
+      const sp = this.stormRefuge(p);
+      if (sp) return { x: sp.x, y: sp.y, z: sp.z, pri: 160 };
+    }
+    const cr = this.crownObjective(p); if (cr) return cr;
+    if (this.dom) return this.domObjective(p);
     if (!this.mode.teams || this.flags.length < 2 || p.team < 0) return null;
     const own = this.flags[p.team], enemy = this.flags[1 - p.team], home = this.W.flags[p.team];
     if (enemy.st === 1 && enemy.by === p.id) return { x: home.x, y: home.y, z: home.z, pri: 200 };
@@ -85,6 +110,20 @@
     if (Math.hypot(p.s.x - home.x, p.s.z - home.z) > 14) return { x: home.x + (Math.random() - .5) * 16, y: 0, z: home.z - Math.sign(home.z) * (4 + Math.random() * 8), pri: 50 };
     return null;
   }
+  /* la corona para los bots: la van a buscar si está suelta y cerca, y si la tiene otro lo persiguen.
+     Las distancias dependen de la dificultad (CROWN.BOT_GO). El que la lleva sigue jugando normal. */
+  crownObjective(p) {
+    if (!this.crownOn() || this.state !== 'play') return null;
+    const c = this.crown; if (!c || c.dead > 0) return null;
+    const k = Math.max(0, Math.min(3, this.o.botSkill | 0)), lejos = CROWN.BOT_GO[k];
+    if (!c.by) {
+      return Math.hypot(c.x - p.s.x, c.z - p.s.z) < lejos ? { x: c.x, y: c.y, z: c.z, pri: 120 } : null;
+    }
+    if (c.by === p.id) return null;
+    const h = this.players.get(c.by);
+    if (!h || !h.alive) return null;
+    return Math.hypot(h.s.x - p.s.x, h.s.z - p.s.z) < lejos * 1.3 ? { x: h.s.x, y: h.s.y, z: h.s.z, pri: 95 } : null;
+  }
   botThink(p, dt) {
     const ai = p.ai, s = p.s, nav = this.nav, sk = SKILL[this.o.botSkill] || SKILL[1];
     ai.think -= dt; ai.replan -= dt; ai.hurtT -= dt; ai.lostT -= dt; ai.errT -= dt; ai.flyT -= dt; ai.noLook -= dt;
@@ -93,12 +132,17 @@
       const t = this.findTarget(p);
       if (t) { if (t.id !== ai.tgt) { ai.seeT = 0; ai.replan = Math.min(ai.replan, .2); } ai.tgt = t.id; ai.last = [t.s.x, t.s.y, t.s.z]; ai.lostT = 3; }
       else if (ai.tgt) { ai.tgt = 0; ai.replan = 0; }
+      // sin rivales a la vista: primero los minions que estorban, después el generador o el boss
+      ai.min = null;
+      if (!t && this.dom) { const mm = this.domMinTarget(p, Math.max(26, this.skill().range * .6)); if (mm) { ai.min = mm; ai.st = { x: mm.x, y: mm.y + .9, z: mm.z, min: mm.id }; } }
+      ai.st = ai.st && ai.min ? ai.st : (!t && this.dom ? this.domBotTarget(p) : null);
+      if (this.dom && (ai.dodge == null || Math.random() < .05)) ai.dodge = Math.random() < DOM.BOT_DODGE[Math.max(0, Math.min(3, this.o.botSkill | 0))];
     }
     if (ai.replan <= 0 && s.on) { if (this.planBudget > 0) { this.planBudget--; ai.replan = .7 + Math.random() * .5; this.planBot(p); } else ai.replan = .03; }
     const tgt = ai.tgt ? this.players.get(ai.tgt) : null;
     if (tgt) ai.seeT += dt;
     // --- movimiento ---
-    let wx = 0, wz = 0, jump = false;
+    let wx = 0, wz = 0, jump = false, zg = null;   // zg: {up, cr} cuando el bot flota en el pozo de gravedad cero
     let nextLink = 0;
     if (ai.path && ai.pi < ai.path.length && ai.flyT <= 0) {
       let n = nav.nodes[ai.path[ai.pi]];
@@ -118,16 +162,24 @@
         const ax = aim.x - s.x, az = aim.z - s.z, al = Math.hypot(ax, az) || 1;
         wx = ax / al; wz = az / al;
         const d = Math.hypot(n.x - s.x, n.z - s.z);
+        if (nextLink === 5) { zg = this.zgSteer(s, n.y, n.x, n.z); wx = zg.wx; wz = zg.wz; ai.stuckT = 0; ai.bestD = 1e9; }   // gravedad cero: flota hasta el nivel del próximo nodo
         if (nextLink === 2 && s.on) {
           const prev = nav.nodes[ai.path[ai.pi - 1]];
           if (Math.hypot(prev.x - s.x, prev.z - s.z) < 1.1 || d < 4.5) { jump = true; ai.flyT = .05; }
         }
-        if (d < ai.bestD - .2) { ai.bestD = d; ai.stuckT = 0; } else ai.stuckT += dt;
+        if (nextLink === 5) { /* flotando: no cuenta como trabado */ } else if (d < ai.bestD - .2) { ai.bestD = d; ai.stuckT = 0; } else ai.stuckT += dt;
         if (ai.stuckT > 1.2) { jump = true; ai.replan = 0; ai.stuckT = 0; ai.noLook = 1.5; }
       } else ai.path = null;
     } else if (!ai.path && !findNode(nav, s.x, s.y, s.z)) { jump = true; }
+    if (!zg && this.W.zerog && inZeroG(this.W, s)) {   // cayó al pozo sin querer: sube hasta el borde del nivel de arriba y sale de costado
+      const lv = nav.zlev || [0]; let yb = lv[lv.length - 1];
+      for (const y of lv) if (y >= s.y - 1.4) { yb = y; break; }
+      const zb = this.W.zerog[0], dx = s.x - (zb.min[0] + zb.max[0]) / 2, dz = s.z - (zb.min[2] + zb.max[2]) / 2;
+      const ex = Math.abs(dx) > Math.abs(dz) ? s.x + Math.sign(dx || 1) * 6 : s.x, ez = Math.abs(dx) > Math.abs(dz) ? s.z : s.z + Math.sign(dz || 1) * 6;
+      zg = this.zgSteer(s, yb, ex, ez); wx = zg.wx; wz = zg.wz;
+    }
     // combate: esquivar de costado y acercarse/alejarse
-    if (tgt) {
+    if (tgt && !zg) {
       const dx = tgt.s.x - s.x, dz = tgt.s.z - s.z, dist = Math.hypot(dx, dz) || 1;
       ai.strafeT -= dt; if (ai.strafeT <= 0) { ai.strafe *= -1; ai.strafeT = .5 + Math.random() * 1.2; }
       const melee = !!WEAPONS[p.w].melee;
@@ -141,8 +193,9 @@
       const fx = s.x + wx * 1.2, fz = s.z + wz * 1.2;
       if (s.on && !nav.nodeAt(fx, s.y, fz)) { wx = -wx * .3; wz = -wz * .3; }
     }
+    if (this.dom && ai.dodge) { const dg = this.domDanger(p); if (dg) { const ax = s.x - dg.x, az = s.z - dg.z, al = Math.hypot(ax, az) || 1; wx = ax / al; wz = az / al; } }   // sale del área de un ataque avisado
     const was = s.on;
-    pmove(this.W, s, { wx, wz, jump }, dt);
+    pmove(this.W, s, zg ? { wx, wz, jump: false, up: zg.up, crouch: zg.cr } : { wx, wz, jump }, dt);
     const landed = was !== s.on && s.on;
     if (landed) ai.flyT = 0;
     // plataformas de salto y teletransportadores
@@ -174,6 +227,14 @@
       if (ai.seeT > sk.react && Math.abs(dy) < .12 + 1 / (dist + 1) && this.canFire(p, w) && this.time - p.lastFire >= W_.rate * sk.fire) {
         if (W_.type !== 'proj' || dist > 3) this.botFire(p, w, [ex, ey, ez], dirFromAngles(p.yaw, p.pitch));
       }
+    } else if (ai.st) {   // Captura el dominio: apunta y dispara a la estructura o al minion que tenga enfrente
+      const q = ai.st, ex = s.x, ey = s.y + K.EYE, ez = s.z, dist = Math.hypot(q.x - ex, q.y - ey, q.z - ez);
+      const w = this.chooseWeapon(p, Math.max(dist, 8)); if (w !== p.w) { p.w = w; p.lastFire = Math.max(p.lastFire, this.time - WEAPONS[w].rate * .5); }
+      const W_ = WEAPONS[w], ty = q.y + (W_.proj === 'grenade' ? dist * .06 : 0);
+      const wantYaw = Math.atan2(-(q.x - ex), -(q.z - ez)), wantPitch = Math.atan2(ty - ey, Math.hypot(q.x - ex, q.z - ez));
+      let dy = wantYaw - p.yaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
+      const mt = sk.turn * dt; p.yaw += clamp(dy, -mt, mt); p.pitch += clamp(wantPitch - p.pitch, -mt, mt);
+      if (Math.abs(dy) < .06 && Math.abs(wantPitch - p.pitch) < .06 && !W_.melee && this.canFire(p, w) && this.time - p.lastFire >= W_.rate * sk.fire) this.botFire(p, w, [ex, ey, ez], dirFromAngles(p.yaw, p.pitch));
     } else {
       const sp = Math.hypot(s.vx, s.vz);
       if (sp > 1) { const want = Math.atan2(-s.vx, -s.vz); let dy = want - p.yaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2; p.yaw += clamp(dy, -6 * dt, 6 * dt); }

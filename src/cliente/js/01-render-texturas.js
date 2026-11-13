@@ -9,7 +9,7 @@ const setTimeout0=f=>f();
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x1c1310);
 scene.fog=new THREE.FogExp2(0x1c1310,.0105);
-const camera=new THREE.PerspectiveCamera(S.fov,1,.05,500);camera.rotation.order='YXZ';
+const camera=new THREE.PerspectiveCamera(S.fov,1,.08,500);camera.rotation.order='YXZ';
 const wScene=new THREE.Scene(),wCam=new THREE.PerspectiveCamera(62,1,.01,10);
 // resolución dinámica: si la compu no llega a ~50 cuadros, se baja un poco la resolución (hasta 75%) en vez de que el juego se trabe
 const DR={s:1,acc:0,n:0,good:0,upT:0,block:0,fps:0};
@@ -84,6 +84,23 @@ T.basalt=tex(basaltCanvas);
 const basaltEm=tex(cv(64,64,(g)=>{g.drawImage(basaltCanvas,0,0);const d=g.getImageData(0,0,64,64);for(let i=0;i<d.data.length;i+=4){const hot=d.data[i]>150;d.data[i]=hot?d.data[i]:0;d.data[i+1]=hot?d.data[i+1]*.6:0;d.data[i+2]=0;}g.putImageData(d,0,0);}));
 const lavaCanvas=cv(64,64,(g)=>{g.fillStyle='#7a1a05';g.fillRect(0,0,64,64);for(let i=0;i<120;i++){const c=['#c23a0a','#ff6a10','#ffae2a','#9a2205','#ff8c1a'][rnd()*5|0];g.fillStyle=c;g.beginPath();g.arc(rnd()*64,rnd()*64,1+rnd()*5,0,7);g.fill();}});
 const lavaTex=tex(lavaCanvas);
+function skySunset(){return cv(1024,512,(g,w,h)=>{
+  // atardecer sobre el Paraná: violeta arriba, rosa, naranja y dorado hacia el horizonte, sol bajo al noroeste y su reflejo en el río
+  const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#241a4a');gr.addColorStop(.2,'#4e3478');gr.addColorStop(.32,'#a8497e');gr.addColorStop(.41,'#ee7a52');gr.addColorStop(.47,'#ffb468');gr.addColorStop(.5,'#ffd9a0');gr.addColorStop(.52,'#d9704c');gr.addColorStop(.7,'#6e3a56');gr.addColorStop(1,'#26182e');
+  g.fillStyle=gr;g.fillRect(0,0,w,h);
+  const sx=w*.908,sy=h*.394;
+  for(const ox of [0,-w,w]){const rg=g.createRadialGradient(sx+ox,sy,4,sx+ox,sy,300);rg.addColorStop(0,'rgba(255,244,214,1)');rg.addColorStop(.08,'rgba(255,196,120,.85)');rg.addColorStop(.3,'rgba(255,140,80,.35)');rg.addColorStop(1,'rgba(255,110,90,0)');g.fillStyle=rg;g.fillRect(0,0,w,h*.5);}
+  g.fillStyle='#fff6dc';g.beginPath();g.arc(sx,sy,15,0,7);g.fill();
+  // nubes alargadas teñidas de naranja cerca del sol y de violeta arriba
+  for(let c=0;c<34;c++){const cx=rnd()*w,cy=h*(.1+rnd()*.3),s=30+rnd()*60,warm=cy/h>.27;
+    for(let k=0;k<7;k++){g.fillStyle=warm?'rgba(255,'+(130+rnd()*60|0)+','+(100+rnd()*40|0)+','+(.18+rnd()*.25)+')':'rgba(150,90,150,'+(.15+rnd()*.2)+')';
+      g.beginPath();g.ellipse(cx+(rnd()-.5)*s*3,cy+(rnd()-.5)*s*.18,s*(.8+rnd()),s*(.06+rnd()*.07),0,0,7);g.fill();}}
+  // la otra orilla: colinas violetas y la ciudad lejana con algunas luces
+  g.fillStyle='#4a2a4c';g.beginPath();g.moveTo(0,h*.5);for(let x=0;x<=w;x+=12)g.lineTo(x,h*.5-4-Math.abs(Math.sin(x*.009)*10+Math.sin(x*.031)*4));g.lineTo(w,h*.5);g.fill();
+  for(let x=360;x<560;x+=7){const bh=3+rnd()*14;g.fillStyle='#3a2140';g.fillRect(x,h*.5-bh-4,5,bh+4);if(rnd()<.5){g.fillStyle='rgba(255,200,120,.8)';g.fillRect(x+1,h*.5-bh-2,1,1);}}
+  // reflejo del sol en el agua
+  for(let i=0;i<140;i++){const y=h*.5+2+rnd()*h*.22,dx=(rnd()-.5)*(60+(y-h*.5)*2.2),wl=8+rnd()*40;g.fillStyle='rgba(255,'+(170+rnd()*60|0)+',120,'+(.2+rnd()*.35)+')';g.fillRect(sx+dx-wl/2,y,wl,1.5);}
+});}
 const MATS={
   wall:{t:T.wall,sc:3,shin:10},floor:{t:T.floor,sc:2,shin:22},concrete:{t:T.concrete,sc:4,shin:4},grate:{t:T.grate,sc:1.2,shin:30},
   metal:{t:T.metal,sc:2,shin:40},tower:{t:T.tower,sc:3,shin:30,em:towerEm},trim:{t:T.trim,sc:1,shin:10},step:{t:T.step,sc:1,shin:14},
@@ -97,7 +114,7 @@ const MATS={
   roofTiles:{t:T.roofTiles,sc:1.5,shin:6},booth:{t:T.booth,sc:2,shin:20},
   tube:{t:tex(cv(16,64,(g)=>{g.fillStyle='rgba(120,220,255,.28)';g.fillRect(0,0,16,64);g.fillStyle='rgba(200,245,255,.55)';g.fillRect(0,0,16,2);g.fillRect(0,0,2,64);})),sc:1.3,shin:140,alpha:true,emc:0x0a3040}
 };
-const NEON={neonP:0xff3fd2,neonC:0x2be6ff,light:0xffd7a0,neonR:0xff3a2a,neonB:0x2a7bff};
+const NEON={neonP:0xff3fd2,neonC:0x2be6ff,light:0xffd7a0,neonR:0xff3a2a,neonB:0x2a7bff,vitR:0xc24a12,vitB:0x1f54b0};   // vitR/vitB: vitrales (más apagados que los neones, para que parezcan vidrio y no un cartel)
 const waterCanvas=cv(64,64,(g)=>{g.fillStyle='#1d3a3a';g.fillRect(0,0,64,64);for(let i=0;i<90;i++){g.fillStyle=['#24504c','#2c5e58','#173130','#3a7068'][rnd()*4|0];g.fillRect(rnd()*64|0,rnd()*64|0,4+rnd()*14|0,1+rnd()*2|0);}g.fillStyle='rgba(255,210,150,.25)';for(let i=0;i<14;i++)g.fillRect(rnd()*64|0,rnd()*64|0,3+rnd()*6|0,1);});
 const waterTex=tex(waterCanvas);waterTex.magFilter=THREE.LinearFilter;
 
@@ -110,6 +127,29 @@ function skyDusk(){return cv(1024,512,(g,w,h)=>{
   g.fillStyle='#0f0908';g.fillRect(300,h*.5-26,260,26);
   for(let x=304;x<560;x+=18){g.fillStyle='#1a100c';g.fillRect(x,h*.5-24,8,22);g.fillStyle='rgba(255,170,90,.55)';g.fillRect(x+3,h*.5-20,2,3);}
   g.strokeStyle='#120a08';g.lineWidth=2;for(const tx of [120,700,860]){g.beginPath();g.moveTo(tx-10,h*.5);g.lineTo(tx,h*.5-60);g.lineTo(tx+10,h*.5);g.moveTo(tx-14,h*.5-46);g.lineTo(tx+14,h*.5-46);g.stroke();}
+});}
+function skyHalloween(){return cv(1024,512,(g,w,h)=>{
+  // noche de Halloween: cielo violeta, estrellas y una luna roja grande (en u=.25: hacia el sur, +z)
+  const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#08031a');gr.addColorStop(.3,'#1a0b34');gr.addColorStop(.46,'#3b1752');gr.addColorStop(.5,'#2a1038');gr.addColorStop(.52,'#0d0618');gr.addColorStop(1,'#07030f');
+  g.fillStyle=gr;g.fillRect(0,0,w,h);
+  for(let i=0;i<900;i++){const y=rnd()*h*.48;g.fillStyle='rgba(235,225,255,'+(rnd()*.95*(1-y/(h*.5)))+')';g.fillRect(rnd()*w|0,y|0,1,1);}
+  for(let i=0;i<26;i++){const x=rnd()*w,y=rnd()*h*.4;g.fillStyle='rgba(255,255,255,.9)';g.fillRect(x,y,2,2);g.fillStyle='rgba(200,170,255,.25)';g.fillRect(x-1,y-1,4,4);}
+  // auroras de otro mundo: cintas verdes, violetas, celestes y rosas que se retuercen en lo alto
+  g.globalCompositeOperation='lighter';
+  for(let r=0;r<5;r++){const col=['60,255,170','150,70,255','60,200,255','255,90,200','120,255,90'][r];
+    for(let k=0;k<22;k++){const x0=r*w/5+rnd()*w/5,gr=g.createLinearGradient(0,h*.04,0,h*.4);gr.addColorStop(0,'rgba('+col+',0)');gr.addColorStop(.5,'rgba('+col+',.07)');gr.addColorStop(1,'rgba('+col+',0)');
+      g.strokeStyle=gr;g.lineWidth=5+rnd()*10;g.beginPath();g.moveTo(x0,h*.05);for(let y=h*.05;y<h*.42;y+=14)g.lineTo(x0+Math.sin(y*.03+r*2)*18+Math.sin(y*.011+k)*40,y);g.stroke();}}
+  g.globalCompositeOperation='source-over';
+  const mx=w*.25,my=h*.34,mr=38,halo=g.createRadialGradient(mx,my,mr*.8,mx,my,mr*4.2);halo.addColorStop(0,'rgba(255,60,50,.4)');halo.addColorStop(1,'rgba(255,60,50,0)');
+  g.fillStyle=halo;g.fillRect(mx-mr*4.4,my-mr*4.4,mr*8.8,mr*8.8);
+  const md=g.createRadialGradient(mx-mr*.25,my-mr*.25,mr*.1,mx,my,mr);md.addColorStop(0,'#ff8a70');md.addColorStop(.6,'#e03a30');md.addColorStop(1,'#9a1418');
+  g.fillStyle=md;g.beginPath();g.ellipse(mx,my,mr*1.15,mr,0,0,7);g.fill();   // más ancha que alta: la esfera del cielo la achata hacia arriba
+  for(let i=0;i<14;i++){const a=rnd()*6.28,d=rnd()*mr*.8,r=3+rnd()*8;g.fillStyle='rgba(90,10,20,'+(.15+rnd()*.25)+')';g.beginPath();g.ellipse(mx+Math.cos(a)*d*1.15,my+Math.sin(a)*d,r*1.15,r,0,0,7);g.fill();}
+  for(let i=0;i<22;i++){const x=rnd()*w,y=h*.1+rnd()*h*.32,rw=60+rnd()*120;if(Math.abs(x-mx)<rw+mr*1.6&&Math.abs(y-my)<mr*2.2)continue;g.fillStyle='rgba(14,5,30,'+(.25+rnd()*.3)+')';g.beginPath();g.ellipse(x,y,rw,5+rnd()*8,0,0,7);g.fill();}
+  // tentáculos gigantes que se alzan del horizonte (siluetas)
+  for(let i=0;i<9;i++){const bx=i*w/9+rnd()*50,hh=50+rnd()*95,ph=rnd()*6;g.fillStyle='#08030f';
+    for(let t=0;t<1;t+=.012){const x=bx+Math.sin(t*3.2+ph)*55*t,y=h*.505-t*hh,r=(11+rnd()*2)*(1-t)+1.5;g.beginPath();g.arc(x,y,r,0,7);g.fill();}}
+  g.fillStyle='rgba(150,60,170,.13)';g.fillRect(0,h*.46,w,h*.05);
 });}
 function skyNight(){return cv(1024,512,(g,w,h)=>{
   // noche de Posadas: costanera, el río y el puente a Encarnación

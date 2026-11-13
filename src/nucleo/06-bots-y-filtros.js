@@ -69,6 +69,14 @@ function cleanSkin(k, fallback) {
   const f = fallback || { c: COLORS[0], v: '#ffffff', a: 0 };
   if (!k || typeof k !== 'object') return Object.assign({}, f);
   const out = { c: HEX.test(k.c) ? k.c : f.c, v: HEX.test(k.v) ? k.v : f.v, a: Number.isInteger(k.a) && k.a >= 0 && k.a < ACCESSORIES.length ? k.a : 0 };
+  if (HEX.test(k.c2)) out.c2 = k.c2;   // partes secundarias/articulaciones (opcional: si falta, se deriva de c)
+  if (HEX.test(k.c3)) out.c3 = k.c3;   // detalles y luces (opcional)
+  if (HEX.test(k.cp)) out.cp = k.cp;   // pecho (opcional: si falta, vale c)
+  if (HEX.test(k.cb)) out.cb = k.cb;   // brazos y manos (opcional)
+  if (HEX.test(k.cl)) out.cl = k.cl;   // pelvis y piernas (opcional)
+  if (HEX.test(k.ck)) out.ck = k.ck;   // casco (opcional: si falta, vale c)
+  if (HEX.test(k.ce)) out.ce = k.ce;   // color del emblema del pecho (opcional: si falta, se elige claro u oscuro)
+  if (EMBLEMS.includes(k.em)) out.em = k.em;   // emblema del pecho (si falta, el ancla)
   if (okChestImg(k.img)) out.img = k.img;
   return out;
 }

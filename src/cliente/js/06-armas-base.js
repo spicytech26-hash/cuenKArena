@@ -27,8 +27,12 @@ const mPoly=new THREE.MeshPhongMaterial({color:0x1d1e20,shininess:15,flatShading
 const mGripT=new THREE.MeshPhongMaterial({map:new THREE.CanvasTexture(cv(16,32,(g)=>{g.fillStyle='#202124';g.fillRect(0,0,16,32);for(let i=0;i<90;i++){g.fillStyle=Math.random()<.5?'#2c2d31':'#141517';g.fillRect(Math.random()*16|0,Math.random()*32|0,1,1);}})),shininess:6});
 const mODrab=new THREE.MeshPhongMaterial({map:new THREE.CanvasTexture(cv(64,64,(g)=>{g.fillStyle='#565e36';g.fillRect(0,0,64,64);for(let i=0;i<220;i++){const v=Math.random();g.fillStyle=v<.5?'rgba(30,34,16,.18)':'rgba(170,175,120,.12)';g.fillRect(Math.random()*64|0,Math.random()*64|0,1+Math.random()*3|0,1);}g.fillStyle='rgba(20,22,10,.55)';g.fillRect(0,21,64,1);g.fillRect(0,43,64,1);g.fillRect(31,0,1,64);g.fillStyle='rgba(210,210,170,.25)';g.fillRect(0,0,64,1);})),shininess:22,specular:0x3a3a28,flatShading:true});
 const mODdark=new THREE.MeshPhongMaterial({color:0x353b22,flatShading:true,shininess:16});
-const mGlove=new THREE.MeshPhongMaterial({color:0x2a2420,flatShading:true,shininess:10});
-const mSleeve=new THREE.MeshPhongMaterial({color:0x3a4433,flatShading:true,shininess:4});
+// manos y brazos en primera persona: mismo estilo que el personaje (se pintan con los colores elegidos en la Taquilla, ver vmSync en 10-personaje-robot.js)
+const mGlove=new THREE.MeshStandardMaterial({color:0xe8542a,roughness:.4,metalness:.35});
+const mSleeve=new THREE.MeshStandardMaterial({color:0xe8542a,roughness:.4,metalness:.35});
+const mArmB=new THREE.MeshStandardMaterial({color:0x7a2a12,roughness:.35,metalness:.65});     // articulaciones
+const mArmC=new THREE.MeshStandardMaterial({color:0xffcc33,roughness:.4,metalness:.45});      // muñequera de color
+const mArmV=new THREE.MeshBasicMaterial({color:0x2be6ff});                                    // luz del antebrazo
 /* ===== armas con más definición (inspiradas en TF2 y Quake): piezas redondeadas, partes que se mueven y manos de verdad =====
    Cada arma es un grupo; las piezas móviles son subgrupos con nombre (pump, mag, bolt, slide, drum, cell, brl, cock, rh).
    Todo lo que no se mueve se fusiona en una sola malla por material, así un arma con 80 piezas cuesta unas pocas llamadas de dibujo. */
@@ -38,6 +42,26 @@ const vPoly=VMAT(0x26282c,{shininess:14,specular:0x222222}),vBrass=VMAT(0xb08a3e
 const vOD=VMAT(0x5b6339,{shininess:18,specular:0x2a2a1a}),vODd=VMAT(0x3a4026,{shininess:14}),vRL=VMAT(0x6c705c,{shininess:26,specular:0x3a3a2e}),vRLd=VMAT(0x3f4237,{shininess:20});
 const vRed=VMAT(0xa8291c,{shininess:34}),vWoodD=VMAT(0x3b2516,{shininess:10}),vSci=VMAT(0x5d636b,{shininess:70,specular:0x9aa6b4}),vSciD=VMAT(0x2c3036,{shininess:50,specular:0x55606c});
 const vRubber=VMAT(0x151515,{shininess:6,specular:0x111111});
+// acabado de las armas: acero cepillado con rayones, pintura descascarada y veta de madera (una textura de ruido por tipo, compartida, más relieve leve)
+{const mkT=(w,h,fn)=>{const t=new THREE.CanvasTexture(cv(w,h,fn));t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=4;return t;};
+  const rnd=Math.random,
+  metal=mkT(128,128,(g,w,h)=>{g.fillStyle='#e4e4e4';g.fillRect(0,0,w,h);
+    for(let i=0;i<300;i++){const v=190+rnd()*65|0;g.fillStyle='rgba('+v+','+v+','+v+','+(.1+rnd()*.12)+')';g.fillRect(rnd()*w,rnd()*h,6+rnd()*40,1);}   // cepillado
+    for(let i=0;i<12;i++){g.strokeStyle='rgba(250,250,250,'+(.15+rnd()*.2)+')';g.lineWidth=1;g.beginPath();const x=rnd()*w,y=rnd()*h;g.moveTo(x,y);g.lineTo(x+(rnd()-.5)*50,y+(rnd()-.5)*14);g.stroke();}   // rayones
+    for(let i=0;i<40;i++){g.fillStyle='rgba(60,50,40,'+(.08+rnd()*.12)+')';g.fillRect(rnd()*w,rnd()*h,1+rnd()*2,1+rnd()*2);}   // picaduras y óxido
+  }),
+  paint=mkT(128,128,(g,w,h)=>{g.fillStyle='#e8e8e8';g.fillRect(0,0,w,h);
+    for(let i=0;i<500;i++){const v=200+rnd()*55|0;g.fillStyle='rgba('+v+','+v+','+v+',.2)';g.fillRect(rnd()*w,rnd()*h,1+rnd()*2,1+rnd()*2);}   // grano
+    for(let i=0;i<16;i++){g.fillStyle='rgba(80,74,68,'+(.2+rnd()*.2)+')';g.fillRect(rnd()*w,rnd()*h,1+rnd()*4,1+rnd()*3);}   // descascarado: asoma el metal
+  }),
+  wood=mkT(64,128,(g,w,h)=>{g.fillStyle='#e2e2e2';g.fillRect(0,0,w,h);
+    for(let x=0;x<w;x+=1){const v=170+rnd()*85|0;g.fillStyle='rgba('+v+','+v+','+v+','+(.1+rnd()*.15)+')';g.fillRect(x,0,1,h);}   // veta a lo largo
+    for(let i=0;i<14;i++){g.fillStyle='rgba(50,40,30,'+(.2+rnd()*.25)+')';g.fillRect(rnd()*w,rnd()*h,1,8+rnd()*40);}
+    for(let i=0;i<30;i++){g.fillStyle='rgba(40,34,28,.35)';g.fillRect(rnd()*w,rnd()*h,1+rnd()*2,1+rnd()*2);}});   // golpes
+  const tx=(m,t)=>{m.map=t;m.needsUpdate=true;};   // solo un grano leve, sin relieve (con relieve se veían derretidas)
+  [vSteel,vSteelL,vBrass].forEach(m=>tx(m,metal));
+  [vBlack,vPoly,vOD,vODd,vRL,vRLd,vRed,vSci,vSciD,vRubber].forEach(m=>tx(m,paint));
+  tx(vWoodD,wood);}
 // coordenadas de textura por la cara dominante, escaladas a la pieza (así la veta de la madera corre a lo largo del arma)
 function vUV(geo){const p=geo.attributes.position,n=geo.attributes.normal;geo.computeBoundingBox();const b=geo.boundingBox,s=new THREE.Vector3();b.getSize(s);const uv=new Float32Array(p.count*2);
   for(let k=0;k<p.count;k++){const ax=Math.abs(n.getX(k)),ay=Math.abs(n.getY(k)),az=Math.abs(n.getZ(k));let u,v;

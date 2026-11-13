@@ -1,5 +1,7 @@
 /* =================== GEOMETRÍA DEL MAPA =================== */
 let level=null;
+let NIGHT=false;   // mapa de noche (theme.noche): linternas, ver 18-noche.js
+let MATSX=MATS;   // juego de materiales del mapa actual (las texturas «ut» solo las usan los mapas con theme.tex==='ut')
 const sky=new THREE.Mesh(new THREE.SphereGeometry(400,32,16),new THREE.MeshBasicMaterial({fog:false,side:THREE.BackSide,depthWrite:false}));sky.renderOrder=-1;scene.add(sky);
 function skyDay(){return cv(1024,512,(g,w,h)=>{
   // tarde soleada en Posadas: celeste, nubes de algodón y la ciudad baja en el horizonte
@@ -9,7 +11,7 @@ function skyDay(){return cv(1024,512,(g,w,h)=>{
   for(let x=0;x<w;x+=5){const bh=4+rnd()*rnd()*40;g.fillStyle=['#c9cdd2','#b7bcc2','#d8d4cc','#a9aeb4'][rnd()*4|0];g.fillRect(x,h*.5-bh,5,bh);}
   for(let x=0;x<w;x+=9){if(rnd()<.35){g.fillStyle='#4f6e3a';g.beginPath();g.arc(x,h*.5-2,4+rnd()*8,Math.PI,0);g.fill();}}
 });}
-const skyTex={dusk:new THREE.CanvasTexture(skyDusk()),night:new THREE.CanvasTexture(skyNight()),day:new THREE.CanvasTexture(skyDay())};
+const skyTex={dusk:new THREE.CanvasTexture(skyDusk()),night:new THREE.CanvasTexture(skyNight()),halloween:new THREE.CanvasTexture(skyHalloween()),day:new THREE.CanvasTexture(skyDay()),sunset:new THREE.CanvasTexture(skySunset())};
 function quad(g,v,nrm,uvs,shade){
   const b=g.p.length/3;
   v.forEach(q=>g.p.push(q[0],q[1],q[2]));
@@ -27,8 +29,8 @@ function brushFaces(g,b,sc,ox,oy,oz){
   let nx=0,ny=1,nz=0;
   if(b.ramp){const r=b.ramp,L=r.axis==='x'?x1-x0:z1-z0,k=(r.hi-r.lo)/L*(r.dir>0?1:-1);if(r.axis==='x')nx=-k;else nz=-k;const l=Math.hypot(nx,ny,nz);nx/=l;ny/=l;nz/=l;}
   const U=(a,c)=>[(a+ox)/sc,(c+oz)/sc];
-  quad(g,[[x0,t00,z0],[x1,t10,z0],[x1,t11,z1],[x0,t01,z1]],[nx,ny,nz],[U(x0,z0),U(x1,z0),U(x1,z1),U(x0,z1)],1);
-  if(b.min[1]>-5.9)quad(g,[[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1]],[0,-1,0],[U(x0,z0),U(x1,z0),U(x1,z1),U(x0,z1)],.55);
+  if(b.mat!=='rail')quad(g,[[x0,t00,z0],[x1,t10,z0],[x1,t11,z1],[x0,t01,z1]],[nx,ny,nz],[U(x0,z0),U(x1,z0),U(x1,z1),U(x0,z1)],1);
+  if(b.min[1]>-5.9&&b.mat!=='rail')quad(g,[[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1]],[0,-1,0],[U(x0,z0),U(x1,z0),U(x1,z1),U(x0,z1)],.55);
   const V=(a,y)=>[a/sc,(y+oy)/sc];
   quad(g,[[x0,y0,z0],[x0,y0,z1],[x0,t01,z1],[x0,t00,z0]],[-1,0,0],[V(z0+oz,y0),V(z1+oz,y0),V(z1+oz,t01),V(z0+oz,t00)],.8);
   quad(g,[[x1,y0,z0],[x1,y0,z1],[x1,t11,z1],[x1,t10,z0]],[1,0,0],[V(z0+oz,y0),V(z1+oz,y0),V(z1+oz,t11),V(z0+oz,t10)],.8);
@@ -39,11 +41,13 @@ function geoOf(d){const geo=new THREE.BufferGeometry();geo.setAttribute('positio
 const matCache={};
 function matOf(m){
   if(matCache[m])return matCache[m];
-  const md=MATS[m]||MATS.wall;
+  const md=MATSX[m]||MATSX.wall;
   const mat=new THREE.MeshPhongMaterial({map:md.t,vertexColors:true,shininess:md.shin,specular:0x2a241d});
   if(md.alpha){mat.transparent=true;mat.side=THREE.DoubleSide;if(m==='tube'){mat.depthWrite=false;}else mat.alphaTest=.4;}
   if(md.em){mat.emissiveMap=md.em;mat.emissive=new THREE.Color(m==='led'?0xbbbbbb:0xffffff);}
   if(md.emc)mat.emissive=new THREE.Color(md.emc);
+  if(md.bump&&S.q){mat.bumpMap=md.t;mat.bumpScale=md.bump;}   // relieve (solo la variante «ruina» y con las luces en calidad alta)
+  if(md.spec){mat.specularMap=md.spec;mat.specular=new THREE.Color(0x99a0aa);}   // zonas húmedas que reflejan más la luz
   return matCache[m]=mat;
 }
 const padTex=new THREE.CanvasTexture(cv(64,64,(g)=>{g.fillStyle='#120a06';g.fillRect(0,0,64,64);g.strokeStyle='#ffb12b';g.lineWidth=4;g.beginPath();g.arc(32,32,26,0,7);g.stroke();g.fillStyle='#ffb12b';for(let k=0;k<3;k++){g.beginPath();g.moveTo(32,8+k*14);g.lineTo(44,20+k*14);g.lineTo(38,20+k*14);g.lineTo(32,14+k*14);g.lineTo(26,20+k*14);g.lineTo(20,20+k*14);g.fill();}}));
@@ -69,25 +73,30 @@ function updLightSlots(dt){
     sl.cur=Math.min(1,sl.cur+dt*5);l.intensity=v.intensity*sl.cur;}
 }
 function loadMap(id){
-  const M=C.MAPS[id]||C.MAPS.represa;clearShards();initLightSlots();for(const sl of lightSlots){sl.v=null;sl.l.intensity=0;}slotT=0;
+  const M=C.MAPS[id]||C.MAPS.represa;clearShards();clearCrown();clearStorm();for(const o of DM.orbs.values())scene.remove(o.g);for(const z of DM.zones)scene.remove(z.q);initLightSlots();for(const sl of lightSlots){sl.v=null;sl.l.intensity=0;}slotT=0;
   if(level){scene.remove(level.group);level.group.traverse(o=>{if(o.geometry)o.geometry.dispose();});}
   W=M;
   const group=new THREE.Group();scene.add(group);
   const L={group,items:[],pads:[],teles:[],lavaTexs:[],waterTexs:[],movers:[],club:null,maplights:[],flags:[]};
   const th=M.theme;
+  {const ut=th.tex==='ut'||th.tex==='ruina';UTcur=!ut?null:th.tex==='ruina'?(UTruin||(UTruin=buildUT(true))):(UTset||(UTset=buildUT()));const nm=ut?UTcur.mats:MATS;if(nm!==MATSX){MATSX=nm;for(const k in matCache)delete matCache[k];}}
   scene.fog.color.setHex(th.fog);scene.fog.density=th.fogD;scene.background.setHex(th.fog);
-  sky.material.map=skyTex[th.sky]||skyTex.dusk;sky.material.needsUpdate=true;
-  const groups={};
+  sky.material.map=skyTex[th.sky]||skyTex.dusk;sky.material.color.setScalar(th.skyDim||1);sky.material.needsUpdate=true;   // skyDim: oscurece el cielo (noche cerrada)
+  const groups={},neon=[];
   for(const b of M.brushes){
-    if(NEON[b.mat]){const m=new THREE.Mesh(new THREE.BoxGeometry(b.max[0]-b.min[0],b.max[1]-b.min[1],b.max[2]-b.min[2]),new THREE.MeshBasicMaterial({color:NEON[b.mat]}));m.position.set((b.min[0]+b.max[0])/2,(b.min[1]+b.max[1])/2,(b.min[2]+b.max[2])/2);group.add(m);continue;}
+    if(b.mat==='clip')continue;   // bloque de colisión invisible
+    // los neones van todos a una sola malla con color por vértice: el Santuario tiene decenas y antes
+    // cada uno era un dibujado aparte
+    if(NEON[b.mat]){const g=new THREE.BoxGeometry(b.max[0]-b.min[0],b.max[1]-b.min[1],b.max[2]-b.min[2]);g.translate((b.min[0]+b.max[0])/2,(b.min[1]+b.max[1])/2,(b.min[2]+b.max[2])/2);neon.push([g,NEON[b.mat]]);continue;}
     if(b.mover)continue;
     const g=groups[b.mat]||(groups[b.mat]={p:[],n:[],u:[],c:[],i:[]});
-    brushFaces(g,b,(MATS[b.mat]||MATS.wall).sc);
+    brushFaces(g,b,(MATSX[b.mat]||MATSX.wall).sc);
   }
   for(const m in groups)group.add(new THREE.Mesh(geoOf(groups[m]),matOf(m)));
+  if(neon.length)group.add(new THREE.Mesh(dmGeo(neon),new THREE.MeshBasicMaterial({vertexColors:true})));
   for(const b of M.movers){
     const m0=b.mover,d={p:[],n:[],u:[],c:[],i:[]};
-    brushFaces(d,{min:m0.min0,max:m0.max0},(MATS[b.mat]||MATS.wall).sc,m0.min0[0],m0.min0[1],m0.min0[2]);
+    brushFaces(d,{min:m0.min0,max:m0.max0},(MATSX[b.mat]||MATSX.wall).sc,m0.min0[0],m0.min0[1],m0.min0[2]);
     const mesh=new THREE.Mesh(geoOf(d),matOf(b.mat));group.add(mesh);
     const glow=new THREE.Mesh(new THREE.BoxGeometry(m0.max0[0]-m0.min0[0]+.06,.06,m0.max0[2]-m0.min0[2]+.06),new THREE.MeshBasicMaterial({color:0x2be6ff}));
     glow.position.set((m0.max0[0]-m0.min0[0])/2,-.03,(m0.max0[2]-m0.min0[2])/2);mesh.add(glow);
@@ -95,7 +104,7 @@ function loadMap(id){
   }
   for(const l of M.lava){
     const w=l.max[0]-l.min[0],d=l.max[2]-l.min[2];
-    const t=(l.water?waterTex:lavaTex).clone();t.needsUpdate=true;t.repeat.set(w/(l.water?8:4),d/(l.water?8:4));(l.water?L.waterTexs:L.lavaTexs).push(t);
+    const t=(l.water?(UTcur&&MATSX===UTcur.mats?UTcur.water:waterTex):lavaTex).clone();t.needsUpdate=true;t.repeat.set(w/(l.water?8:4),d/(l.water?8:4));(l.water?L.waterTexs:L.lavaTexs).push(t);
     const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),l.water?new THREE.MeshPhongMaterial({map:t,shininess:120,specular:0xffd0a0,transparent:true,opacity:.92}):new THREE.MeshBasicMaterial({map:t,fog:false}));
     m.rotation.x=-Math.PI/2;m.position.set((l.min[0]+l.max[0])/2,l.max[1],(l.min[2]+l.max[2])/2);group.add(m);
   }
@@ -109,10 +118,14 @@ function loadMap(id){
   group.add(new THREE.HemisphereLight(th.hemi[0],th.hemi[1],th.hemi[2]*(shOn?.75:1)));
   if(th.sun){const sun=new THREE.DirectionalLight(th.sunC||0xffb48a,(th.sunI||.35)*(shOn?1.7:1));
     const B=M.bounds,cx=(B.x0+B.x1)/2,cz=(B.z0+B.z1)/2,R=Math.max(B.x1-B.x0,B.z1-B.z0)*.62;
-    sun.position.set(cx-40,60,cz+28);sun.target.position.set(cx,0,cz);group.add(sun.target);
-    sun.castShadow=S.sh!==0;sun.shadow.mapSize.set(2048,2048);
-    Object.assign(sun.shadow.camera,{left:-R,right:R,top:R,bottom:-R,near:5,far:160});sun.shadow.camera.updateProjectionMatrix();
-    sun.shadow.bias=-.0006;sun.shadow.normalBias=.04;L.sun=sun;group.add(sun);}
+    const sp=th.sunPos||[-40,60,28];sun.position.set(cx+sp[0],sp[1],cz+sp[2]);sun.target.position.set(cx,0,cz);group.add(sun.target);
+    sun.castShadow=S.sh!==0;sun.shadow.mapSize.set(th.shadowRes||2048,th.shadowRes||2048);
+    Object.assign(sun.shadow.camera,{left:-R,right:R,top:R,bottom:-R,near:5,far:th.shFar||160});sun.shadow.camera.updateProjectionMatrix();
+    sun.shadow.bias=th.shBias!=null?th.shBias:-.0006;sun.shadow.normalBias=th.shNormal!=null?th.shNormal:.04;L.sun=sun;group.add(sun);}
+  // modo noche: 3 focos reales (el mío y los de los 2 rivales más cercanos); se mueven en updNight
+  NIGHT=!!th.noche;$('shopHint').innerHTML=NIGHT?'B · TIENDA<br>G · LINTERNA':'B · TIENDA';document.body.classList.toggle('noche',NIGHT);   // viñeta y grano de película en los mapas de noche
+  if(NIGHT)L.spots=[[3.2,28,.4],[2.4,20,.38],[2.4,20,.38]].map(([i,d,a])=>{const sp=new THREE.SpotLight(0xfff0cc,i,d,a,.6,1.15);sp.castShadow=false;sp.userData.i0=i;sp.userData.pid=null;group.add(sp,sp.target);return sp;});
+  try{for(const v of vms)if(v.userData.lin)v.userData.lin.visible=NIGHT;}catch(e){}
   // todo el mapa recibe sombra y la proyecta (menos lo transparente y los neones)
   group.traverse(o=>{if(!o.isMesh)return;const mt=o.material;if(mt&&(mt.transparent||mt.isMeshBasicMaterial))return;o.castShadow=true;o.receiveShadow=true;});
   // las sombras del mapa se calculan una sola vez (el mapa no se mueve): las plataformas móviles reciben sombra pero no la proyectan
@@ -138,13 +151,13 @@ function loadMap(id){
     m.rotation.y=Math.atan2(p.t[0]-p.x,p.t[2]-p.z)+Math.PI;m.position.set(p.x,p.y+.07,p.z);group.add(m);L.pads.push({m,p});
   }
   for(const t of M.teles){
-    const ring=new THREE.Mesh(new THREE.TorusGeometry(t.r,.08,8,24),new THREE.MeshBasicMaterial({color:0x6fd8ff}));ring.rotation.x=Math.PI/2;ring.position.set(t.x,t.y+.05,t.z);group.add(ring);
-    const disc=new THREE.Mesh(new THREE.CircleGeometry(t.r,24),new THREE.MeshBasicMaterial({color:0x2a8cff,transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false}));disc.rotation.x=-Math.PI/2;disc.position.set(t.x,t.y+.04,t.z);group.add(disc);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(t.r,.08,8,24),new THREE.MeshBasicMaterial({color:t.color==='yellow'?0xffc83a:0x6fd8ff}));ring.rotation.x=Math.PI/2;ring.position.set(t.x,t.y+.05,t.z);if(!t.color)group.add(ring);
+    const disc=new THREE.Mesh(new THREE.CircleGeometry(t.r,24),new THREE.MeshBasicMaterial({color:t.color==='yellow'?0xffa81a:0x2a8cff,transparent:true,opacity:t.color?.32:.5,blending:THREE.AdditiveBlending,depthWrite:false}));disc.rotation.x=-Math.PI/2;disc.position.set(t.x,t.y+.04,t.z);group.add(disc);
     L.teles.push(t);
   }
   L.items=M.items.map(it=>{const g=buildItem(it.type);g.position.set(it.x,it.y+.6,it.z);group.add(g);return {g,it,ty:it.type,ph:Math.random()*6};});
   if(th.club)L.club=buildClub(group);
-  if(MODE==='ctf'&&M.flags)L.flags=M.flags.map((f,i)=>buildFlag(group,i,f));
+  domLoad(group,M);mnClear();   // Captura el dominio: bosses, generadores, barreras y arte
   level=L;
   $('bTitle').textContent=M.name;
   warmShaders();
@@ -160,9 +173,17 @@ function warmShaders(){
     add(buildPlayer({c:'#e8542a',v:'#ffffff',a:1},'x',true).g);
     for(const k of ['rocket','grenade','bullet','molotov']){spawnProjVis(k,[0,-999,0],[0,0,0],false,-1,0);}
     const vis=vms.map(v=>v.visible);vms.forEach(v=>v.visible=true);
+    if(typeof mnBuild==='function')for(const tm of [0,1])for(const k of [0,1,2])add(mnBuild(tm,k).g);
+    if(typeof mercBuild==='function'&&typeof mercVa==='function'&&mercVa())mercBuild();
+    // TODO se dibuja una vez: sin recorte por cámara y con lo oculto visible, así ningún shader se compila en medio
+    // de la partida (antes solo se precalentaba lo que la cámara veía al cargar, y el resto daba tirones la primera vez)
+    const ocultos=[],corte=[];
+    const destapar=r=>r.traverse(o=>{if(!o.visible){ocultos.push(o);o.visible=true;}if(o.frustumCulled){corte.push(o);o.frustumCulled=false;}});
+    destapar(scene);destapar(wScene);if(typeof MD!=='undefined'&&MD.sc)destapar(MD.sc);
     // render de verdad a una textura chiquita (renderer.compile falla con las sombras en three r128)
     const rt=warmShaders.rt||(warmShaders.rt=new THREE.WebGLRenderTarget(8,8));
-    try{renderer.shadowMap.needsUpdate=true;renderer.setRenderTarget(rt);renderer.clear();renderer.render(scene,camera);renderer.render(wScene,wCam);}finally{renderer.setRenderTarget(null);}
+    try{renderer.shadowMap.needsUpdate=true;renderer.setRenderTarget(rt);renderer.clear();renderer.render(scene,camera);renderer.render(wScene,wCam);if(typeof MD!=='undefined'&&MD.sc)renderer.render(MD.sc,MD.cam);}
+    finally{renderer.setRenderTarget(null);ocultos.forEach(o=>o.visible=false);corte.forEach(o=>o.frustumCulled=true);}
     vms.forEach((v,i)=>v.visible=vis[i]);
   }catch(e){console.warn('warmShaders',e);}
   // pase lo que pase, el muñeco de prueba y los proyectiles de prueba se sacan (si no, quedaba un "bot congelado" en el mapa)

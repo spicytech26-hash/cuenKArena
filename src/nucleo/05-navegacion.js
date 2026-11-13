@@ -4,20 +4,21 @@
 const NAVS = {};
 function inLava(W, x, y, z) { for (const l of W.lava) if (x > l.min[0] && x < l.max[0] && z > l.min[2] && z < l.max[2] && y < l.max[1] + .05 && y > l.min[1] - .5) return true; return false; }
 function airtime(dy) { const disc = K.JUMP * K.JUMP - 2 * K.GRAV * dy; if (disc < 0) return 0; return (K.JUMP + Math.sqrt(disc)) / K.GRAV; }
-function buildNav(W) {
+function buildNav(W) { const prev = setPasa(-2); try { return buildNav0(W); } finally { setPasa(prev); } }   // las barreras no cuentan: se prohíben por equipo al buscar el camino
+function buildNav0(W) {
   const X0 = Math.floor(W.bounds.x0), Z0 = Math.floor(W.bounds.z0), NX = Math.ceil(W.bounds.x1) - X0, NZ = Math.ceil(W.bounds.z1) - Z0;
   const cells = new Array(NX * NZ), nodes = [];
   // bloques agrupados por columna (x) para no recorrer todo el mapa en cada celda: el armado tarda varias veces menos
   const cols = [];
-  for (let cx = 0; cx < NX; cx++) { const qx = X0 + cx + .5 + .013; cols.push(W.brushes.filter(b => !b.nc && !b.mover && b.min[0] < qx && b.max[0] > qx)); }
+  for (let cx = 0; cx < NX; cx++) { const qx = X0 + cx + .5 + .013; cols.push(W.brushes.filter(b => !b.nc && !b.mover && !b.nonav && !b.bar && b.min[0] < qx && b.max[0] > qx)); }
   for (let cz = 0; cz < NZ; cz++) for (let cx = 0; cx < NX; cx++) {
     const px = X0 + cx + .5, pz = Z0 + cz + .5, tops = [];
     for (const b of cols[cx]) {
       // se mira un poquito corrido del centro para no caer justo en el borde entre dos escalones
       const qx = px + .013, qz = pz + .017;
-      if (b.nc || b.mover || !(b.min[0] < qx && b.max[0] > qx && b.min[2] < qz && b.max[2] > qz)) continue;
+      if (b.nc || b.mover || b.nonav || !(b.min[0] < qx && b.max[0] > qx && b.min[2] < qz && b.max[2] > qz)) continue;
       const t = topAt(b, qx, qz, qx, qz);
-      if (t > 12.5) continue;
+      if (t > (W.navMaxY || 12.5)) continue;   // navMaxY: mapas muy altos (Pyramid) suben el tope de los nodos de navegación
       if (!tops.some(q => Math.abs(q - t) < .05)) tops.push(t);
     }
     const list = [];
@@ -42,13 +43,13 @@ function buildNav(W) {
       if (m) {
         if (dx && dz && (!near(at(cx + dx, cz), n.y, .6) || !near(at(cx, cz + dz), n.y, .6))) continue;
         // todos los nodos vecinos a menos de un escalón (en las escaleras puede haber dos en la misma celda)
-        for (const q of at(cx + dx, cz + dz)) if (Math.abs(q.y - n.y) <= .6) n.l.push([q.id, dx && dz ? 1.414 : 1, 0]);
+        for (const q of at(cx + dx, cz + dz)) if (Math.abs(q.y - n.y) <= .6 && !solidAt(W, (n.x + q.x) / 2, Math.max(n.y, q.y) + K.STEP + .01, (n.z + q.z) / 2, .3, 1.75 - K.STEP)) n.l.push([q.id, dx && dz ? 1.414 : 1, 0]);   // y que no haya una valla o pared finita justo en el límite entre las dos celdas (si no, el bot queda empujando contra ella)
       } else if (!dx || !dz) {
         edge = true;
         let low = null;
         for (const q of at(cx + dx, cz + dz)) if (q.y < n.y - .6 && q.y > n.y - 14 && (!low || q.y > low.y)) low = q;
         // solo si el cuerpo entra en la columna de al lado a la altura de partida (no atravesar paredes sobre puertas)
-        if (low && !solidAt(W, low.x, n.y + .05, low.z, .3, 1.7)) n.l.push([low.id, 1.5, 1]);
+        if (low && !solidAt(W, low.x, n.y + .05, low.z, .3, 1.7) && !solidAt(W, (n.x + low.x) / 2, n.y + K.STEP + .01, (n.z + low.z) / 2, .3, 1.75 - K.STEP)) n.l.push([low.id, 1.5, 1]);   // sin baranda ni valla en el borde
       }
     }
     if (edge) edges.push(n);
@@ -91,13 +92,41 @@ function buildNav(W) {
     const a = nodeAt(t.x, t.y + .1, t.z), b = nodeAt(t.to[0], t.to[1] + .1, t.to[2]);
     if (a && b) a.l.push([b.id, 3, 4]);
   }
+  // gravedad cero: desde la boca del pozo de cada nivel se puede ir a la boca de cualquier otro nivel (tipo 5: el bot flota hasta ahí, ver 7-bots.js)
+  const zlev = [];
+  for (const zb of W.zerog || []) {
+    const cx = (zb.min[0] + zb.max[0]) / 2, cz = (zb.min[2] + zb.max[2]) / 2, hx = (zb.max[0] - zb.min[0]) / 2, hz = (zb.max[2] - zb.min[2]) / 2;
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const px = cx + dx * (hx + .5), pz = cz + dz * (hz + .5);
+      const rim = at(Math.floor(px) - X0, Math.floor(pz) - Z0).filter(m => m.y >= zb.min[1] && m.y <= zb.max[1]).sort((a, b) => a.y - b.y);
+      for (let i = rim.length - 2; i >= 0; i--) if (rim[i + 1].y - rim[i].y < .3) rim.splice(i, 1);   // baldosa sobre ladrillo: dos nodos casi a la misma altura, queda el de arriba
+      for (const m of rim) if (!zlev.some(y => Math.abs(y - m.y) < .05)) zlev.push(m.y);
+      for (let i = 0; i < rim.length; i++) for (let j = 0; j < rim.length; j++) if (i !== j) rim[i].l.push([rim[j].id, 3 + Math.abs(rim[j].y - rim[i].y) * .4, 5]);
+    }
+  }
+  zlev.sort((a, b) => a - b);
   // adyacencia compacta para búsquedas rápidas
   const N = nodes.length; let E = 0; nodes.forEach(n => E += n.l.length);
-  const off = new Int32Array(N + 1), to = new Int32Array(E), cost = new Float32Array(E);
+  const off = new Int32Array(N + 1), to = new Int32Array(E), cost = new Float32Array(E), ebar = new Uint8Array(E);
   let k = 0;
   nodes.forEach((n, i) => { off[i] = k; n.l.forEach(l => { to[k] = l[0]; cost[k] = l[1]; k++; }); });
   off[N] = k;
-  return { X0, Z0, NX, NZ, cells, nodes, at, nodeAt, off, to, cost };
+  // Captura el dominio: nodos que caen dentro de una barrera (bar[nodo]) y tramos que la cruzan (ebar[tramo]).
+  // Los dos hacen falta: un salto largo puede pasar por el hueco del portón sin pisar ningún nodo de adentro.
+  const bar = new Uint8Array(N), barB = W.brushes.filter(b => b.bar);
+  for (const b of barB) for (const n of nodes) if (n.x > b.min[0] && n.x < b.max[0] && n.z > b.min[2] && n.z < b.max[2] && n.y > b.min[1] - .6 && n.y < b.max[1]) bar[n.id] = b.bar.i + 1;
+  if (barB.length) for (let i = 0; i < N; i++) {
+    const n = nodes[i];
+    for (let e = off[i]; e < off[i + 1]; e++) {
+      const m = nodes[to[e]], dx = m.x - n.x, dy = m.y - n.y, dz = m.z - n.z, L = Math.hypot(dx, dy, dz) || 1e-6;
+      const ix = inv(dx / L), iy = inv(dy / L), iz = inv(dz / L);
+      for (const b of barB) {
+        // el cuerpo del jugador es alto: se prueba a la altura de los pies y a la de la cabeza
+        if (slab(b, n.x, n.y + .2, n.z, ix, iy, iz, L) >= 0 || slab(b, n.x, n.y + 1.5, n.z, ix, iy, iz, L) >= 0) { ebar[e] = b.bar.i + 1; break; }
+      }
+    }
+  }
+  return { X0, Z0, NX, NZ, cells, nodes, at, nodeAt, off, to, cost, zlev, bar, ebar };
 }
 function getNav(W) { W = W || WORLD; if (!NAVS[W.id]) NAVS[W.id] = buildNav(W); return NAVS[W.id]; }
 function findNode(nav, x, y, z) {
@@ -114,12 +143,13 @@ function findNode(nav, x, y, z) {
     }
   return best;
 }
-function dijkstra(nav, start) {
+// ban (opcional): ban[barrera + 1] = 1 si esa barrera está cerrada para el que busca el camino
+function dijkstra(nav, start, ban) {
   // los arreglos se reutilizan entre búsquedas (menos basura = menos pausas del recolector)
   const N = nav.nodes.length;
   if (!nav._dist) { nav._dist = new Float64Array(N); nav._prev = new Int32Array(N); nav._hk = new Float64Array(1024); nav._hv = new Int32Array(1024); }
   const dist = nav._dist.fill(Infinity), prev = nav._prev.fill(-1);
-  const off = nav.off, to = nav.to, cost = nav.cost;
+  const off = nav.off, to = nav.to, cost = nav.cost, bar = nav.bar, ebar = nav.ebar;
   let cap = nav._hk.length, hk = nav._hk, hv = nav._hv, size = 0;
   const push = (i, d) => {
     if (size === cap) { cap *= 2; const a = new Float64Array(cap), b = new Int32Array(cap); a.set(hk); b.set(hv); hk = nav._hk = a; hv = nav._hv = b; }
@@ -137,7 +167,7 @@ function dijkstra(nav, start) {
       hk[c] = kd; hv[c] = kv;
     }
     if (d > dist[i]) continue;
-    for (let e = off[i], ee = off[i + 1]; e < ee; e++) { const nd = d + cost[e], j = to[e]; if (nd < dist[j]) { dist[j] = nd; prev[j] = i; push(j, nd); } }
+    for (let e = off[i], ee = off[i + 1]; e < ee; e++) { const nd = d + cost[e], j = to[e]; if (ban && (bar[j] && ban[bar[j]] || ebar[e] && ban[ebar[e]])) continue; if (nd < dist[j]) { dist[j] = nd; prev[j] = i; push(j, nd); } }
   }
   return { dist, prev };
 }

@@ -56,7 +56,7 @@ function buildPanYManteca() {
   /* ---- estructura de luces (truss) a 12 m ---- */
   add(-14, 11.6, -9.5, 14, 12, -8, 'truss'); add(-14, 11.6, 8, 14, 12, 9.5, 'truss');
   add(-14, 11.6, -8, -12.5, 12, 8, 'truss'); add(12.5, 11.6, -8, 14, 12, 8, 'truss');
-  /* ---- cabina flotante con el cuádruple ---- */
+  /* ---- cabina flotante con el daño triple ---- */
   add(-2.5, 10.6, -2.5, 2.5, 11, 2.5, 'chrome');
   /* ---- partes móviles ---- */
   mover(-14.5, 6.6, -7.5, -11.5, 7, -4.5, 'lift', 0, 26, 10, 0);              // plataforma que cruza el salón

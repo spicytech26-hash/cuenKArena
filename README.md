@@ -1,20 +1,26 @@
 # CuenkArena
 
-Deathmatch online estilo Quake que corre en el navegador. Al terminar cada partida los jugadores votan el próximo mapa, entre ellos **dm3 · La Cuenca** (la Universidad de la Cuenca del Plata de Posadas, con la plaza y el edificio para recorrer por dentro), **dm1 · La Represa** (industrial, con lava) y **dm2 · Humita** (un boliche con pista LED, plataformas móviles, ascensores y subwoofers que te lanzan). Siete armas, tienda con créditos, taquilla para personalizar tu personaje, bots y movimiento con *strafe jump* y *bunny hop*.
+Deathmatch online estilo Quake que corre en el navegador. Al terminar cada partida los jugadores votan el próximo mapa, entre ellos **dm3 · La Cuenca** (la Universidad de la Cuenca del Plata de Posadas, con la plaza y el edificio para recorrer por dentro), **dm1 · La Represa** (industrial, con lava) **dm2 · Humita** (un boliche con pista LED, plataformas móviles, ascensores y subwoofers que te lanzan) y **El Cuarto Tramo** (la vieja estación de la Costanera de Posadas al atardecer, con locomotora, galería, torre de andamios, portales y el Paraná que mata). Siete armas, tienda con créditos, taquilla para personalizar tu personaje, bots y movimiento con *strafe jump* y *bunny hop*.
 
 ## Modos de juego
 
 Al tocar **Jugar online** (o **Práctica con bots**) elegís el modo. Cada modo es una sala aparte del servidor.
 
 - **Francotiradores** (mapa *snp1 · Fuertes del Cañón*): rojo contra azul, cada equipo en su establo a un lado del cañón. Solo francotirador (mata de un tiro, munición infinita) y cuchillo (con el cuchillo en la mano corrés un 30 % más rápido). Una racha de 6 bajas sin morir desbloquea la escopeta doble (tecla 2) hasta que te maten. Sin tienda y sin mira: la retícula aparece solo al apuntar con el clic derecho. Gana el primer equipo a 30 bajas o el que tenga más a los 6 minutos.
-- **Arena**: todos contra todos en La Represa, Humita y La Cuenca, con créditos y tienda. Cada partida dura **5 minutos** (online y en práctica).
+- **Arena**: todos contra todos en La Represa, Humita, La Cuenca, El Cuarto Tramo, Skatenight y Pyramid, con créditos y tienda. Cada partida dura **5 minutos** (online y en práctica) y **gana el que más frags haga**: ya no hay límite de frags que la corte antes. Con **cartas de mejora** (ver más abajo).
 - **Gungame**: todos arrancan con la ametralladora y cada baja te da la siguiente arma de una lista de 20 niveles (armas fuertes primero, pistola, riel y francotirador al final, cuchillo en el último). Munición infinita, sin tienda y sin nada tirado en el mapa (ni armas, ni vida, ni blindaje). Además de la del nivel tenés siempre el cuchillo: si te matás solo, o te matan con cuchillo, bajás un nivel. Gana el primero en hacer la baja número 20.
-- **Team Deathmatch**: rojo contra azul, cada baja suma para el equipo hasta llegar al límite. Online la sala espera a tener **4 jugadores** (mientras tanto hay calentamiento y las bajas no cuentan) y arranca con una cuenta regresiva. El límite de bajas lo elige el primero en entrar desde la pantalla de modos, y se puede cambiar desde el menú (Esc) mientras esperan.
-- **Captura la bandera**: rojo (Posadas) contra azul (Encarnación) en **ctf1 · El Puente**. Robá la bandera rival del fortín enemigo y llevala hasta el pedestal de tu base (cuenta aunque tu bandera esté robada). Si matan al que la lleva, la bandera queda tirada 20 segundos: si la toca su equipo vuelve a la base. Gana el primer equipo en capturarla 3 veces (se cambia con `/caplimit N`). No hay fuego amigo y los equipos se equilibran solos con los bots.
+- **Team Deathmatch** (con **cartas de mejora**): rojo contra azul, cada baja suma para el equipo hasta llegar al límite. Online la sala espera a tener **4 jugadores** (mientras tanto hay calentamiento y las bajas no cuentan) y arranca con una cuenta regresiva. El límite de bajas lo elige el primero en entrar desde la pantalla de modos, y se puede cambiar desde el menú (Esc) mientras esperan.
+- **En el celular**: el juego detecta la pantalla táctil y pone los controles solo. Palanca a la izquierda para moverte, arrastrás a la derecha para mirar, y botones para disparar, saltar, agacharte, recargar, cambiar de arma, la mira, la tienda, la tabla y el chat. Se juega con el celular en horizontal.
+- **Captura el dominio** (con **cartas de mejora**): rojo contra azul en **dom1 · El Santuario Dual**, el mapa más grande del juego (188 × 136 m), una arena de ruinas góticas que se cruza en unos 18 segundos. Cada equipo tiene un **boss** de 14 metros en su fortaleza, detrás de tres **barreras de campo de fuerza** (rutas norte, centro y sur). Cada barrera vive de **dos generadores**: rompé los dos y esa ruta queda abierta. Entrá y matá al boss rival: la partida termina en ese instante. Si a los **15 minutos** siguen vivos los dos, gana el equipo que más lo lastimó (después desempatan barreras tiradas, generadores rotos y daño total). Las barreras frenan a los rivales y a sus disparos, pero tu equipo las cruza. El **núcleo del pecho** del boss recibe el doble de daño.
+  - **Los ataques del boss avisan antes de pegar**: marca en el piso la forma exacta del golpe, pega ahí y después se queda vendido un momento. El rojo tira un latigazo de cadena, te agarra con ella y pisa el suelo (ese se esquiva saltando); el azul suelta un pulso, orbes que te persiguen desde las puntas del halo y un barrido con el rayo del núcleo. Cuando le queda poca vida entra en **furia** y ataca más seguido.
+  - **Oleadas de minions, como en el LoL**: a los 15 s y después cada 30 s sale una oleada de cada fortaleza por los tres carriles (3 de cuerpo a cuerpo y 2 a distancia, y cada 3 oleadas uno de asedio). Marchan solos, se pelean con la oleada rival, castigan al que le pega a un compañero, se frenan en la barrera enemiga y les pegan a los generadores. Cada 3 minutos se hacen más fuertes. Además, cada generador tiene 3 guardianes fijos. El último golpe a un minion da créditos extra; no cuentan como baja.
+  - **Puestos de reabastecimiento**: en cada ruta, antes de los generadores, hay un puesto con botiquín, munición y (en la ruta del centro) un chaleco, para no tener que volver a la base.
+  - El **locutor** canta lo que pasa: que abrieron una ruta, que están rompiendo un generador tuyo, que atacan a tu boss, que el boss entró en furia y cuánto tiempo queda. En el tablero (Tab), la columna **Objetivos** muestra cuántos generadores rompió cada uno, cuántas rutas abrió, cuánto le sacó al boss y cuántos minions bajó.
+  - Reemplaza a Captura la bandera; El Puente ahora se juega en Team Deathmatch.
 
 ## Armas
 
-Como en Counter-Strike llevás **una sola arma principal** (ranura 1): arrancás con la escopeta, y si comprás otra, la reemplaza (aparecés con la comprada hasta que termina la partida; la escopeta se puede volver a elegir gratis en la tienda). Las armas tiradas en el mapa se levantan solas si todavía tenés la escopeta de base; si ya compraste otra, parate al lado y apretá **E** para cambiarla. Todos arrancan con pistola (automática, 60 balas que comparte con la ametralladora; se recargan juntando cajas de balas), escopeta y cuchillo. En Gungame la munición es infinita. Las demás se juntan del mapa o se compran.
+En las manos llevás **tres cosas**: una arma principal (ranura 1), la pistola (2) y el cuchillo (3; la molotov va en el 4 o la G). Lo que comprás en la tienda se suma a tu **inventario** y se queda toda la partida: **mantené E** para abrir la ruleta de armas (como en Doom Eternal), movés el mouse hacia el arma que querés y soltás E; la principal cambia por esa y la pistola y el cuchillo no se tocan. Arrancás con la escopeta y la ruleta crece a medida que comprás. Las armas tiradas en el mapa se levantan solas si todavía tenés la escopeta de base; si ya compraste otra, parate al lado y tocá **E** para cambiarla (un arma agarrada del piso no queda en el inventario). **Si no hay nada para agarrar, un toque de E vuelve a la principal que tenías antes** (cambio rápido: tocás de nuevo y volvés a la otra). Todos arrancan con pistola (automática, 60 balas que comparte con la ametralladora; se recargan juntando cajas de balas), escopeta y cuchillo. En Gungame la munición es infinita y hay botiquines repartidos por el mapa (vuelven a aparecer a los 20 s). Las demás se juntan del mapa o se compran.
 
 | Arma | Daño | Tiros para matar (100 de vida / con blindaje 100) |
 |---|---|---|
@@ -24,7 +30,7 @@ Como en Counter-Strike llevás **una sola arma principal** (ranura 1): arrancás
 | Ametralladora | 16 | 7 / 10 |
 | Lanzagranadas | 110 de área + 40 directo; explota al segundo. Si le pega de lleno a alguien antes de rebotar: 100 directo, explota en el acto y da ¤ 150 | 1 / 2 |
 | Lanzacohetes | 70 directo; 60 de área a los pies que baja rápido hasta 15 en el borde (4,5 m). El directo siempre pega más que tirar al piso. El rocket jump empuja igual que antes | 1 / 1 |
-| Rifle de plasma | 110 (atraviesa) | 1 / 2 |
+| Cañón de plasma | **se carga**: mantené el botón y soltá. Un toque saca 30, media carga unos 75 y la carga llena (1,2 s) 200, que mata de un tiro a cualquiera. Atraviesa. Mientras cargás vas un 25% más lento y, si te pegan, perdés la carga | 1 / 2 con la carga llena |
 | Cuchillo mariposa | 55, 99 por la espalda; el segundo tajo dentro de 4 s mata siempre; ignora el blindaje; alcance 2,6 m | 2 / 2 |
 | Francotirador | 115, 230 a la cabeza (click derecho: mira) | 1 / 2 |
 | Bomba molotov (tecla 4 o G) | se rompe al primer golpe y deja 6 s de fuego en 5 m de radio: 5,5 cada décima de segundo, unos 55 por segundo (la mitad a vos). Es de un solo uso: se compra estando vivo por ¤ 300 (3 por compra, hasta 6) y si te matan la perdés | — |
@@ -40,6 +46,7 @@ Se elige al escoger el modo (y en práctica también desde Ajustes, en plena par
 
 - **Espectador**: cuando te eliminan, primero ves al que te mató. Con **clic izquierdo** pasás a mirar por los ojos de otro jugador o bot vivo (otro clic, al siguiente), y con **Espacio** la cámara gira alrededor del jugador que mirás (el mouse la mueve, como en Counter-Strike o TF2); otro Espacio vuelve a la primera persona. Al terminar el tiempo de reaparición volvés a jugar.
 - Al terminar una partida se ve el ganador, el próximo mapa y la cuenta regresiva (25 s), con **Seguir jugando** y **Volver al menú**.
+- **Movimiento:** **Ctrl** corriendo = deslizamiento largo y rápido (no gasta stamina); **Espacio** en el aire = doble salto (cuesta un cuarto de la barra y no hay triple hasta tocar el piso); **Espacio** pegado a una pared = salto de pared (el primero es gratis; si encadenás otro antes de 1,25 s gasta un poco de stamina y sube menos; sin stamina igual salta). Si **matás mientras te deslizás** ganás un impulso de velocidad (te empuja hacia donde ibas y subís la velocidad máxima un 30 % durante 2,5 s). La barra de stamina está bajo el medidor de velocidad y se recupera sola. La mira se abre al moverte, saltar y disparar, y se cierra quieto y agachado.
 - Agacharse con **Ctrl** necesita pantalla completa: el juego la pide al empezar (se desactiva en Ajustes). Sin pantalla completa, Ctrl+W cierra la pestaña en el navegador, así que usá **C**; igual el juego pide confirmación antes de cerrar.
 - El rifle de caza se apunta con sus miras de hierro (click derecho), sin mira telescópica.
 - En La Represa, si caés al pozo de lava del centro hay dos salidas: el **géiser de magma** del medio, que burbujea para avisar y cada 3,6 s erupciona y te tira afuera (justo sobre el saltador que lleva al balcón), y **cuatro piedras de basalto** que suben y bajan por turnos: abajo quedan a ras de la lava, te subís caminando y desde arriba saltás al borde.
@@ -54,13 +61,15 @@ Se elige al escoger el modo (y en práctica también desde Ajustes, en plena par
 
 ## Créditos y tienda
 
-Cada frag da ¤ 200 (¤ 100 extra si cortás una racha de 3 y ¤ 100 extra con pistola). Arrancás con ¤ 300. Con **B** se abre la tienda: pistola y escopeta vienen gratis; el resto de las armas, el blindaje y la cartuchera doble se desbloquean y quedan tuyos hasta que termina la partida (aparecés con eso cada vez). Los precios están en `SHOP` dentro de `public/game.js`.
+Cada frag da ¤ 200 (¤ 100 extra si cortás una racha de 3 y ¤ 100 extra con pistola). Arrancás con ¤ 300. Con **B** se abre la tienda (El Mercader del Umbral): pistola y escopeta vienen gratis; el resto de las armas, el blindaje y la cartuchera doble se desbloquean y quedan tuyos hasta que termina la partida (aparecés con todo eso cada vez, con la principal que hayas dejado equipada). Los precios están en `SHOP` dentro de `public/game.js`.
 
 ## Taquilla
 
-Desde el menú: color de armadura (o uno a elección), color de visor, accesorio e **imagen en el pecho** (una foto PNG o JPG de tu dispositivo, que se recorta cuadrada al centro y se achica a 128×128 para que pese poco; cubre todo el frente del torso). En Ajustes se pueden ocultar las imágenes de los demás. El personaje de la vista previa se gira arrastrándolo (o con las flechas). Se guarda en el navegador (y en tu cuenta si iniciaste sesión) y los demás lo ven al instante.
+El personaje es un robot humanoide (casco con cuerno y visor, torso redondeado con ancla, cinturón con bolsitas, articulaciones metálicas y botas). Desde el menú elegís el color de la **armadura**, de las **partes secundarias y articulaciones** y de los **detalles y luces** (cada una con "Auto", que lo deriva del color de armadura), el color del visor, el accesorio e **imagen en el pecho** (una foto PNG o JPG de tu dispositivo, que se recorta cuadrada al centro y se achica a 128×128 para que pese poco; va en la zona plana del pecho). En Ajustes se pueden ocultar las imágenes de los demás. El personaje de la vista previa se gira arrastrándolo (o con las flechas). Se guarda en el navegador (y en tu cuenta si iniciaste sesión) y los demás lo ven al instante.
 
 ## Mira
+
+**Ajustes** está ordenado en secciones (Controles, Video, Audio, Mira y Juego). En **Controles** la sensibilidad se ajusta con el deslizador o escribiendo el valor exacto, la sensibilidad **al apuntar** (click derecho, francotirador) es aparte (1,00 = igual que sin mira), se puede invertir el eje vertical y hay una zona de prueba para ver cuánto gira la vista (click derecho = al apuntar). Al tocar **Práctica con bots** primero se elige la cantidad de bots, después el modo y por último el mapa; online, si la sala está vacía también se elige el mapa.
 
 En **Ajustes → Mira** hay 12 formas (cruz, cruz chica, cruz con punto, punto, círculo, círculo con punto, anillo punteado, horizontal, T, cruz hueca, equis y paréntesis), 8 colores o uno a elección y tamaño de 50 % a 250 %. Todas llevan un borde oscuro para verse sobre cualquier fondo.
 
@@ -143,9 +152,13 @@ Las bajas con francotirador o rifle de caza **sin apuntar con la mira** se anunc
 
 Al terminar aparece la tabla con la cuenta regresiva a la próxima partida. **Jugar de nuevo** en práctica arranca otra al instante; online marca que estás listo (se ve *2/3 jugadores listos*) y, cuando todos los que están en la sala lo apretaron, arranca sin esperar la cuenta.
 
+## Cambio de mapa por votación (Y)
+
+Con **Y** se abre la lista de mapas del modo (con foto si hay). Al elegir uno, todos ven la votación; para que cambie tienen que votar **sí todas las personas** de la partida (Y = sí, N = no, 30 s). Un solo *no* o que se acabe el tiempo la cancela. Cada uno puede pedir un cambio cada 45 s.
+
 ## Votación para echar a un jugador
 
-En las partidas online, con **Y** (el cartel *Y · KICKEAR* está arriba de *B · TIENDA*) se abre un menú con las personas de la partida: elegís a una con el número o un click y confirmás con Enter. A todos los demás les aparece a la izquierda un panel de votación con barras de sí y no, la marca de cuántos votos hacen falta y una barra del tiempo que queda. También se puede desde el menú de pausa (**Esc**) → el enlace chiquito *Votar para echar a alguien* (abajo de los botones), o con `/echar NOMBRE` en el chat. Todos ven el cartel y votan con **Y** o **N** durante 30 segundos. Pasa si vota que sí más de la mitad de los demás jugadores (hacen falta 3 personas como mínimo). La primera vez que echan a alguien en una partida puede volver a entrar enseguida, y le aparece un cartel avisándole que una segunda echada no lo dejará entrar hasta que termine la partida. Si lo echan por segunda vez, el cartel le muestra cuánto falta para que termine la partida (con cuenta regresiva) y recién ahí puede volver. Al terminar la partida se borra todo y se empieza de cero. Al echado se lo reconoce por su cuenta de Google o por su navegador, nunca por la IP ni por el nombre, así los que juegan en el mismo wifi o se llaman igual no quedan afuera. Cada jugador puede iniciar una votación cada 90 segundos.
+En las partidas online, con **K** (el cartel *K · KICKEAR* está arriba de *B · TIENDA*) se abre un menú con las personas de la partida: elegís a una con el número o un click y confirmás con Enter. A todos los demás les aparece a la izquierda un panel de votación con barras de sí y no, la marca de cuántos votos hacen falta y una barra del tiempo que queda. También se puede desde el menú de pausa (**Esc**) → el enlace chiquito *Votar para echar a alguien* (abajo de los botones), o con `/echar NOMBRE` en el chat. Todos ven el cartel y votan con **Y** o **N** durante 30 segundos. Pasa si vota que sí más de la mitad de los demás jugadores (hacen falta 3 personas como mínimo). La primera vez que echan a alguien en una partida puede volver a entrar enseguida, y le aparece un cartel avisándole que una segunda echada no lo dejará entrar hasta que termine la partida. Si lo echan por segunda vez, el cartel le muestra cuánto falta para que termine la partida (con cuenta regresiva) y recién ahí puede volver. Al terminar la partida se borra todo y se empieza de cero. Al echado se lo reconoce por su cuenta de Google o por su navegador, nunca por la IP ni por el nombre, así los que juegan en el mismo wifi o se llaman igual no quedan afuera. Cada jugador puede iniciar una votación cada 90 segundos.
 
 ## Palabras censuradas
 
@@ -164,7 +177,7 @@ Variables de entorno opcionales:
 | `TIMELIMIT` | 10 | Minutos por partida (la Arena siempre dura 6) |
 | `MAX_PLAYERS` | 16 | Jugadores máximos, contando bots |
 | `MAP` | represa | Mapa inicial de Arena: `represa` o `panymanteca` |
-| `CAPLIMIT` | 3 | Capturas para ganar en Captura la bandera |
+| `DEV` | – | Con `DEV=1` se habilitan online los comandos de prueba de Captura el dominio |
 | `GOOGLE_CLIENT_ID` | — | Activa el inicio de sesión con Google (ver *Cuentas*) |
 | `SUPABASE_URL` / `SUPABASE_KEY` | — | Dónde se guardan las cuentas (clave secreta, solo servidor) |
 | `SESSION_SECRET` | derivada | Clave para firmar las sesiones |
@@ -179,7 +192,7 @@ Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 
 | W A S D | moverse |
 | Espacio | saltar (mantenelo para encadenar saltos) |
 | Mouse / click | apuntar / disparar |
-| 1 · 2 · 3 · 4, rueda, Q | 1 arma principal, 2 pistola, 3 cuchillo (también V), 4 molotov. Q vuelve al arma que tenías antes. En Gungame: 1 el arma del nivel y 3 el cuchillo (acuchillar baja un nivel al otro) |
+| 1 · 2 · 3 · 4, rueda, Q | 1 arma principal, 2 pistola, 3 cuchillo (también V), 4 molotov. Q vuelve al arma que tenías antes. En Gungame: 1 el arma del nivel y 3 el cuchillo (acuchillar baja un nivel al otro). **Mientras hay cartas para elegir, 1 · 2 · 3 eligen carta** |
 | E | agarrar el arma tirada al lado: reemplaza tu principal hasta que morís (al reaparecer volvés a tener la comprada). Si tenías un arma principal (comprada o levantada, no la escopeta de base), queda tirada en el mismo lugar donde estaba la que agarraste, para que otro la levante o la vuelvas a cambiar |
 | F | inspeccionar el arma (como en CS o Valorant) |
 | F o V | cuchillo |
@@ -187,11 +200,13 @@ Comandos en el chat (tecla T): `/bots 6`, `/bots auto`, `/skill 2`, `/fraglimit 
 | R | recargar la escopeta doble |
 | Click derecho | mira del francotirador: un toque la deja puesta, otro la saca; si lo mantenés, se saca al soltar |
 | G | bomba molotov |
-| Y | online: abre el menú para elegir a quién echar (número o click, Enter confirma). Si hay una votación en la que no votaste, Y es *sí* |
-| N | votar *no* en la votación para echar |
+| K | online: abre el menú para elegir a quién echar (número o click, Enter confirma) |
+| Y | abre la lista de mapas del modo para pedir un **cambio de mapa**: se abre una votación de 30 s y cambia solo si votan *sí* todas las personas (si estás solo, cambia al instante). Si hay una votación en la que no votaste, Y es *sí* |
+| N | votar *no* en una votación (echar o cambiar de mapa) |
 | B | tienda |
-| Tab | tabla de frags |
+| Tab | tabla de frags y, abajo, **El Grimorio del Umbral** con las cartas que tenés y sus números (solo en los modos con cartas) |
 | T o Enter | chat |
+| G | linterna (solo en Skatenight) |
 | + / − | agregar o sacar bots (solo en práctica) |
 | Esc | menú y ajustes |
 
@@ -221,7 +236,7 @@ La práctica con bots del menú corre la misma clase `Game` dentro del navegador
 
 **Con el editor (sin programar):** abrí `editor.html` (hay un link abajo en el menú del juego). Dibujás bloques desde arriba, ponés ítems, apariciones y saltadores, lo probás en práctica con un botón y lo exportás como archivo `.js` que va en `src/nucleo/02-mapas/`.
 
-**A mano:** cada mapa es un archivo en `src/nucleo/02-mapas/` (`1-represa.js`, `2-humita.js`, `3-lacuenca.js`, `4-puente.js`, `5-fuertes.js`). Todo son cajas, como los *brushes* de Quake:
+**A mano:** cada mapa es un archivo en `src/nucleo/02-mapas/` (`1-represa.js`, `2-humita.js`, `3-lacuenca.js`, `4-puente.js`, `5-fuertes.js`, `6-cuartotramo.js`, `7-skatenight.js`, `8-pyramid.js`). Todo son cajas, como los *brushes* de Quake:
 
 - `add(x0, y0, z0, x1, y1, z1, 'material')` agrega un bloque sólido.
 - `stairs(...)`, `ramp(...)` y `wall(... , [puertas])` arman escaleras, rampas y paredes con aberturas.
@@ -268,6 +283,51 @@ Los ítems de ayuda tienen forma propia: el **blindaje** es un escudo verde, el 
 ## Votación del próximo mapa
 
 En la pantalla final hay una tarjeta por cada mapa del modo, con su nombre y una foto chiquita del mapa (sacadas con el mismo motor del juego, en `public/maps/`). Se vota con un click o con 1, 2, 3; cada tarjeta muestra los votos y una estrella en el que va ganando, y se puede cambiar el voto. Gana el más votado; si hay empate entre los más votados, o si nadie vota, el mapa sale **al azar**.
+
+## El Cuarto Tramo (mapa nuevo)
+
+Inspirado en el cuarto tramo de la Costanera de Posadas, **al atardecer** (cielo naranja, rosa y violeta, sol bajo y sombras largas). Mapa grande (unos 124 × 84 m) pensado para moverse rápido, con varios caminos a distintas alturas. Se juega en **Arena** y **Gungame**.
+- **Estación de ladrillo** de dos plantas: galería cubierta abajo y **balcón corrido a 6 m con barandas** arriba, con puertas y ventanas a las habitaciones altas. Adentro hay un hall con escaleras y dos alas con habitaciones en planta baja y alta.
+- **Cómo subir al balcón:** dos **escaleras de reja** frente a la fachada (una a cada lado de la locomotora), el **andamio del oeste** (plataforma a 3 m con la megasalud), la **torre del este** (plataforma a 3 m con dos rifles de plasma, pasarela a 6 m con puerta al piso alto, y mirador a 9 m con el francotirador y los cohetes) y un **saltador** de cada lado.
+- **Andén con vías y la locomotora «La Posadeña»**: elevada sobre el chasis y las ruedas rojas, con caldera redonda y chimenea. La cabina del maquinista está a 1,6 m (se sube por escalones), se atraviesa por las dos puertas y guarda el daño triple; arriba de la caldera hay un botiquín (se sube con los cajones).
+- **Vereda y costanera:** vereda de ladrillo bajo la galería y, más al sur, el paseo elevado con baldosas, bancos, glorietas, palmeras, farolas y gradas hasta el agua.
+- **El Paraná** al sur y al este, sin rejas: el agua llega hasta el horizonte y mata al instante. Cada muelle guarda una armadura pesada.
+- **Adentro:** el **hall** tiene un atrio abierto en el medio (arriba, un corredor con baranda alrededor; el arma del centro está sobre un altar y dos saltadores te suben al corredor). Cada **ala** tiene en planta baja un entrepiso de madera a 3 m (escalera y saltador), mostradores, bancos y muros bajos de cobertura, con ventanas al andén; en planta alta, columnas, mesa larga y estantes. Cada ala también tiene su **escalera interna** al piso alto. El **alero de chapa** sobre el balcón se pisa (pasarela alta a 10 m, se llega desde el mirador de la torre este).
+- **Orilla segura:** el agua está casi a ras de la costanera, así que tocarla mata al instante. Barandas bajas que se saltan y tres carteles de «prohibido nadar» frenan al que viene corriendo. La valla del oeste tiene un muro invisible por arriba.
+- **Al oeste** hay una valla transparente: del otro lado la costanera sigue (paseo, farolas, bancos, árboles y casas), pero solo se ve.
+- **Detalles de la estación real:** alero de chapa sobre el balcón con columnas de hierro, marcos blancos en puertas y ventanas, canteros con plantas, banderines, farolas con farol, buzón, cartel «POSADAS», banderas de Argentina y Misiones, y lanchas sobre el río.
+- **Dos portales enfrentados** a campo abierto: el amarillo en el andén oeste y el azul en el andén este. Son energía pura flotando a 1,5 m del suelo (sin marco ni base): vórtice en espiral, borde de luz y partículas cuadradas, y siempre te miran de frente. Entrás por uno y salís delante del otro.
+- **El techo del edificio es inalcanzable** (ni con rocket jump). **Barandas físicas** en balcones, atrio, entrepiso, andamios y alero (se pueden saltar, no se atraviesan) con entradas donde llegan las escaleras y los saltadores. Los saltadores de la galería están probados con la física real, desde cualquier punto del disco.
+- **Del otro lado de la valla del oeste** la costanera sigue de verdad (suelo, vías, galpones de la estación, farolas, palmeras y árboles) hasta perderse en la niebla.
+- **Texturas «Unreal Tournament lovecraftiano»** solo en este mapa (con zonas húmedas que reflejan la luz, baranda transparente, brillos en las farolas, enredaderas bajo el alero y brillos sobre el río): ladrillo mugriento con musgo, hormigón húmedo con grietas, metal oxidado con pátina verdosa, madera gastada, yeso con manchas de humedad y runas apenas visibles, y un río negro verdoso. Los demás mapas conservan sus texturas.
+- Los botones del menú y la votación lo toman solos; la foto de la votación es opcional (`public/maps/cuartotramo.jpg`).
+
+## Skatenight (mapa nuevo, de noche)
+
+Inspirado en el **skatepark de la Costanera de Posadas**, pero **abandonado y de noche cerrada**: casi no hay luz (cielo, ambiente y reflectores apagados, apenas una luna), con **niebla azulada muy espesa** (a unos 20 m ya se pierde la vista) y **nubes de niebla suaves** (de borde difuminado, sin bloques) flotando bajo y dentro de los pozos. Gráficos: relieve en las texturas (las grietas y juntas se marcan con la linterna), hormigón de doble resolución, viñeta y grano de película apenas visibles. Sin linterna no se ve casi nada. Se juega en **Arena** y **Gungame**. Es un mapa grande (unos 112 × 94 m) hecho para moverse, con varios niveles.
+- **Linterna en cada arma (solo en este mapa):** las 11 armas llevan una linterna táctica **montada al costado del caño con su soporte** (se ve en pantalla) y un foco real: alumbrás lo que apuntás y el resto queda a oscuras. A los rivales los ves por **su haz de luz y el brillo del lente**, que pega fuerte cuando te apuntan a vos; el visor y el pecho de los jugadores se apagan (solo se ven si están a menos de 5 m o los alumbrás) y el nombre aparece solo si los alumbrás. Los dos rivales más cercanos alumbran de verdad el escenario. Los bots ven hasta 30 m. (Con las luces en calidad baja solo anda tu linterna.) **Susto:** la linterna alcanza unos 28 m (con cono cerrado) y **titila** de vez en cuando; los rivales **no se ven**: su cuerpo solo aparece a menos de 4 m o si los alumbrás (hasta 24 m), y lo único que los delata de lejos es el haz corto y el brillo de su lente (hasta 26 m). Hay ambiente sonoro de noche: viento con ráfagas, una capa de niebla, crujidos de metal, golpes lejanos, susurros, pasos lejanos de alguien que no ves, **pasos de los rivales** (se oyen hasta 24 m y agachado no suenan) y un **tren que pasa a lo lejos** cada minuto o dos, con bocina y traqueteo. **La G prende y apaga tu linterna** (en este mapa el chat se abre solo con Enter). El viento, los pasos lejanos y el tren suenan **solo en este mapa**.
+- **Armas con acabado nuevo:** grano leve en el acero, la pintura y la madera, sin relieve.
+- **Plaza de concreto** con un **pozo en L al oeste** (el bowl grande, un canal y el bowl chico forman un solo pozo de 3 m de profundidad, con bruma), un **pozo en L grande al sureste** (3,2 m, con un bloque adentro para saltar), tres **pirámides**, un **spine** al centro, una caja de *bank to ledge* con el cartel «PROHIBIDO NIÑOS ZOMBIES», **bancos con terraza** contra las vallas del oeste y del este y una escalera con terraza. La tribuna de 10 gradas al norte (hasta 5 m) tiene pasillo y baranda sobre el río.
+- **Tribuna** de 10 gradas al norte (sube hasta 5 m), con pasillo y baranda sobre el río. Poste de luz con transformador, murales, palmeras y autos en la calle.
+- **Tres torres de andamio** (pisos a 2,5 y 5 m) unidas por **pasarelas a 5 m**: una L desde la torre noroeste hasta la tribuna y otra de la tribuna a la torre este.
+- **Escondites y juego rápido:** debajo de la tribuna hay una **galería oscura** (7 m de fondo, con pilares y botín) a la que se entra por el oeste o por dos pasos en las gradas; un **kiosko con techo** (3 m, se sube por una escalera de afuera) con puertas al norte, sur y este; **8 muros de 3 m** que cortan la línea de tiro de la plaza; y un **ascensor** que lleva en segundos de la plaza a la pasarela de la tribuna (5 m), con una luz cyan en el costado.
+- **Abandono y ruina:** el hormigón, el metal y el ladrillo tienen texturas más sucias (hollín, churretes de óxido, musgo y grietas profundas). Sobre el piso, las rampas y las paredes hay **decals de abandono**: grietas, manchas de aceite, musgo, **sangre seca**, basura (latas, papeles, botellas), charcos y **yuyos** que se cuelan por las grietas y las vallas; en los rincones, pilas de **escombros** sólidas. Los graffitis de aerosol (64 diseños: letras con volumen, scribbles, íconos, salpicaduras) quedaron **más escasos**, solo en algunas paredes de los pozos, rampas, muros y en el muro bajo al pie de la tribuna. Vallas de alambre al norte (con el río) y al sur (con la calle), reflectores de cuatro cabezales en el perímetro (casi todos apagados), palets, rocas y juncos afuera. **Estructuras terminadas:** las barandas tienen rieles, postes y malla de alambre vieja (se saltan pero no se atraviesan); las torres, bases y marcos de vigas; las pasarelas, vigas de borde, nervios y pilares con base y capitel; los reflectores, base con bulones, travesaño y viseras; las vallas, zócalo, riel medio y tramos rotos; el kiosko, ventanas, cornisa y mostrador; el ascensor, un marco con luz; los pozos, borde metálico (coping); los muros, remate y zócalo.
+- **Zona sur** (14 m más): una **media caña** al oeste, una escalera con terraza y muros de cobertura, además del pozo en L grande.
+- **Seis saltadores** (pozo en L oeste → torre noroeste, pozo en L oeste → torre sudoeste, media caña → torre sudoeste, pozo en L grande → torre este, plaza → tribuna, plaza → torre este) y **dos portales** lejísimos entre sí: amarillo en el rincón sudoeste, azul arriba de la tribuna.
+- **Daño triple** en la pasarela este, **megasalud** en lo alto de la torre sudoeste y tres armaduras pesadas (pasillo de la tribuna, bowl chico y debajo del cartel).
+- Todo es sólido (barandas, carteles, troncos, escaleras), techo y bordes inalcanzables (ni con rocket jump). Texturas «Unreal Tournament lovecraftiano» como El Cuarto Tramo. Foto de la votación en `public/maps/skatenight.jpg`.
+- Para hacer otro mapa de noche basta con `noche: true` en su `theme` (ver `src/cliente/js/18-noche.js`).
+
+## Pyramid (mapa nuevo, noche de Halloween lovecraftiana)
+
+Una **pirámide de piedra** inspirada en *dm-pyramid* de Unreal Tournament, flotando sobre un agua oscura, bajo un **cielo violeta con auroras de colores, una luna roja enorme y tentáculos gigantes en el horizonte**. **Sin linterna** (la linterna, tecla **G**, es solo de Skatenight).
+- **Cinco niveles chicos y rápidos** (cada 4,8 m), cada uno con su color: **lava** (abajo, el más grande, 38 x 38 m), **magenta**, **azul con neón**, **naranja** y **verde**. Se achican hacia arriba: si te caés de un borde aterrizás en el nivel de abajo (solo te matás si te caés del primero). Cuatro **patas** inclinadas sólidas llegan hasta la **punta dorada**, también sólida.
+- **Pozo de gravedad cero:** un hueco de 6 x 6 m atraviesa **todos** los niveles, también el de abajo, que queda **abierto al vacío**. Es la única forma de subir y bajar (no hay escaleras): al entrar **flotás**, te vas yendo despacio hacia abajo y te movés libre: **Espacio sube**, **agacharse baja** y **W mirando arriba o abajo** te lleva para ahí. Para salir en un nivel, te movés de costado por encima del borde del piso. **Si te quedás en el pozo sin subir, salís por abajo y te caés al vacío.** Adentro no hay nada (solo un resplandor celeste casi invisible). Al entrar suena un zumbido de gravedad.
+- **Lovecraftiano:** obeliscos de basalto con un ojo brillante en los tres primeros niveles, un **ojo gigante** que mira desde el vacío (los tentáculos gigantes se ven solo a lo lejos, en el cielo), y mucho **deterioro**: bordes rotos con varillas de hierro, cadenas y enredaderas colgando, parches de roca, tierra y musgo en las paredes, montones de escombros sólidos, bruma pegada al piso y decals de grietas, musgo, sangre y charcos. Luces de color distintas en cada nivel.
+- **Los bots también usan el pozo** para subir y bajar de nivel.
+- **Nada flota en el pozo:** cada nivel tiene su **arma, escudo y curación** repartidos por las esquinas, los laterales y cerca de la boca del pozo; la **megasalud** está en el nivel 2, el **daño triple** en el 3 y la **armadura pesada** en el nivel de arriba.
+- **Música propia:** una pieza larga y suave, inspirada en las bases de los primeros Doom (música de fondo para todo un nivel, sin picos ni agudos molestos) de unos 2 min 20 s antes de repetirse de electrónica a 140 BPM al estilo tracker de Unreal Tournament, con diez secciones (intro, A, B con melodía, pausa, C y D en otra tonalidad, interludio, puente oscuro, subida y final): bajo, batería, guitarra con distorsión, arpegios con eco, cuerdas, campana y coro. Se regula con la barra de *música* de Ajustes. Nada que ver con el ambiente de Skatenight.
+- Solo modos **Arena** y **Gungame**. Foto de la votación en `public/maps/pyramid.jpg`.
 
 ## Novedades de La Cuenca y Humita
 
@@ -322,7 +382,7 @@ Las armas en primera persona están hechas con piezas redondeadas (cantos bisela
 - **Pistola**: se lleva con una mano; la corredera retrocede en cada tiro. La izquierda aparece para cambiar el cargador y soltar la corredera.
 - **Lanzagranadas**: el tambor gira con cada tiro y se carga granada por granada.
 - **Lanzacohetes**: como el del Soldier de TF2, lo baja girándolo y mete los cohetes de a uno a mano por la boca.
-- **Rifle de plasma**: las bobinas se apagan al tirar y se vuelven a cargar; para recargar cambia la celda de energía.
+- **Rifle de plasma**: mientras mantenés el botón, el tubo se llena de luz hasta quedar blanco, el arma vibra, suena un chirrido que sube y un anillo alrededor de la mira muestra cuánta carga llevás (blanco parpadeante al máximo, rojo si te pasás y se descarga sola). Al tirar, las bobinas se apagan y se vuelven a cargar; para recargar cambia la celda de energía.
 - **Francotirador**: después de cada tiro la mano derecha trabaja el cerrojo (sale la vaina); recarga por cargador.
 - **Rifle de caza**: nuevo modelo de palanca, estilo Winchester. Después de cada tiro la mano derecha baja y sube la palanca, y se recarga bala por bala por el portón del costado.
 
@@ -333,3 +393,42 @@ El **cuchillo** ahora barre en horizontal y deja una **ráfaga** blanca en forma
 ## Al morir
 
 Como en TF2, después de un instante ves **en primera persona lo que ve el que te mató**: su posición, a dónde apunta y el arma que tiene en la mano, con el cartel "Viendo a NOMBRE" y la cuenta para reaparecer. Si no hubo culpable (lava, caída, tu propia explosión) o el otro murió, la cámara gira sobre tu cuerpo como antes.
+
+## Vista en tercera persona
+
+Con **H** (o en Ajustes → Video) pasás de primera a tercera persona: la cámara va sobre el hombro, con la mira en el centro. **J** cambia de hombro. Con el francotirador volvés a primera persona para mirar por la mira. Los disparos van a donde marca la mira.
+
+## Cartas de mejora (estilo roguelike)
+
+En **Arena**, **Team Deathmatch** y **Captura la bandera** cada partida te arma un personaje distinto. A las **3, 7 y 12 bajas** te aparecen **abajo a la derecha tres cartas al azar** (de nueve) y te quedás con una: **máximo 3 por partida**. Cada ronda cuesta más que la anterior. Duran hasta que termina la partida y se borran en la siguiente. En Gungame y Francotiradores no hay cartas.
+
+Quien te las ofrece es **el Mercader del Umbral en 3D**: se materializa entre la neblina en el **tercio derecho** de la pantalla, con su capucha, sus seis ojos verdes, la barba de tentáculos y el farol titilando, y despliega las tres cartas una tras otra. Mientras esperás que elijas se queda vivo (los tentáculos se mecen, los ojos parpadean, las cartas flotan) y te va tirando frases. Al elegir, la carta se resalta, vuela al mazo del HUD y el mercader se desvanece en la neblina.
+
+Las cartas son de **papel viejo con tinta sepia**, con el ícono, el nombre, qué hace y sus números exactos, en texto nítido por encima de la escena. **El juego no se frena ni un segundo**: no hay pausa, la cámara no se mueve, el mouse y los clics siguen siendo del juego y podés correr, apuntar y disparar mientras elegís. Ni la mira ni el HUD de salud, munición y blindaje quedan tapados; las ranuras de armas y los carteles de teclas se corren de la vista mientras dura.
+
+En **Ajustes → Video** podés apagar la animación del mercader o activar "Reducir movimiento"; en calidad **Liviana** se muestran solo las cartas, sin el mercader.
+
+- Se elige con **1 · 2 · 3** (cada carta lleva su número estampado en la esquina). No se elige con el mouse a propósito: el cartel no se queda con ningún clic, para no robarle un disparo al juego.
+- Si dejás pasar los **12 segundos** (la barra naranja de abajo), te quedás con la primera.
+- Los **bots** también reciben cartas, al azar y al instante, así no quedan en desventaja.
+- Las que ya tenés quedan de muestra **abajo a la izquierda** (debajo del chat), con el cartel de cuántas bajas te faltan para la próxima.
+- Con **Tab**, abajo del tablero, se abre **El Grimorio del Umbral**: las cartas que tenés en ese momento, en el orden en que las agarraste, con lo que hace cada una y sus números exactos. Arriba dice a las cuántas bajas sale cada surtido (tachando las que ya pasaron) y cuántas te faltan para la próxima.
+- Las tres que te toca elegir salen **siempre al azar** entre las que todavía no tenés, así que nunca te repite una.
+
+| Carta | Qué hace |
+|---|---|
+| **Vampirismo** | Te curás con el 30 % del daño que hacés (hasta 100 de vida) |
+| **Cohetero** | Tus propias explosiones no te lastiman: rocket jump gratis |
+| **Carga mortal** | Al morir explotás: 85 de daño en el centro y 42 en el borde, hasta 5,5 m |
+| **Toque ígneo** | Al que golpeás lo dejás prendido fuego: 4 de daño cada medio segundo durante 3 s |
+| **Carnicero** | +15 % de daño con todas las armas |
+| **Coraza** | Recibís un 15 % menos de daño |
+| **Botín de guerra** | +60 % de créditos por cada baja |
+| **Trofeo** | Cada baja te suma 25 de blindaje (hasta 100) |
+| **Hambre de sangre** | Cada baja te cura 40 de vida (hasta 100) |
+
+Todo lo decide el servidor: el daño, la curación, el fuego y la explosión al morir salen de `src/nucleo/`, el cliente solo dibuja las cartas.
+
+## Fila de líderes por bajas (Arena y Gungame)
+
+En **Arena** y **Gungame** aparece arriba del centro una fila chica, ordenada por jerarquía, con los **tres que más bajas tienen**: arranca con el cartel **TOP** y sigue con el puesto, el nombre y las bajas de cada uno. El número 1 va más grande y en naranja, y el 2 y el 3 cada vez más apagados. Si no estás en el podio, tu puesto se agrega al final de la fila marcado en violeta. En los modos por equipos no aparece, porque ya está el marcador de rojo contra azul.

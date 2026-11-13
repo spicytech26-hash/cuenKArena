@@ -7,6 +7,7 @@ const K = {
 const hOf = s => s.crouch ? K.HC : K.H;
 const EPS = 1e-3;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const r1 = v => Math.round(v * 10) / 10;
 const r2 = v => Math.round(v * 100) / 100;
 const r3a = a => [Math.round(a[0] * 1000) / 1000, Math.round(a[1] * 1000) / 1000, Math.round(a[2] * 1000) / 1000];
 const r3 = v => Math.round(v * 1000) / 1000;
@@ -17,6 +18,10 @@ const falloff = (W_, d) => { const f = W_.fall; if (!f) return 1; if (d <= f[0])
 /* Daño pensado para combates cortos: 100 de salud cae en ~1 segundo de fuego sostenido.
    mag/reload: armas con cargador (la escopeta doble tira 2 y recarga).
    hip: dispersión del francotirador sin mira (con mira usa spread). */
+/* Carga del rifle de plasma. El servidor es el que mide: anota cuándo empezó a cargar (mensaje 'chg') y al
+   disparar usa ese tiempo, nunca el que diga el cliente. MIN es el toque más corto que ya dispara, MAX la
+   carga llena, y pasado MAX + SOBRA el arma se descarga sola para que nadie la deje cargada eternamente. */
+const CARGA = { MIN: .02, MAX: 1.2, SOBRA: 2.5, DMG_MIN: 30, DMG_MAX: 200, EXP: 1.5, HAZ_MIN: .15, HAZ_MAX: .4, LENTO: .75 };
 const WEAPONS = [
   { name: 'Pistola',        ammo: 'bullets',  cost: 1, rate: .17, type: 'hit',  pel: 1,  spread: .005, dmg: 22, range: 300, mag: 12, reload: 1.3 },
   { name: 'Escopeta',       ammo: 'shells',   cost: 1, rate: .85, type: 'hit',  pel: 10, spread: .06,  dmg: 9, range: 120, mag: 6, reload: 1.8, fall: [4, 20, .45] },   // como la de TF2: 90 de cerca, baja hasta ~40 de lejos
@@ -25,7 +30,8 @@ const WEAPONS = [
   // granada: explota al segundo; si le pega de lleno a alguien antes de rebotar, explota en el acto con daño extra y premio
   { name: 'Lanzagranadas',  ammo: 'grenades', cost: 1, rate: .75, type: 'proj', proj: 'grenade', speed: 26, dmg: 110, rad: 5.5, direct: 40, clean: 100, fuse: 1, mag: 4, reload: 2 },
   { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 60, rad: 4.5, sfall: .75, direct: 70, mag: 4, reload: 3.6 },   // como el del Soldier: 4 cohetes y ~2,7 s para recargar todo   // nerf: antes 100/105, después 80/85; ahora 70 directo y 60 de área (nunca más que el directo) que cae rápido con la distancia
-  { name: 'Rifle de plasma', ammo: 'slugs',    cost: 1, rate: 1.4, type: 'rail', pel: 1,  dmg: 110, range: 400, mag: 4, reload: 2.2 },
+  // plasma: se mantiene el botón para cargar y al soltar sale el rayo. Un toque pincha, la carga llena mata.
+  { name: 'Cañón de plasma', ammo: 'slugs',    cost: 1, rate: .45, type: 'rail', pel: 1,  dmg: 30, range: 400, mag: 5, reload: 2.2, carga: CARGA },
   // cuchillo mariposa: el segundo tajo sobre la misma víctima (dentro de 4 s) mata siempre
   { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 55, back: 1.8, range: 1.9, melee: true },   // alcance corto como el cuchillo del espía de TF2 o el del CS:GO
   { name: 'Francotirador',  ammo: 'sniper',   cost: 1, rate: 1.25, type: 'hit', pel: 1,  spread: .002, hip: .045, dmg: 115, head: 2, range: 500, scope: true, mag: 5, reload: 2.2 },
@@ -51,7 +57,7 @@ const ITEMS = {
   mega:   { name: 'Megasalud', respawn: 35 },
   armor:  { name: 'Chaleco', respawn: 25 },
   armorH: { name: 'Armadura pesada', respawn: 30 },
-  quad:   { name: 'Daño cuádruple', respawn: 60 },
+  quad:   { name: 'Daño triple', respawn: 60 },
   w1: { weapon: 1, ammo: 'shells', n: 10, respawn: 10 },
   w2: { weapon: 2, ammo: 'shells', n: 10, respawn: 10 },
   w3: { weapon: 3, ammo: 'bullets', n: 50, respawn: 10 },
@@ -72,21 +78,21 @@ for (const k in ITEMS) if (!ITEMS[k].name && ITEMS[k].ammo) ITEMS[k].name = AMMO
 
 const COLORS = ['#e8542a', '#3fa7ff', '#9ccc3c', '#ffcc33', '#c45cff', '#ff5c8a', '#38d6c4', '#f2efe6', '#ff8f1f', '#7a8cff'];
 /* ---------- Economía: créditos por frag y tienda (tecla B) ---------- */
-const ECON = { START: 300, KILL: 200, SHUTDOWN: 100, PISTOL: 100, MAX: 9999 };
+const ECON = { START: 300, KILL: 400, SHUTDOWN: 100, PISTOL: 100, MAX: 9999 };
 // pack: munición con la que aparecés si desbloqueaste el arma
 const SHOP = [
   { id: 'w0', cat: 'Pistolas', name: 'Pistola', w: 0, price: 0, free: 1, desc: 'Arrancás con 60 balas; comparte munición con la ametralladora' },
   { id: 'w1', cat: 'Escopetas', name: 'Escopeta', w: 1, price: 0, free: 1, desc: 'Tu arma principal de base (gratis). Elegila para volver a la escopeta' },
   { id: 'w2', cat: 'Escopetas', name: 'Escopeta doble', w: 2, price: 500, pack: ['shells', 20], desc: '20 perdigones, gasta 2 cartuchos' },
-  { id: 'w3', cat: 'Automáticas', name: 'Ametralladora', w: 3, price: 600, pack: ['bullets', 100], desc: 'Fuego continuo a media distancia' },
-  { id: 'w4', cat: 'Explosivas', name: 'Lanzagranadas', w: 4, price: 900, pack: ['grenades', 10], desc: 'Explotan al segundo. Un impacto directo explota en el acto y da premio' },
+  { id: 'w3', cat: 'Ametralladoras', name: 'Ametralladora', w: 3, price: 600, pack: ['bullets', 100], desc: 'Fuego continuo a media distancia' },
+  { id: 'w4', cat: 'Bombas', name: 'Lanzagranadas', w: 4, price: 900, pack: ['grenades', 10], desc: 'Explotan al segundo. Un impacto directo explota en el acto y da premio' },
   // la molotov es de un solo uso: se compra estando vivo y si te matan la perdés
-  { id: 'w10', cat: 'Explosivas', name: 'Bomba molotov', w: 10, price: 300, once: 1, pack: ['molotov', 3], desc: 'Tecla G. 3 molotovs que dejan el piso en llamas 6 s. Si te matan, las perdés' },
-  { id: 'w5', cat: 'Explosivas', name: 'Lanzacohetes', w: 5, price: 1300, pack: ['rockets', 10], desc: 'Daño en área y rocket jump' },
-  { id: 'w6', cat: 'Precisión', name: 'Rifle de plasma', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Atraviesa a todos los que estén en línea' },
-  { id: 'w8', cat: 'Precisión', name: 'Francotirador', w: 8, price: 1500, pack: ['sniper', 10], desc: 'Click derecho para apuntar con mira. Mata de un tiro a quien no tiene blindaje' },
-  { id: 'w9', cat: 'Precisión', name: 'Rifle de caza', w: 9, price: 1400, pack: ['caza', 8], desc: 'La bala viaja y cae: cualquier impacto mata. Tiros largos o al aire dan premio' },
-  { id: 'w7', cat: 'Pistolas', name: 'Cuchillo', w: 7, price: 0, free: 1, desc: 'Cuchillo mariposa: dos puñaladas matan siempre. No lo frena el blindaje' },
+  { id: 'w10', cat: 'Bombas', name: 'Bomba molotov', w: 10, price: 300, once: 1, pack: ['molotov', 3], desc: 'Tecla G. 3 molotovs que dejan el piso en llamas 6 s. Si te matan, las perdés' },
+  { id: 'w5', cat: 'Misiles', name: 'Lanzacohetes', w: 5, price: 1300, pack: ['rockets', 10], desc: 'Daño en área y rocket jump' },
+  { id: 'w6', cat: 'Rifles', name: 'Cañón de plasma', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Mantené el botón para cargar: un toque pincha, la carga llena mata de un tiro. Atraviesa a todos los que estén en línea' },
+  { id: 'w8', cat: 'Rifles', name: 'Francotirador', w: 8, price: 1500, pack: ['sniper', 10], desc: 'Click derecho para apuntar con mira. Mata de un tiro a quien no tiene blindaje' },
+  { id: 'w9', cat: 'Rifles', name: 'Rifle de caza', w: 9, price: 1400, pack: ['caza', 8], desc: 'La bala viaja y cae: cualquier impacto mata. Tiros largos o al aire dan premio' },
+  { id: 'w7', cat: 'Cuerpo a cuerpo', name: 'Cuchillo', w: 7, price: 0, free: 1, desc: 'Cuchillo mariposa: dos puñaladas matan siempre. No lo frena el blindaje' },
   { id: 'a1', cat: 'Blindaje', name: 'Chaleco', price: 400, armor: 50, desc: 'Aparecés con 50 de blindaje' },
   { id: 'a2', cat: 'Blindaje', name: 'Armadura pesada', price: 900, armor: 100, desc: 'Aparecés con 100 de blindaje' },
   { id: 'am', cat: 'Suministros', name: 'Cartuchera doble', price: 500, desc: 'Aparecés con el doble de munición' },
@@ -94,21 +100,183 @@ const SHOP = [
 ];
 /* ---------- Modos de juego ---------- */
 const MODES = {
-  arena:   { name: 'Arena', maps: ['represa', 'panymanteca', 'lacuenca'], shop: true, timelimit: 300,
-             desc: 'Todos contra todos. Cada frag da créditos para la tienda (B).' },
-  gungame: { name: 'Gungame', maps: ['represa', 'panymanteca', 'lacuenca'], shop: false, gg: true,
+  arena:   { name: 'Arena', maps: ['represa', 'panymanteca', 'lacuenca', 'cuartotramo'], shop: true, cards: true, crown: true, storm: true, timelimit: 300,
+             desc: 'Todos contra todos. Cada baja da créditos para la tienda (B). Buscá la corona: cada 15 s con ella puesta valen 1 punto y ¤ 300. En el último minuto la zona se achica.' },
+  gungame: { name: 'Gungame', maps: ['represa', 'panymanteca', 'lacuenca', 'cuartotramo'], shop: false, gg: true,
              desc: 'Cada baja te da la siguiente arma de la lista. Munición infinita, sin tienda. Si te matan con cuchillo bajás un nivel. Gana el primero en hacer las 20 bajas; la última es con cuchillo.' },
-  tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca'], shop: true, teams: true, tdm: true, minPlayers: 4,
+  tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca', 'cuartotramo', 'puente'], shop: true, cards: true, teams: true, tdm: true, minPlayers: 4,
              desc: 'Rojo contra azul: cada baja suma para tu equipo hasta llegar al límite que elijan. Online arranca cuando hay 4 jugadores; mientras tanto, calentamiento.' },
   snipers: { name: 'Francotiradores', maps: ['fuertes'], shop: false, teams: true, tk: true, snipers: true, inf: true, timelimit: 360, teamLimit: 30,
              desc: 'Rojo contra azul con francotirador y cuchillo nomás: el francotirador mata de un tiro y con el cuchillo en la mano corrés más rápido. Racha de 6 bajas: escopeta doble. Sin tienda y sin mira hasta que apuntás.' },
-  ctf:     { name: 'Captura la bandera', maps: ['puente'], shop: true, teams: true, ctf: true,
-             desc: 'Rojo contra azul. Robá la bandera rival y llevala hasta tu base. Gana el primer equipo en capturarla 3 veces.' }
+  // reemplaza a Captura la bandera (el id nuevo es `dominio`; El Puente pasó a Team Deathmatch)
+  dominio: { name: 'Captura el dominio', maps: ['santuario'], shop: true, cards: true, teams: true, dom: true, timelimit: 900,
+             desc: 'Rojo contra azul. Cada equipo tiene un boss en su fortaleza, detrás de tres barreras. Rompé los dos generadores de una barrera para abrir esa ruta, entrá y matá al boss rival. Si a los 15 minutos siguen vivos los dos, gana el que más lo lastimó.' }
 };
 const MODE_IDS = Object.keys(MODES);
+const MODE_ALIAS = { ctf: 'dominio' };   // ajustes guardados y salas viejas que todavía piden Captura la bandera
+
+/* ---------- Captura el dominio: todo lo que se balancea está acá ----------
+   Dos fortalezas con un boss cada una. Cada carril (norte, centro, sur) entra por un portón sellado con una
+   barrera de campo de fuerza que alimentan 2 generadores. Las reglas están en 07-partida/5b-dominio.js. */
+const DOM = {
+  TIME: 900,            // duración máxima de la partida, en segundos (15 minutos). Es el `timelimit` del modo
+  LANES: ['norte', 'centro', 'sur'],
+  // generadores y barreras
+  GEN_HP: 1500,         // vida de cada generador
+  BAR_NEED: 2,          // cuántos generadores de la barrera hay que romper para que caiga (1 = con uno basta)
+  BAR_REARM: 0,         // segundos hasta que una barrera caída se vuelve a levantar con sus generadores (0 = queda abierta para siempre)
+  HIT_CAP: 260,         // tope de daño de un solo impacto a un generador o al boss (el rifle de caza no los borra de un tiro)
+  // boss
+  BOSS_HP: 20000,       // vida de cada boss
+  BOSS_H: 14,           // altura del boss en metros (un jugador mide 1,8)
+  BOSS_R: 2,            // medio ancho del cuerpo (la caja que recibe los tiros mide 2·R de lado)
+  CORE_Y: 9.6,          // altura del núcleo del pecho
+  CORE_FWD: 1.5,        // cuánto sobresale el núcleo hacia adelante
+  CORE_R: 1.15,         // radio del núcleo (punto débil)
+  CORE_MULT: 2,         // el núcleo recibe el doble
+  BOSS_SEE: 48,         // hasta dónde ve y ataca
+  BOSS_TURN: 1.7,       // qué tan rápido gira mientras avisa (radianes por segundo)
+  GCD: [1.5, 2.6],      // descanso entre ataques (mínimo, máximo)
+  ENRAGE: .35,          // con menos de esta fracción de vida ataca más seguido…
+  ENRAGE_CD: .6,        // …descansando este factor
+  /* Los ataques. Cada uno tiene tres etapas: aviso (el boss se prepara y se marca en el piso la zona exacta),
+     golpe (el daño, justo donde decía la marca) y recuperación (queda vendido). `forma` es la figura del daño
+     y también la que dibuja el cliente: arco, anillo, linea, circulo o barrido. `lock` es en qué fracción del
+     aviso deja de girar: a partir de ahí el ataque ya no te sigue y se puede esquivar.
+     r = alcance · cos = coseno del medio ángulo del abanico · w = medio ancho · kick = empujón */
+  ATK: {
+    1: { n: 'latigazo', team: 0, warn: 1,   hit: .18, rec: .7,  forma: 'arco',    r: 19, cos: .42, dmg: 52, kick: 9,  lock: .55, near: 1 },
+    2: { n: 'agarre',   team: 0, warn: 1,   hit: .12, rec: 1.2, forma: 'linea',   r: 40, w: 1.7,   dmg: 22, pull: 32, lock: .6 },
+    3: { n: 'pisotón',  team: 0, warn: 1.1, hit: .22, rec: .9,  forma: 'anillo',  r: 16, dmg: 58,  kick: 11, lock: 0, near: 1, aire: 1 },
+    4: { n: 'pulso',    team: 1, warn: 1,   hit: .22, rec: .8,  forma: 'anillo',  r: 17, dmg: 55,  kick: 13, lock: 0, near: 1 },
+    5: { n: 'salva',    team: 1, warn: 1.1, hit: .5,  rec: .7,  forma: 'orbes',   r: 48, lock: .8 },
+    6: { n: 'rayo',     team: 1, warn: 1.2, hit: 1,   rec: 1,   forma: 'barrido', r: 46, w: 2.2,   dmg: 110, lock: .5, barre: .8 },
+    7: { n: 'zona',     warn: 1.4, hit: .12, rec: .5, forma: 'circulo', r: 7, dmg: 70, kick: 8, lock: .45, suelo: 1 }
+  },
+  GRAB: { pull: 32 },
+  /* Minions defensores (07-partida/5c-minions.js): dos por generador, uno cuerpo a cuerpo y otro a distancia.
+     Molestan y obligan a entrar en equipo, pero no son un muro. */
+  MIN: {
+    POR_GEN: 3,     // guardianes fijos que cuida cada generador
+    // OLEADAS (como los súbditos del LoL): salen de cada fortaleza por los tres carriles y marchan solas
+    OLA_INI: 15,    // la primera oleada sale a los 15 s
+    OLA_CADA: 30,   // y después una cada 30 s
+    OLA_C: 3, OLA_D: 2,   // por carril: 3 cuerpo a cuerpo y 2 a distancia
+    ASEDIO_CADA: 3, // cada 3 oleadas se suma un minion de asedio
+    HP_AS: 240, DMG_AS: 18, RATE_AS: 1.6, RANGE_AS: 6,   // asedio: mucha vida, pega fuerte y lejos
+    GEN_C: 8, GEN_D: 5, GEN_AS: 40,   // daño por golpe a generadores (bajo: ayudan, no reemplazan a los jugadores)
+    BOSS_F: .5,     // contra el boss pegan la mitad que contra un generador
+    SPD_OLA: 4.2,   // marchan más lento que lo que corre un guardián
+    SEE_OLA: 14,    // a qué distancia se trenzan con algo
+    AGGRO: 3,       // castigan al jugador que dañó a un aliado en los últimos 3 s
+    SEP: 1.1,       // se separan de sus compañeros a esta distancia (no se amontonan)
+    CRECE: .10, CRECE_CADA: 180,   // +10 % de vida y daño cada 3 minutos
+    LAST_HIT: 40,
+    INTERES: 70,    // a cada jugador se le mandan solo los minions a menos de 70 m
+    RED_CADA: 3,    // cada cuántos snapshots (20 por segundo) se mandan: 3 = casi 7 por segundo   // bono de créditos para el que da el último golpe
+    PATRULLA: 4,    // radio en metros en el que patrullan alrededor de su puesto cuando no hay nadie
+    HP: 45,
+    DMG_C: 11, RATE_C: .85, RANGE_C: 2.8,    // cuerpo a cuerpo: daño, cada cuánto pega y alcance
+    DMG_D: 8,  RATE_D: 1.5, RANGE_D: 20,     // a distancia
+    SPD: 5.4,       // a cuánto corre (el jugador va a 10)
+    SEE: 21,        // a qué distancia te ve
+    LEASH: 25,      // si te alejás más de esto de su puesto, te deja y vuelve
+    RESP: 25,       // cuánto tarda en volver a aparecer
+    MAX: 30,        // tope de minions de oleada vivos por equipo (los guardianes van aparte: 3 por generador)
+    CRED: 60,       // créditos por matarlo (no cuenta como baja)
+    R: .45, H: 1.5  // radio y alto
+  },
+  ORBS: { n: 3, dmg: 28, speed: 15, turn: 2.4, life: 6, r: 1.3 },   // proyectiles teledirigidos de la salva
+  ZONES_RAGE: 3,        // al abrirse un carril el boss castiga la entrada con esta cantidad de zonas
+  ALERT_EVERY: 12,      // cada cuánto se repite el aviso "están atacando a tu boss" (y el del generador)
+  AVISOS: [300, 120, 60, 30],   // segundos que quedan en los que el locutor avisa
+  // aparición
+  SPAWN_INV: 3,         // segundos de invulnerabilidad al aparecer
+  FWD_SPAWN: true,      // reaparición adelantada a mitad del carril que tu equipo ya abrió
+  // créditos y puntos
+  PAY: { STEP: 200, GEN_HIT: 30, BOSS_HIT: 40, GEN: 300, BAR: 500, BAR_TEAM: 200, BOSS_KILL: 1000 },   // cada STEP de daño paga GEN_HIT o BOSS_HIT
+  // bots
+  BOT_DODGE: [0, .5, .85, 1],   // probabilidad de esquivar un ataque avisado, por dificultad (Fácil a Pesadilla)
+  BOT_DEF: 4                    // uno de cada BOT_DEF bots se queda a defender
+};
+
+/* ---------- Cartas de mejora (estilo roguelike) ----------
+   Solo en los modos con `cards` (Arena, Team Deathmatch y Captura el dominio).
+   A las 3, 7 y 12 bajas le aparecen 3 cartas al azar y se queda con una: máximo 3 por partida.
+   Duran toda la partida y se borran en `restart()`. Los bots eligen al azar y al toque. */
+const CARD_AT = [3, 7, 12];                // bajas que destraban cada carta (cada ronda cuesta más)
+const CARD_MAX = CARD_AT.length;           // cuántas lleva como máximo
+const CARD_PICK = 3;                       // cuántas se ofrecen por vez
+const CARD_TIME = 12;                      // si no elige en 12 s se queda con la primera
+const CARD_FX = {
+  VAMP: .3,                                // vampirismo: te curás con el 30% del daño que hacés
+  DMG: 1.15,                               // carnicero: +15% de daño
+  ARMOR: .85,                              // coraza: -15% de daño recibido
+  CASH: 1.6,                               // botín de guerra: +60% de créditos por baja
+  KILL_AR: 25,                             // trofeo: blindaje por baja
+  KILL_HP: 40,                             // hambre de sangre: vida por baja
+  BURN_T: 3, BURN_DMG: 4, BURN_EVERY: .5,  // toque ígneo: 4 de daño cada 0,5 s durante 3 s (24 en total)
+  BLAST_R: 5.5, BLAST_DMG: 85              // carga mortal: 85 en el centro, 42 en el borde
+};
+const CARDS = [
+  { id: 'vampiro',     name: 'Vampirismo',       desc: 'Te curás con el 30% del daño que hacés',            c: '#d4120f', ic: 'gota',     stat: '30% del daño hecho · tope 100 de vida' },
+  { id: 'cohetero',    name: 'Cohetero',         desc: 'Tus explosiones no te lastiman: rocket jump gratis', c: '#ff7a1a', ic: 'cohete',   stat: 'autodaño 0 (antes 28% del cohete)' },
+  { id: 'bomba',       name: 'Carga mortal',     desc: 'Al morir explotás y te llevás al que esté cerca',    c: '#ffb347', ic: 'bomba',    stat: '85 en el centro · 42 al borde · 5,5 m' },
+  { id: 'igneo',       name: 'Toque ígneo',      desc: 'Al que golpeás lo dejás prendido fuego 3 s',         c: '#ff4a1a', ic: 'llama',    stat: '4 de daño cada 0,5 s durante 3 s' },
+  { id: 'carnicero',   name: 'Carnicero',        desc: 'Pegás más fuerte con todas las armas',               c: '#8dff3a', ic: 'colmillo', stat: '×1,15 de daño' },
+  { id: 'coraza',      name: 'Coraza',           desc: 'Aguantás más: todo lo que te pega hace menos',       c: '#9b4dff', ic: 'escudo',   stat: '×0,85 de daño recibido' },
+  { id: 'botin',       name: 'Botín de guerra',  desc: 'Cada baja te deja más plata para la tienda',         c: '#7fe0a0', ic: 'moneda',   stat: '×1,6 de créditos por baja' },
+  { id: 'trofeo',      name: 'Trofeo',           desc: 'Cada baja te suma blindaje al toque',                c: '#38d6c4', ic: 'placa',    stat: '+25 de blindaje · tope 100' },
+  { id: 'sanguijuela', name: 'Hambre de sangre', desc: 'Cada baja te devuelve vida al instante',             c: '#ff5c8a', ic: 'corazon',  stat: '+40 de vida · tope 100' }
+];
+const CARD_BY = {}; for (const c of CARDS) CARD_BY[c.id] = c;
+const hasCard = (p, id) => !!(p && p.cards && p.cards.indexOf(id) >= 0);
 // sifón: mini escudos que suelta el que muere
 // duran 10 s desde que caen al piso (a los 8 s empiezan a parpadear, eso lo hace el cliente)
+/* ---------- La tormenta del último minuto (por ahora solo Arena: la prende `storm` en MODES) ----------
+   Cuando quedan STORM.WARN segundos (sobre la duración real de la partida, no un número fijo) se avisa,
+   y STORM.DELAY después arranca. La zona segura es un círculo que al principio contiene todo el área
+   jugable y se achica linealmente hasta STORM.MIN_R en STORM.SHRINK segundos. Afuera hay daño continuo
+   que sube con el tiempo y que el blindaje no frena. Un mapa puede declarar `stormCenter: [x, z]` y
+   `stormR` (radio final) si el centro automático no le sirve. */
+const STORM = {
+  WARN: 60,          // avisa cuando queda este tiempo de partida
+  DELAY: 10,         // arranca este rato después del aviso
+  SHRINK: 40,        // cuánto tarda en achicarse del todo
+  MIN_R: 22,         // radio final (se puede pisar por mapa con `stormR`)
+  DMG0: 5,           // daño por segundo al empezar
+  DMG1: 15,          // daño por segundo con la zona ya chica
+  STEP: .25,         // cada cuánto se aplica el daño
+  CROWN_EVERY: 7.5,  // mientras dura, la corona paga cada tanto en lugar de CROWN.EVERY
+  MARGIN: 2          // un poco más grande que el área jugable al arrancar
+};
+/* Las dos cuentas de la tormenta, compartidas entre servidor y cliente: con los parámetros que
+   manda el servidor una sola vez (`i`) y el reloj del servidor alcanza para saber radio y daño.
+   i = [arranque, centro x, centro z, radio inicial, radio final, achique, daño inicial, daño final] */
+const stormK = (i, now) => !i ? 0 : Math.max(0, Math.min(1, i[5] ? (now - i[0]) / i[5] : 1));
+const stormR = (i, now) => !i ? 0 : i[3] + (i[4] - i[3]) * stormK(i, now);
+const stormDmg = (i, now) => !i ? 0 : i[6] + (i[7] - i[6]) * stormK(i, now);
 const SHARD = { N: 5, AR: 5, CAP: 100, LIFE: 10.45, MAX: 80 };
+/* ---------- La Corona (por ahora solo Arena: la prende `crown` en MODES) ----------
+   Hay una sola corona por partida y la lleva uno solo. Aparece a los 45 s de que arranca el reloj
+   y se avisa a todos. Cada 15 s seguidos de tenerla: 1 punto al tablero (el mismo contador de bajas
+   que define al ganador) y 100 créditos para la tienda. Al portador lo ve todo el mundo.
+   Es del servidor: el cliente solo la dibuja. */
+const CROWN = {
+  AT: 45,        // segundos desde que arranca la partida hasta que aparece
+  EVERY: 15,     // cada cuántos segundos seguidos paga (se reinicia al perderla)
+  PTS: 1,        // puntos al tablero por tanda
+  CASH: 300,     // créditos por tanda (una baja da ECON.KILL = 400)
+  KILL_PTS: 2,   // puntos extra para el que mata al portador
+  ARM: 1.5,      // nadie la puede levantar hasta 1,5 s después de que cae
+  IDLE: 20,      // si queda sola este tiempo, se muda lejos del último portador
+  VOID: 5,       // si cae en la lava o fuera del mapa, vuelve a un punto seguro
+  FAR: 18,       // al mudarse busca un punto a más de esta distancia del último portador
+  R: 1.1,        // radio para levantarla
+  HEAD: 1.75,    // altura de la corona sobre el portador
+  BOT_GO: [22, 38, 55, 75],   // a cuántos metros la van a buscar los bots, por dificultad (Fácil a Pesadilla)
+  BOT_AIM: [8, 16, 26, 36]    // cuánto priorizan al portador al elegir a quién dispararle
+};
 // Gungame: arranca con armas fuertes y termina con las difíciles; la última baja es con machete
 const GG = [3, 5, 2, 4, 1, 6, 8, 0, 3, 5, 2, 4, 1, 9, 8, 0, 5, 6, 9, 7];
 const TEAMS = [{ name: 'Rojo', c: '#ff4a3a' }, { name: 'Azul', c: '#3a8bff' }];
@@ -137,5 +305,6 @@ const MEDALS = [
 ];
 const medalOf = L => MEDALS.reduce((a, m) => L >= m.from ? m : a, MEDALS[0]);
 const ACCESSORIES = ['Ninguno', 'Cresta', 'Antena', 'Cuernos', 'Gorra'];
+const EMBLEMS = ['ancla', 'flecha', 'corazon', 'estrella', 'calavera', 'rayo', 'mira', 'corona', 'escudo', 'alas', 'espada', 'ninguno'];   // emblemas del pecho (el dibujo está en el cliente)
 const BOT_NAMES = ['Yacaré', 'Carpincho', 'Surubí', 'Tatú', 'Coatí', 'Aguará', 'Yaguareté', 'Pacú', 'Dorado', 'Tero', 'Hornero', 'Mbiguá', 'Urutaú', 'Tucán', 'Zorro', 'Lobito'];
 

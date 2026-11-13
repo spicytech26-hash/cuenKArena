@@ -19,6 +19,7 @@ const K = {
 const hOf = s => s.crouch ? K.HC : K.H;
 const EPS = 1e-3;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const r1 = v => Math.round(v * 10) / 10;
 const r2 = v => Math.round(v * 100) / 100;
 const r3a = a => [Math.round(a[0] * 1000) / 1000, Math.round(a[1] * 1000) / 1000, Math.round(a[2] * 1000) / 1000];
 const r3 = v => Math.round(v * 1000) / 1000;
@@ -29,6 +30,10 @@ const falloff = (W_, d) => { const f = W_.fall; if (!f) return 1; if (d <= f[0])
 /* Daño pensado para combates cortos: 100 de salud cae en ~1 segundo de fuego sostenido.
    mag/reload: armas con cargador (la escopeta doble tira 2 y recarga).
    hip: dispersión del francotirador sin mira (con mira usa spread). */
+/* Carga del rifle de plasma. El servidor es el que mide: anota cuándo empezó a cargar (mensaje 'chg') y al
+   disparar usa ese tiempo, nunca el que diga el cliente. MIN es el toque más corto que ya dispara, MAX la
+   carga llena, y pasado MAX + SOBRA el arma se descarga sola para que nadie la deje cargada eternamente. */
+const CARGA = { MIN: .02, MAX: 1.2, SOBRA: 2.5, DMG_MIN: 30, DMG_MAX: 200, EXP: 1.5, HAZ_MIN: .15, HAZ_MAX: .4, LENTO: .75 };
 const WEAPONS = [
   { name: 'Pistola',        ammo: 'bullets',  cost: 1, rate: .17, type: 'hit',  pel: 1,  spread: .005, dmg: 22, range: 300, mag: 12, reload: 1.3 },
   { name: 'Escopeta',       ammo: 'shells',   cost: 1, rate: .85, type: 'hit',  pel: 10, spread: .06,  dmg: 9, range: 120, mag: 6, reload: 1.8, fall: [4, 20, .45] },   // como la de TF2: 90 de cerca, baja hasta ~40 de lejos
@@ -37,7 +42,8 @@ const WEAPONS = [
   // granada: explota al segundo; si le pega de lleno a alguien antes de rebotar, explota en el acto con daño extra y premio
   { name: 'Lanzagranadas',  ammo: 'grenades', cost: 1, rate: .75, type: 'proj', proj: 'grenade', speed: 26, dmg: 110, rad: 5.5, direct: 40, clean: 100, fuse: 1, mag: 4, reload: 2 },
   { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 60, rad: 4.5, sfall: .75, direct: 70, mag: 4, reload: 3.6 },   // como el del Soldier: 4 cohetes y ~2,7 s para recargar todo   // nerf: antes 100/105, después 80/85; ahora 70 directo y 60 de área (nunca más que el directo) que cae rápido con la distancia
-  { name: 'Rifle de plasma', ammo: 'slugs',    cost: 1, rate: 1.4, type: 'rail', pel: 1,  dmg: 110, range: 400, mag: 4, reload: 2.2 },
+  // plasma: se mantiene el botón para cargar y al soltar sale el rayo. Un toque pincha, la carga llena mata.
+  { name: 'Cañón de plasma', ammo: 'slugs',    cost: 1, rate: .45, type: 'rail', pel: 1,  dmg: 30, range: 400, mag: 5, reload: 2.2, carga: CARGA },
   // cuchillo mariposa: el segundo tajo sobre la misma víctima (dentro de 4 s) mata siempre
   { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 55, back: 1.8, range: 1.9, melee: true },   // alcance corto como el cuchillo del espía de TF2 o el del CS:GO
   { name: 'Francotirador',  ammo: 'sniper',   cost: 1, rate: 1.25, type: 'hit', pel: 1,  spread: .002, hip: .045, dmg: 115, head: 2, range: 500, scope: true, mag: 5, reload: 2.2 },
@@ -63,7 +69,7 @@ const ITEMS = {
   mega:   { name: 'Megasalud', respawn: 35 },
   armor:  { name: 'Chaleco', respawn: 25 },
   armorH: { name: 'Armadura pesada', respawn: 30 },
-  quad:   { name: 'Daño cuádruple', respawn: 60 },
+  quad:   { name: 'Daño triple', respawn: 60 },
   w1: { weapon: 1, ammo: 'shells', n: 10, respawn: 10 },
   w2: { weapon: 2, ammo: 'shells', n: 10, respawn: 10 },
   w3: { weapon: 3, ammo: 'bullets', n: 50, respawn: 10 },
@@ -84,21 +90,21 @@ for (const k in ITEMS) if (!ITEMS[k].name && ITEMS[k].ammo) ITEMS[k].name = AMMO
 
 const COLORS = ['#e8542a', '#3fa7ff', '#9ccc3c', '#ffcc33', '#c45cff', '#ff5c8a', '#38d6c4', '#f2efe6', '#ff8f1f', '#7a8cff'];
 /* ---------- Economía: créditos por frag y tienda (tecla B) ---------- */
-const ECON = { START: 300, KILL: 200, SHUTDOWN: 100, PISTOL: 100, MAX: 9999 };
+const ECON = { START: 300, KILL: 400, SHUTDOWN: 100, PISTOL: 100, MAX: 9999 };
 // pack: munición con la que aparecés si desbloqueaste el arma
 const SHOP = [
   { id: 'w0', cat: 'Pistolas', name: 'Pistola', w: 0, price: 0, free: 1, desc: 'Arrancás con 60 balas; comparte munición con la ametralladora' },
   { id: 'w1', cat: 'Escopetas', name: 'Escopeta', w: 1, price: 0, free: 1, desc: 'Tu arma principal de base (gratis). Elegila para volver a la escopeta' },
   { id: 'w2', cat: 'Escopetas', name: 'Escopeta doble', w: 2, price: 500, pack: ['shells', 20], desc: '20 perdigones, gasta 2 cartuchos' },
-  { id: 'w3', cat: 'Automáticas', name: 'Ametralladora', w: 3, price: 600, pack: ['bullets', 100], desc: 'Fuego continuo a media distancia' },
-  { id: 'w4', cat: 'Explosivas', name: 'Lanzagranadas', w: 4, price: 900, pack: ['grenades', 10], desc: 'Explotan al segundo. Un impacto directo explota en el acto y da premio' },
+  { id: 'w3', cat: 'Ametralladoras', name: 'Ametralladora', w: 3, price: 600, pack: ['bullets', 100], desc: 'Fuego continuo a media distancia' },
+  { id: 'w4', cat: 'Bombas', name: 'Lanzagranadas', w: 4, price: 900, pack: ['grenades', 10], desc: 'Explotan al segundo. Un impacto directo explota en el acto y da premio' },
   // la molotov es de un solo uso: se compra estando vivo y si te matan la perdés
-  { id: 'w10', cat: 'Explosivas', name: 'Bomba molotov', w: 10, price: 300, once: 1, pack: ['molotov', 3], desc: 'Tecla G. 3 molotovs que dejan el piso en llamas 6 s. Si te matan, las perdés' },
-  { id: 'w5', cat: 'Explosivas', name: 'Lanzacohetes', w: 5, price: 1300, pack: ['rockets', 10], desc: 'Daño en área y rocket jump' },
-  { id: 'w6', cat: 'Precisión', name: 'Rifle de plasma', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Atraviesa a todos los que estén en línea' },
-  { id: 'w8', cat: 'Precisión', name: 'Francotirador', w: 8, price: 1500, pack: ['sniper', 10], desc: 'Click derecho para apuntar con mira. Mata de un tiro a quien no tiene blindaje' },
-  { id: 'w9', cat: 'Precisión', name: 'Rifle de caza', w: 9, price: 1400, pack: ['caza', 8], desc: 'La bala viaja y cae: cualquier impacto mata. Tiros largos o al aire dan premio' },
-  { id: 'w7', cat: 'Pistolas', name: 'Cuchillo', w: 7, price: 0, free: 1, desc: 'Cuchillo mariposa: dos puñaladas matan siempre. No lo frena el blindaje' },
+  { id: 'w10', cat: 'Bombas', name: 'Bomba molotov', w: 10, price: 300, once: 1, pack: ['molotov', 3], desc: 'Tecla G. 3 molotovs que dejan el piso en llamas 6 s. Si te matan, las perdés' },
+  { id: 'w5', cat: 'Misiles', name: 'Lanzacohetes', w: 5, price: 1300, pack: ['rockets', 10], desc: 'Daño en área y rocket jump' },
+  { id: 'w6', cat: 'Rifles', name: 'Cañón de plasma', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Mantené el botón para cargar: un toque pincha, la carga llena mata de un tiro. Atraviesa a todos los que estén en línea' },
+  { id: 'w8', cat: 'Rifles', name: 'Francotirador', w: 8, price: 1500, pack: ['sniper', 10], desc: 'Click derecho para apuntar con mira. Mata de un tiro a quien no tiene blindaje' },
+  { id: 'w9', cat: 'Rifles', name: 'Rifle de caza', w: 9, price: 1400, pack: ['caza', 8], desc: 'La bala viaja y cae: cualquier impacto mata. Tiros largos o al aire dan premio' },
+  { id: 'w7', cat: 'Cuerpo a cuerpo', name: 'Cuchillo', w: 7, price: 0, free: 1, desc: 'Cuchillo mariposa: dos puñaladas matan siempre. No lo frena el blindaje' },
   { id: 'a1', cat: 'Blindaje', name: 'Chaleco', price: 400, armor: 50, desc: 'Aparecés con 50 de blindaje' },
   { id: 'a2', cat: 'Blindaje', name: 'Armadura pesada', price: 900, armor: 100, desc: 'Aparecés con 100 de blindaje' },
   { id: 'am', cat: 'Suministros', name: 'Cartuchera doble', price: 500, desc: 'Aparecés con el doble de munición' },
@@ -106,21 +112,183 @@ const SHOP = [
 ];
 /* ---------- Modos de juego ---------- */
 const MODES = {
-  arena:   { name: 'Arena', maps: ['represa', 'panymanteca', 'lacuenca'], shop: true, timelimit: 300,
-             desc: 'Todos contra todos. Cada frag da créditos para la tienda (B).' },
-  gungame: { name: 'Gungame', maps: ['represa', 'panymanteca', 'lacuenca'], shop: false, gg: true,
+  arena:   { name: 'Arena', maps: ['represa', 'panymanteca', 'lacuenca', 'cuartotramo'], shop: true, cards: true, crown: true, storm: true, timelimit: 300,
+             desc: 'Todos contra todos. Cada baja da créditos para la tienda (B). Buscá la corona: cada 15 s con ella puesta valen 1 punto y ¤ 300. En el último minuto la zona se achica.' },
+  gungame: { name: 'Gungame', maps: ['represa', 'panymanteca', 'lacuenca', 'cuartotramo'], shop: false, gg: true,
              desc: 'Cada baja te da la siguiente arma de la lista. Munición infinita, sin tienda. Si te matan con cuchillo bajás un nivel. Gana el primero en hacer las 20 bajas; la última es con cuchillo.' },
-  tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca'], shop: true, teams: true, tdm: true, minPlayers: 4,
+  tdm:     { name: 'Team Deathmatch', maps: ['lacuenca', 'represa', 'panymanteca', 'cuartotramo', 'puente'], shop: true, cards: true, teams: true, tdm: true, minPlayers: 4,
              desc: 'Rojo contra azul: cada baja suma para tu equipo hasta llegar al límite que elijan. Online arranca cuando hay 4 jugadores; mientras tanto, calentamiento.' },
   snipers: { name: 'Francotiradores', maps: ['fuertes'], shop: false, teams: true, tk: true, snipers: true, inf: true, timelimit: 360, teamLimit: 30,
              desc: 'Rojo contra azul con francotirador y cuchillo nomás: el francotirador mata de un tiro y con el cuchillo en la mano corrés más rápido. Racha de 6 bajas: escopeta doble. Sin tienda y sin mira hasta que apuntás.' },
-  ctf:     { name: 'Captura la bandera', maps: ['puente'], shop: true, teams: true, ctf: true,
-             desc: 'Rojo contra azul. Robá la bandera rival y llevala hasta tu base. Gana el primer equipo en capturarla 3 veces.' }
+  // reemplaza a Captura la bandera (el id nuevo es `dominio`; El Puente pasó a Team Deathmatch)
+  dominio: { name: 'Captura el dominio', maps: ['santuario'], shop: true, cards: true, teams: true, dom: true, timelimit: 900,
+             desc: 'Rojo contra azul. Cada equipo tiene un boss en su fortaleza, detrás de tres barreras. Rompé los dos generadores de una barrera para abrir esa ruta, entrá y matá al boss rival. Si a los 15 minutos siguen vivos los dos, gana el que más lo lastimó.' }
 };
 const MODE_IDS = Object.keys(MODES);
+const MODE_ALIAS = { ctf: 'dominio' };   // ajustes guardados y salas viejas que todavía piden Captura la bandera
+
+/* ---------- Captura el dominio: todo lo que se balancea está acá ----------
+   Dos fortalezas con un boss cada una. Cada carril (norte, centro, sur) entra por un portón sellado con una
+   barrera de campo de fuerza que alimentan 2 generadores. Las reglas están en 07-partida/5b-dominio.js. */
+const DOM = {
+  TIME: 900,            // duración máxima de la partida, en segundos (15 minutos). Es el `timelimit` del modo
+  LANES: ['norte', 'centro', 'sur'],
+  // generadores y barreras
+  GEN_HP: 1500,         // vida de cada generador
+  BAR_NEED: 2,          // cuántos generadores de la barrera hay que romper para que caiga (1 = con uno basta)
+  BAR_REARM: 0,         // segundos hasta que una barrera caída se vuelve a levantar con sus generadores (0 = queda abierta para siempre)
+  HIT_CAP: 260,         // tope de daño de un solo impacto a un generador o al boss (el rifle de caza no los borra de un tiro)
+  // boss
+  BOSS_HP: 20000,       // vida de cada boss
+  BOSS_H: 14,           // altura del boss en metros (un jugador mide 1,8)
+  BOSS_R: 2,            // medio ancho del cuerpo (la caja que recibe los tiros mide 2·R de lado)
+  CORE_Y: 9.6,          // altura del núcleo del pecho
+  CORE_FWD: 1.5,        // cuánto sobresale el núcleo hacia adelante
+  CORE_R: 1.15,         // radio del núcleo (punto débil)
+  CORE_MULT: 2,         // el núcleo recibe el doble
+  BOSS_SEE: 48,         // hasta dónde ve y ataca
+  BOSS_TURN: 1.7,       // qué tan rápido gira mientras avisa (radianes por segundo)
+  GCD: [1.5, 2.6],      // descanso entre ataques (mínimo, máximo)
+  ENRAGE: .35,          // con menos de esta fracción de vida ataca más seguido…
+  ENRAGE_CD: .6,        // …descansando este factor
+  /* Los ataques. Cada uno tiene tres etapas: aviso (el boss se prepara y se marca en el piso la zona exacta),
+     golpe (el daño, justo donde decía la marca) y recuperación (queda vendido). `forma` es la figura del daño
+     y también la que dibuja el cliente: arco, anillo, linea, circulo o barrido. `lock` es en qué fracción del
+     aviso deja de girar: a partir de ahí el ataque ya no te sigue y se puede esquivar.
+     r = alcance · cos = coseno del medio ángulo del abanico · w = medio ancho · kick = empujón */
+  ATK: {
+    1: { n: 'latigazo', team: 0, warn: 1,   hit: .18, rec: .7,  forma: 'arco',    r: 19, cos: .42, dmg: 52, kick: 9,  lock: .55, near: 1 },
+    2: { n: 'agarre',   team: 0, warn: 1,   hit: .12, rec: 1.2, forma: 'linea',   r: 40, w: 1.7,   dmg: 22, pull: 32, lock: .6 },
+    3: { n: 'pisotón',  team: 0, warn: 1.1, hit: .22, rec: .9,  forma: 'anillo',  r: 16, dmg: 58,  kick: 11, lock: 0, near: 1, aire: 1 },
+    4: { n: 'pulso',    team: 1, warn: 1,   hit: .22, rec: .8,  forma: 'anillo',  r: 17, dmg: 55,  kick: 13, lock: 0, near: 1 },
+    5: { n: 'salva',    team: 1, warn: 1.1, hit: .5,  rec: .7,  forma: 'orbes',   r: 48, lock: .8 },
+    6: { n: 'rayo',     team: 1, warn: 1.2, hit: 1,   rec: 1,   forma: 'barrido', r: 46, w: 2.2,   dmg: 110, lock: .5, barre: .8 },
+    7: { n: 'zona',     warn: 1.4, hit: .12, rec: .5, forma: 'circulo', r: 7, dmg: 70, kick: 8, lock: .45, suelo: 1 }
+  },
+  GRAB: { pull: 32 },
+  /* Minions defensores (07-partida/5c-minions.js): dos por generador, uno cuerpo a cuerpo y otro a distancia.
+     Molestan y obligan a entrar en equipo, pero no son un muro. */
+  MIN: {
+    POR_GEN: 3,     // guardianes fijos que cuida cada generador
+    // OLEADAS (como los súbditos del LoL): salen de cada fortaleza por los tres carriles y marchan solas
+    OLA_INI: 15,    // la primera oleada sale a los 15 s
+    OLA_CADA: 30,   // y después una cada 30 s
+    OLA_C: 3, OLA_D: 2,   // por carril: 3 cuerpo a cuerpo y 2 a distancia
+    ASEDIO_CADA: 3, // cada 3 oleadas se suma un minion de asedio
+    HP_AS: 240, DMG_AS: 18, RATE_AS: 1.6, RANGE_AS: 6,   // asedio: mucha vida, pega fuerte y lejos
+    GEN_C: 8, GEN_D: 5, GEN_AS: 40,   // daño por golpe a generadores (bajo: ayudan, no reemplazan a los jugadores)
+    BOSS_F: .5,     // contra el boss pegan la mitad que contra un generador
+    SPD_OLA: 4.2,   // marchan más lento que lo que corre un guardián
+    SEE_OLA: 14,    // a qué distancia se trenzan con algo
+    AGGRO: 3,       // castigan al jugador que dañó a un aliado en los últimos 3 s
+    SEP: 1.1,       // se separan de sus compañeros a esta distancia (no se amontonan)
+    CRECE: .10, CRECE_CADA: 180,   // +10 % de vida y daño cada 3 minutos
+    LAST_HIT: 40,
+    INTERES: 70,    // a cada jugador se le mandan solo los minions a menos de 70 m
+    RED_CADA: 3,    // cada cuántos snapshots (20 por segundo) se mandan: 3 = casi 7 por segundo   // bono de créditos para el que da el último golpe
+    PATRULLA: 4,    // radio en metros en el que patrullan alrededor de su puesto cuando no hay nadie
+    HP: 45,
+    DMG_C: 11, RATE_C: .85, RANGE_C: 2.8,    // cuerpo a cuerpo: daño, cada cuánto pega y alcance
+    DMG_D: 8,  RATE_D: 1.5, RANGE_D: 20,     // a distancia
+    SPD: 5.4,       // a cuánto corre (el jugador va a 10)
+    SEE: 21,        // a qué distancia te ve
+    LEASH: 25,      // si te alejás más de esto de su puesto, te deja y vuelve
+    RESP: 25,       // cuánto tarda en volver a aparecer
+    MAX: 30,        // tope de minions de oleada vivos por equipo (los guardianes van aparte: 3 por generador)
+    CRED: 60,       // créditos por matarlo (no cuenta como baja)
+    R: .45, H: 1.5  // radio y alto
+  },
+  ORBS: { n: 3, dmg: 28, speed: 15, turn: 2.4, life: 6, r: 1.3 },   // proyectiles teledirigidos de la salva
+  ZONES_RAGE: 3,        // al abrirse un carril el boss castiga la entrada con esta cantidad de zonas
+  ALERT_EVERY: 12,      // cada cuánto se repite el aviso "están atacando a tu boss" (y el del generador)
+  AVISOS: [300, 120, 60, 30],   // segundos que quedan en los que el locutor avisa
+  // aparición
+  SPAWN_INV: 3,         // segundos de invulnerabilidad al aparecer
+  FWD_SPAWN: true,      // reaparición adelantada a mitad del carril que tu equipo ya abrió
+  // créditos y puntos
+  PAY: { STEP: 200, GEN_HIT: 30, BOSS_HIT: 40, GEN: 300, BAR: 500, BAR_TEAM: 200, BOSS_KILL: 1000 },   // cada STEP de daño paga GEN_HIT o BOSS_HIT
+  // bots
+  BOT_DODGE: [0, .5, .85, 1],   // probabilidad de esquivar un ataque avisado, por dificultad (Fácil a Pesadilla)
+  BOT_DEF: 4                    // uno de cada BOT_DEF bots se queda a defender
+};
+
+/* ---------- Cartas de mejora (estilo roguelike) ----------
+   Solo en los modos con `cards` (Arena, Team Deathmatch y Captura el dominio).
+   A las 3, 7 y 12 bajas le aparecen 3 cartas al azar y se queda con una: máximo 3 por partida.
+   Duran toda la partida y se borran en `restart()`. Los bots eligen al azar y al toque. */
+const CARD_AT = [3, 7, 12];                // bajas que destraban cada carta (cada ronda cuesta más)
+const CARD_MAX = CARD_AT.length;           // cuántas lleva como máximo
+const CARD_PICK = 3;                       // cuántas se ofrecen por vez
+const CARD_TIME = 12;                      // si no elige en 12 s se queda con la primera
+const CARD_FX = {
+  VAMP: .3,                                // vampirismo: te curás con el 30% del daño que hacés
+  DMG: 1.15,                               // carnicero: +15% de daño
+  ARMOR: .85,                              // coraza: -15% de daño recibido
+  CASH: 1.6,                               // botín de guerra: +60% de créditos por baja
+  KILL_AR: 25,                             // trofeo: blindaje por baja
+  KILL_HP: 40,                             // hambre de sangre: vida por baja
+  BURN_T: 3, BURN_DMG: 4, BURN_EVERY: .5,  // toque ígneo: 4 de daño cada 0,5 s durante 3 s (24 en total)
+  BLAST_R: 5.5, BLAST_DMG: 85              // carga mortal: 85 en el centro, 42 en el borde
+};
+const CARDS = [
+  { id: 'vampiro',     name: 'Vampirismo',       desc: 'Te curás con el 30% del daño que hacés',            c: '#d4120f', ic: 'gota',     stat: '30% del daño hecho · tope 100 de vida' },
+  { id: 'cohetero',    name: 'Cohetero',         desc: 'Tus explosiones no te lastiman: rocket jump gratis', c: '#ff7a1a', ic: 'cohete',   stat: 'autodaño 0 (antes 28% del cohete)' },
+  { id: 'bomba',       name: 'Carga mortal',     desc: 'Al morir explotás y te llevás al que esté cerca',    c: '#ffb347', ic: 'bomba',    stat: '85 en el centro · 42 al borde · 5,5 m' },
+  { id: 'igneo',       name: 'Toque ígneo',      desc: 'Al que golpeás lo dejás prendido fuego 3 s',         c: '#ff4a1a', ic: 'llama',    stat: '4 de daño cada 0,5 s durante 3 s' },
+  { id: 'carnicero',   name: 'Carnicero',        desc: 'Pegás más fuerte con todas las armas',               c: '#8dff3a', ic: 'colmillo', stat: '×1,15 de daño' },
+  { id: 'coraza',      name: 'Coraza',           desc: 'Aguantás más: todo lo que te pega hace menos',       c: '#9b4dff', ic: 'escudo',   stat: '×0,85 de daño recibido' },
+  { id: 'botin',       name: 'Botín de guerra',  desc: 'Cada baja te deja más plata para la tienda',         c: '#7fe0a0', ic: 'moneda',   stat: '×1,6 de créditos por baja' },
+  { id: 'trofeo',      name: 'Trofeo',           desc: 'Cada baja te suma blindaje al toque',                c: '#38d6c4', ic: 'placa',    stat: '+25 de blindaje · tope 100' },
+  { id: 'sanguijuela', name: 'Hambre de sangre', desc: 'Cada baja te devuelve vida al instante',             c: '#ff5c8a', ic: 'corazon',  stat: '+40 de vida · tope 100' }
+];
+const CARD_BY = {}; for (const c of CARDS) CARD_BY[c.id] = c;
+const hasCard = (p, id) => !!(p && p.cards && p.cards.indexOf(id) >= 0);
 // sifón: mini escudos que suelta el que muere
 // duran 10 s desde que caen al piso (a los 8 s empiezan a parpadear, eso lo hace el cliente)
+/* ---------- La tormenta del último minuto (por ahora solo Arena: la prende `storm` en MODES) ----------
+   Cuando quedan STORM.WARN segundos (sobre la duración real de la partida, no un número fijo) se avisa,
+   y STORM.DELAY después arranca. La zona segura es un círculo que al principio contiene todo el área
+   jugable y se achica linealmente hasta STORM.MIN_R en STORM.SHRINK segundos. Afuera hay daño continuo
+   que sube con el tiempo y que el blindaje no frena. Un mapa puede declarar `stormCenter: [x, z]` y
+   `stormR` (radio final) si el centro automático no le sirve. */
+const STORM = {
+  WARN: 60,          // avisa cuando queda este tiempo de partida
+  DELAY: 10,         // arranca este rato después del aviso
+  SHRINK: 40,        // cuánto tarda en achicarse del todo
+  MIN_R: 22,         // radio final (se puede pisar por mapa con `stormR`)
+  DMG0: 5,           // daño por segundo al empezar
+  DMG1: 15,          // daño por segundo con la zona ya chica
+  STEP: .25,         // cada cuánto se aplica el daño
+  CROWN_EVERY: 7.5,  // mientras dura, la corona paga cada tanto en lugar de CROWN.EVERY
+  MARGIN: 2          // un poco más grande que el área jugable al arrancar
+};
+/* Las dos cuentas de la tormenta, compartidas entre servidor y cliente: con los parámetros que
+   manda el servidor una sola vez (`i`) y el reloj del servidor alcanza para saber radio y daño.
+   i = [arranque, centro x, centro z, radio inicial, radio final, achique, daño inicial, daño final] */
+const stormK = (i, now) => !i ? 0 : Math.max(0, Math.min(1, i[5] ? (now - i[0]) / i[5] : 1));
+const stormR = (i, now) => !i ? 0 : i[3] + (i[4] - i[3]) * stormK(i, now);
+const stormDmg = (i, now) => !i ? 0 : i[6] + (i[7] - i[6]) * stormK(i, now);
 const SHARD = { N: 5, AR: 5, CAP: 100, LIFE: 10.45, MAX: 80 };
+/* ---------- La Corona (por ahora solo Arena: la prende `crown` en MODES) ----------
+   Hay una sola corona por partida y la lleva uno solo. Aparece a los 45 s de que arranca el reloj
+   y se avisa a todos. Cada 15 s seguidos de tenerla: 1 punto al tablero (el mismo contador de bajas
+   que define al ganador) y 100 créditos para la tienda. Al portador lo ve todo el mundo.
+   Es del servidor: el cliente solo la dibuja. */
+const CROWN = {
+  AT: 45,        // segundos desde que arranca la partida hasta que aparece
+  EVERY: 15,     // cada cuántos segundos seguidos paga (se reinicia al perderla)
+  PTS: 1,        // puntos al tablero por tanda
+  CASH: 300,     // créditos por tanda (una baja da ECON.KILL = 400)
+  KILL_PTS: 2,   // puntos extra para el que mata al portador
+  ARM: 1.5,      // nadie la puede levantar hasta 1,5 s después de que cae
+  IDLE: 20,      // si queda sola este tiempo, se muda lejos del último portador
+  VOID: 5,       // si cae en la lava o fuera del mapa, vuelve a un punto seguro
+  FAR: 18,       // al mudarse busca un punto a más de esta distancia del último portador
+  R: 1.1,        // radio para levantarla
+  HEAD: 1.75,    // altura de la corona sobre el portador
+  BOT_GO: [22, 38, 55, 75],   // a cuántos metros la van a buscar los bots, por dificultad (Fácil a Pesadilla)
+  BOT_AIM: [8, 16, 26, 36]    // cuánto priorizan al portador al elegir a quién dispararle
+};
 // Gungame: arranca con armas fuertes y termina con las difíciles; la última baja es con machete
 const GG = [3, 5, 2, 4, 1, 6, 8, 0, 3, 5, 2, 4, 1, 9, 8, 0, 5, 6, 9, 7];
 const TEAMS = [{ name: 'Rojo', c: '#ff4a3a' }, { name: 'Azul', c: '#3a8bff' }];
@@ -149,6 +317,7 @@ const MEDALS = [
 ];
 const medalOf = L => MEDALS.reduce((a, m) => L >= m.from ? m : a, MEDALS[0]);
 const ACCESSORIES = ['Ninguno', 'Cresta', 'Antena', 'Cuernos', 'Gorra'];
+const EMBLEMS = ['ancla', 'flecha', 'corazon', 'estrella', 'calavera', 'rayo', 'mira', 'corona', 'escudo', 'alas', 'espada', 'ninguno'];   // emblemas del pecho (el dibujo está en el cliente)
 const BOT_NAMES = ['Yacaré', 'Carpincho', 'Surubí', 'Tatú', 'Coatí', 'Aguará', 'Yaguareté', 'Pacú', 'Dorado', 'Tero', 'Hornero', 'Mbiguá', 'Urutaú', 'Tucán', 'Zorro', 'Lobito'];
 
 /* =====================================================================
@@ -254,7 +423,7 @@ function buildRepresa() {
   //   te suben hasta casi el borde y de ahí saltás afuera. Siempre hay una subiendo.
   [[-3.5, -3.5, 0], [3.5, -3.5, 1], [3.5, 3.5, 2], [-3.5, 3.5, 3]].forEach(([x, z, k]) =>
     mover(x - .9, -4.7, z - .9, x + .9, -3.75, z + .9, 'basalt', 1, 3.2, 4.8, k * Math.PI / 2));
-  // plataforma del daño cuádruple y piedras para llegar
+  // plataforma del daño triple y piedras para llegar
   add(-2, 6.6, -2, 2, 7, 2, 'metal');
   [[6.5, 0], [-6.5, 0], [0, 6.5], [0, -6.5]].forEach(([x, z]) => add(x - 1, 6.1, z - 1, x + 1, 6.5, z + 1, 'metal'));
   // balcón perimetral
@@ -503,7 +672,7 @@ function buildPanYManteca() {
   /* ---- estructura de luces (truss) a 12 m ---- */
   add(-14, 11.6, -9.5, 14, 12, -8, 'truss'); add(-14, 11.6, 8, 14, 12, 9.5, 'truss');
   add(-14, 11.6, -8, -12.5, 12, 8, 'truss'); add(12.5, 11.6, -8, 14, 12, 8, 'truss');
-  /* ---- cabina flotante con el cuádruple ---- */
+  /* ---- cabina flotante con el daño triple ---- */
   add(-2.5, 10.6, -2.5, 2.5, 11, 2.5, 'chrome');
   /* ---- partes móviles ---- */
   mover(-14.5, 6.6, -7.5, -11.5, 7, -4.5, 'lift', 0, 26, 10, 0);              // plataforma que cruza el salón
@@ -966,6 +1135,1112 @@ function buildFuertes() {
 }
 MAPDEFS.fuertes = buildFuertes;
 
+/* ---------- El Cuarto Tramo — Costanera de Posadas, Misiones ----------
+   La vieja estación de ladrillo al atardecer, frente al Paraná. Norte = -z (el edificio), sur = +z (el río).
+   · Un solo edificio largo de dos plantas, con galería cubierta abajo y balcón corrido arriba (6 m) con barandas.
+     Adentro: hall central con escaleras y dos alas con habitaciones en planta baja y alta.
+   · Al balcón se sube por escaleras de reja frente a la fachada (a los costados de la locomotora), por el andamio
+     del oeste (plataforma a 3 m con la megasalud) y por la torre del este: plataforma a 3 m, pasarela a 6 m con puerta al piso alto
+     y mirador a 9 m. Un saltador por lado sube de golpe al balcón.
+   · Andén con vías y la locomotora «La Posadeña» (la cabina se atraviesa), vereda, la costanera con gradas
+     y dos muelles. Al sur y al este, solo agua hasta el horizonte: mata al instante. Al oeste, una valla
+     transparente: del otro lado la costanera sigue (solo se ve). Farolas, canteros, banderines y árboles dan vida.
+   · Dos portales enfrentados: amarillo en el andén oeste y azul en el andén este (a campo abierto); cada uno te deja delante del otro. */
+function buildCuartoTramo() {
+  const { B, pads, teles, lava, spawns, lights, add, ramp, wall, stairs, D, face, I, finish } = mapKit();
+  const deco = [];
+  // farola de hierro con farol, como las de la costanera
+  const farola = (x, z, y) => {
+    add(x - .1, y, z - .1, x + .1, y + 4.6, z + .1, 'metal'); add(x - .22, y, z - .22, x + .22, y + .5, z + .22, 'metal', { nc: 1 });
+    add(x - .3, y + 4.6, z - .3, x + .3, y + 5.2, z + .3, 'light', { nc: 1 }); add(x - .4, y + 5.2, z - .4, x + .4, y + 5.35, z + .4, 'black', { nc: 1 }); add(x - .2, y + 5.35, z - .2, x + .2, y + 5.55, z + .2, 'black', { nc: 1 });
+    deco.push({ t: 'glow', x, y: y + 4.9, z, c: 0xffcf8a });
+  };
+  // baranda física de 1 m (se puede saltar, pero no se atraviesa): tramos sueltos para dejar entradas donde llegan las escaleras
+  const bar = (x0, y, z0, x1, z1) => add(Math.min(x0, x1), y, Math.min(z0, z1), Math.max(x0, x1), y + 1, Math.max(z0, z1), 'rail');
+  // escalera de andamio: peldaños de reja; abajo es un bloque cerrado de metal (visible) y arriba queda abierta, con vigas y pilares cada dos peldaños
+  const andamio = (x0, z0, x1, z1, yb, rise, n, axis, dir) => {
+    const lo = axis === 'x' ? x0 : z0, hi = axis === 'x' ? x1 : z1, L = (hi - lo) / n, X = axis === 'x';
+    for (let i = 1; i <= n; i++) {
+      const a = dir > 0 ? lo + (i - 1) * L : hi - i * L, b = a + L, top = yb + rise * i, bajo = top - .2;
+      if (X) add(a, bajo, z0, b, top, z1, 'grate'); else add(x0, bajo, a, x1, top, b, 'grate');
+      if (bajo < 2.2) { if (X) add(a, 0, z0, b, bajo, z1, 'metal'); else add(x0, 0, a, x1, bajo, b, 'metal'); }
+      else if (X) { add(a, bajo - .45, z0, b, bajo, z0 + .14, 'metal'); add(a, bajo - .45, z1 - .14, b, bajo, z1, 'metal'); if (i % 2 === 0) { add(a, 0, z0, a + .14, bajo - .45, z0 + .14, 'metal'); add(a, 0, z1 - .14, a + .14, bajo - .45, z1, 'metal'); } }
+      else { add(x0, bajo - .45, a, x0 + .14, bajo, b, 'metal'); add(x1 - .14, bajo - .45, a, x1, bajo, b, 'metal'); if (i % 2 === 0) { add(x0, 0, a, x0 + .14, bajo - .45, a + .14, 'metal'); add(x1 - .14, 0, a, x1, bajo - .45, a + .14, 'metal'); } }
+    }
+  };
+  // plataforma de andamio: reja, marco de vigas por debajo y pilares hasta el suelo cada ~5 m
+  const cubierta = (x0, z0, x1, z1, yt) => {
+    add(x0, yt - .3, z0, x1, yt, z1, 'grate');
+    add(x0, yt - .65, z0, x1, yt - .3, z0 + .16, 'metal'); add(x0, yt - .65, z1 - .16, x1, yt - .3, z1, 'metal'); add(x0, yt - .65, z0, x0 + .16, yt - .3, z1, 'metal'); add(x1 - .16, yt - .65, z0, x1, yt - .3, z1, 'metal');
+    const nx = Math.max(1, Math.round((x1 - x0) / 5)), nz = Math.max(1, Math.round((z1 - z0) / 5));
+    for (let i = 0; i <= nx; i++) for (let j = 0; j <= nz; j++) {
+      const px = Math.min(Math.max(x0 + (x1 - x0) * i / nx - .1, x0), x1 - .2), pz = Math.min(Math.max(z0 + (z1 - z0) * j / nz - .1, z0), z1 - .2);
+      add(px, 0, pz, px + .2, yt - .65, pz + .2, 'metal');
+    }
+  };
+  const escalera = (x0, x1, z0, z1, n, dir) => { andamio(x0, z0, x1, z1, 0, .5, n, 'x', dir); for (let i = 1; i <= n; i++) { const L = (x1 - x0) / n, a = dir > 0 ? x0 + (i - 1) * L : x1 - i * L; add(a, .5 * i, z1 - .08, a + L, .5 * i + 1, z1, 'rail'); } };
+  /* ---- suelo, río y límites ---- */
+  add(-62, -2, -40, 62, -.03, 24, 'grass');                              // pasto base (patios laterales)
+  add(-50, -2, -26, 50, 0, 8, 'concrete');                               // andén / explanada
+  add(-62, -2, 8, 62, 1, 20, 'tiles');                                   // costanera: paseo elevado 1 m
+  add(-22, -2, -40, 22, 0, -26, 'tiles');                              // piso del hall
+  add(-50, -2, -40, -22, 0, -26, 'concrete'); add(22, -2, -40, 50, 0, -26, 'concrete');   // pisos de las alas
+  add(-50, 0, -26, 50, .2, -23.6, 'brick');                              // vereda de ladrillo bajo la galería
+  stairs(-62, 20, 62, 24, 0, .25, 4, 'z', -1, 'step');                   // gradas de la costanera hasta el río
+  lava.push({ min: [-420, -4, 24], max: [200, 0, 150], water: true, dps: 0 });   // el Paraná al sur: agua que mata, hasta el horizonte
+  lava.push({ min: [62, -4, -43], max: [200, 0, 24], water: true, dps: 0 });     // y al este
+  add(-62, -6, 24, 62, -4, 42, 'rock');
+  // límites: el fondo es la pared del edificio, al este una loma, al oeste una valla transparente
+  add(50.4, -4, -43, 62, 10, -40, 'grass'); add(-50.4, -4, -43, 50.4, 12, -40, 'brick');
+  deco.push({ t: 'palm', x: 56, y: 10, z: -41.5, h: 9 });
+  add(-62.2, -4, -43, -62, 4, 42, 'fence'); add(-62.2, -4, -40.2, -50.4, 4, -40, 'fence');
+  for (let z = -43; z <= 42; z += 6) add(-62.34, 0, z, -62.1, 4.3, z + .3, 'metal'); add(-62.34, 4, -43, -62.1, 4.3, 42, 'metal');
+  for (let x = -62; x <= -50.4; x += 6) add(x, 0, -40.34, x + .3, 4.3, -40.1, 'metal');
+
+  // del otro lado de la valla la costanera sigue (solo se ve, no se puede ir): suelo continuo, paseo, vías y galpones de la estación hasta perderse en la niebla
+  add(-420, -.5, -150, -62.5, -.03, 24, 'grass', { nc: 1 }); add(-420, -.03, -26, -62.5, 0, 8, 'concrete', { nc: 1 });
+  add(-420, -.2, 8, -62.5, 1, 20, 'tiles', { nc: 1 }); add(-420, 1, 11.8, -62.5, 1.02, 12.2, 'brick', { nc: 1 }); add(-420, 1, 16.8, -62.5, 1.02, 17.2, 'brick', { nc: 1 });
+  for (let i = 0; i < 4; i++) add(-420, -1, 23 - i, -62.5, .25 + i * .25, 24 - i, 'step', { nc: 1 });
+  add(-420, 0, -16.4, -62.5, .05, -11.6, 'rock', { nc: 1 }); add(-420, 0, -15.1, -62.5, .14, -14.95, 'metal', { nc: 1 }); add(-420, 0, -13.05, -62.5, .14, -12.9, 'metal', { nc: 1 });
+  for (let x = -64; x > -300; x -= 2) add(x - .4, 0, -15.8, x, .07, -12.2, 'wood', { nc: 1 });
+  for (let k = 0; k < 7; k++) {   // galpones de ladrillo con alero, ventanas y puertas a lo largo del norte
+    const x1 = -64 - k * 40, x0 = x1 - 36, h = k % 2 ? 8 : 7;
+    add(x0, 0, -40, x1, h, -26, 'brick', { nc: 1 }); add(x0 - .6, h, -40.6, x1 + .6, h + .5, -25.4, 'roof', { nc: 1 }); add(x0, h - .6, -26.1, x1, h, -25.9, 'whitewall', { nc: 1 });
+    for (let w = x0 + 3; w < x1 - 2; w += 6) { add(w, 1.2, -26.1, w + 2.2, 3.6, -25.95, 'navy', { nc: 1 }); add(w - .25, 1, -26.15, w + 2.45, 1.2, -25.9, 'whitewall', { nc: 1 }); add(w - .25, 3.6, -26.15, w + 2.45, 3.85, -25.9, 'whitewall', { nc: 1 }); }
+    for (let w = x0 + 6; w < x1 - 4; w += 12) { add(w, 0, -26.1, w + 2.4, 3.2, -25.95, 'black', { nc: 1 }); add(w - .3, 0, -26.15, w + 2.7, 3.5, -25.9, 'whitewall', { nc: 1 }); }
+    add(x0, 3.9, -26, x1, 4.1, -22, 'roof', { nc: 1 }); for (let w = x0 + 2; w < x1; w += 6) add(w, 0, -22.2, w + .2, 3.9, -22, 'metal', { nc: 1 });
+    add(x0, 0, -26, x1, .2, -22, 'brick', { nc: 1 });
+  }
+  add(-420, 0, -150, -64, 26, -110, 'grass', { nc: 1 }); add(-420, 0, -112, -64, 14, -70, 'grass', { nc: 1 });   // lomas del fondo
+  for (let x = -76; x >= -300; x -= 16) { farola(x, 19.6, 1); deco.push({ t: 'palm', x: x + 5, y: 1, z: 10.2, h: 8 }); }
+  for (let x = -70; x >= -290; x -= 20) { add(x, 1, 12, x + 3.4, 1.45, 12.6, 'wood', { nc: 1 }); add(x, 1.45, 12.5, x + 3.4, 2, 12.6, 'wood', { nc: 1 }); }
+  for (let x = -80; x >= -300; x -= 24) farola(x, 6, 0);
+  for (const [x, z] of [[-72, -60], [-90, -64], [-110, -58], [-128, -66], [-150, -60], [-172, -64], [-196, -58], [-220, -66], [-246, -60]]) deco.push({ t: 'tree', x, y: -.03, z, h: 7, r: 3 });
+  // rampas anchas desde el andén a la costanera
+  for (const x of [-42, -6, 32]) ramp(x, 2, x + 10, 8, 0, 0, 1, 'z', 1, 'concrete');
+  // franjas rojas de la costanera (solo pintura)
+  add(-62, 1, 11.8, 62, 1.02, 12.2, 'brick', { nc: 1 }); add(-62, 1, 16.8, 62, 1.02, 17.2, 'brick', { nc: 1 });
+  /* ---- edificio: fachada de dos plantas con arcadas, puertas y ventanas al balcón ---- */
+  const puertas = [D(-9.3, -5.7, 0, 4.2), D(-4.3, -.7, 0, 4.2), D(.7, 4.3, 0, 4.2), D(5.7, 9.3, 0, 4.2), D(-32, -28, 0, 3.6), D(28, 32, 0, 3.6), D(-26.6, -24.2, 1, 3), D(24.2, 26.6, 1, 3), D(-36.4, -34, 1, 3), D(34, 36.4, 1, 3)];
+  const salidas = [-34, -20, 0, 20, 34];
+  for (const c of salidas) puertas.push(D(c - 1.5, c + 1.5, 6, 9.2));                       // puertas al balcón
+  for (let c = -46; c <= 46; c += 6) if (salidas.every(d => Math.abs(c - d) >= 3.6)) puertas.push(D(c - 1.2, c + 1.2, 7.2, 9.6));   // ventanas
+  wall(-50, -26.4, 50, -26, 0, 12, puertas, 'brick');
+  wall(-50.4, -40, -50, -26.4, 0, 12, [D(-35, -31, 0, 3.4)], 'brick');                      // fondo del ala oeste, con puerta al patio
+  wall(50, -40, 50.4, -26.4, 0, 12, [D(-35, -31, 0, 3.4), D(-39, -35, 6, 9.4)], 'brick');   // ala este: puerta al patio y puerta de la pasarela a 6 m
+  wall(-22.4, -40, -22, -26.4, 0, 12, [D(-39.5, -30.5, 0, 3.8), D(-38, -31, 6, 9.4)], 'brick'); // paredes del hall con paso a las alas, abajo y arriba
+  wall(22, -40, 22.4, -26.4, 0, 12, [D(-39.5, -30.5, 0, 3.8), D(-38, -31, 6, 9.4)], 'brick');
+  add(-50.4, 12, -40, 50.4, 12.4, -25.8, 'roof');                        // techo
+  add(-8, 12.4, -26.4, 8, 13.4, -26, 'brick'); add(-5, 13.4, -26.4, 5, 14.2, -26, 'brick');   // frontis
+  add(-50.5, 11.4, -26.6, 50.5, 12.05, -25.8, 'whitewall', { nc: 1 });      // cornisa
+  for (let x = -48; x <= 48; x += 12) if (puertas.every(d => x + .3 < d[0] - .5 || x - .3 > d[1] + .5)) add(x - .3, 0, -26, x + .3, 11.4, -25.72, 'whitewall', { nc: 1 });   // pilastras (nunca dentro de una puerta o ventana)
+  // piso alto: losa con huecos para las dos escaleras del hall
+  add(-50, 5.6, -40, 50, 6, -38, 'tiles'); add(-50, 5.6, -38, -8, 6, -30, 'tiles'); add(8, 5.6, -38, 50, 6, -30, 'tiles');   // piso alto con un atrio abierto en el medio del hall (x -8..8)
+  // barandas físicas del atrio, con entradas donde llegan los saltadores
+  bar(-8, 6, -38.1, 8, -38); bar(-8.1, 6, -38, -8, -35); bar(-8.1, 6, -31, -8, -30); bar(8, 6, -38, 8.1, -35); bar(8, 6, -31, 8.1, -30); bar(-8, 6, -30.1, 8, -30);
+  add(-38, 5.6, -30, -22, 6, -26.4, 'tiles'); add(-10, 5.6, -30, 10, 6, -26.4, 'tiles'); add(22, 5.6, -30, 38, 6, -26.4, 'tiles');
+  stairs(10, -30, 22, -26.4, 0, .5, 12, 'x', -1, 'step'); stairs(-22, -30, -10, -26.4, 0, .5, 12, 'x', 1, 'step');
+  stairs(38, -30, 50, -26.4, 0, .5, 12, 'x', -1, 'step'); stairs(-50, -30, -38, -26.4, 0, .5, 12, 'x', 1, 'step');   // escaleras internas de las alas
+  /* ---- galería cubierta (abajo) y balcón corrido a 6 m con barandas ---- */
+  add(-50, 5.6, -26, 50, 6, -22.4, 'wood');
+  for (const [a, b] of [[-50, -41.5], [-38.5, -36], [-32, 32], [36, 38.5], [41.5, 50]]) bar(a, 6, -22.5, b, -22.4);   // baranda del balcón: entradas en las escaleras y en los saltadores
+  for (let x = -48; x <= 48; x += 8) add(x - .25, 0, -22.9, x + .25, 5.6, -22.4, 'whitewall');
+  for (const x of [-40, -24, -8, 8, 24, 40]) { add(x - .2, 5.2, -24.3, x + .2, 5.6, -23.9, 'light', { nc: 1 }); deco.push({ t: 'glow', x, y: 5.15, z: -24.1, c: 0xffb868 }); }
+  add(-50, 5.2, -22.6, 50, 5.6, -22.4, 'metal', { nc: 1 });   // viga bajo el borde del balcón
+  // escaleras de reja frente a la fachada, del andén al balcón (a los dos lados de la locomotora)
+  escalera(20, 32, -22.4, -19, 12, 1); escalera(-32, -20, -22.4, -19, 12, -1);
+  // rellano al final de cada escalera, pegado al balcón
+  cubierta(32, -22.4, 36, -19, 6); cubierta(-36, -22.4, -32, -19, 6);
+
+  bar(32, 6, -19.1, 36, -19); bar(35.9, 6, -22.4, 36, -19); bar(-36, 6, -19.1, -32, -19); bar(-36, 6, -22.4, -35.9, -19);
+  // saltador desde el andén hasta el balcón
+  for (const s of [-1, 1]) pads.push({ x: s * 40, y: 0, z: -8, r: 1.1, t: [s * 40, 6, -24.2], apex: 2 });
+  // hall: columnas, boletería y cajones
+  for (const [x, z] of [[-8, -38], [8, -38], [-8, -30.3], [8, -30.3]]) add(x - .4, 0, z - .4, x + .4, 12, z + .4, 'whitewall');   // columnas del atrio (hasta el techo)
+  for (const s of [-1, 1]) pads.push({ x: s * 4.5, y: 0, z: -34, r: 1.1, t: [s * 10, 6, -34], apex: 1.5 });   // saltadores del atrio al corredor alto (la trayectoria pasa libre por el hueco)
+  add(-4, 0, -39.4, 4, 1.1, -38.2, 'wood'); add(-4, 1.1, -39.4, 4, 1.2, -38.2, 'navy');
+  add(-19, 0, -39, -15, 1.25, -36.6, 'crate'); add(15, 0, -39, 19, 1.25, -36.6, 'crate');
+  add(-7, 0, -36.4, -4, .45, -35.8, 'wood'); add(4, 0, -36.4, 7, .45, -35.8, 'wood'); add(-7, 0, -32.2, -4, .45, -31.6, 'wood'); add(4, 0, -32.2, 7, .45, -31.6, 'wood'); add(-1.6, 0, -35.6, 1.6, .8, -32.4, 'smooth');   // bancos y altar del arma central
+  add(-14, 0, -39.6, -10, 2.4, -37.4, 'wood'); add(10, 0, -39.6, 14, 2.4, -37.4, 'wood'); add(-14, 2.4, -39.6, -10, 2.6, -37.4, 'navy'); add(10, 2.4, -39.6, 14, 2.6, -37.4, 'navy');   // boleterías
+  add(-18, 6, -36.6, -12, 7.2, -35.4, 'crate'); add(12, 6, -36.6, 18, 7.2, -35.4, 'crate');
+  /* ---- por lado (oeste s=-1, este s=1): habitaciones, costanera y muelle ---- */
+  for (const s of [-1, 1]) {
+    const ax = (x0, y0, z0, x1, y1, z1, m, e) => add(s * x0, y0, z0, s * x1, y1, z1, m, e);
+    for (const x of [30, 42]) ax(x - .4, 0, -33.4, x + .4, 5.6, -32.6, 'whitewall');   // columnas
+    /* planta baja del ala: entrepiso de madera a 3 m al fondo (columnas de hierro, baranda, escalera y un saltador), mostradores, bancos y muros bajos como cobertura */
+    ax(24, 2.8, -40, 48, 3, -36.4, 'wood'); ax(24, 2.5, -36.6, 48, 2.8, -36.4, 'metal', { nc: 1 }); ax(26, 3, -36.5, 43.5, 4, -36.4, 'rail');
+    for (const x of [26, 32, 38, 44]) ax(x - .15, 0, -36.7, x + .15, 2.8, -36.4, 'metal');
+    if (s > 0) stairs(24, -36.4, 30, -34.6, 0, .5, 6, 'x', -1, 'step'); else stairs(-30, -36.4, -24, -34.6, 0, .5, 6, 'x', 1, 'step');
+    ax(24, 0, -33.8, 28.5, 1.1, -33, 'wood'); ax(24, 1.1, -33.8, 28.5, 1.2, -33, 'navy'); ax(43, 0, -32.9, 47.5, 1.1, -32.1, 'wood'); ax(43, 1.1, -32.9, 47.5, 1.2, -32.1, 'navy');
+    ax(23.4, 0, -28.2, 27, .45, -27.6, 'wood'); ax(23.4, .45, -27.7, 27, 1, -27.6, 'wood'); ax(34, 0, -28.2, 37, .45, -27.6, 'wood'); ax(34, .45, -27.7, 37, 1, -27.6, 'wood');
+    ax(33, 0, -31.6, 37, 1.2, -31.2, 'whitewall'); ax(35, 0, -36, 38, 1.2, -35.6, 'whitewall');
+    ax(26, 0, -39.6, 29.5, 1.25, -38.4, 'crate'); ax(34, 0, -39.6, 38, 1.25, -38.4, 'crate'); ax(46, 0, -39.6, 49, 1.25, -38.4, 'crate');
+    /* planta alta del ala: columnas, mesa larga, estantes y cajones de cobertura; baranda en el hueco de la escalera */
+    for (const x of [30, 42]) ax(x - .4, 6, -33.4, x + .4, 12, -32.6, 'whitewall');
+    ax(28, 6, -35, 36, 6.9, -33.6, 'wood'); ax(28, 6.9, -35, 36, 7, -33.6, 'navy');
+    ax(24, 6, -39.8, 31, 8.2, -38.9, 'wood'); ax(39, 6, -39.8, 47, 8.2, -38.9, 'wood');
+    ax(46, 6, -36.6, 48.5, 7.2, -35, 'crate'); ax(36, 6, -38, 40, 7.2, -36.6, 'crate'); ax(26, 6, -33.4, 30, 7.2, -32, 'crate');
+    ax(39, 6, -30.1, 50, 7, -30, 'rail');
+    // barandas bajas (se saltan) en los muelles: frenan al que viene corriendo
+    ax(36, .25, 24, 36.2, 1.35, 36, 'rail'); ax(45.8, .25, 24, 46, 1.35, 36, 'rail'); ax(36, .25, 35.8, 46, 1.35, 36, 'rail');
+    // costanera: bancos, glorieta, farolas
+    ax(14, 1, 12, 18, 1.45, 12.6, 'wood'); ax(14, 1.45, 12.5, 18, 2, 12.6, 'wood'); ax(42, 1, 12, 46, 1.45, 12.6, 'wood'); ax(42, 1.45, 12.5, 46, 2, 12.6, 'wood');
+    for (const [x, z] of [[28, 11], [36, 11], [28, 17], [36, 17]]) ax(x, 1, z, x + .3, 4.4, z + .3, 'wood');
+    ax(27.6, 4.4, 10.6, 36.4, 4.7, 17.4, 'roof');
+    for (const x of [-8, 8, 20, 44, 56]) { const x0 = Math.min(s * x, s * x + 2); add(x0, 1, 9.2, x0 + 2, 1.6, 11.2, 'smooth'); deco.push({ t: 'palm', x: x0 + 1, y: 1.6, z: 10.2, h: 8 }); }
+    for (const x of [12, 30, 48, 60]) farola(s * x, 19.6, 1);
+    ax(2, 1, 19.9, 8, 2, 20, 'rail'); ax(14, 1, 19.9, 32, 2, 20, 'rail'); ax(38, 1, 19.9, 62, 2, 20, 'rail');
+    // muelle sobre el río
+    add(Math.min(s * 36, s * 46), -.15, 24, Math.max(s * 36, s * 46), .25, 36, 'wood');
+    for (const [x, z] of [[36, 24.2], [45.7, 24.2], [36, 35.7], [45.7, 35.7]]) ax(x, -4, z, x + .3, -.15, z + .3, 'wood');
+    deco.push({ t: 'bush', x: s * 55, y: -.03, z: -4, r: 1.1 }, { t: 'bush', x: s * 58, y: -.03, z: -8, r: 1 }, { t: 'palm', x: s * 56, y: -.03, z: -2, h: 9 });
+  }
+  /* ---- andamio del oeste: tramo de abajo, plataforma a 3 m (megasalud) y tramo que entra al balcón ---- */
+  stairs(-61, -18, -57, -12, 0, .5, 6, 'z', -1, 'step');
+  cubierta(-61, -26, -56, -18, 3);
+  andamio(-56, -26, -50, -22.4, 3, .5, 6, 'x', 1);
+
+  bar(-61.1, 3, -26, -61, -18); bar(-61, 3, -26.1, -56, -26); bar(-56.1, 3, -22.4, -56, -18); bar(-57, 3, -18.1, -56, -18);
+  /* ---- torre del este: plataforma a 3 m, pasarela a 6 m (puerta al piso alto) y mirador a 9 m ---- */
+  stairs(57, -18, 61, -12, 0, .5, 6, 'z', -1, 'step');                  // tramo de abajo
+  cubierta(56, -26, 61, -18, 3);                                        // plataforma baja
+  andamio(50, -26, 56, -22.4, 3, .5, 6, 'x', -1);                       // de la plataforma al balcón
+  andamio(57, -34, 61, -26, 3, .5, 6, 'z', -1);                         // de la plataforma a la pasarela
+  cubierta(50.4, -40, 61, -34, 6);                                      // pasarela a 6 m, pegada a la puerta del ala
+  andamio(51, -34, 55, -26, 6, .5, 6, 'z', 1);                          // de la pasarela al mirador
+  cubierta(50.4, -26, 61, -18, 9);                                      // mirador a 9 m
+
+
+
+  bar(61, 3, -26, 61.1, -18); bar(56, 3, -26.1, 57, -26); bar(55.9, 3, -22.4, 56, -18); bar(56, 3, -18.1, 57, -18);
+  bar(61, 6, -40, 61.1, -34); bar(55, 6, -34.1, 57, -34); bar(50.4, 6, -34.1, 51, -34);
+  bar(61, 9, -26, 61.1, -18); bar(50.4, 9, -18.1, 61, -18); bar(55, 9, -26.1, 61, -26); bar(50.4, 9, -22.4, 50.5, -18);
+  /* ---- grúa del patio oeste (solo se ve) ---- */
+  add(-59, 0, -39, -57, 24, -37, 'truss', { nc: 1 }); add(-59, 24, -38.4, -38, 25, -37.6, 'truss', { nc: 1 }); add(-64, 24, -38.4, -59, 25, -37.6, 'truss', { nc: 1 });
+  add(-59.4, 22.2, -39.4, -56.6, 24, -36.6, 'metal', { nc: 1 }); add(-65, 23, -38.8, -62.5, 25, -37.2, 'black', { nc: 1 });
+  add(-45.1, 15, -38.1, -45, 24, -37.9, 'metal', { nc: 1 }); add(-45.4, 14, -38.4, -44.7, 15, -37.6, 'barn', { nc: 1 });
+  // cajones y cobertura en el andén (1,25 m: se saltan)
+  add(-9, 0, -6, -6.5, 1.25, -3.5, 'crate'); add(-6.5, 0, -6, -4, 1.25, -3.5, 'crate'); add(-9, 0, -3.5, -6.5, 2.5, -1, 'crate'); add(-6.5, 0, -3.5, -4, 1.25, -1, 'crate'); add(-9, 2.5, -3.5, -7.75, 3.75, -2.25, 'crate');
+  add(4, 0, 0, 6.5, 1.25, 2.5, 'crate'); add(6.5, 0, 0, 8, 2.5, 1.5, 'crate');
+  add(-30, 0, -6, -27.5, 1.25, -3.5, 'crate'); add(28, 0, -6, 30.5, 1.25, -3.5, 'crate'); add(-30, 0, 2, -27.5, 1.25, 4.5, 'crate'); add(28, 0, 2, 30.5, 1.25, 4.5, 'crate');
+  /* ---- vías y locomotora «La Posadeña»: elevada sobre el chasis y las ruedas, con la cabina enterable ---- */
+  add(-62, 0, -15.1, 62, .14, -14.95, 'metal', { nc: 1 }); add(-62, 0, -13.05, 62, .14, -12.9, 'metal', { nc: 1 });
+  for (let x = -62; x < 62; x += 1.6) add(x, 0, -15.8, x + .4, .07, -12.2, 'wood', { nc: 1 });
+  add(-17, .7, -15.2, 17, 1.6, -12.8, 'black');                            // chasis (el hueco de abajo no se pasa)
+  add(-16.4, 1.6, -15.3, 0, 4.2, -12.7, 'clip');                           // caldera: la forma redonda es visual, esto es la colisión
+  add(8.9, 1.6, -15.5, 17, 3.8, -12.5, 'black');                           // ténder
+  add(9.3, 3.8, -15.2, 16.6, 4.2, -12.8, 'rock', { nc: 1 });               // carbón
+  add(0, 1.4, -15.8, 8.6, 1.63, -12.2, 'metal');                            // cabina a 1,6 m: se sube por escalones y se cruza por las dos puertas
+  wall(0, -15.8, 8.6, -15.5, 1.6, 4.6, [D(3.3, 5.3, 1.6, 4), D(1, 2.6, 2.8, 4), D(6.2, 7.8, 2.8, 4)], 'black');
+  wall(0, -12.5, 8.6, -12.2, 1.6, 4.6, [D(3.3, 5.3, 1.6, 4), D(1, 2.6, 2.8, 4), D(6.2, 7.8, 2.8, 4)], 'black');
+  add(0, 1.6, -15.5, .3, 4.6, -12.5, 'black'); add(8.3, 1.6, -15.5, 8.6, 4.6, -12.5, 'black');
+  add(-.3, 4.6, -16.1, 8.9, 5, -11.9, 'black');
+  add(5.6, 1.6, -15.5, 7.6, 2.4, -14.6, 'metal'); add(.3, 1.6, -14.4, 1.3, 2.8, -13.6, 'metal');
+  stairs(3.3, -12.2, 5.3, -9.8, 0, .4, 4, 'z', -1, 'step'); stairs(3.3, -18.2, 5.3, -15.8, 0, .4, 4, 'z', 1, 'step');
+  deco.push({ t: 'tren' });
+  deco.push({ t: 'cartel', x: 13, y: 2.7, z: -12.47, w: 4.6, h: .9, txt: 'LA POSADEÑA', bg: '#111', fg: '#f4f4f4' }, { t: 'cartel', x: 13, y: 2.7, z: -15.53, w: 4.6, h: .9, txt: 'LA POSADEÑA', bg: '#111', fg: '#f4f4f4', ry: Math.PI });
+  add(-12, 0, -12.7, -10.4, 1.2, -11.1, 'crate'); add(-10.4, 0, -12.7, -8.8, 2.4, -11.1, 'crate'); add(-8.8, 0, -12.7, -7.2, 3.6, -11.1, 'crate');   // cajones escalonados hasta la caldera
+  /* ---- marcos blancos, farolas, canteros, banderines, alero y detalles de la estación real ---- */
+  for (const [a0, a1, y0, y1] of puertas) {
+    add(a0 - .4, y0, -26, a0, y1 + .4, -25.8, 'whitewall', { nc: 1 }); add(a1, y0, -26, a1 + .4, y1 + .4, -25.8, 'whitewall', { nc: 1 }); add(a0 - .4, y1, -26, a1 + .4, y1 + .4, -25.8, 'whitewall', { nc: 1 });
+    if (y0 > 6.5) add(a0 - .3, y0 - .2, -26, a1 + .3, y0, -25.7, 'whitewall', { nc: 1 });
+  }
+  for (const [a0, a1] of puertas.slice(0, 4)) add(a0 + .5, 4.6, -26, a1 - .5, 4.9, -25.85, 'whitewall', { nc: 1 });          // remate de las arcadas
+  for (const x of [-9, -3, 3, 9]) add(x - 1, 3.2, -26.05, x + 1, 4.2, -26, 'navy', { nc: 1 });                              // vidrio sobre las puertas
+  for (const x of [-34, -14, 14, 34]) { add(x - .15, 3, -26, x + .15, 3.5, -25.8, 'light', { nc: 1 }); deco.push({ t: 'glow', x, y: 3.25, z: -25.6, c: 0xffb060 }); }                         // faroles de pared
+  add(-39.4, 1.2, -26, -38.8, 1.9, -25.75, 'barn', { nc: 1 });                                                               // buzón rojo
+  // alero de chapa sobre el balcón, con columnas finas de hierro
+  for (const x of [-46, -34, -26, -14, -6, 6, 14, 26, 34, 46]) add(x - .1, 6, -22.8, x + .1, 9.9, -22.6, 'metal');
+  add(-50.5, 9.9, -26.6, 50.6, 10.15, -22.3, 'roof'); add(-50.5, 9.6, -22.4, 50.6, 9.9, -22.3, 'metal', { nc: 1 }); add(-50.5, 10.15, -22.4, 50.6, 11.15, -22.3, 'rail');   // el alero se pisa: pasarela alta sobre el balcón
+  add(51.6, 8.7, -26, 52.6, 9.5, -22.4, 'grate'); add(50.6, 8.7, -26, 51.6, 10, -22.4, 'grate');   // dos escalones del mirador al alero
+  // enredaderas colgando del alero (ambiente)
+  for (let x = -48; x <= 48; x += 2.7) deco.push({ t: 'enredadera', x, y: 9.62, z: -22.34, len: 1.1 + Math.abs(Math.sin(x * 3.1)) * 1.8, ry: 0 });
+  // canteros blancos con plantas bajo la galería
+  for (const x of [-44, -28, -12, 12, 28, 44]) { add(x - .45, 0, -25.05, x + .45, .55, -24.15, 'whitewall'); deco.push({ t: 'bush', x, y: .55, z: -24.6, r: .5 }); }
+  // banderines colgados bajo el balcón
+  const banderin = ['barn', 'navy', 'light'];
+  for (let x = -24; x <= 24; x++) add(x - .14, 5.1 - .35 * (1 - Math.abs(((x + 48) % 8) - 4) / 4), -23.4, x + .14, 5.45 - .35 * (1 - Math.abs(((x + 48) % 8) - 4) / 4), -23.38, banderin[(x + 24) % 3], { nc: 1 });
+  // farolas, bancos y tachos en el andén
+  for (const [x, z] of [[-46, -1], [-34, -10], [-18, -9], [18, -9], [34, -10], [46, -1], [-20, 6], [20, 6]]) farola(x, z, 0);
+  add(-28, 0, -10.6, -25, .45, -10, 'wood'); add(-28, .45, -10.1, -25, 1, -10, 'wood'); add(25, 0, -10.6, 28, .45, -10, 'wood'); add(25, .45, -10.1, 28, 1, -10, 'wood');
+  for (const [x, z] of [[-18, -8], [18, -8], [-32, -10], [32, -10], [0, 6.5], [-46, 6]]) add(x - .25, 0, z - .25, x + .25, .9, z + .25, 'metal');
+  // balasto de las vías y cartel del andén
+  add(-62, 0, -16.4, 62, .05, -11.6, 'rock', { nc: 1 });
+  add(-48.9, 0, -10.2, -48.7, 2, -10, 'metal'); add(-45.3, 0, -10.2, -45.1, 2, -10, 'metal');
+  deco.push({ t: 'cartel', x: -47, y: 1.55, z: -9.95, w: 3.6, h: .9, txt: 'POSADAS', bg: '#111', fg: '#fff', ry: Math.PI });
+  deco.push({ t: 'pole', x: -13, y: 0, z: -21, h: 9, flag: 'ar' }, { t: 'pole', x: 13, y: 0, z: -21, h: 9, flag: 'mis' });
+  deco.push({ t: 'tree', x: -54, y: -.03, z: -36, h: 6, r: 2.6 }, { t: 'tree', x: -58, y: -.03, z: -33, h: 5.5, r: 2.3 });
+  // lanchas sobre el río (solo se ven)
+  for (const [x, z, r] of [[-22, 62, 0], [30, 80, 1], [75, 55, 0]]) {
+    add(x, -.3, z, x + 3, .5, z + 9, 'wood', { nc: 1 }); add(x + .4, .5, z + 2, x + 2.6, 1.8, z + 5.5, 'whitewall', { nc: 1 }); add(x + .3, 1.8, z + 1.8, x + 2.7, 2, z + 5.7, 'barn', { nc: 1 });
+    if (r) add(x + 1.4, 2, z + 3, x + 1.6, 4.3, z + 3.2, 'metal', { nc: 1 });
+  }
+  /* ---- muros invisibles (nadie sale por arriba de la valla ni de las paredes) y barandas bajas en la orilla ---- */
+  add(-62.5, -4, -43, -62, 40, 43, 'clip'); add(-62.5, -4, -40.5, -50.4, 40, -40, 'clip');
+  add(-63, 12, -43, 63, 40, -40, 'clip'); add(50.4, 10, -43, 62, 40, -40, 'clip');
+  add(-50.6, 12.4, -40, 50.7, 60, -25.4, 'clip');   // el techo del edificio es inalcanzable (ni con rocket jump): todo el volumen de arriba es sólido
+  add(-62, .25, 23.8, -46, 1.35, 24, 'rail'); add(-36, .25, 23.8, 36, 1.35, 24, 'rail'); add(46, .25, 23.8, 62, 1.35, 24, 'rail');   // sobre el último escalón de la costanera
+  add(61.5, 0, -40, 62, 1, 8, 'rail'); add(61.5, 1, 8, 62, 2, 20, 'rail'); add(61.5, -1, 20, 62, 1.6, 24, 'rail');             // borde este
+  for (const x of [-30, 30]) { add(x - .07, .25, 23.45, x + .07, 1.95, 23.59, 'wood'); deco.push({ t: 'aviso', x, y: 2.3, z: 23.52, ry: 0 }); }
+  for (const [z, y] of [[-4, 0]]) { add(61.1, y, z - .07, 61.24, y + 1.75, z + .07, 'wood'); deco.push({ t: 'aviso', x: 61.17, y: y + 2.1, z, ry: -Math.PI / 2 }); }
+  /* ---- carteles ---- */
+  deco.push({ t: 'cartel', x: 0, y: 10.9, z: -25.97, w: 10, h: 1.4, txt: 'ESTACIÓN POSADAS', bg: '#5a2a1c', fg: '#f3d9a8' });
+  add(-3.6, 0, 8.9, -3.4, 3.4, 9.1, 'metal'); add(3.4, 0, 8.9, 3.6, 3.4, 9.1, 'metal');
+  add(-3.6, 2.25, 8.8, 3.6, 3.35, 8.92, 'clip');                                     // el panel del cartel es sólido (colisión invisible)
+  deco.push({ t: 'cartel', x: 0, y: 2.8, z: 8.85, w: 7.4, h: 1.1, txt: 'COSTANERA · POSADAS', bg: '#1f3a2e', fg: '#f3d9a8', ry: Math.PI });
+  /* ---- portales enfrentados: el amarillo en el andén oeste, el azul en el andén este (a campo abierto); cada uno te deja delante del otro ---- */
+    teles.push({ x: -44, y: 0, z: -6, r: 1, to: [37.5, 0, -6], yaw: face(37.5, -6, 0, 0), color: 'yellow' });
+  teles.push({ x: 44, y: 0, z: -6, r: 1, to: [-37.5, 0, -6], yaw: face(-37.5, -6, 0, 0), color: 'blue' });
+  deco.push({ t: 'portal', x: -44, y: 0, z: -6, r: 1, color: 'yellow' }, { t: 'portal', x: 44, y: 0, z: -6, r: 1, color: 'blue' });
+  /* ---- ítems: todo lo que ya existe, repartido por zonas ---- */
+  // hall y piso alto
+  I('w2', 0, .8, -34); I('w3', 7, 0, -37); I('health', -6, 0, -38.6); I('health', 6, 0, -38.6); I('armor', -8, 0, -29.5); I('shells', 8, 0, -29.5);
+  I('bullets', 0, 6, -39); I('armor', -30, 3, -38.2); I('armor', 30, 3, -38.2); I('armorH', -17, 6, -38); I('health', 17, 6, -38); I('slugs', 0, 6, -28);
+  // ala oeste: planta baja y habitación alta
+  I('w1', -36, 0, -34); I('armor', -47, 0, -35.5); I('health', -30, 0, -30); I('bullets', -40, 0, -31); I('armor', -41, 0, -37.2);
+  I('w2', -36, 6, -32); I('health', -28, 6, -30); I('grenades', -44, 6, -32); I('shells', -44, 6, -37.5);
+  // ala este
+  I('w4', 36, 0, -34); I('armor', 47, 0, -35.5); I('armor', 41, 0, -37.2); I('health', 30, 0, -30); I('rockets', 40, 0, -31);
+  I('w9', 36, 6, -32); I('armor', 28, 6, -30); I('rockets', 44, 6, -32); I('health', 44, 6, -37.5);
+  // balcón
+  I('health', 0, 6, -24.2); I('armor', -30, 6, -24.2); I('armor', 30, 6, -24.2); I('health', 20, 10.15, -24.4); I('health', -44, 3, -38.2); I('health', 44, 3, -38.2); I('armor', 44, 10.15, -24.4);
+  // locomotora: daño triple en la cabina, botiquín arriba de la caldera
+  I('quad', 4, 1.63, -14); I('health', -8, 4.2, -14);
+  // andén
+  I('health', -19, 0, -20); I('health', 19, 0, -20); I('armor', -24, 0, 3); I('armor', 24, 0, 5); I('w1', 4, 0, -2); I('shells', -12, 0, -7); I('bullets', 12, 0, -7);
+  I('bullets', -34, 0, -19); I('shells', 34, 0, -19); I('health', 0, 0, -3);
+  // costanera
+  I('health', -32, 1, 14); I('health', 32, 1, 14); I('health', 0, 1, 16); I('w3', -14, 1, 15); I('caza', 14, 1, 15); I('grenades', -48, 1, 12); I('rockets', 48, 1, 16); I('slugs', -8, 1, 13);
+  // patios, andamios y muelles (premios con riesgo: el agua mata)
+  I('health', -56, 0, -6); I('health', 56, 0, -6); I('armor', -56, 0, -1); I('slugs', 56, 0, -1);
+  I('armorH', -41, .25, 32); I('armorH', 41, .25, 32);
+  I('mega', -58.5, 3, -22); I('health', -58.5, 3, -19.5);
+  I('w6', 58.5, 3, -24); I('w6', 58.5, 3, -20); I('health', 55, 6, -37); I('w8', 58.5, 9, -22); I('w5', 54.5, 9, -20.5);
+  /* ---- apariciones: andén, balcón, costanera, patios, hall, alas y habitaciones ---- */
+  [[-36, 0, -17], [-12, 0, -20], [12, 0, -20], [36, 0, -17], [-20, 0, -8], [0, 0, -6], [20, 0, -8], [-40, 0, 0], [40, 0, 0], [-10, 0, 5], [10, 0, 5],
+   [-50, 1, 14], [-25, 1, 16], [0, 1, 12], [25, 1, 16], [50, 1, 14], [-56, 0, -10], [56, 0, -10],
+   [-14, 0, -34], [14, 0, -34], [0, 0, -30], [-14, 6, -33], [14, 6, -33], [-32, 0, -37], [32, 0, -37], [-34, 6, -30], [34, 6, -30],
+   [-30, 6, -24.2], [-10, 6, -24.2], [10, 6, -24.2], [30, 6, -24.2]]
+    .forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
+  /* ---- luces ---- */
+  lights.push({ x: 0, y: 5, z: -33, c: 0xffa860, i: .8, d: 26 }, { x: 0, y: 10, z: -34, c: 0xffa860, i: .6, d: 22 },
+    { x: -36, y: 4, z: -33, c: 0xff9a60, i: .6, d: 22 }, { x: 36, y: 4, z: -33, c: 0xff9a60, i: .6, d: 22 },
+    { x: -36, y: 9, z: -32, c: 0xffb070, i: .6, d: 22 }, { x: 36, y: 9, z: -32, c: 0xffb070, i: .6, d: 22 },
+    { x: -24, y: 5, z: -24, c: 0xffb070, i: .6, d: 22 }, { x: 24, y: 5, z: -24, c: 0xffb070, i: .6, d: 22 },
+    { x: -20, y: 6, z: -10, c: 0xff9a60, i: .5, d: 28 }, { x: 20, y: 6, z: -10, c: 0xff9a60, i: .5, d: 28 }, { x: 0, y: 5, z: -8, c: 0xffa060, i: .5, d: 28 },
+    { x: -30, y: 5, z: 14, c: 0xffa060, i: .6, d: 24 }, { x: 30, y: 5, z: 14, c: 0xffa060, i: .6, d: 24 },
+    { x: -44, y: 3, z: -6, c: 0xffc840, i: .9, d: 14 }, { x: 44, y: 3, z: -6, c: 0x4aa0ff, i: .9, d: 14 });
+  {   // juntas: los bloques sólidos del mismo material que se tocan se solapan 6 mm (sin grietas de un píxel entre ellos)
+    const S = B.filter(b => !b.nc && !b.mover && !b.ramp && b.mat !== 'clip'), g = S.map(() => [[0, 0], [0, 0], [0, 0]]);
+    for (let i = 0; i < S.length; i++) for (let j = i + 1; j < S.length; j++) {
+      const a = S[i], b = S[j]; if (a.mat !== b.mat) continue;
+      for (let ax = 0; ax < 3; ax++) {
+        const u = (ax + 1) % 3, v = (ax + 2) % 3;
+        if (Math.min(a.max[u], b.max[u]) - Math.max(a.min[u], b.min[u]) < .01 || Math.min(a.max[v], b.max[v]) - Math.max(a.min[v], b.min[v]) < .01) continue;
+        if (Math.abs(a.max[ax] - b.min[ax]) < 1e-6) { g[i][ax][1] = 1; g[j][ax][0] = 1; } else if (Math.abs(b.max[ax] - a.min[ax]) < 1e-6) { g[j][ax][1] = 1; g[i][ax][0] = 1; }
+      }
+    }
+    S.forEach((b, i) => { for (let ax = 0; ax < 3; ax++) { if (g[i][ax][0]) b.min[ax] -= .006; if (g[i][ax][1]) b.max[ax] += .006; } });
+  }
+  for (const b of B) if (b.nc && b.mat !== 'clip') for (let k = 0; k < 3; k++) { b.min[k] -= .012; b.max[k] += .012; }   // evita caras coplanares (z-fighting)
+  return finish({ id: 'cuartotramo', name: 'El Cuarto Tramo', bounds: { x0: -62, x1: 62, z0: -42, z1: 42 }, deco,
+    theme: { sky: 'sunset', tex: 'ut', fog: 0x8a5262, fogD: .0042, amb: 0xb88a80, ambI: .78, hemi: [0xff9a84, 0x34364e, .7], sun: true, sunC: 0xff8a40, sunI: .85, sunPos: [-46, 21, -30], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
+}
+MAPDEFS.cuartotramo = buildCuartoTramo;
+/* ---------- Skatenight — el skatepark de la Costanera de Posadas, de noche ----------
+   Norte = -z (el río y la tribuna), sur = +z (la calle). Mapa de noche: en el cliente (theme.noche) cada arma lleva linterna
+   y los rivales casi no se ven hasta que los alumbrás o te alumbran.
+   · Plaza de concreto a nivel 0 con un pozo en L al oeste (-3 m), un pozo en L grande al sureste (-3,2 m), pirámides/hips, un spine, una caja
+     de «bank to ledge», bancos con terraza contra las vallas y una escalera con terraza.
+   · Tribuna de 10 gradas al norte (sube hasta 5 m, con pasillo y baranda sobre el río).
+   · Tres torres de andamio (oeste-norte, sur-oeste y este) con piso a 2,5 y a 5 m, unidas por pasarelas a 5 m con la tribuna.
+   · Cuatro saltadores y dos portales (uno en el rincón sur-oeste y otro arriba de la tribuna: lejísimos entre sí).
+   · Casi todos los reflectores están apagados: solo algunos pozos de luz, la linterna y la luna. */
+function buildSkatenight() {
+  const { B, pads, teles, lava, spawns, lights, add, ramp, wall, stairs, D, face, I, mover, finish } = mapKit();
+  const deco = [];
+  // baranda: la colisión es un bloque de 1 m (se salta, no se atraviesa) y lo que se ve son dos rieles, postes cada ~2 m y una malla de alambre vieja
+  const bar = (x0, z0, x1, z1, y) => {
+    const ax = Math.min(x0, x1), bx = Math.max(x0, x1) + (x0 === x1 ? .1 : 0), az = Math.min(z0, z1), bz = Math.max(z0, z1) + (z0 === z1 ? .1 : 0);
+    add(ax, y, az, bx, y + 1, bz, 'clip');
+    const alongX = (bx - ax) >= (bz - az), a0 = alongX ? ax : az, a1 = alongX ? bx : bz, c = alongX ? (az + bz) / 2 : (ax + bx) / 2, n = Math.max(1, Math.round((a1 - a0) / 2));
+    const seg = (a, b, y0, y1, t, m) => alongX ? add(a, y0, c - t, b, y1, c + t, m, { nc: 1 }) : add(c - t, y0, a, c + t, y1, b, m, { nc: 1 });
+    seg(a0, a1, y + .93, y + 1.01, .035, 'metal'); seg(a0, a1, y + .46, y + .5, .03, 'metal'); seg(a0, a1, y + .04, y + .92, .01, 'fence');
+    for (let i = 0; i <= n; i++) { const q = a0 + (a1 - a0) * i / n; seg(Math.max(a0, q - .04), Math.min(a1, q + .04), y, y + 1.02, .045, 'metal'); }
+  };
+  // pilar de hierro con base de hormigón y capitel (centro x, z; y1 = altura de arriba)
+  const pilar = (x, z, y1) => { add(x - .27, 0, z - .27, x + .27, .22, z + .27, 'concrete'); add(x - .12, .22, z - .12, x + .12, y1 - .12, z + .12, 'metal'); add(x - .24, y1 - .12, z - .24, x + .24, y1, z + .24, 'metal'); };
+  // muro de cobertura de 3 m con remate liso arriba y zócalo abajo
+  const muro = (x0, z0, x1, z1) => { add(x0, 0, z0, x1, 3, z1, 'concrete'); add(x0 - .09, 3, z0 - .09, x1 + .09, 3.14, z1 + .09, 'smooth'); add(x0 - .06, 0, z0 - .06, x1 + .06, .22, z1 + .06, 'concrete', { nc: 1 }); };
+  // borde metálico (coping) de la boca de un pozo: solo se ve
+  const lipX = (x0, x1, z) => add(x0 - .07, 0, z - .08, x1 + .07, .08, z + .08, 'metal', { nc: 1 });
+  const lipZ = (z0, z1, x) => add(x - .08, 0, z0 - .07, x + .08, .08, z1 + .07, 'metal', { nc: 1 });
+  const graf = (x, y, z, w, h, txt, fg, bg, ry) => deco.push({ t: 'cartel', x, y, z, w, h, txt, fg, bg: bg || '#1d1d22', ry: ry || 0 });
+  // reflector de estadio (4 cabezales): base de hormigón con bulones, tramo grueso y fino, travesaño, viseras; apagado casi siempre; y0 = piso donde apoya
+  const poste = (x, z, on, y0) => {
+    y0 = y0 || 0;
+    add(x - .32, y0, z - .32, x + .32, y0 + .3, z + .32, 'concrete'); add(x - .15, y0 + .3, z - .15, x + .15, y0 + 3.5, z + .15, 'metal'); add(x - .1, y0 + 3.5, z - .1, x + .1, y0 + 6.8, z + .1, 'metal');
+    for (const [qx, qz] of [[.22, .22], [-.22, .22], [.22, -.22], [-.22, -.22]]) add(x + qx - .03, y0 + .3, z + qz - .03, x + qx + .03, y0 + .5, z + qz + .03, 'metal', { nc: 1 });
+    add(x - 1.05, y0 + 6.8, z - .12, x + 1.05, y0 + 6.97, z + .12, 'metal', { nc: 1 });
+    for (const dx of [-.7, -.23, .23, .7]) {
+      add(x + dx - .18, y0 + 6.97, z - .24, x + dx + .18, y0 + 7.42, z + .24, 'black', { nc: 1 }); add(x + dx - .2, y0 + 7.1, z + .22, x + dx + .2, y0 + 7.42, z + .27, 'metal', { nc: 1 });
+      if (on) add(x + dx - .14, y0 + 6.92, z - .17, x + dx + .14, y0 + 6.97, z + .17, 'light', { nc: 1 });
+    }
+    if (on) deco.push({ t: 'glow', x, y: y0 + 6.7, z, c: 0xffc070 });
+  };
+  // graffitis (deco 'graf'): cada pieza es un cuadro del atlas de aerosol (64 diseños, ver 03-decoracion.js) apoyado sobre una superficie.
+  // cover() cubre un rectángulo de una pared, rampa o piso con piezas superpuestas; el azar es fijo, así que el mapa sale siempre igual
+  let gs = 7; const rnd = () => { gs = (gs * 1664525 + 1013904223) >>> 0; return gs / 4294967296; };
+  const piece = (cx, cy, cz, rx, ry, u, v, w, h, k) => {
+    const cr = Math.cos(ry), sr = Math.sin(ry), sx = Math.sin(rx), cxr = Math.cos(rx);
+    deco.push({ t: 'graf', x: cx + u * cr + v * sx * sr, y: cy + v * cxr, z: cz - u * sr + v * sx * cr, w, h, k, rx, ry, fl: k >= 28 && rnd() < .5 });
+  };
+  // (cx, cy, cz) = centro de la superficie · ry = hacia dónde mira · alpha = inclinación (0 piso, PI/2 pared) · W ancho · H alto (largo de la pendiente)
+  // GD: cuánto del mapa está pintado (menos graffitis = más abandono); los decals de abandono (dpiece) van en las mismas superficies
+  const GD = .3;
+  const dpiece = (cx, cy, cz, rx, ry, u, v, w, k) => {
+    const cr = Math.cos(ry), sr = Math.sin(ry), sx = Math.sin(rx), cxr = Math.cos(rx);
+    deco.push({ t: 'decal', x: cx + u * cr + v * sx * sr, y: cy + v * cxr, z: cz - u * sr + v * sx * cr, w, h: w, k, rx, ry, rz: 0 });
+  };
+  const cover = (cx, cy, cz, ry, alpha, W, H, dens) => {
+    const rx = alpha - Math.PI / 2, nx = Math.sin(ry) * Math.sin(alpha), ny = Math.cos(alpha), nz = Math.cos(ry) * Math.sin(alpha);
+    if (alpha > .05) for (let n = Math.round(W * H / 16), i = 0; i < n; i++) {   // grietas, manchas, óxido, musgo y sangre sobre pared o rampa
+      const k = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 26, 27, 28, 29][Math.floor(rnd() * 22)];
+      const sz = Math.min(1.8 + rnd() * 2.6, W * .9, H * .95);   // nunca más grande que la superficie ni fuera de ella
+      dpiece(cx + nx * .035, cy + ny * .035, cz + nz * .035, rx, ry, (rnd() - .5) * (W - sz), (rnd() - .5) * (H - sz), sz, k);
+    }
+    cx += nx * .05; cy += ny * .05; cz += nz * .05;
+    const cols = Math.max(1, Math.round(W / 4.8)), rows = Math.max(1, Math.round(H / 2.7));
+    for (let a = 0; a < cols; a++) for (let b = 0; b < rows; b++) {
+      if (rnd() > (dens || 1) * GD) continue;
+      const w = Math.min(4.4 + rnd() * 2, W), h = Math.min(w * .52, H * 1.06), clp = (v, m) => m <= 0 ? 0 : Math.max(-m / 2, Math.min(m / 2, v));   // la pieza queda dentro de la superficie
+      piece(cx, cy, cz, rx, ry, clp((a + .5 + (rnd() - .5) * .5) * W / cols - W / 2, W - w), clp((b + .5 + (rnd() - .5) * .4) * H / rows - H / 2, H - h), w, h, Math.floor(rnd() * 64));
+    }
+  };
+  // las dos caras de un muro fino (ry: hacia dónde mira cada cara)
+  const wallArt = (x0, z0, x1, z1, h) => {
+    if (x1 - x0 >= z1 - z0) { const cx = (x0 + x1) / 2, W = x1 - x0; cover(cx, h / 2, z0, Math.PI, Math.PI / 2, W, h, .95); cover(cx, h / 2, z1, 0, Math.PI / 2, W, h, .95); }
+    else { const cz = (z0 + z1) / 2, W = z1 - z0; cover(x0, h / 2, cz, -Math.PI / 2, Math.PI / 2, W, h, .95); cover(x1, h / 2, cz, Math.PI / 2, Math.PI / 2, W, h, .95); }
+  };
+  // palmera con tronco sólido (el tronco es invisible, la copa la dibuja la decoración)
+  const palma = (x, z, h) => { deco.push({ t: 'palm', x, y: 0, z, h }); add(x - .25, 0, z - .25, x + .25, 4, z + .25, 'clip'); };
+  // coronamiento (borde liso) de la boca de un bowl
+  const coping = (x0, z0, x1, z1) => { add(x0, 0, z0, x1, .09, z0 + .22, 'smooth', { nc: 1 }); add(x0, 0, z1 - .22, x1, .09, z1, 'smooth', { nc: 1 }); add(x0, 0, z0, x0 + .22, .09, z1, 'smooth', { nc: 1 }); add(x1 - .22, 0, z0, x1, .09, z1, 'smooth', { nc: 1 }); };
+  // pirámide (hip): tope liso a altura h y cuatro rampas de w metros
+  const hip = (cx, cz, hx, hz, h, w) => {
+    add(cx - hx, 0, cz - hz, cx + hx, h, cz + hz, 'smooth');
+    ramp(cx - hx, cz - hz - w, cx + hx, cz - hz, 0, 0, h, 'z', 1, 'concrete'); ramp(cx - hx, cz + hz, cx + hx, cz + hz + w, 0, 0, h, 'z', -1, 'concrete');
+    ramp(cx - hx - w, cz - hz, cx - hx, cz + hz, 0, 0, h, 'x', 1, 'concrete'); ramp(cx + hx, cz - hz, cx + hx + w, cz + hz, 0, 0, h, 'x', -1, 'concrete');
+    add(cx - hx, h, cz - hz, cx + hx, h + .07, cz - hz + .1, 'metal', { nc: 1 }); add(cx - hx, h, cz + hz - .1, cx + hx, h + .07, cz + hz, 'metal', { nc: 1 });   // coping de los bordes del tope
+    add(cx - hx, h, cz - hz, cx - hx + .1, h + .07, cz + hz, 'metal', { nc: 1 }); add(cx + hx - .1, h, cz - hz, cx + hx, h + .07, cz + hz, 'metal', { nc: 1 });
+  };
+  // torre de andamio de 6x6: piso a 2,5 (escalera desde el sur) y piso a 5 en la mitad este (escalera interna); rail=sin baranda en esa cara del piso alto
+  const torre = (x0, z0, abierto) => {
+    add(x0, 2.2, z0, x0 + 6, 2.5, z0 + 6, 'grate'); add(x0 + 3, 4.7, z0, x0 + 6, 5, z0 + 6, 'grate');
+    for (const [px, pz] of [[x0, z0], [x0 + 5.8, z0], [x0, z0 + 5.8], [x0 + 5.8, z0 + 5.8]]) pilar(px + .1, pz + .1, px > x0 ? 4.7 : 2.2);
+    // marcos de vigas bajo cada piso (sólidos, por encima de la cabeza) y nervios que se ven desde abajo
+    for (const [ax, az, bx, bz, y1, y2] of [[x0, z0, x0 + 6, z0 + .16, 1.95, 2.2], [x0, z0 + 5.84, x0 + 6, z0 + 6, 1.95, 2.2], [x0, z0, x0 + .16, z0 + 6, 1.95, 2.2], [x0 + 5.84, z0, x0 + 6, z0 + 6, 1.95, 2.2],
+      [x0 + 3, z0, x0 + 6, z0 + .16, 4.45, 4.7], [x0 + 3, z0 + 5.84, x0 + 6, z0 + 6, 4.45, 4.7], [x0 + 3, z0, x0 + 3.16, z0 + 6, 4.45, 4.7], [x0 + 5.84, z0, x0 + 6, z0 + 6, 4.45, 4.7]]) add(ax, y1, az, bx, y2, bz, 'metal');
+    for (const i of [2, 4]) add(x0 + i, 2.05, z0, x0 + i + .1, 2.2, z0 + 6, 'metal', { nc: 1 });
+    add(x0 + 4.5, 4.55, z0, x0 + 4.6, 4.7, z0 + 6, 'metal', { nc: 1 });
+    add(x0 + 2.9, 2.5, z0 + 5.8, x0 + 3.1, 4.7, z0 + 6, 'metal');                   // apoyo del piso alto (sobre la baranda sur)
+    stairs(x0, z0 + 6, x0 + 2, z0 + 11, 0, .5, 5, 'z', -1, 'metal');                 // subida al piso bajo
+    stairs(x0, z0, x0 + 3, z0 + 2, 2.5, .5, 5, 'x', 1, 'metal');                     // del piso bajo al alto
+    bar(x0, z0, x0 + 6, z0, 2.5); bar(x0, z0 + 2, x0, z0 + 6, 2.5); bar(x0 + 2, z0 + 6, x0 + 6, z0 + 6, 2.5); bar(x0 + 6, z0, x0 + 6, z0 + 6, 2.5);   // piso bajo
+    // piso alto: el hueco de la baranda es donde sale la pasarela (norte: x0+4..x0+6 · este: z0+2..z0+4)
+    if (abierto === 'n') bar(x0 + 3, z0, x0 + 4, z0, 5); else bar(x0 + 3, z0, x0 + 6, z0, 5);
+    if (abierto === 'e') { bar(x0 + 6, z0, x0 + 6, z0 + 2, 5); bar(x0 + 6, z0 + 4, x0 + 6, z0 + 6, 5); } else bar(x0 + 6, z0, x0 + 6, z0 + 6, 5);
+    bar(x0 + 3, z0 + 6, x0 + 6, z0 + 6, 5);
+    // farol del piso alto
+    add(x0 + 5.4, 5, z0 + .4, x0 + 5.6, 6.6, z0 + .6, 'metal'); add(x0 + 5.1, 6.6, z0 + .1, x0 + 5.9, 6.8, z0 + .9, 'black', { nc: 1 });
+    deco.push({ t: 'glow', x: x0 + 5.5, y: 6.45, z: z0 + .5, c: 0x9ac0ff });
+  };
+
+  /* ---- suelo: subsuelo de roca, plaza con dos huecos (bowls) y borde ---- */
+  add(-70, -8, -60, 70, -3.5, 60, 'rock');
+  const slab = (x0, z0, x1, z1) => add(x0, -3.5, z0, x1, 0, z1, 'concrete');
+  slab(-26, -32, 55.8, -10); slab(-34, -10, 55.8, -4); slab(-55.8, -10, -52, -4); slab(-34, -4, 55.8, 12); slab(-55.8, 12, 55.8, 22);
+  slab(-55.8, 22, 20, 52); slab(46, 22, 55.8, 52); slab(20, 38, 28, 52); slab(28, 50, 46, 52);   // al sureste queda el hueco del pozo en L grande
+  slab(-55.8, -36, 55.8, -32); slab(-55.8, -32, -52, -10); slab(-55.8, -4, -52, 12);
+  // pozo en L del oeste (como el del render): el bowl grande, un canal y el bowl chico forman un solo pozo con piso a -3
+  add(-52, -3.5, -32, -26, -3, -10, 'concrete'); add(-52, -3.5, -10, -34, -3, 12, 'concrete');
+  ramp(-52, -32, -47.5, 12, -3, -3, 0, 'x', -1, 'concrete'); ramp(-31, -32, -26, -10, -3, -3, 0, 'x', 1, 'concrete');
+  ramp(-52, -32, -26, -27, -3, -3, 0, 'z', -1, 'concrete'); ramp(-34, -15, -26, -10, -3, -3, 0, 'z', 1, 'concrete');
+  ramp(-38.5, -10, -34, 12, -3, -3, 0, 'x', 1, 'concrete'); ramp(-52, 8, -34, 12, -3, -3, 0, 'z', 1, 'concrete');
+  // pozo en L grande del sureste (3,2 m de profundidad): un bloque adentro para saltar y una vuelta al fondo
+  add(20, -3.5, 22, 46, -3.2, 38, 'concrete'); add(28, -3.5, 38, 46, -3.2, 50, 'concrete'); add(29, -3.2, 28, 35, -1.6, 32, 'smooth');
+  ramp(20, 22, 25, 38, -3.2, -3.2, 0, 'x', -1, 'concrete'); ramp(20, 22, 46, 27, -3.2, -3.2, 0, 'z', -1, 'concrete'); ramp(41, 22, 46, 50, -3.2, -3.2, 0, 'x', 1, 'concrete');
+  ramp(20, 33, 28, 38, -3.2, -3.2, 0, 'z', 1, 'concrete'); ramp(28, 38, 33, 50, -3.2, -3.2, 0, 'x', -1, 'concrete'); ramp(28, 45, 46, 50, -3.2, -3.2, 0, 'z', 1, 'concrete');
+
+  lipX(-52, -26, -32); lipZ(-32, -10, -26); lipX(-34, -26, -10); lipZ(-10, 12, -34); lipX(-52, -34, 12); lipZ(-32, 12, -52);
+  lipX(20, 46, 22); lipZ(22, 50, 46); lipX(28, 46, 50); lipZ(38, 50, 28); lipX(20, 28, 38); lipZ(22, 38, 20);
+  /* ---- límites: valla al oeste y al este, mural al sur y al norte-oeste, río al norte; todo cerrado por arriba y por los costados ---- */
+  // vallas de alambre con tramos rotos (huecos): detrás hay muro invisible, así que nadie sale, pero se ve la calle y el río por los agujeros
+  const fenceZ = (xa, xb, z0, z1, gaps) => { let a = z0; for (const [g0, g1] of [...gaps, [z1, z1]]) { if (g0 > a) add(xa, 0, a, xb, 4.2, g0, 'fence'); a = Math.max(a, g1); } };
+  const fenceX = (za, zb, x0, x1, gaps) => { let a = x0; for (const [g0, g1] of [...gaps, [x1, x1]]) { if (g0 > a) add(a, 0, za, g0, 4.2, zb, 'fence'); a = Math.max(a, g1); } };
+  fenceZ(-56, -55.8, -36, 52, [[4, 9], [36, 41]]); fenceZ(55.8, 56, -32, 52, [[10, 14], [30, 35]]);
+  add(-56.2, 0, -36, -55.6, .25, 52, 'concrete', { nc: 1 }); add(55.6, 0, -32, 56.2, .25, 52, 'concrete', { nc: 1 }); add(-56.1, 1.9, -36, -55.8, 1.98, 52, 'metal', { nc: 1 }); add(55.8, 1.9, -32, 56.1, 1.98, 52, 'metal', { nc: 1 });
+  for (let z = -36; z <= 52; z += 6) { add(-56.1, 0, z, -55.8, 4.4, z + .3, 'metal'); if (z >= -32) add(55.8, 0, z, 56.1, 4.4, z + .3, 'metal'); }
+  add(-56.1, 4.2, -36, -55.8, 4.4, 52, 'metal'); add(55.8, 4.2, -32, 56.1, 4.4, 52, 'metal');
+  fenceX(51.7, 51.9, -55.8, 55.8, [[-30, -24], [16, 22]]); add(-55.8, 4.2, 51.6, 55.8, 4.4, 52, 'metal'); fenceX(-36.2, -36, -55.8, -2, [[-40, -35]]); add(-55.8, 4.2, -36.3, -2, 4.4, -35.9, 'metal');
+  add(-55.8, 0, 51.5, 55.8, .25, 52.1, 'concrete', { nc: 1 }); add(-55.8, 1.9, 51.6, 55.8, 1.98, 52, 'metal', { nc: 1 }); add(-55.8, 0, -36.4, -2, .25, -35.8, 'concrete', { nc: 1 }); add(-55.8, 1.9, -36.3, -2, 1.98, -35.9, 'metal', { nc: 1 });   // vallas de alambre: al norte se ve el río, al sur la calle
+  for (let x = -55.8; x <= 55; x += 6) add(x, 0, 51.5, x + .3, 4.4, 52.1, 'metal'); for (let x = -55.8; x <= -2; x += 6) add(x, 0, -36.4, x + .3, 4.4, -35.8, 'metal');
+  add(-60, -8, -44, -55.8, 60, 58, 'clip'); add(55.8, -8, -44, 60, 60, 58, 'clip'); add(-60, -8, -44, 60, 60, -36.2, 'clip');
+  add(-60, -8, 52, 60, 60, 58, 'clip'); add(-60, 24, -44, 60, 60, 58, 'clip');     // techo del mapa: inalcanzable ni con rocket jump
+  lava.push({ min: [-420, -4, -260], max: [420, 0, -36.6], water: true, dps: 0 });   // el Paraná, al otro lado del muro: solo se ve
+  // afuera: pasto oscuro y la calle con autos estacionados (solo se ven)
+  add(-420, -.5, -36.6, -56.5, -.05, 400, 'grass', { nc: 1 }); add(56.5, -.5, -36.6, 420, -.05, 400, 'grass', { nc: 1 }); add(-56.5, -.5, 52, 56.5, -.05, 400, 'grass', { nc: 1 });
+  add(-56.5, -.05, 57, 56.5, 0, 66, 'rock', { nc: 1 });
+  for (const [x, z, c] of [[-34, 60.5, 'barn'], [8, 61.5, 'navy'], [38, 60.5, 'barn']]) { add(x, 0, z, x + 4.4, 1, z + 1.9, c, { nc: 1 }); add(x + 1, 1, z + .1, x + 3.2, 1.7, z + 1.8, 'black', { nc: 1 }); }
+  palma(-53.5, -34, 9); palma(-53.5, 35, 8); palma(53.5, 35, 9); palma(-53.5, 10, 8); palma(53.5, -2, 8); palma(-10, 35.5, 7);
+  palma(-60, 20, 8); palma(62, 14, 9); palma(-30, 55, 8); palma(24, 55, 9); palma(-53.5, 49, 8); palma(53.5, 49, 9);
+
+  /* ---- tribuna al norte: 10 gradas hasta 5 m, pasillo de arriba con baranda sobre el río ---- */
+  // las 4 primeras gradas son macizas (con dos entradas de 3 m en x 14..17 y 36..39); de la 5 en adelante están huecas por debajo (a 2 m):
+  // abajo queda una galería oscura de 7 m de fondo, abierta al oeste, con pilares y botín: el escondite del mapa
+  for (let i = 1; i <= 10; i++) {
+    const za = -20 - 1.2 * i, zb = za + 1.2, top = .5 * i;
+    if (i <= 4) { for (const [a, b] of [[-2, 14], [17, 36], [39, 54]]) add(a, 0, za, b, top, zb, 'concrete'); }
+    else add(-2, 2, za, 54, top, zb, 'concrete');
+  }
+  for (const x of [6, 22, 30, 46]) { add(x, .25, -29.3, x + .6, 1.75, -28.7, 'concrete'); add(x - .1, 0, -29.4, x + .7, .25, -28.6, 'concrete'); add(x - .1, 1.75, -29.4, x + .7, 2, -28.6, 'concrete'); }
+  for (let x = 0; x <= 54; x += 6) add(x, 1.82, -32, x + .35, 2, -24.8, 'concrete', { nc: 1 });   // nervios del techo de la galería
+  // muro bajo (1,1 m, se salta) al pie de la tribuna, con los dos pasos a la galería: es el lienzo de graffitis largo que se ve en el render
+  for (const [a, b] of [[-2, 14], [17, 36], [39, 54]]) add(a, 0, -19.8, b, 1.1, -19.4, 'concrete');
+  add(-2, 0, -36, 54, 5, -32, 'concrete');
+  bar(-2, -36, 54, -36, 5);
+  add(54, 0, -36, 55.8, 5, -20, 'concrete');                                       // cabecera este de la tribuna
+  /* ---- andamios, pasarelas y plataforma sur ---- */
+  torre(-22, -24, 'e'); torre(-30, 18, ''); torre(40, 10, 'n');
+  // pasarela 1: de la torre norte-oeste a la tribuna, a 5 m (L: 12 m al este y 16 m al norte)
+  add(-16, 4.7, -22, -4, 5, -20, 'grate'); add(-4, 4.7, -36, -2, 5, -20, 'grate');
+  bar(-16, -22, -4, -22, 5); bar(-16, -20, -4, -20, 5); bar(-4, -36, -4, -30, 5); bar(-4, -26.6, -4, -22, 5); bar(-2.1, -32, -2.1, -20, 5); bar(-4, -36, -2, -36, 5);
+  for (const [x, z] of [[-10.1, -22], [-10.1, -20.2], [-3.1, -26], [-3.1, -22.4]]) pilar(x + .1, z + .1, 4.7);
+  add(-16, 4.35, -22, -4, 4.7, -21.86, 'metal'); add(-16, 4.35, -20.14, -4, 4.7, -20, 'metal'); add(-4, 4.35, -36, -3.86, 4.7, -20, 'metal'); add(-2.14, 4.35, -36, -2, 4.7, -20, 'metal');   // vigas de borde
+  for (let x = -14; x < -4; x += 2) add(x, 4.5, -22, x + .08, 4.7, -20, 'metal', { nc: 1 }); for (let z = -34; z < -22; z += 2) add(-4, 4.5, z, -2, 4.7, z + .08, 'metal', { nc: 1 });   // nervios
+  // pasarela 2: de la tribuna a la torre este, a 5 m (2 m de ancho sobre la plaza)
+  add(44, 4.7, -30.8, 46, 5, 10, 'grate');
+  bar(44, -30.8, 44, 10, 5); bar(46, -30.8, 46, 10, 5);
+  for (const z of [-14, -4, 6]) { pilar(44, z + .1, 4.7); pilar(46, z + .1, 4.7); }
+  add(44, 4.35, -30.8, 44.14, 4.7, 10, 'metal'); add(45.86, 4.35, -30.8, 46, 4.7, 10, 'metal'); for (let z = -28; z < 10; z += 2) add(44, 4.5, z, 46, 4.7, z + .08, 'metal', { nc: 1 });
+  /* ---- pirámides, bank con cartel, billboard y terraza contra la valla ---- */
+  hip(-12, 2, 3, 2.5, 1.5, 4); hip(14, 2, 4, 3, 2.4, 5);
+  ramp(-6, 24, 0, 30, 0, 0, 1, 'x', 1, 'concrete'); add(0, 0, 24, 8, 1, 30, 'smooth'); ramp(8, 24, 14, 30, 0, 0, 1, 'x', -1, 'concrete');   // bank to ledge
+  add(0, 1, 24, 8, 1.08, 24.2, 'rail', { nc: 1 });
+  ramp(46, 20, 52, 31, 0, 0, 2.6, 'x', 1, 'concrete'); add(52, 0, 20, 55.8, 2.6, 31, 'smooth'); bar(46, 20, 55.8, 20, 2.6); bar(46, 31, 55.8, 31, 2.6);
+  // poste de luz con transformador, como el de la foto
+  add(-46.3, 0, 29.7, -45.7, 11, 30.3, 'concrete'); add(-48.2, 9.6, 29.85, -43.8, 9.8, 30.15, 'metal', { nc: 1 }); add(-47.4, 7.6, 29.5, -46.6, 8.8, 30.5, 'metal', { nc: 1 }); add(-45.4, 7.6, 29.5, -44.6, 8.8, 30.5, 'metal', { nc: 1 });
+  // cajones, muretes y cobertura baja
+  for (const [x, z, s] of [[-6, -16, 1.5], [30, -6, 1.2], [-20, 14, 1.2], [4, 20, 1.2], [-42, 20, 1.2], [22, -14, 1.2], [8, -12, 1.2]]) add(x, 0, z, x + s * 1.4, s, z + s, 'crate');
+  add(-28, 0, 8, -22, .9, 8.6, 'smooth'); 
+  // zona sur nueva (z 38..51): media caña (mini ramp) al oeste, escalera con terraza al medio, muros de cobertura y salida con saltador
+  ramp(-34, 42, -29, 50, 0, 0, 1.8, 'x', -1, 'concrete'); add(-38, 0, 42, -34, 1.8, 50, 'smooth'); ramp(-21, 42, -16, 50, 0, 0, 1.8, 'x', 1, 'concrete'); add(-16, 0, 42, -12, 1.8, 50, 'smooth');
+  stairs(8, 40, 20, 46, 0, .5, 4, 'x', 1, 'concrete'); add(20, 0, 40, 28, 2, 46, 'smooth'); bar(20, 40, 28, 40, 2); bar(20, 46, 28, 46, 2);
+  for (const [x0, z0, x1, z1] of [[-8, 40, -7.6, 48], [0, 38.6, 6, 39], [-45, 42, -44.6, 49], [8, 48, 16, 48.4]]) muro(x0, z0, x1, z1);
+  add(-4, 0, 47, -1, 1.2, 48.6, 'crate'); add(-48, 0, 41, -46.4, 1.2, 44, 'crate');
+  pads.push({ x: -24, y: 0, z: 46, r: 1.1, t: [-25.5, 5, 21], apex: 3 });          // media caña -> piso alto de la torre sur-oeste
+  I('health', -36, 1.8, 46); I('armor', -14, 1.8, 46); I('shells', 25, 2, 43); I('rockets', 0, 0, 44); I('bullets', 50, 0, 44); I('health', 14, 0, 49); I('slugs', -42, 0, 46); I('grenades', 48, 0, 48); I('armor', 6, 0, 42);
+  [[-24, 0, 48], [0, 0, 44], [14, 0, 49.8], [50, 0, 44], [25, 2, 43], [-42, 0, 46], [38, -3.2, 29], [38, -3.2, 40], [-54, 1.8, 19], [54, 1.8, -11]].forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
+  // más estructura (como en el render): spine en el centro, hip este, dos bancos con terraza contra las vallas y una escalera con terraza
+  ramp(-4.5, -2, -.5, 6, 0, 0, 1.4, 'x', 1, 'concrete'); add(-.5, 0, -2, .5, 1.4, 6, 'smooth'); ramp(.5, -2, 4.5, 6, 0, 0, 1.4, 'x', -1, 'concrete');
+  hip(32, 7, 4, 1.2, 1.8, 4);
+  ramp(-52, 14, -46, 24, 0, 0, 1.8, 'x', -1, 'concrete'); add(-55.8, 0, 14, -52, 1.8, 24, 'smooth'); bar(-55.8, 14, -46, 14, 1.8); bar(-55.8, 24, -46, 24, 1.8);
+  ramp(46, -16, 52, -6, 0, 0, 1.8, 'x', 1, 'concrete'); add(52, 0, -16, 55.8, 1.8, -6, 'smooth'); bar(46, -16, 55.8, -16, 1.8); bar(46, -6, 55.8, -6, 1.8);
+  stairs(26, -18, 34, -12, 0, .5, 3, 'x', 1, 'concrete'); add(34, 0, -18, 40, 1.5, -12, 'smooth'); bar(34, -18, 40, -18, 1.5);
+  pads.push({ x: 27, y: -3.2, z: 30, r: 1.1, t: [44.5, 5, 13], apex: 3 });          // pozo grande -> piso alto de la torre este
+  // ascensor rápido: sube del piso de la plaza a la pasarela de la tribuna (5 m) cada 10 s; el costado cyan se enciende solo
+  mover(-7.6, -.36, -30, -4, .04, -26.6, 'metal', 1, 5, 10, -Math.PI / 2);
+  add(-7.95, 0, -30.2, -7.75, 6.4, -30, 'metal'); add(-7.95, 0, -26.6, -7.75, 6.4, -26.4, 'metal'); add(-7.95, 6.2, -30.2, -7.75, 6.4, -26.4, 'metal'); add(-8.05, 0, -30.3, -7.65, .25, -26.3, 'concrete');   // marco del hueco
+  deco.push({ t: 'glow', x: -7.85, y: 6.0, z: -28.3, c: 0x6ae0ff });
+  // muros de cobertura (3 m): cortan la línea de tiro de la plaza y dejan esquinas para esperar a oscuras
+  for (const [x0, z0, x1, z1] of [[-12, -18, -11.6, -10], [22, -9, 30, -8.6], [41, -4, 41.4, 6], [-26, 28, -18, 28.4], [10, 18, 18, 18.4], [-8, 9, -7.6, 16]]) muro(x0, z0, x1, z1);
+  // kiosko con techo: dos puertas al norte y al sur, una al este; se sube al techo (3 m) por una escalera de afuera
+  wall(-31, -1, -22, -.6, 0, 2.8, [D(-28, -25, 0, 2.2), D(-30.4, -29, 1, 2), D(-24, -22.6, 1, 2)], 'brick'); wall(-31, 5.6, -22, 6, 0, 2.8, [D(-30, -27, 0, 2.2), D(-26, -23.4, 1, 2)], 'brick');
+  wall(-31, -.6, -30.6, 5.6, 0, 2.8, [D(1.4, 3.8, 1, 2)], 'brick'); wall(-22.4, -.6, -22, 5.6, 0, 2.8, [D(1, 3.4, 0, 2.2)], 'brick');
+  add(-31.4, 2.55, -1.4, -21.6, 2.7, 6.4, 'concrete');                                                     // cornisa
+  for (const [x0, z0, x1, z1] of [[-30.5, -1.05, -29, -.55], [-24.1, -1.05, -22.5, -.55], [-26.1, 5.55, -23.3, 6.05]]) add(x0 - .08, .94, z0, x1 + .08, 1, z1, 'metal', { nc: 1 });   // antepechos
+  add(-26.6, 0, 4.7, -22.6, 1.05, 5.4, 'wood'); add(-26.7, 1.05, 4.65, -22.5, 1.12, 5.45, 'metal');       // mostrador
+  add(-30.6, .3, .6, -30.1, .36, 5.2, 'wood'); add(-30.6, .9, .6, -30.1, .96, 5.2, 'wood');               // estantes
+  add(-31.2, 2.7, -1.2, -21.8, 3, 6.2, 'roof'); stairs(-31, -6, -29, -1, 0, .5, 6, 'z', 1, 'concrete');
+  bar(-29, -1.2, -21.8, -1.2, 3); bar(-31.2, -1.2, -31.2, 6.2, 3); bar(-31.2, 6.2, -21.8, 6.2, 3); bar(-21.8, -1.2, -21.8, 6.2, 3);
+  deco.push({ t: 'cartel', x: -26.5, y: 2.4, z: -1.03, w: 3.2, h: .3, txt: 'KIOSCO 24 HS', bg: '#2a1c14', fg: '#a8844a', ry: Math.PI });
+  /* ---- graffitis: todo el mapa está pintado, como en el render (paredes de los pozos, rampas, muros, tribuna y algo de piso) ---- */
+  const P = Math.PI, al = (d, w) => Math.atan2(d, w);
+  // pozo en L del oeste (3 m): pared oeste (44 m de largo), norte, este del bowl grande, sur, este del canal y sur del bowl chico
+  cover(-49.75, -1.5, -10, P / 2, al(3, 4.5), 44, 5.4, 1); cover(-39, -1.5, -29.5, 0, al(3, 5), 26, 5.8, 1); cover(-28.5, -1.5, -21, -P / 2, al(3, 5), 22, 5.8, 1);
+  cover(-30, -1.5, -12.5, P, al(3, 5), 8, 5.8, 1); cover(-36.25, -1.5, 1, -P / 2, al(3, 4.5), 22, 5.4, 1); cover(-43, -1.5, 10, P, al(3, 4), 18, 5, 1);
+  // pozo en L grande del sureste (3,2 m)
+  cover(22.5, -1.6, 30, P / 2, al(3.2, 5), 16, 5.9, 1); cover(33, -1.6, 24.5, 0, al(3.2, 5), 26, 5.9, 1); cover(43.5, -1.6, 36, -P / 2, al(3.2, 5), 28, 5.9, 1);
+  cover(24, -1.6, 35.5, P, al(3.2, 5), 8, 5.9, 1); cover(30.5, -1.6, 44, P / 2, al(3.2, 5), 12, 5.9, 1); cover(37, -1.6, 47.5, P, al(3.2, 5), 18, 5.9, 1);
+  // pirámides, spine, hip, bancos, bank to ledge y media caña (las cuatro rampas de cada una)
+  cover(-12, .75, -2.5, P, al(1.5, 4), 6, 4.3, 1); cover(-12, .75, 6.5, 0, al(1.5, 4), 6, 4.3, 1); cover(-17, .75, 2, -P / 2, al(1.5, 4), 5, 4.3, 1); cover(-7, .75, 2, P / 2, al(1.5, 4), 5, 4.3, 1);
+  cover(14, 1.2, -3.5, P, al(2.4, 5), 8, 5.5, 1); cover(14, 1.2, 7.5, 0, al(2.4, 5), 8, 5.5, 1); cover(7.5, 1.2, 2, -P / 2, al(2.4, 5), 6, 5.5, 1); cover(20.5, 1.2, 2, P / 2, al(2.4, 5), 6, 5.5, 1);
+  cover(32, .9, 3.8, P, al(1.8, 4), 8, 4.4, 1); cover(32, .9, 10.2, 0, al(1.8, 4), 8, 4.4, 1); cover(-2.5, .7, 2, -P / 2, al(1.4, 4), 8, 4.2, 1); cover(2.5, .7, 2, P / 2, al(1.4, 4), 8, 4.2, 1);
+  cover(-49, .9, 19, P / 2, al(1.8, 6), 10, 6.3, 1); cover(49, .9, -11, -P / 2, al(1.8, 6), 10, 6.3, 1); cover(49, 1.3, 25.5, -P / 2, al(2.6, 6), 11, 6.5, 1);
+  cover(-3, .5, 27, -P / 2, al(1, 6), 6, 6.1, 1); cover(11, .5, 27, P / 2, al(1, 6), 6, 6.1, 1); cover(-31.5, .9, 46, P / 2, al(1.8, 5), 8, 5.3, 1); cover(-18.5, .9, 46, -P / 2, al(1.8, 5), 8, 5.3, 1);
+  // muros de cobertura (las dos caras) y el muro bajo al pie de la tribuna
+  for (const [x0, z0, x1, z1] of [[-12, -18, -11.6, -10], [22, -9, 30, -8.6], [41, -4, 41.4, 6], [-26, 28, -18, 28.4], [10, 18, 18, 18.4], [-8, 9, -7.6, 16], [0, 38.6, 6, 39], [-8, 40, -7.6, 48], [-45, 42, -44.6, 49], [8, 48, 16, 48.4]]) wallArt(x0, z0, x1, z1, 3);
+  for (const [a, b] of [[-2, 14], [17, 36], [39, 54]]) cover((a + b) / 2, .55, -19.37, 0, P / 2, b - a, 1.1, 1);
+  // piso: manchones y firmas sueltas (pocas, como en el render)
+  for (const [x, z] of [[-14, -26], [8, -5], [18, 16], [-30, 38], [0, 34], [36, -8], [52, 10], [-24, 16], [-10, 20], [50, 40], [12, 36], [-40, 24], [26, 20], [-4, -20]]) cover(x, 0, z, rnd() * 6.28, 0, 5, 3.4, 1);
+  // basura y escombros afuera de las vallas (solo se ven): palets y rocas
+  for (const [x, z] of [[-60, -20], [-61, 6], [-59, 30], [-26, 56], [14, 57], [44, 56], [60, 20], [61, -4]]) { add(x, 0, z, x + 1.4, .14, z + 1.1, 'wood', { nc: 1 }); add(x + .1, .14, z + .1, x + 1.3, .28, z + 1, 'wood', { nc: 1 }); add(x + 1.9, 0, z + .4, x + 2.6, .5, z + 1.1, 'rock', { nc: 1 }); }
+  // orilla del río al norte: banco de pasto con juncos
+  add(-58, -1, -44, -2, .3, -37.2, 'grass', { nc: 1 }); for (let x = -56; x <= -4; x += 5) deco.push({ t: 'bush', x, y: .3, z: -39.5 + (x % 3), r: .8 });
+  // reflectores: casi todos apagados
+  for (const [x, z, on] of [[-54.2, -26, 0], [-54.2, -6, 0], [-54.2, 28, 1], [-54.2, 46, 0], [-40, 50.6, 0], [-20, 50.6, 0], [2, 50.6, 1], [24, 50.6, 0], [46, 50.6, 0], [54.6, -19, 0], [54.6, 6, 1], [54.6, 34, 0], [54.6, 46, 0], [0, -8, 0], [36, 18, 0], [-20, 34, 0], [30, -18, 0]]) poste(x, z, on);
+  for (const [x, on] of [[8, 0], [28, 1], [48, 0]]) poste(x, -35.5, on, 5);   // sobre el pasillo de la tribuna
+
+  /* ---- portales: uno en el rincón sur-oeste y otro arriba de la tribuna ---- */
+  teles.push({ x: -46, y: 0, z: 34, r: 1, to: [46.5, 5, -33.7], yaw: face(46.5, -33.7, 0, 0), color: 'yellow' });
+  teles.push({ x: 51, y: 5, z: -33.8, r: 1, to: [-42, 0, 31], yaw: face(-42, 31, 0, 0), color: 'blue' });
+  deco.push({ t: 'portal', x: -46, y: 0, z: 34, r: 1, color: 'yellow' }, { t: 'portal', x: 51, y: 5, z: -33.8, r: 1, color: 'blue' });
+  /* ---- saltadores ---- */
+  pads.push({ x: -36, y: -3, z: -21, r: 1.1, t: [-17.2, 5, -21], apex: 3 });       // bowl grande -> piso alto de la torre norte-oeste
+  pads.push({ x: -45, y: -3, z: 6.5, r: 1.1, t: [-25.5, 5, 21], apex: 3 });        // bowl chico -> piso alto de la torre sur-oeste
+  pads.push({ x: 0, y: 0, z: -12, r: 1.1, t: [10, 5, -34], apex: 2.5 });           // plaza -> pasillo de la tribuna
+  pads.push({ x: 32, y: 0, z: 19, r: 1.1, t: [44.5, 5, 13], apex: 2.5 });          // plaza este -> piso alto de la torre este
+
+  /* ---- ítems (todo lo que ya existe) ---- */
+  // armaduras amarillas: pasillo de la tribuna, bowl chico y debajo del cartel
+  I('armorH', 1, 5, -34); I('armorH', -41, -3, 2); I('armorH', 0, 0, 14);
+  I('quad', 45, 5, -8); I('mega', -25.5, 5, 21);
+  // armas
+  I('w1', -12, 1.5, 2); I('w2', 0, 0, 12.5); I('w3', -39, -3, -24); I('w4', 37, -3.2, 42); I('w5', 41.5, 2.5, 14.5); I('w6', 24, 4.5, -30.2); I('w8', 45, 5, -27); I('w9', -17.5, 5, -22);
+  // munición
+  I('shells', 14, 2.4, 2); I('shells', -30, 0, -34); I('bullets', 52, 2.6, 25); I('bullets', -24, 0, -7); I('rockets', 22, 0, 20); I('rockets', 41, 5, -34); I('grenades', -50, 0, 30); I('grenades', 4, 0, -8);
+  I('slugs', 14, 5, -34); I('slugs', -47, -3, 2); I('caza', 38, -3.2, 30); I('caza', -21, 2.5, -20);
+  // chalecos y botiquines
+  I('armor', -14, 1.5, 2); I('armor', 32, 0, -10); I('armor', -34, -3, -17); I('armor', 24, 5, -34); I('armor', 35, 0, 16); I('armor', -6, 0, 33);
+  I('health', -40, -3, -18); I('health', -43, -3, 4); I('health', 14, 2.4, 0); I('health', 6, 5, -34); I('health', 36, 5, -34); I('health', -18, 2.5, -19.5); I('health', -27, 2.5, 21);
+  I('health', 42.5, 2.5, 12.5); I('health', 54, 2.6, 22); I('health', -3, 0, -6); I('health', 32, 1.8, 7); I('health', -8, 0, 24); I('health', 50, 0, 36); I('health', -50, 0, -34); I('health', 8, 0, -17);
+
+  I('armor', -54, 1.8, 19); I('health', 54, 1.8, -11); I('armor', 40, -3.2, 43); I('health', 34, -3.2, 36); I('shells', 30, -3.2, 35);
+  // galería bajo la tribuna y kiosko: botín en la oscuridad
+  I('armor', 10, 0, -28.2); I('bullets', 44, 0, -28); I('health', 26, 0, -29); I('shells', 34, 0, -27); I('rockets', 2, 0, -27);
+  I('armor', -26, 0, 2); I('rockets', -29, 0, 4); I('slugs', -26, 3, 2); I('health', -24, 3, 5);
+  /* ---- apariciones: repartidas por todos los niveles ---- */
+  [[-12, 0, -34], [-8, 0, -14], [4, 0, -8], [22, 0, -10], [42, 0, -9], [50, 0, -2], [50, 0, 6], [30, 0, -1], [38, 0, 18], [8, 0, 34], [-20, 0, 32], [-36, 0, 22], [-50, 0, 28], [-48, 0, -34], [-20, 0, -33], [-24, 0, -6],
+   [-40, -3, -20], [-34, -3, -24], [-43, -3, 3], [6, 5, -34], [20, 5, -34], [34, 5, -34], [26, 3, -26.6], [-17, 5, -21], [-25.5, 5, 21], [44.5, 5, 13], [45, 5, -10], [14, 2.4, 2], [-12, 1.5, 2], [42, 2.5, 13], [-20, 2.5, -21], [20, 0, -28], [44, 0, -28], [8, 0, -27], [-26, 0, 3], [-26, 3, 4]]
+    .forEach(([x, y, z]) => spawns.push({ x, y, z, yaw: face(x, z, 0, 0) }));
+  /* ---- luces: unos pocos pozos de luz en la oscuridad (la linterna hace el resto) ---- */
+  lights.push({ x: -53, y: 7, z: 28, c: 0xffa860, i: .2, d: 20 }, { x: 53.6, y: 7, z: 6, c: 0xffa860, i: .2, d: 20 }, { x: 2, y: 7, z: 49.6, c: 0xffa860, i: .2, d: 20 }, { x: 28, y: 12, z: -34.6, c: 0xffa860, i: .2, d: 20 },
+    { x: -16.5, y: 6.3, z: -23.5, c: 0x6aa0ff, i: .4, d: 14 }, { x: -24.5, y: 6.3, z: 18.5, c: 0x6aa0ff, i: .4, d: 14 }, { x: 45.5, y: 6.3, z: 10.5, c: 0x6aa0ff, i: .4, d: 14 },
+    { x: -46, y: 3, z: 34, c: 0xffc840, i: .9, d: 13 }, { x: 51, y: 8, z: -33.8, c: 0x4aa0ff, i: .9, d: 13 },
+    { x: -24, y: 3, z: 46, c: 0x4a8a6a, i: .35, d: 14 }, { x: 36, y: 6, z: 48, c: 0xffa860, i: .5, d: 18 }, { x: -39, y: -1, z: -21, c: 0x4a8a6a, i: .35, d: 14 }, { x: -43, y: 0, z: 4, c: 0x8a4a8a, i: .35, d: 12 });
+  /* ---- niebla baja: muchas nubes chicas de borde difuminado a distintas alturas (no una lámina con bordes), y más densa dentro de los pozos ---- */
+  for (let i = 0; i < 16; i++) { const cx = -50 + rnd() * 100, cz = -32 + rnd() * 82, w = 18 + rnd() * 16, dd = 14 + rnd() * 14; deco.push({ t: 'bruma', soft: 1, x0: cx - w / 2, x1: cx + w / 2, z0: cz - dd / 2, z1: cz + dd / 2, y: .25 + rnd() * .75, o: .1 + rnd() * .08, dir: rnd() < .5 ? 1 : -1 }); }
+  for (const [x0, x1, z0, z1, y] of [[-56, -22, -36, -6, -2.55], [-56, -30, -12, 16, -2.55], [16, 50, 18, 54, -2.65]]) for (let k = 0; k < 2; k++) deco.push({ t: 'bruma', soft: 1, x0: x0 + k * 2, x1: x1 - k * 2, z0: z0 + k * 2, z1: z1 - k * 2, y: y + k * .45, o: .14, dir: k % 2 ? 1 : -1 });
+  /* ---- abandono: grietas, manchas, musgo, sangre seca, basura, charcos y yuyos sobre el piso; escombros sólidos en los rincones ---- */
+  // altura del piso plano en (x, z) si en las cinco muestras es el mismo y no es rampa, rejilla, techo ni baranda (si no, null: ahí no se pega nada)
+  const NOPISO = ['grate', 'roof', 'rail', 'fence', 'metal'];
+  const flatTop = (x, z, r) => {
+    let t0 = null;
+    for (const [dx, dz] of [[0, 0], [r, r], [-r, r], [r, -r], [-r, -r]]) {
+      let top = -99, tb = null;
+      for (const b of B) { if (b.nc || b.mat === 'clip' || !(b.min[0] < x + dx && b.max[0] > x + dx && b.min[2] < z + dz && b.max[2] > z + dz)) continue; if (b.max[1] > top) { top = b.max[1]; tb = b; } }
+      if (!tb || tb.ramp || tb.mover || NOPISO.includes(tb.mat)) return null;
+      if (t0 == null) t0 = top; else if (Math.abs(top - t0) > .03) return null;
+    }
+    return t0;
+  };
+  const scatter = (ks, count, smin, smax) => {
+    for (let n = 0, tries = 0; n < count && tries < count * 12; tries++) {
+      const x = -54 + rnd() * 108, z = -34 + rnd() * 84, w = smin + rnd() * (smax - smin), t = flatTop(x, z, w * .5);
+      if (t == null) continue;
+      deco.push({ t: 'decal', x, y: t + .025, z, w, h: w, k: ks[Math.floor(rnd() * ks.length)], rx: -Math.PI / 2, ry: rnd() * 6.28, rz: 0 }); n++;
+    }
+  };
+  scatter([0, 1, 2, 3, 4, 5], 110, 3.5, 7); scatter([6, 7, 8, 9], 26, 2, 4); scatter([14, 15, 16, 17], 20, 1.8, 3.4); scatter([22, 23, 24, 25], 80, 1.5, 2.6);
+  scatter([26, 27, 28, 29], 16, 2.2, 4); scatter([30, 31], 12, 2, 3.4);
+  // yuyos: matas cruzadas (4 cuadros) que se cuelan por las grietas, pegadas a las vallas y a los bordes; no estorban (son bajitos)
+  const tuft = (x, z) => {
+    const h = .5 + rnd() * .85, w = h * (1.2 + rnd() * .5), k = 18 + Math.floor(rnd() * 4), ry = rnd() * 3.14, t = flatTop(x, z, w * .55); if (t == null) return;
+    for (const a of [0, Math.PI / 2]) for (const f of [0, Math.PI]) deco.push({ t: 'decal', x, y: t + h / 2 - .02, z, w, h, k, rx: 0, ry: ry + a + f, rz: 0, lib: 1 });
+  };
+  for (let x = -54; x <= 54; x += 3.4) { tuft(x + rnd() * 2, 50.4 - rnd() * .9); tuft(x + rnd() * 2, -35.2 + rnd() * .9); }
+  for (let z = -34; z <= 50; z += 3.4) { tuft(-54.4 + rnd() * .8, z + rnd() * 2); tuft(54.6 - rnd() * .8, z + rnd() * 2); }
+  for (let n = 0; n < 110; n++) tuft(-54 + rnd() * 108, -34 + rnd() * 84);
+  // escombros: pilas de roca rota (sólidas) en los rincones y contra las vallas
+  for (const [x, z] of [[-51, -33.4], [-49, 47], [50, 47], [51, -24.4], [-24, -34.2], [12, -34], [16, 50], [-28, 50], [-52, 24.5], [52, 36]]) { add(x, 0, z, x + 1.6, .6, z + 1.1, 'rock'); add(x + .4, .6, z + .2, x + 1.2, 1.1, z + .8, 'rock'); }
+  {   // juntas: los bloques sólidos del mismo material que se tocan se solapan 6 mm (sin grietas de un píxel entre ellos)
+    const S = B.filter(b => !b.nc && !b.mover && !b.ramp && b.mat !== 'clip'), g = S.map(() => [[0, 0], [0, 0], [0, 0]]);
+    for (let i = 0; i < S.length; i++) for (let j = i + 1; j < S.length; j++) {
+      const a = S[i], b = S[j]; if (a.mat !== b.mat) continue;
+      for (let ax = 0; ax < 3; ax++) {
+        const u = (ax + 1) % 3, v = (ax + 2) % 3;
+        if (Math.min(a.max[u], b.max[u]) - Math.max(a.min[u], b.min[u]) < .01 || Math.min(a.max[v], b.max[v]) - Math.max(a.min[v], b.min[v]) < .01) continue;
+        if (Math.abs(a.max[ax] - b.min[ax]) < 1e-6) { g[i][ax][1] = 1; g[j][ax][0] = 1; } else if (Math.abs(b.max[ax] - a.min[ax]) < 1e-6) { g[j][ax][1] = 1; g[i][ax][0] = 1; }
+      }
+    }
+    S.forEach((b, i) => { for (let ax = 0; ax < 3; ax++) { if (g[i][ax][0]) b.min[ax] -= .006; if (g[i][ax][1]) b.max[ax] += .006; } });
+  }
+  for (const b of B) if (b.nc && b.mat !== 'clip') for (let k = 0; k < 3; k++) { b.min[k] -= .012; b.max[k] += .012; }   // evita caras coplanares (z-fighting)
+  // revisión de grafitis, manchas y carteles: cada pieza tiene que apoyar entera sobre algo sólido y no quedar tapada ni colgando en el aire (si no, se saca)
+  const sobre = (x, y, z) => { for (const b of B) { if (b.mat === 'clip' || x < b.min[0] || x > b.max[0] || z < b.min[2] || z > b.max[2] || y < b.min[1]) continue; if (y <= topAt(b, x - .001, z - .001, x + .001, z + .001) + .002) return true; } return false; };
+  for (let i = deco.length - 1; i >= 0; i--) {
+    const d = deco[i]; if ((d.t !== 'graf' && d.t !== 'decal') || d.lib) continue;   // lib: pilas de escombro, que se paran solas sobre el piso
+    const rx = d.rx || 0, ry = d.ry || 0, cx = Math.cos(rx), sx = Math.sin(rx), cy = Math.cos(ry), sy = Math.sin(ry);
+    const n = [sy * cx, -sx, cy * cx], u = [cy, 0, -sy], v = [sx * sy, cx, sx * cy];
+    let atras = 0, libre = 0;
+    for (const [a, c] of [[0, 0], [.4, .4], [-.4, .4], [.4, -.4], [-.4, -.4]]) {
+      const x = d.x + u[0] * a * d.w + v[0] * c * d.h, y = d.y + u[1] * a * d.w + v[1] * c * d.h, z = d.z + u[2] * a * d.w + v[2] * c * d.h;
+      if (sobre(x - n[0] * .06, y - n[1] * .06, z - n[2] * .06)) atras++;
+      if (!sobre(x + n[0] * .03, y + n[1] * .03, z + n[2] * .03)) libre++;
+    }
+    if (atras < 4 || libre < (d.t === 'graf' ? 4 : 2)) deco.splice(i, 1);
+  }
+  return finish({ id: 'skatenight', name: 'Skatenight', bounds: { x0: -56, x1: 56, z0: -40, z1: 54 }, deco, modos: ['arena', 'gungame', 'tdm'],
+    theme: { sky: 'night', tex: 'ruina', noche: true, skyDim: .035, fog: 0x020409, fogD: .06, amb: 0x1a2440, ambI: .004, hemi: [0x20345c, 0x01020a, .004], sun: true, sunC: 0x5a78c0, sunI: .01, sunPos: [34, 60, -46], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
+}
+MAPDEFS.skatenight = buildSkatenight;
+/* ---------- Pyramid — la pirámide de gravedad, noche de Halloween lovecraftiana ----------
+   Inspirado en dm-pyramid de Unreal Tournament. Cinco niveles de piedra apilados (cada 4,8 m) que se achican hacia arriba: el de abajo es el
+   más grande, así que si te caés de un borde aterrizás en el nivel de abajo. Pisos chicos para que el juego sea rápido.
+   · Pozo central de 6x6 m que atraviesa TODOS los niveles, también el de abajo (queda abierto al vacío) y es una ZONA DE GRAVEDAD CERO
+     (W.zerog, ver pmove en 04-fisica.js): al entrar flotás y te vas yendo despacio hacia abajo; Espacio sube, agacharse baja y W mirando arriba
+     o abajo te lleva para ahí. Para salir en un nivel, te movés de costado por encima del borde del piso. Si te quedás sin subir, salís por
+     abajo y te caés al vacío. No hay escaleras: el pozo es la única forma de cambiar de nivel (los bots también lo usan, ver 7-bots.js).
+   · Nada de ítems en el pozo: armas, escudos y curación están en los pisos.
+   · La punta y las 4 patas son sólidos (se choca y se pisa); las patas no cuentan para la navegación de los bots (nonav). Los obeliscos y los
+     escombros también. El pozo está libre: nada adentro.
+   · Cada nivel tiene su color (material y luces) y adorno lovecraftiano: obeliscos con ojos y un ojo en el vacío (los tentáculos se ven solo a lo lejos, en el cielo).
+   · SIN linterna (no es theme.noche, eso es solo de Skatenight). Música y ambiente propios (theme.ambiente = 'piramide'). */
+function buildPyramid() {
+  const { B, pads, teles, lava, spawns, lights, add, ramp, wall, stairs, D, face, I, mover, finish } = mapKit();
+  const deco = [];
+  const Y = [0, 4.8, 9.6, 14.4, 19.2];          // altura del piso de cada nivel
+  const S = [19, 16, 13, 9.5, 6];               // mitad del lado de cada nivel (las patas pasan justo por las esquinas)
+  const F = [19 / 24, 16 / 19.5, 13 / 15, 9.5 / 10.5, 1];   // cuánto se achicó cada nivel respecto del diseño anterior: las posiciones de ítems, apariciones y cobertura se escalan con esto
+  const H = 3;                                  // mitad del pozo central
+  // cada nivel tiene su identidad: material del cuerpo y color de las luces
+  const BODY = ['basalt', 'velvet', 'barnB', 'canyon', 'board'];   // lava, magenta, azul, naranja, verde
+  const TOP = ['concrete', 'club', 'tower', 'wall', 'step'];
+  const LCOL = [0x30ff90, 0xa040ff, 0xffa030, 0xff40c0, 0xb8ff30];
+  let gs = 11; const rnd = () => { gs = (gs * 1664525 + 1013904223) >>> 0; return gs / 4294967296; };   // azar fijo: el mapa sale siempre igual
+
+  /* ---- niveles: cuerpo de color + piso de baldosa; todos son un anillo alrededor del pozo (también el de abajo) ---- */
+  const slab = (x0, z0, x1, z1, y, th, body, top) => { add(x0, y - th, z0, x1, y - .15, z1, body); add(x0, y - .15, z0, x1, y, z1, top); };
+  for (let k = 0; k <= 4; k++) {
+    const s = S[k], y = Y[k], th = k ? 1.2 : 3, bd = BODY[k], tp = TOP[k];
+    slab(-s, -s, s, -H, y, th, bd, tp); slab(-s, H, s, s, y, th, bd, tp); slab(-s, -H, -H, H, y, th, bd, tp); slab(H, -H, s, H, y, th, bd, tp);
+  }
+  // cordón del borde de cada nivel: roto, con tramos de distinto alto y huecos (solo se ve, se pisa)
+  for (let k = 0; k <= 4; k++) {
+    const s = S[k], y = Y[k];
+    for (const side of [0, 1, 2, 3]) {
+      for (let q = -s; q < s - .5;) {
+        const len = .8 + rnd() * 2.2, e = Math.min(s, q + len), h = .12 + rnd() * .5;
+        if (rnd() > .28) { const sg = side % 2 ? 1 : 0;
+          if (side < 2) add(q, y, sg ? s - .3 : -s, e, y + h, sg ? s : -s + .3, 'concrete', { nc: 1 }); else add(sg ? s - .3 : -s, y, q, sg ? s : -s + .3, y + h, e, 'concrete', { nc: 1 }); }
+        q = e + (rnd() < .3 ? .6 : 0);
+      }
+    }
+  }
+
+  /* ---- pozo de gravedad cero: zona física (baja hasta debajo del nivel 0: ahí salís y te caés al vacío) + efectos casi transparentes ---- */
+  const zerog = [{ min: [-H, -3.2, -H], max: [H, Y[4] + 6, H] }];
+  for (let i = 0; i < 90; i++) {                                       // espiral de brillos muy tenues (puntos con halo)
+    const a = i * .55, y = -.5 + i * .27;
+    deco.push({ t: 'glow', x: Math.cos(a) * 1.7, y, z: Math.sin(a) * 1.7, c: 0x0b3548, s: .55 });
+  }
+
+  /* ---- patas (sólidas, fuera de la navegación de los bots) y la punta: sólida ---- */
+  const slope = (S[0] - S[4]) / Y[4];
+  for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
+    for (let y = -3; y < 24.4; y += .5) {
+      const c = S[0] - slope * y;   // la viga pasa justo por la esquina de cada nivel
+      add(sx * (c - .9), y, sz * (c - .9), sx * (c + .9), y + .56, sz * (c + .9), 'metal', { nonav: 1 });
+    }
+  }
+  add(-1.8, 24.4, -1.8, 1.8, 25.2, 1.8, 'trim'); add(-1.1, 25.2, -1.1, 1.1, 26, 1.1, 'trim'); add(-.5, 26, -.5, .5, 26.7, .5, 'trim');
+  deco.push({ t: 'glow', x: 0, y: 27.3, z: 0, c: 0xc060ff, s: 1.6 });
+
+  /* ---- lovecraft: obeliscos con ojo en los primeros tres niveles y un ojo gigante en el vacío ---- */
+  const obelisco = (k, x, z, h) => {
+    const y = Y[k], c = LCOL[k];
+    add(x - .7, y, z - .7, x + .7, y + .5, z + .7, 'basalt'); add(x - .45, y + .5, z - .45, x + .45, y + h * .72, z + .45, 'basalt'); add(x - .25, y + h * .72, z - .25, x + .25, y + h, z + .25, 'basalt');
+    deco.push({ t: 'glow', x, y: y + h + .35, z, c, s: 1.3 }, { t: 'glow', x, y: y + h * .45, z, c, s: .7 });
+  };
+  for (const k of [0, 1, 2]) { const o = S[k] - (k ? 1.8 : 2); for (const [x, z] of [[o, 0], [-o, 0], [0, o], [0, -o]]) obelisco(k, x, z, 3.6); }
+  deco.push({ t: 'glow', x: 0, y: -9, z: 0, c: 0x6a1a8a, s: 18 }, { t: 'glow', x: 0, y: -9.5, z: 0, c: 0xb040ff, s: 7 }, { t: 'glow', x: 0, y: -9.8, z: 0, c: 0xfff0c0, s: 2 });   // el ojo
+  lava.push({ min: [-500, -40, -500], max: [500, -14, 500], water: true, dps: 0 });
+  for (const [x, z, w] of [[-34, -22, 5], [30, 28, 6], [-30, 32, 4], [36, -18, 4], [0, -44, 7], [-44, 4, 5]]) add(x, -15, z, x + w, -12.6, z + w * .8, 'rock', { nc: 1 });
+  for (let i = 0; i < 14; i++) {
+    const a = i * 2.4, r = 30 + (i % 4) * 9, cx = Math.cos(a) * r, cz = Math.sin(a) * r, w = 20 + (i % 3) * 8;
+    deco.push({ t: 'bruma', soft: 1, x0: cx - w / 2, x1: cx + w / 2, z0: cz - w / 3, z1: cz + w / 3, y: -12 + (i % 4) * 1.8, o: .09, dir: i % 2 ? 1 : -1 });
+  }
+  add(-80, 45, -80, 80, 55, 80, 'clip');                                                       // techo: inalcanzable
+
+  /* ---- cobertura: cajones y muretes en cada nivel (para pelear, no para encerrarse) ---- */
+  const cajon = (x, y, z, s) => add(x - s * .7, y, z - s * .7, x + s * .7, y + s, z + s * .7, 'crate');
+  const muro = (x0, z0, x1, z1, y) => { add(x0, y, z0, x1, y + 1.5, z1, 'concrete'); add(x0 - .06, y + 1.5, z0 - .06, x1 + .06, y + 1.62, z1 + .06, 'smooth'); };
+  for (const [x, z] of [[-12, -17], [12, 17]]) muro(x * F[0] - 2.5, z * F[0] - .2, x * F[0] + 2.5, z * F[0] + .2, 0);
+  for (const [x, z] of [[-17, 12], [17, -12]]) muro(x * F[0] - .2, z * F[0] - 2.5, x * F[0] + .2, z * F[0] + 2.5, 0);
+  for (const [x, z] of [[-6, 16], [6, -16], [-16, -6], [16, 6], [-20, -20], [20, 20]]) cajon(x * F[0], 0, z * F[0], 1.4);
+  for (const [x, z] of [[-10, -16], [10, 16], [-16, 10], [16, -10]]) cajon(x * F[1], Y[1], z * F[1], 1.3);
+  for (const [x, z] of [[-6, -12], [6, 12], [-12, 6], [12, -6]]) cajon(x * F[2], Y[2], z * F[2], 1.3);
+  for (const [x, z] of [[-4.5, -9], [4.5, 9]]) cajon(x * F[3], Y[3], z * F[3], 1.2);
+
+  /* ---- ítems: todo en los pisos, en esquinas, laterales y cerca del pozo (ninguno flota en la gravedad cero) ---- */
+  const it = (k, list) => list.forEach(([t, x, z]) => I(t, x * F[k], Y[k], z * F[k]));
+  it(0, [['w1', -14, 14], ['w2', -14, -14], ['w3', 14, 14], ['armor', 14, -14], ['armor', -21, 21], ['health', -19, 0], ['health', 19, 0], ['health', -10, -21], ['health', 10, 21],
+    ['shells', -8, 5], ['bullets', 8, -5], ['rockets', 6, 8], ['grenades', -6, -8], ['slugs', 22, 16], ['caza', -22, -16]]);
+  it(1, [['w4', -14, -14], ['w9', 14, 14], ['armor', 14, -14], ['health', -14, 14], ['health', 0, 14.5], ['shells', 0, -14.5], ['rockets', 12, 0], ['bullets', -12, 0], ['health', 7, -7]]);
+  it(2, [['w5', -10, -10], ['armor', 10, -10], ['health', -10, 10], ['health', 10, 10], ['grenades', -9, -12], ['slugs', 9, 12], ['mega', 0, -10.5], ['bullets', 0, 10.5]]);
+  it(3, [['w6', -7, -7], ['armor', 7, -7], ['health', -7, 7], ['quad', 7, 7], ['rockets', 0, -8], ['caza', 0, 8], ['health', -7, 0]]);
+  it(4, [['w8', -3.9, -3.9], ['armor', 3.9, 3.9], ['health', 3.9, -3.9], ['health', -3.9, 3.9], ['armorH', 0, -4.5], ['slugs', -4.5, 0], ['shells', 4.5, 0]]);
+
+  /* ---- apariciones: repartidas por todos los niveles ---- */
+  const sp = (k, list) => list.forEach(([x, z]) => { x *= F[k]; z *= F[k]; spawns.push({ x, y: Y[k], z, yaw: face(x, z, 0, 0) }); });
+  sp(0, [[-20, -18], [18, -20], [20, 18], [-18, 20], [-20, 6], [20, -6], [6, 20], [-6, -20], [-9, -9], [9, 9], [9, -9], [-9, 9]]);
+  sp(1, [[-12, -17], [12, 17], [17, -12], [-17, 12], [-8, -16], [8, 16], [16, 8], [-16, -8]]);
+  sp(2, [[-14, -3], [14, 3], [3, -14], [-3, 14], [-5, 12], [5, -12]]);
+  sp(3, [[-8.5, -5], [8.5, 5], [5, -8.5], [-5, 8.5]]);
+  sp(4, [[0, 4.5], [-4.5, 2], [4.5, -2], [2, -4.5]]);
+
+  /* ---- deterioro: parches de roca, tierra y musgo sobre las caras de cada nivel, varillas y cadenas colgando, enredaderas, escombros y bruma baja ---- */
+  const PARCHE = ['rock', 'soil', 'grass', 'concrete', 'metal', 'rock'];
+  for (let k = 0; k <= 4; k++) {
+    const s = S[k], y = Y[k], th = k ? 1.2 : 3, n = Math.round(s * 1.4);
+    for (let i = 0; i < n; i++) for (const side of [0, 1, 2, 3]) {
+      const q = -s + rnd() * (s * 2 - 3), w = 1 + rnd() * 2.4, h = th * (.35 + rnd() * .6), y0 = y - .15 - h - rnd() * (th - h - .15), m = PARCHE[Math.floor(rnd() * PARCHE.length)];
+      if (rnd() > .45) continue;
+      if (side < 2) add(q, y0, side ? s : -s - .05, q + w, y0 + h, side ? s + .05 : -s, m, { nc: 1 }); else add(side === 3 ? s : -s - .05, y0, q, side === 3 ? s + .05 : -s, y0 + h, q + w, m, { nc: 1 });
+    }
+    for (let i = 0; i < 10; i++) {                                     // varillas de hierro que sobresalen del borde roto
+      const side = i % 4, q = -s + 1 + rnd() * (s * 2 - 2), yy = y - .3 - rnd() * (th - .5), L = .7 + rnd() * 1.1;
+      if (side < 2) add(q, yy, side ? s : -s - L, q + .07, yy + .07, side ? s + L : -s, 'metal', { nc: 1 }); else add(side === 3 ? s : -s - L, yy, q, side === 3 ? s + L : -s, yy + .07, q + .07, 'metal', { nc: 1 });
+    }
+    for (let i = 0; i < 7; i++) {                                      // cadenas que cuelgan bajo el borde
+      const side = i % 4, q = -s + 2 + rnd() * (s * 2 - 4), n2 = 3 + Math.floor(rnd() * 4), yy = y - th;
+      const cx = side < 2 ? q : (side === 3 ? s + .15 : -s - .15), cz = side < 2 ? (side ? s + .15 : -s - .15) : q;
+      for (let j = 0; j < n2; j++) add(cx - .05 + (j % 2) * .04, yy - (j + 1) * .42, cz - .05 + (j % 2) * .04, cx + .05 + (j % 2) * .04, yy - j * .42, cz + .05 + (j % 2) * .04, 'metal', { nc: 1 });
+    }
+    for (let q = -s + 1; q < s; q += 2.2 + rnd() * 1.4) {              // enredaderas colgando de los cuatro lados
+      const len = 1.2 + rnd() * 2.4, yv = y - .3 - rnd() * .5;
+      deco.push({ t: 'enredadera', x: q, y: yv, z: -s - .06, len, ry: Math.PI }, { t: 'enredadera', x: q, y: yv, z: s + .06, len: len * .9, ry: 0 },
+        { t: 'enredadera', x: -s - .06, y: yv, z: q, len: len * .8, ry: -Math.PI / 2 }, { t: 'enredadera', x: s + .06, y: yv, z: q, len, ry: Math.PI / 2 });
+    }
+    for (const [x0, z0, x1, z1] of [[-s, -s, s, -H], [-s, H, s, s], [-s, -H, -H, H], [H, -H, s, H]]) deco.push({ t: 'bruma', soft: 1, x0, x1, z0, z1, y: y + .35, o: .1, dir: k % 2 ? 1 : -1 });   // bruma pegada al piso
+  }
+  for (let [k, x, z] of [[0, 21, -21], [0, -21, -21], [0, 22.5, 6], [0, -22.5, -6], [1, 16.5, -16.5], [1, -16.5, -16.5], [2, 12.5, -12.5], [2, -12.5, 12.5]]) {   // montones de escombros (sólidos, sirven de cobertura)
+    const y = Y[k]; x *= F[k]; z *= F[k];
+    add(x - .9, y, z - .7, x + .9, y + .7, z + .7, 'rock'); add(x - .5, y + .7, z - .4, x + .5, y + 1.2, z + .4, 'rock'); add(x + .7, y, z - 1.4, x + 1.5, y + .4, z - .7, 'rock'); add(x - 1.5, y, z + .3, x - .9, y + .35, z + 1, 'rock');
+  }
+
+  /* ---- decals: grietas, musgo, sangre y charcos sobre los pisos (solo donde el piso es plano) ---- */
+  const NOPISO = ['grate', 'roof', 'rail', 'fence', 'metal', 'tube'];
+  const flatTop = (x, z, r) => {
+    let t0 = null;
+    for (const [dx, dz] of [[0, 0], [r, r], [-r, r], [r, -r], [-r, -r]]) {
+      let top = -99, tb = null;
+      for (const b of B) { if (b.nc || b.mat === 'clip' || !(b.min[0] < x + dx && b.max[0] > x + dx && b.min[2] < z + dz && b.max[2] > z + dz)) continue; if (b.max[1] > top) { top = b.max[1]; tb = b; } }
+      if (!tb || tb.ramp || tb.mover || NOPISO.includes(tb.mat) || tb.mat === 'basalt') return null;
+      if (t0 == null) t0 = top; else if (Math.abs(top - t0) > .03) return null;
+    }
+    return t0;
+  };
+  const scatter = (ks, count, smin, smax) => {
+    for (let n = 0, tries = 0; n < count && tries < count * 14; tries++) {
+      const x = -S[0] + rnd() * S[0] * 2, z = -S[0] + rnd() * S[0] * 2, w = smin + rnd() * (smax - smin), t = flatTop(x, z, w * .5);
+      if (t == null) continue;
+      deco.push({ t: 'decal', x, y: t + .025, z, w, h: w, k: ks[Math.floor(rnd() * ks.length)], rx: -Math.PI / 2, ry: rnd() * 6.28, rz: 0 }); n++;
+    }
+  };
+  scatter([0, 1, 2, 3, 4, 5], 110, 2.5, 5.5); scatter([14, 15, 16, 17], 46, 1.8, 3.6); scatter([26, 27, 28, 29], 34, 2.2, 4); scatter([30, 31], 14, 2, 3.6); scatter([6, 7, 8, 9], 26, 2, 3.8); scatter([22, 23, 24, 25], 40, 1.5, 2.6);
+
+  /* ---- luces de color: cada nivel con su tono (el pozo, apenas un resplandor celeste) ---- */
+  for (let k = 0; k <= 4; k++) { const o = S[k] * .55; lights.push({ x: o, y: Y[k] + 2.6, z: -o, c: LCOL[k], i: .6, d: 18 }, { x: -o, y: Y[k] + 2.6, z: o, c: LCOL[k], i: .6, d: 18 }); }
+  lights.push({ x: 0, y: 4, z: 0, c: 0x40e0ff, i: .3, d: 12 }, { x: 0, y: 14, z: 0, c: 0x40e0ff, i: .3, d: 12 }, { x: 0, y: -8, z: 0, c: 0xb040ff, i: .9, d: 18 });
+
+  return finish({ id: 'pyramid', name: 'Pyramid', navMaxY: 24, zerog, bounds: { x0: -21, x1: 21, z0: -21, z1: 21 }, deco, modos: ['arena', 'gungame', 'tdm'],
+    theme: { sky: 'halloween', tex: 'ruina', ambiente: 'piramide', fog: 0x0c0818, fogD: .006, amb: 0x5a4a90, ambI: .48, hemi: [0x6a58a8, 0x3a2a58, .52], sun: true, sunC: 0x9a88c0, sunI: .4, sunPos: [0, 60, 50], shadowRes: 4096, shBias: -.0004, shNormal: .08 } });
+}
+MAPDEFS.pyramid = buildPyramid;
+/* ---------- El Santuario Dual (Captura el dominio) ----------
+   184 × 136 m: el mapa más grande del juego, pero ancho y compacto (se cruza en 18-22 s, no es un pasillo).
+   Simétrico respecto de x = 0: azul al oeste, rojo al este. De un extremo al otro:
+     fortaleza · barreras y generadores · ruinas · cañón con el río · ruinas · barreras y generadores · fortaleza.
+   Tres carriles, cada uno con su portón sellado por una barrera y un generador en cada extremo de la barrera:
+     norte  z -44, terraza alta a 6 m, ruinas de catedral y puente alto sobre el cañón
+     centro z   0, plaza con el punto de poder y dos puentes de piedra
+     sur    z  44, túnel a -7 m por dentro del arco de roca, con canal y rejas
+
+   Está armado con un kit de piezas simples que se repiten (columna, arco, muro roto, escalera, caño, caja,
+   barril, farola, reja, escombro, vitral, lápida). TODO lo que se ve choca: no hay adornos fantasma.
+   Nada de Math.random acá: el mapa se arma igual en el cliente y en el servidor, así que el azar es con semilla. */
+function buildSantuario() {
+  const { lava, spawns, lights, add, ramp, wall, stairs, D, face, I, finish } = mapKit();
+  const tspawns = [[], []], fspawns = [[], []], gens = [], bars = [], bosses = [], bossPts = [[], []], defPts = [[], []], deco = [];
+  const LANES = [{ z: -44, y: 6 }, { z: 0, y: 0 }, { z: 44, y: -7 }];   // norte, centro, sur
+  const GW = 18, GH = [6, 6, 4.8];        // ancho del portón y alto de cada barrera
+  const XW = 66, XG = 62, XB = 80, XS = 86;   // muro de la fortaleza, generadores, boss, aparición
+  const CX = 26, CY = -14;                // medio ancho del cañón y altura del fondo
+  let SEED = 20261113;
+  const rr = () => ((SEED = (SEED * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+  const vr = (a, b) => a + (b - a) * rr();
+
+  /* ================= EL KIT =================
+     Todo lo que se ve a la altura de un jugador CHOCA: nada de paredes, caños o columnas fantasma.
+     Las piezas son simples (bloques grandes y pocos): se leen de lejos y no cuestan FPS. */
+  const caja = (x, z, y, w, h, d, m) => add(x - w / 2, y, z - d / 2, x + w / 2, y + h, z + d / 2, m || 'crate');
+  const barril = (x, z, y) => add(x - .45, y, z - .45, x + .45, y + 1.1, z + .45, 'metal');
+  // columna: basa, fuste y capitel (la basa mide menos que un escalón: se camina por encima)
+  const columna = (x, z, y, h, r, m) => {
+    add(x - r * 1.4, y, z - r * 1.4, x + r * 1.4, y + .4, z + r * 1.4, m || 'pillar');
+    add(x - r, y + .4, z - r, x + r, y + h - .5, z + r, m || 'pillar');
+    add(x - r * 1.4, y + h - .5, z - r * 1.4, x + r * 1.4, y + h, z + r * 1.4, m || 'pillar');
+  };
+  // arco: dos columnas y un dintel macizo arriba (eje = por dónde se pasa)
+  const arco = (x, z, y, luz, h, eje, m) => {
+    const q = luz / 2, mat = m || 'brick';
+    if (eje === 'z') { columna(x, z - q, y, h, .5, mat); columna(x, z + q, y, h, .5, mat); add(x - .6, y + h, z - q - .7, x + .6, y + h + .8, z + q + .7, mat); }
+    else { columna(x - q, z, y, h, .5, mat); columna(x + q, z, y, h, .5, mat); add(x - q - .7, y + h, z - .6, x + q + .7, y + h + .8, z + .6, mat); }
+  };
+  // muro derruido: altura irregular, con mordiscos arriba
+  const muroRoto = (x0, z0, x1, z1, y, h, m) => {
+    const ejeX = (x1 - x0) >= (z1 - z0), L = ejeX ? x1 - x0 : z1 - z0, n = Math.max(2, Math.round(L / 3.5));
+    for (let i = 0; i < n; i++) {
+      const a = (ejeX ? x0 : z0) + L * i / n, b = (ejeX ? x0 : z0) + L * (i + 1) / n, hh = h * vr(.45, 1.05);
+      if (ejeX) add(a, y, z0, b, y + hh, z1, m || 'brick'); else add(x0, y, a, x1, y + hh, b, m || 'brick');
+    }
+  };
+  // caño de bronce de un punto a otro, sobre un eje (macizo)
+  const cano = (x, z, y, L, eje, r) => {
+    r = r || .3;
+    if (eje === 'x') add(Math.min(x, x + L), y - r, z - r, Math.max(x, x + L), y + r, z + r, 'metal');
+    else if (eje === 'z') add(x - r, y - r, Math.min(z, z + L), x + r, y + r, Math.max(z, z + L), 'metal');
+    else add(x - r, y, z - r, x + r, y + L, z + r, 'metal');
+  };
+  const farola = (x, z, y, col) => { add(x - .18, y, z - .18, x + .18, y + 3.2, z + .18, 'metal'); add(x - .45, y + 3.2, z - .45, x + .45, y + 3.9, z + .45, col); lights.push({ x, y: y + 3.5, z, c: col === 'neonR' ? 0xff7a20 : 0x3a8bff, i: .9, d: 17 }); };
+  const reja = (x0, z0, x1, z1, y, h) => add(x0, y, z0, x1, y + h, z1, 'grate');
+  const baranda = (x0, z0, x1, z1, y) => add(x0, y, z0, x1, y + .95, z1, 'rail');
+  // escombro: dos bloques apilados, sirven de cobertura baja
+  const escombro = (x, z, y, r) => { add(x - r, y, z - r, x + r, y + r * vr(.7, 1.2), z + r, 'rock'); add(x - r * .6, y, z - r * .6, x + r * .55, y + r * vr(1, 1.6), z + r * .55, 'rock'); };
+  // vitral: paño de vidrio de color con su marco (macizo)
+  const vitral = (x, z, y, w, h, eje, col) => {
+    if (eje === 'z') { add(x - .15, y, z - w / 2, x + .15, y + h, z + w / 2, col); add(x - .3, y + h, z - w / 2 - .3, x + .3, y + h + .4, z + w / 2 + .3, 'brick'); add(x - .3, y - .4, z - w / 2 - .3, x + .3, y, z + w / 2 + .3, 'brick'); }
+    else { add(x - w / 2, y, z - .15, x + w / 2, y + h, z + .15, col); add(x - w / 2 - .3, y + h, z - .3, x + w / 2 + .3, y + h + .4, z + .3, 'brick'); }
+  };
+  // baldosa sobre el piso: lámina de 2 cm, así no te hundís en ella
+  const lamina = (x0, y, z0, x1, z1, m) => add(Math.min(x0, x1), y, z0, Math.max(x0, x1), y + .02, z1, m || 'tiles');
+  // lápida: cobertura baja
+  const lapida = (x, z, y, eje) => eje === 'x' ? add(x - .7, y, z - .2, x + .7, y + 1.1, z + .2, 'rock') : add(x - .2, y, z - .7, x + .2, y + 1.1, z + .7, 'rock');
+
+  /* ================= EL CAÑÓN Y EL RÍO ================= */
+  add(-CX, -18, -68, CX, CY, 68, 'canyon');                       // fondo
+  lava.push({ min: [-CX, CY, -68], max: [CX, CY + 1.7, 68], dps: 999, water: 1 });
+  for (const s of [-1, 1]) {                                       // paredes del cañón: cornisas de roca
+    for (let z = -64; z < 68; z += 16) add(Math.min(s * CX, s * (CX - 2.2)), CY + 1, z, Math.max(s * CX, s * (CX - 2.2)), CY + vr(2.5, 5), z + vr(4, 7), 'rock');
+    for (const z of [-56, -24, 10, 50]) { add(s * CX - s * 5, CY, z - 3, s * CX, CY + .6, z + 3, 'rock'); escombro(s * (CX - 3), z, CY + .6, 1.6); }
+  }
+  // puente alto del norte (carril norte, y = 6) con sus arcos
+  add(-CX - 1, 5, -53, CX + 1, 6, -35, 'step');
+  for (const x of [-20, -10, 0, 10, 20]) add(x - 1.4, -2, -52, x + 1.4, 5, -36, 'pillar');
+  baranda(-CX, -53.2, CX, -52.6, 6); baranda(-CX, 35.6 - 71, CX, 36.2 - 71, 6);
+  for (let x = -24; x <= 24; x += 8) { farola(x, -52.2, 6, 'light'); }
+  // puentes del centro (y = 0) y plaza con el punto de poder
+  for (const zc of [-13, 13]) {
+    add(-CX - 1, -1, zc - 4, CX + 1, 0, zc + 4, 'step');
+    for (const x of [-18, -6, 6, 18]) add(x - 1.2, -8, zc - 3.6, x + 1.2, -1, zc + 3.6, 'pillar');
+    baranda(-CX, zc - 4.3, CX, zc - 3.75, 0); baranda(-CX, zc + 3.75, CX, zc + 4.3, 0);
+  }
+  // arco de roca del sur: por arriba se cruza a cielo abierto, por dentro sigue el túnel
+  add(-CX - 1, -18, 30, CX + 1, -7, 58, 'rock');
+  add(-CX - 1, -7, 30, CX + 1, 0, 36, 'rock'); add(-CX - 1, -7, 52, CX + 1, 0, 58, 'rock');
+  add(-CX - 1, -2.2, 36, CX + 1, 0, 52, 'rock');
+  for (const x of [-18, -6, 6, 18]) { add(x - 1.2, -14, 31, x + 1.2, -7, 34, 'pillar'); add(x - 1.2, -14, 54, x + 1.2, -7, 57, 'pillar'); }
+  for (let x = -22; x <= 22; x += 11) { lamina(x - 2.5, -7, 36, x + 2.5, 52); lights.push({ x, y: -3, z: 44, c: 0xffb060, i: .8, d: 15 }); }
+  // arriba del arco de roca: ruinas de un puente caído, para no cruzar a campo pelado
+  for (const s of [-1, 1]) {
+    columna(s * 13, 35, 0, vr(3, 5), .7, 'pillar'); columna(s * 13, 53, 0, vr(3, 5), .7, 'pillar');
+    escombro(s * 6, 40, 0, 1.4); escombro(s * 6, 48, 0, 1.2);
+    muroRoto(s * 18 - 1, 41, s * 18 + 1, 47, 0, 3);
+  }
+  add(-2.5, 0, 42, 2.5, 1.3, 46, 'rock');
+  add(-15, -18, -9, 15, 0, 9, 'rock');                             // la isla de la plaza
+  add(-11, 0, -7, 11, .5, 7, 'tiles'); add(-5.5, .5, -5.5, 5.5, 1, 5.5, 'tiles');
+  add(-2.2, 1, -2.2, 2.2, 2.2, 2.2, 'pillar'); I('quad', 0, 2.2, 0);
+  for (const [a, b] of [[-9, -5], [9, -5], [-9, 5], [9, 5]]) columna(a, b, .5, 5.5, .55, 'pillar');
+  for (const [a, b] of [[-12.5, 0], [12.5, 0], [0, -7.5], [0, 7.5]]) escombro(a, b, 0, 1.5);
+  for (const [a, b] of [[-7, -2], [7, 2], [-3, 6], [3, -6]]) caja(a, b, .5, 1.6, 1.3, 1.6);
+  lights.push({ x: 0, y: 6, z: 0, c: 0xffe0a8, i: 1.5, d: 26 });
+  for (let z = -62; z < 62; z += 26) deco.push({ t: 'bruma', soft: 1, x0: -CX + 2, x1: CX - 2, z0: z, z1: z + 24, y: CY + 2.4, o: .1, dir: z % 2 ? 1 : -1 });   // bruma sobre el río
+
+  for (const sx of [1, -1]) {
+    const team = sx > 0 ? 0 : 1, col = team ? 'neonB' : 'neonR', luz = team ? 0x3a8bff : 0xff7a20, vid = team ? 'vitB' : 'vitR';
+    const A = (u0, y0, z0, u1, y1, z1, m, ex) => add(sx * u0, y0, z0, sx * u1, y1, z1, m, ex);
+    const P = (u, y, z) => ({ x: sx * u, y, z });
+    const col_ = (u, z, y, h, r, m) => columna(sx * u, z, y, h, r, m);
+    const arc_ = (u, z, y, l, h, e, m) => arco(sx * u, z, y, l, h, e, m);
+    const caj_ = (u, z, y, w, h, d, m) => caja(sx * u, z, y, w, h, d, m);
+    const esc_ = (u, z, y, r) => escombro(sx * u, z, y, r);
+    const far_ = (u, z, y) => farola(sx * u, z, y, col);
+    const vit_ = (u, z, y, w, h, e) => vitral(sx * u, z, y, w, h, e, vid);
+
+    /* ---------- suelo general y borde del mapa ---------- */
+    A(CX, -18, -68, 92, 0, 30, 'floor');
+    A(CX, -18, 58, 92, 0, 68, 'floor');
+    A(CX, -18, 30, 92, -7, 58, 'concrete');                        // banda del túnel sur: piso hundido
+    A(92, -18, -68, 94, 26, 68, 'brick');                          // muro del fondo
+    for (const z of [-68, 67]) add(-94, -18, z, 94, 26, z + 1, 'brick');
+
+    /* ---------- CARRIL SUR: túnel por dentro de la roca ---------- */
+    A(CX, -7, 30, 57, 0, 36, 'brick'); A(CX, -7, 52, 57, 0, 58, 'brick');   // paredes del túnel…
+    A(XW, -7, 30, 92, 0, 36, 'brick'); A(XW, -7, 52, 92, 0, 58, 'brick');   // …cortadas donde están los fosos de los generadores
+    A(CX, -2.2, 36, 42, 0, 52, 'brick'); A(42, -2.2, 43, XW + 2, 0, 52, 'brick');   // techo, con el hueco de la rampa
+    A(CX, -7, 36, 58, -6.98, 52, 'tiles');                         // piso embaldosado (lámina)
+    for (let u = CX + 4; u < 92; u += 7) {                         // arcos del túnel y farolas
+      A(u - .4, -2.6, 36, u + .4, -2.2, 52, 'pillar');
+      A(u - .5, -7, 36, u + .5, -2.6, 36.6, 'pillar'); A(u - .5, -7, 51.4, u + .5, -2.6, 52, 'pillar');
+      if (u % 14 < 7) { lights.push({ x: sx * u, y: -3, z: 44, c: 0xffb060, i: .85, d: 15 }); }
+    }
+    A(CX, -7, 36.6, 92, -6.2, 38.4, 'grate');                      // canal inundado con reja a un costado
+    for (let u = CX + 6; u < 90; u += 12) esc_(u, vr(40, 50), -7, 1.2);
+    for (const u of [34, 46, 56]) { caj_(u, vr(39, 49), -7, 1.6, 1.4, 1.6); }
+    // bocas del túnel: una rampa sale a la superficie en pleno campo y otra sube adentro de la fortaleza
+    A(42, -7, 36, 56, 0, 43, 'floor', { ramp: { axis: 'x', dir: -sx, lo: -7, hi: 0 } });
+    A(XW + 2, -7, 36, 82, 0, 52, 'floor', { ramp: { axis: 'x', dir: sx, lo: -7, hi: 0 } });
+    A(82, -18, 30, 92, 0, 58, 'floor');
+    baranda(sx * 42, 35.6, sx * 56, 36.2, 0); baranda(sx * 41.4, 36, sx * 42, 43, 0);   // baranda del hueco
+
+    /* ---------- CARRIL NORTE: terraza alta y ruinas de catedral ---------- */
+    A(CX, 0, -68, XW, 6, -30, 'rock');                             // terreno alto hasta el muro de la fortaleza
+    A(38, 0, -30, 50, 6, -18, 'floor', { ramp: { axis: 'z', dir: -1, lo: 0, hi: 6 } });   // rampa al carril del centro
+    stairs(sx * 28, -30, sx * 34, -14, 0, .55, 11, 'z', -1);        // y una escalera más cerca del cañón
+    stairs(sx * 56, -30, sx * 62, -18, 0, .55, 11, 'z', -1);        // bajada de servicio del lado de la fortaleza
+    for (let u = CX + 5; u < XG; u += 9) {                         // nave de la catedral: dos filas de columnas
+      col_(u, -58, 6, 8, .65, 'pillar'); col_(u, -40, 6, 8, .65, 'pillar');
+      A(u - .7, 13.5, -58.8, u + .7, 14.4, -39.2, 'brick');
+    }
+    muroRoto(sx * CX + (sx > 0 ? 2 : -8), -66, sx * CX + (sx > 0 ? 8 : -2), -62, 6, 9);
+    for (let u = CX + 6; u < XG; u += 11) { muroRoto(sx * u - 1, -67, sx * u + 1, -60, 6, 8); vit_(u, -63.5, 9, 3, 5, 'x'); }
+    A(CX + 2, 6, -67, XG, 10, -64, 'brick');                       // balcón corrido sobre la nave
+    A(CX + 2, 10, -67, XG, 10.6, -60, 'step'); baranda(sx * (CX + 2), -60.6, sx * XG, -60, 10.6);
+    for (let u = CX + 8; u < XG; u += 14) { A(u - 3, 6, -60.5, u + 3, 10, -59.5, 'step', { ramp: { axis: 'z', dir: -1, lo: 0, hi: 4 } }); }
+    for (let u = CX + 9; u < XG - 6; u += 10) { esc_(u, vr(-54, -36), 6, vr(1.1, 1.8)); caj_(u + 4, vr(-52, -38), 6, 1.8, 1.5, 1.8); }
+    for (const u of [34, 48, 58]) { arc_(u, -44, 6, 7, 7, 'z'); far_(u, -36, 6); }
+
+    /* ---------- SUPERFICIE SUR: cementerio y cripta sobre el túnel ----------
+       Arriba del túnel había un llano pelado. Ahora: una cripta con dos puertas, lápidas para cubrirse,
+       un mirador al que se sube por escalera y un muro roto que tapa del carril del centro. */
+    A(30, 0, 54, 32.6, 3.2, 54.8, 'brick'); A(34.6, 0, 54, 37, 3.2, 54.8, 'brick');      // cripta: frente con puerta
+    A(30, 0, 61.2, 37, 3.2, 62, 'brick'); A(30, 0, 54, 30.8, 3.2, 62, 'brick');
+    A(36.2, 0, 54, 37, 3.2, 57, 'brick'); A(36.2, 0, 59, 37, 3.2, 62, 'brick');           // costado con otra puerta
+    A(29.6, 3.2, 53.6, 37.4, 3.7, 62.4, 'step');                                         // techo
+    lamina(sx * 30.8, 0, 54.8, sx * 36.2, 61.2, 'tiles');
+    lights.push({ x: sx * 33.5, y: 2.6, z: 58, c: luz, i: .8, d: 9 });
+    for (const u of [40, 44.5, 49, 53.5]) for (const z of [56.5, 60.5, 64.5]) if (!(u === 53.5 && z === 56.5)) A(u - .7, 0, z - .2, u + .7, 1.1, z + .2, 'rock');   // lápidas
+    A(46, 0, 45.5, 54, 2.5, 50.5, 'brick'); baranda(sx * 46, 45.5, sx * 54, 46.1, 2.5);   // mirador sobre la boca del túnel
+    stairs(sx * 48, 50.5, sx * 52, 55.5, 0, .5, 5, 'z', -1);
+    muroRoto(Math.min(sx * 28, sx * 39), 31, Math.max(sx * 28, sx * 39), 32, 0, 3.4);   // tapa del carril del centro
+    col_(30, 45, 0, 5.5, .6, 'pillar'); col_(38, 49, 0, 4, .6, 'pillar');
+    caj_(40, 46.5, 0, 1.6, 1.3, 1.6); esc_(32, 38.5, 0, 1.3);
+    far_(34, 44, 0); far_(52, 63, 0);
+
+    /* ---------- CARRIL CENTRO: ruinas abiertas ---------- */
+    for (const [u, z] of [[34, -18], [34, 18], [46, -10], [46, 10], [56, -20], [56, 20], [40, 0], [52, 0]]) { col_(u, z, 0, 7, .6, 'pillar'); }
+    for (const [u, z] of [[38, -8], [38, 8], [50, -16], [50, 16], [58, -6], [58, 6]]) { caj_(u, z, 0, 2.2, 1.5, 2.2); }
+    for (const [u, z] of [[44, -22], [44, 22], [54, -12], [54, 12], [32, 0]]) esc_(u, z, 0, 1.8);
+    muroRoto(sx * 42 - 1, -28, sx * 42 + 1, -16, 0, 5); muroRoto(sx * 42 - 1, 16, sx * 42 + 1, 28, 0, 5);
+    A(30, 0, -14, 34, 4, 14, 'brick'); A(30, 4, -14, 34, 4.6, 14, 'step');   // plataforma baja frente al cañón
+    stairs(sx * 34, -3, sx * 44, 3, 0, .55, 8, 'x', -sx);
+    baranda(sx * 29.6, -14, sx * 30.2, 14, 4.6);
+    for (const z of [-24, 24]) { arc_(36, z, 0, 8, 7, 'x'); }
+    for (let u = CX + 8; u < XG - 6; u += 10) barril(sx * u, vr(-26, 26), 0);
+    for (const z of [-20, 20]) far_(56, z, 0);   // a los costados: el medio del carril queda libre hasta el portón
+
+    /* ---------- MURO DE LA FORTALEZA Y LAS TRES BARRERAS ---------- */
+    const puertas = [D(LANES[0].z - GW / 2, LANES[0].z + GW / 2, 6, 12), D(-GW / 2, GW / 2, 0, 6), D(LANES[2].z - GW / 2, LANES[2].z + GW / 2, -7, -2.2)];
+    wall(Math.min(sx * XW, sx * (XW + 2)), -68, Math.max(sx * XW, sx * (XW + 2)), 68, -18, 16, puertas, 'brick');
+    // campo permanente por encima del muro: al rival no le sirve saltar, volar con cohetes ni bordear el mapa
+    A(XW, 16, -68, XW + 2, 70, 68, 'clip', { bar: { team, lane: -1, i: 250, down: false }, nonav: 1 });
+    LANES.forEach((L, lane) => {
+      const i = bars.length, z0 = L.z - GW / 2, z1 = L.z + GW / 2, h = GH[lane];
+      A(XW, L.y, z0, XW + 2, L.y + h, z1, 'clip', { bar: { team, lane, i, down: false } });
+      bars.push({ team, lane, x: sx * (XW + 1), y: L.y, z: L.z, w: GW, h });
+      defPts[team].push(P(XW + 6, L.y, L.z));
+      // marco del portón: arco, vitrales y caños de energía que bajan a los dos generadores
+      arc_(XW + 1, L.z, L.y, GW + 2, h + 1.5, 'z', 'pillar');
+      vit_(XW - .2, L.z, L.y + h + 2.5, 5, 6, 'z');   // ventanal sobre el portón, del lado de afuera
+      for (const s of [-1, 1]) {
+        const zg = L.z + s * 11;
+        // puesto fortificado del generador: plataforma, parapeto con huecos y cobertura alrededor
+        A(XG - 4, L.y, zg - 4, XG + 3, L.y + .4, zg + 4, 'tiles');
+        for (let q = -4.6; q < 4.5; q += 3.2) A(XG - 4.6, L.y + .4, zg + q, XG - 3.4, L.y + 1.8, zg + q + 1.6, 'brick');   // parapeto almenado: cubre, pero deja ver y tirar
+        A(XG - 4.6, L.y + .4, zg + s * 4, XG + 3, L.y + 2.2, zg + s * 4.6, 'brick');
+        col_(XG + 2.5, zg - 3.5, L.y + .4, 3.4, .45, 'pillar'); col_(XG + 2.5, zg + 3.5, L.y + .4, 3.4, .45, 'pillar');
+        esc_(XG - 9, zg + s * 3.5, L.y, 1.2);
+        cano(sx * XG, zg + s * .9, L.y + 2.6, sx * (XW - XG), 'x', .25);   // caño de energía hasta la barrera
+        A(XG - 1.6, L.y, zg - 1.6, XG + 1.6, L.y + 3.2, zg + 1.6, 'clip', { gen: gens.length });
+        // desde dónde lo ataca un bot: a cubierto, del lado de afuera
+        const atk = lane === 0 ? P(XG - 9, 6, zg + s * 2) : lane === 1 ? P(XG - 9, 0, zg + s * 1.5) : P(XG - 7, -7, 44 - s * 4);
+        gens.push({ team, lane, x: sx * XG, y: L.y, z: zg, atk });
+        lights.push({ x: sx * XG, y: L.y + 4, z: zg, c: luz, i: 1.1, d: 15 });
+      }
+      /* puesto de reabastecimiento del carril, del lado del atacante: si gastaste todo rompiendo los
+         generadores no tenés que volver hasta tu base. Tarima con respaldo que te cubre del portón. */
+      const rx = XG - 13, muni = ['slugs', 'bullets', 'shells'][lane];
+      A(rx - 3, L.y, L.z - 3.4, rx + 3, L.y + .4, L.z + 3.4, 'tiles');                  // tarima
+      A(rx + 2, L.y + .4, L.z - 3.4, rx + 3.2, L.y + 2.2, L.z + 3.4, 'brick');          // parapeto que te tapa de los generadores
+      A(rx - 3, L.y + .4, L.z - 3.6, rx + 3.2, L.y + 2.4, L.z - 3, 'brick'); A(rx - 3, L.y + .4, L.z + 3, rx + 3.2, L.y + 2.4, L.z + 3.6, 'brick');
+      A(rx - 3.4, L.y + 2.4, L.z - 3.8, rx + 3.4, L.y + 2.8, L.z + 3.8, 'metal');   // techito (se puede subir)
+      caj_(rx - 1.8, L.z + 2.2, L.y + .4, 1.4, 1, 1.4, 'crate');
+      lights.push({ x: sx * rx, y: L.y + 2.3, z: L.z, c: 0x9fe8ff, i: .9, d: 11 });
+      deco.push({ t: 'glow', x: sx * rx, y: L.y + 2.2, z: L.z, c: 0x8fe4ff, s: 1.1 });
+      I('health', sx * rx, L.y + .5, L.z + 1.4);
+      I(muni, sx * rx, L.y + .5, L.z - 1.4);
+      if (lane === 1) I('armor', sx * (rx - .4), L.y + .5, L.z);
+    });
+
+    /* ---------- FORTALEZA ---------- */
+    lamina(sx * (XW + 2), 0, -68, sx * 92, 36); lamina(sx * (XW + 2), 0, 52, sx * 92, 68); lamina(sx * 82, 0, 36, sx * 92, 52);   // piso embaldosado (sin tapar la rampa del túnel)
+    // bajada del portón norte (y 6) al patio (y 0)
+    A(XW + 2, 0, -53, XW + 16, 6, -35, 'floor', { ramp: { axis: 'x', dir: -sx, lo: 0, hi: 6 } });
+    A(XW + 2, 0, -68, 92, 6, -56, 'rock'); esc_(XW + 9, -28, 0, 1.6); esc_(XW + 20, -27, 0, 1.4);
+    // arena circular del boss: anillo de columnas, gradas y cúpula
+    const bx = sx * XB;
+    add(bx - 15, -18, -15, bx + 15, 0, 15, 'floor');
+    add(bx - 13, 0, -13, bx + 13, .35, 13, 'tiles'); add(bx - 9, .35, -9, bx + 9, .7, 9, 'tiles');
+    add(bx - 3.2, .7, -3.2, bx + 3.2, 1.4, 3.2, 'pillar');
+    for (let a = 0; a < 10; a++) { const an = a / 10 * 6.2832 + .31, cx2 = bx + Math.cos(an) * 14.5, cz = Math.sin(an) * 14.5; if (Math.abs(cz) > 13.6 || Math.abs(cx2 - bx) > 13.6) continue; columna(cx2, cz, 0, 9, .75, 'pillar'); }
+    for (const z of [-26, -16, 16, 26]) vitral(sx * 91.5, z, 4, 7, 10, 'z', vid);          // vitrales del fondo de la fortaleza
+    for (const s of [-1, 1]) { add(bx - 8.9, 0, s * 11, bx - 7.4, 12, s * 17, 'brick'); vitral(bx - 9.05, s * 14, 3, 5, 7, 'z', vid); }   // y dos en los machones de la arena
+    for (const [u, z] of [[XB - 11, -11], [XB - 11, 11], [XB + 11, -11], [XB + 11, 11]]) { caj_(u, z, 0, 2, 1.5, 2); }
+    bosses[team] = { x: bx, y: 1.4, z: 0, yaw: face(bx, 0, 0, 0) };
+    add(bx - 2, 1.4, -2, bx + 2, 1.4 + DOM.BOSS_H, 2, 'clip', { boss: team });
+    bossPts[team].push(P(XB - 10, 0, -9), P(XB - 10, 0, 9));
+    // salas de aparición, detrás del boss
+    for (const s of [-1, 1]) {
+      A(XS - 5, 0, s * 20, 92, 8, s * 21, 'brick'); A(XS - 5, 0, s * 38, 92, 8, s * 39, 'brick');
+      // el frente es un claustro de arcos abierto al patio del boss, no una pared
+      for (const z of [24, 29.5, 35]) { arco(sx * (XS - 4.5), s * z, 0, 4.6, 5, 'z', 'pillar'); }
+      A(XS - 5, 6.5, s * 21, XS - 4, 8, s * 38, 'brick'); A(XS - 5.6, 8, s * 20, XS - 3.4, 8.6, s * 39, 'step');
+      for (const z of [26, 31, 36]) { tspawns[team].push({ x: sx * (XS + 3), y: 0, z: s * z, yaw: face(sx * (XS + 3), s * z, 0, s * z) }); }
+      vit_(91.6, s * 30, 3, 6, 5, 'z');
+      lights.push({ x: sx * XS, y: 5, z: s * 30, c: 0xffe0b0, i: 1, d: 20 });
+      far_(XW + 6, s * 12, 0);
+    }
+    lights.push({ x: bx, y: 11, z: 0, c: luz, i: 1.8, d: 34 });
+    // reaparición adelantada: a mitad del carril que tu equipo ya abrió, del lado de afuera
+    fspawns[1 - team] = [P(44, 6, -44), P(40, 0, 13), P(40, -7, 44)].map(p => ({ x: p.x, y: p.y, z: p.z, yaw: face(p.x, p.z, sx * 92, p.z) }));
+
+    /* ---------- ítems ---------- */
+    I('health', sx * 56, 6, -44); I('health', sx * 36, 0, 0); I('health', sx * 56, -7, 44); I('health', sx * (XW + 8), 0, 0);
+    I('armor', sx * 30, 4.6, 0); I('armorH', sx * 44, 6, -62); I('mega', sx * 44, -7, 44);
+    I('w8', sx * 58, 6, -50); I('w5', sx * 34, 0, 12); I('w3', sx * 50, -7, 40); I('w6', sx * 70, 0, -44);
+    I('bullets', sx * 88, 0, -14); I('shells', sx * 88, 0, 14); I('rockets', sx * (XW + 7), 0, 44); I('slugs', sx * 48, 6, -38);
+    I('bullets', sx * 40, 0, -22); I('shells', sx * 40, 0, 22); I('slugs', sx * 52, -7, 48);
+  }
+  spawns.push(...tspawns[0], ...tspawns[1]);
+  return finish({
+    id: 'santuario', name: 'dom1 · El Santuario Dual', bounds: { x0: -94, x1: 94, z0: -68, z1: 68 },
+    tspawns, fspawns, gens, bars, bosses, bossPts, defPts, deco, navMaxY: 11,
+    theme: { sky: 'halloween', tex: 'ruina', fog: 0x101722, fogD: .0042, amb: 0x7585ac, ambI: .62, hemi: [0x8aa0d8, 0x40301c, .6], sun: true, sunC: 0xc8d4ff, sunI: .5, sunPos: [10, 70, 40], shadowRes: 4096, shBias: -.0004, shNormal: .08, shFar: 230 }
+  });
+}
+MAPDEFS.santuario = buildSantuario;
 const MAPS = {};
 for (const id in MAPDEFS) MAPS[id] = MAPDEFS[id]();
 // "Probar en práctica" desde el editor: la página deja el mapa en self.CK_MAPA_EDITOR antes de cargar el juego
@@ -1019,12 +2294,89 @@ function topAt(b, x0, z0, x1, z1) {
   else { const L = b.max[2] - b.min[2]; t = r.dir > 0 ? (Math.min(z1, b.max[2]) - b.min[2]) / L : (b.max[2] - Math.max(z0, b.min[2])) / L; }
   return r.lo + (r.hi - r.lo) * clamp(t, 0, 1);
 }
+/* Barreras de campo de fuerza (Captura el dominio): son bloques con `bar: { team, lane, i, down }`.
+   Frenan a todo lo que no sea del equipo dueño: cuerpos, balas y proyectiles. PASA dice para qué equipo se está
+   calculando ahora (-1 = nadie pasa, -2 = pasan todos: así se arma la navegación). El movimiento lo toma solo
+   de `s.tm`; para disparos y líneas de visión se fija con setPasa(), que devuelve el valor anterior para restaurarlo. */
+let PASA = -1;
+function setPasa(t) { const o = PASA; PASA = t == null ? -1 : t; return o; }
+const barOpen = b => b.bar.down || PASA === -2 || b.bar.team === PASA;
 const overlapXZ = (b, x0, z0, x1, z1) => b.min[0] < x1 && b.max[0] > x0 && b.min[2] < z1 && b.max[2] > z0;
+
+/* ---------- índice espacial (rejilla de GC metros en XZ) ----------
+   El Santuario Dual tiene cientos de bloques y antes cada paso de cada jugador y cada disparo los recorría todos.
+   Cada celda guarda los índices de los bloques que la tocan; los móviles y los enormes (un piso entero) quedan
+   en `sueltos` y se prueban siempre. Se arma una vez por mapa y los índices sirven igual para la copia del mundo
+   que hace cada partida de Captura el dominio, porque el orden de los bloques no cambia.
+   gBox y gRay dejan los candidatos en SCR (sin repetidos): no se pueden anidar dos recorridos. */
+const GC = 8, GBIG = 48;
+function gridOf(W) {
+  if (W.gridx) return W.gridx;
+  const B = W.brushes;
+  let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
+  for (const b of B) { if (b.min[0] < x0) x0 = b.min[0]; if (b.min[2] < z0) z0 = b.min[2]; if (b.max[0] > x1) x1 = b.max[0]; if (b.max[2] > z1) z1 = b.max[2]; }
+  if (!B.length) { x0 = z0 = 0; x1 = z1 = 1; }
+  const NX = Math.max(1, Math.ceil((x1 - x0) / GC) + 1), NZ = Math.max(1, Math.ceil((z1 - z0) / GC) + 1);
+  const cells = new Array(NX * NZ), loose = [];
+  for (let i = 0; i < B.length; i++) {
+    const b = B[i];
+    const cx0 = Math.floor((b.min[0] - x0) / GC), cx1 = Math.floor((b.max[0] - x0) / GC);
+    const cz0 = Math.floor((b.min[2] - z0) / GC), cz1 = Math.floor((b.max[2] - z0) / GC);
+    if (b.nc) continue;   // decoración sin colisión: no entra al índice, así adornar el mapa no cuesta nada
+    if (b.mover || (cx1 - cx0 + 1) * (cz1 - cz0 + 1) > GBIG) { loose.push(i); continue; }
+    for (let cz = cz0; cz <= cz1; cz++) for (let cx = cx0; cx <= cx1; cx++) { const k = cx + cz * NX; (cells[k] || (cells[k] = [])).push(i); }
+  }
+  return W.gridx = { x0, z0, NX, NZ, cells, loose };
+}
+let SCR = new Int32Array(256), MARK = null, MARKW = null, MARKV = 0;
+function scrStart(W, G) {
+  if (MARKW !== W.brushes || MARK.length < W.brushes.length) { MARKW = W.brushes; MARK = new Int32Array(W.brushes.length); MARKV = 0; }
+  if (SCR.length < W.brushes.length) SCR = new Int32Array(W.brushes.length);
+  if (++MARKV > 2e9) { MARK.fill(0); MARKV = 1; }
+  let n = 0;
+  for (const i of G.loose) { MARK[i] = MARKV; SCR[n++] = i; }
+  return n;
+}
+function gCell(G, n, cx, cz) {
+  if (cx < 0 || cz < 0 || cx >= G.NX || cz >= G.NZ) return n;
+  const c = G.cells[cx + cz * G.NX];
+  if (c) for (let k = 0; k < c.length; k++) { const i = c[k]; if (MARK[i] !== MARKV) { MARK[i] = MARKV; SCR[n++] = i; } }
+  return n;
+}
+function gBox(W, x0, z0, x1, z1) {
+  const G = gridOf(W);
+  let n = scrStart(W, G);
+  const cx0 = Math.max(0, Math.floor((x0 - G.x0) / GC)), cx1 = Math.min(G.NX - 1, Math.floor((x1 - G.x0) / GC));
+  const cz0 = Math.max(0, Math.floor((z0 - G.z0) / GC)), cz1 = Math.min(G.NZ - 1, Math.floor((z1 - G.z0) / GC));
+  for (let cz = cz0; cz <= cz1; cz++) for (let cx = cx0; cx <= cx1; cx++) n = gCell(G, n, cx, cz);
+  return n;
+}
+// celdas que toca un rayo, caminándolas en orden (DDA en XZ)
+function gRay(W, ox, oz, dx, dz, maxT) {
+  const G = gridOf(W);
+  let n = scrStart(W, G);
+  let cx = Math.floor((ox - G.x0) / GC), cz = Math.floor((oz - G.z0) / GC);
+  const sx = dx > 1e-9 ? 1 : dx < -1e-9 ? -1 : 0, sz = dz > 1e-9 ? 1 : dz < -1e-9 ? -1 : 0;
+  const tdx = sx ? Math.abs(GC / dx) : Infinity, tdz = sz ? Math.abs(GC / dz) : Infinity;
+  let tmx = sx ? (G.x0 + (cx + (sx > 0 ? 1 : 0)) * GC - ox) / dx : Infinity;
+  let tmz = sz ? (G.z0 + (cz + (sz > 0 ? 1 : 0)) * GC - oz) / dz : Infinity;
+  if (tmx < 0) tmx = Infinity; if (tmz < 0) tmz = Infinity;
+  for (let guard = G.NX + G.NZ + 4; guard >= 0; guard--) {
+    n = gCell(G, n, cx, cz);
+    const t = tmx < tmz ? tmx : tmz;
+    if (!(t <= maxT)) break;
+    if (tmx < tmz) { cx += sx; tmx += tdx; } else { cz += sz; tmz += tdz; }
+    if ((cx < 0 && sx <= 0) || (cx >= G.NX && sx >= 0) || (cz < 0 && sz <= 0) || (cz >= G.NZ && sz >= 0)) break;
+  }
+  return n;
+}
 
 function solidAt(W, x, y, z, r, h) {
   const x0 = x - r, x1 = x + r, z0 = z - r, z1 = z + r;
-  for (const b of W.brushes) {
-    if (b.nc || !overlapXZ(b, x0, z0, x1, z1)) continue;
+  const N = gBox(W, x0, z0, x1, z1);
+  for (let k = 0; k < N; k++) {
+    const b = W.brushes[SCR[k]];
+    if (b.nc || (b.bar && barOpen(b)) || !overlapXZ(b, x0, z0, x1, z1)) continue;
     if (b.min[1] >= y + h - EPS) continue;
     if (topAt(b, x0, z0, x1, z1) <= y + EPS) continue;
     return true;
@@ -1036,8 +2388,10 @@ function stepAxis(W, s, ax, d) {
   const nx = ax === 0 ? s.x + d : s.x, nz = ax === 2 ? s.z + d : s.z, r = K.R, H = hOf(s);
   const x0 = nx - r, x1 = nx + r, z0 = nz - r, z1 = nz + r;
   let rise = 0;
-  for (const b of W.brushes) {
-    if (b.nc || !overlapXZ(b, x0, z0, x1, z1)) continue;
+  const N = gBox(W, x0, z0, x1, z1);
+  for (let k = 0; k < N; k++) {
+    const b = W.brushes[SCR[k]];
+    if (b.nc || (b.bar && barOpen(b)) || !overlapXZ(b, x0, z0, x1, z1)) continue;
     if (b.min[1] >= s.y + H - EPS) continue;
     const top = topAt(b, x0, z0, x1, z1);
     if (top <= s.y + EPS) continue;
@@ -1054,10 +2408,12 @@ function stepAxis(W, s, ax, d) {
 function stepY(W, s, h, wasOn) {
   const r = K.R, H = hOf(s), x0 = s.x - r, x1 = s.x + r, z0 = s.z - r, z1 = s.z + r;
   const ny = s.y + s.vy * h;
+  const N = gBox(W, x0, z0, x1, z1), CAND = [];
+  for (let k = 0; k < N; k++) CAND.push(W.brushes[SCR[k]]);   // copia: más abajo se llama a solidAt, que vuelve a usar SCR
   if (s.vy <= 0) {
     let ground = -Infinity, gb = null;
-    for (const b of W.brushes) {
-      if (b.nc || !overlapXZ(b, x0, z0, x1, z1)) continue;
+    for (const b of CAND) {
+      if (b.nc || (b.bar && barOpen(b)) || !overlapXZ(b, x0, z0, x1, z1)) continue;
       const top = topAt(b, x0, z0, x1, z1);
       if (top <= s.y + .02 && top > ground) { ground = top; gb = b; }
     }
@@ -1070,8 +2426,8 @@ function stepY(W, s, h, wasOn) {
     } else { s.y = ny; s.on = false; s.gb = null; }
   } else {
     let ceil = Infinity;
-    for (const b of W.brushes) {
-      if (b.nc || !overlapXZ(b, x0, z0, x1, z1)) continue;
+    for (const b of CAND) {
+      if (b.nc || (b.bar && barOpen(b)) || !overlapXZ(b, x0, z0, x1, z1)) continue;
       if (b.min[1] >= s.y + H - .02 && b.min[1] < ceil) ceil = b.min[1];
     }
     if (ny + H > ceil) { s.y = ceil - H; s.vy = 0; } else s.y = ny;
@@ -1119,23 +2475,112 @@ function crouchUpdate(W, s, want) {
     else if (!solidAt(W, s.x, s.y + .01, s.z, K.R, K.H)) s.crouch = false;           // no se para si no hay lugar arriba
   }
 }
+/* Zonas de gravedad cero (W.zerog = [{ min: [x, y, z], max: [x, y, z] }], hoy el pozo de Pyramid): adentro no hay gravedad, te vas
+   cayendo despacio hacia abajo y te movés libre: salto/Espacio sube, agacharse baja, y W mirando arriba o abajo te lleva para ahí.
+   Parado en el piso solo se activa si apretás para subir. */
+const ZG = { DRIFT: -4.5, VSPEED: 9.5, HSPEED: .7 };
+/* Movimiento avanzado (solo lo usa el cliente humano con cmd.mech; los bots siguen con el movimiento de siempre).
+   Stamina 0..1: deslizar gasta un poco, el doble salto gasta la mitad; el salto de pared es gratis. */
+const MV = {
+  SL_MIN: 5, SL_BOOST: 5.5, SL_MAX: 19, SL_END: 3, SL_FRIC: .65, SL_STEER: .7,    // deslizamiento (estilo Deadlock): velocidad mínima para arrancar, empujón, tope, velocidad a la que se corta, fricción, control
+  SL_START: 0, SL_DRAIN: 0,                                                      // el deslizamiento no gasta stamina
+  DJ_COST: .25, DJ_JUMP: 1.3,                                                    // doble salto: un cuarto de la barra, altura fija (siempre la misma)
+  WJ_UP: 1.1, WJ_OUT: 7, WJ_CD: .25, WJ_REACH: .14,                              // salto de pared: impulso arriba y hacia afuera, espera entre saltos, distancia a la pared
+  WJ_COST: .12, WJ_FAT: 1.25, WJ_LOSS: .18, WJ_MINUP: .6,                        // el primero es gratis; los siguientes dentro de 1,25 s gastan stamina y suben menos (fatiga)
+  REGEN: .22, REGEN_DELAY: .7, COYOTE: .09
+};
+// ¿hay una pared pegada al cuerpo? devuelve la normal (hacia afuera de la pared) o null
+function wallNormal(W, s) {
+  let nx = 0, nz = 0; const y = s.y + K.STEP + .1, h = (s.crouch ? K.HC : K.H) - K.STEP - .3, d = MV.WJ_REACH;
+  if (solidAt(W, s.x + d, y, s.z, K.R, h)) nx -= 1;
+  if (solidAt(W, s.x - d, y, s.z, K.R, h)) nx += 1;
+  if (solidAt(W, s.x, y, s.z + d, K.R, h)) nz -= 1;
+  if (solidAt(W, s.x, y, s.z - d, K.R, h)) nz += 1;
+  const l = Math.hypot(nx, nz); return l > 0 ? { x: nx / l, z: nz / l } : null;
+}
+function inZeroG(W, s) {
+  if (!W.zerog) return false;
+  const y = s.y + .9;
+  for (const z of W.zerog) if (s.x > z.min[0] && s.x < z.max[0] && s.z > z.min[2] && s.z < z.max[2] && y > z.min[1] && y < z.max[1]) return true;
+  return false;
+}
 function pmove(W, s, cmd, dt) {
+  const prev = PASA; PASA = s.tm == null ? -1 : s.tm;
+  try { return pmove0(W, s, cmd, dt); } finally { PASA = prev; }
+}
+function pmove0(W, s, cmd, dt) {
   if (W.movers.length) carry(W, s);
   crouchUpdate(W, s, !!cmd.crouch);
   const steps = Math.max(1, Math.ceil(dt / (1 / 120) - 1e-6)), h = dt / steps;
   let wx = cmd.wx || 0, wz = cmd.wz || 0;
   const wl = Math.hypot(wx, wz); let wish = 0;
   if (wl > 1e-4) { wish = K.MAXSPD * Math.min(1, wl); wx /= wl; wz /= wl; }
-  if (s.crouch && s.on) wish *= K.CROUCH_SPD;
+  if (s.crouch && s.on && !(cmd.mech && s.slide)) wish *= K.CROUCH_SPD;
   if (cmd.fast > 1) wish *= Math.min(1.5, cmd.fast);
-  const out = { jumped: false, landed: 0 };
+  const out = { jumped: false, landed: 0, zerog: false, slide: false, dj: false, wj: false };
+  const up = cmd.up !== undefined ? cmd.up : cmd.jump;
+  let mech = false;
+  if (cmd.mech) {
+    mech = true;
+    if (s.stam === undefined) { s.stam = 1; s.stT = 0; s.dj = false; s.slide = false; s.wjT = 0; s.offT = 0; s.didJump = false; s.upPrev = false; s.crPrev = false; s.wjN = 0; s.wjF = 0; }
+    const press = !!cmd.up && !s.upPrev, crPress = !!cmd.crouch && !s.crPrev;
+    s.upPrev = !!cmd.up; s.crPrev = !!cmd.crouch;
+    s.wjT = Math.max(0, s.wjT - dt); s.wjF = Math.max(0, (s.wjF || 0) - dt); if (s.wjF <= 0) s.wjN = 0; s.stT = Math.max(0, s.stT - dt);
+    if (s.on) { s.dj = false; s.didJump = false; s.offT = 0; } else s.offT += dt;
+    const zg = W.zerog && inZeroG(W, s);
+    // deslizamiento: Ctrl en el piso yendo rápido (solo arranca al apretar, no al llegar corriendo con Ctrl ya apretado)
+    if (!cmd.crouch || !s.on || zg) s.slide = false;
+    else if (crPress && !s.slide && Math.hypot(s.vx, s.vz) >= MV.SL_MIN) {
+      s.slide = true; s.stam = Math.max(0, s.stam - MV.SL_START); s.stT = MV.REGEN_DELAY;
+      const sp = Math.hypot(s.vx, s.vz), k = Math.min(MV.SL_MAX, sp + MV.SL_BOOST) / sp; s.vx *= k; s.vz *= k;
+    }
+    // acciones en el aire con un salto recién apretado
+    if (press && !s.on && !zg) {
+      const hsp = Math.hypot(s.vx, s.vz);
+      const wn = s.wjT <= 0 ? wallNormal(W, s) : null;
+      if (wn) {   // salto de pared: gratis; te empuja hacia afuera y conserva lo que llevabas a lo largo de la pared
+        const along = s.vx * -wn.z + s.vz * wn.x;
+        s.vx = wn.x * MV.WJ_OUT + -wn.z * along; s.vz = wn.z * MV.WJ_OUT + wn.x * along;
+        const n = s.wjN || 0, fat = Math.max(MV.WJ_MINUP, 1 - MV.WJ_LOSS * n);   // fatiga: cada salto seguido sube menos
+        if (n > 0) { s.stam = Math.max(0, s.stam - MV.WJ_COST); s.stT = MV.REGEN_DELAY; }   // sin stamina igual salta (sirve para escapar), pero con fatiga
+        s.vy = K.JUMP * MV.WJ_UP * fat; s.wjN = n + 1; s.wjF = MV.WJ_FAT; s.wjT = MV.WJ_CD; s.didJump = true; out.wj = n + 1;
+      } else if (!s.didJump && s.offT < MV.COYOTE) {   // recién te caíste del borde: cuenta como salto normal
+        s.vy = K.JUMP; s.didJump = true; out.jumped = true;
+      } else if (!s.dj && s.stam >= MV.DJ_COST - 1e-6) {   // doble salto: uno solo por vuelo (hasta tocar el piso), cuesta un cuarto de la barra
+        s.dj = true; s.stam -= MV.DJ_COST; s.stT = MV.REGEN_DELAY; s.vy = K.JUMP * MV.DJ_JUMP; out.dj = true;
+        if (wl > 1e-4) { const sp = Math.max(hsp, 5); s.vx = wx * sp; s.vz = wz * sp; }   // el doble salto reencauza hacia donde apuntás
+      }
+    }
+    // stamina: el deslizamiento gasta de a poco; se recupera pasado un ratito sin gastar
+    if (s.slide) { s.stam = Math.max(0, s.stam - MV.SL_DRAIN * dt); s.stT = MV.REGEN_DELAY; if (s.stam <= 0) s.slide = false; }
+    else if (s.stT <= 0) s.stam = Math.min(1, s.stam + MV.REGEN * dt);
+  }
   for (let i = 0; i < steps; i++) {
     const wasOn = s.on;
+    if (W.zerog && inZeroG(W, s) && (!s.on || up)) {
+      const upIn = clamp((up ? 1 : 0) - (cmd.crouch ? 1 : 0) + (cmd.wy || 0), -1, 1);
+      s.vy += ((upIn ? upIn * ZG.VSPEED : ZG.DRIFT) - s.vy) * Math.min(1, 5 * h);
+      const kh = Math.min(1, 3 * h);
+      s.vx += (wx * wish * ZG.HSPEED - s.vx) * kh; s.vz += (wz * wish * ZG.HSPEED - s.vz) * kh;
+      s.on = false;
+      stepAxis(W, s, 0, s.vx * h);
+      stepAxis(W, s, 2, s.vz * h);
+      stepY(W, s, h, false);
+      out.zerog = true;
+      continue;
+    }
     let jumpedNow = false;
     if (s.on) {
-      if (cmd.jump) { s.vy = K.JUMP; s.on = false; jumpedNow = out.jumped = true; }
-      else friction(s, h);
-      accelerate(s, wx, wz, wish, K.ACC, h, false);
+      if (cmd.jump) { s.vy = K.JUMP; s.on = false; jumpedNow = out.jumped = true; if (mech) { s.didJump = true; s.slide = false; } }
+      else if (mech && s.slide) {   // deslizando: casi sin fricción, y se corta cuando perdés la velocidad
+        const sp = Math.hypot(s.vx, s.vz), ctrl = Math.max(sp, K.STOP), ns = Math.max(0, sp - ctrl * MV.SL_FRIC * h) / (sp || 1);
+        s.vx *= ns; s.vz *= ns; out.slide = true;
+        if (Math.hypot(s.vx, s.vz) < MV.SL_END) s.slide = false;
+      } else friction(s, h);
+      if (mech && s.slide) {   // deslizando solo se puede doblar de costado: no se acelera hacia adelante, así el slide se va apagando
+        const sp = Math.hypot(s.vx, s.vz) || 1, ux = s.vx / sp, uz = s.vz / sp, al = wx * ux + wz * uz, sx = wx - al * ux, sz = wz - al * uz;
+        s.vx += sx * wish * MV.SL_STEER * h; s.vz += sz * wish * MV.SL_STEER * h;
+      } else accelerate(s, wx, wz, wish, K.ACC, h, false);
     } else accelerate(s, wx, wz, wish, K.AIRACC, h, true);
     s.vy -= K.GRAV * h;
     const preVy = s.vy;
@@ -1213,21 +2658,25 @@ function slab(b, ox, oy, oz, ix, iy, iz, maxT) {
 }
 const inv = v => Math.abs(v) < 1e-9 ? Infinity : 1 / v;
 function raycast(W, ox, oy, oz, dx, dy, dz, maxT) {
-  let best = maxT, n = null;
+  let best = maxT, n = null, hb = null;
   const ix = inv(dx), iy = inv(dy), iz = inv(dz);
-  for (const b of W.brushes) {
-    if (b.nc || slab(b, ox, oy, oz, ix, iy, iz, best) < 0) continue;
+  const N = gRay(W, ox, oz, dx, dz, maxT);
+  for (let k = 0; k < N; k++) {
+    const b = W.brushes[SCR[k]];
+    if (b.nc || (b.bar && barOpen(b)) || slab(b, ox, oy, oz, ix, iy, iz, best) < 0) continue;
     const h = rayBrush(b, ox, oy, oz, dx, dy, dz);
-    if (h && h.t < best) { best = h.t; n = h.n; }
+    if (h && h.t < best) { best = h.t; n = h.n; hb = b; }
   }
-  return n ? { t: best, n } : null;
+  return n ? { t: best, n, b: hb } : null;   // b: el bloque golpeado (para saber si fue un generador o un boss)
 }
 // línea de visión: alcanza con que algo la corte (no hace falta buscar el más cercano)
 function los(W, ax, ay, az, bx, by, bz) {
   const dx = bx - ax, dy = by - ay, dz = bz - az, d = Math.hypot(dx, dy, dz) || 1e-6, L = d - .05;
   const ux = dx / d, uy = dy / d, uz = dz / d, ix = inv(ux), iy = inv(uy), iz = inv(uz);
-  for (const b of W.brushes) {
-    if (b.nc || slab(b, ax, ay, az, ix, iy, iz, L) < 0) continue;
+  const N = gRay(W, ax, az, ux, uz, L);
+  for (let k = 0; k < N; k++) {
+    const b = W.brushes[SCR[k]];
+    if (b.nc || (b.bar && barOpen(b)) || slab(b, ax, ay, az, ix, iy, iz, L) < 0) continue;
     const h = rayBrush(b, ax, ay, az, ux, uy, uz);
     if (h && h.t < L) return false;
   }
@@ -1271,7 +2720,7 @@ function projStep(W, p, dt) {
     if (h) {
       const t = Math.max(0, h.t - .06);
       p.x += dx / L * t; p.y += dy / L * t; p.z += dz / L * t;
-      if (p.k === 'rocket' || p.k === 'bullet' || p.k === 'molotov') return { boom: true, n: h.n };
+      if (p.k === 'rocket' || p.k === 'bullet' || p.k === 'molotov') return { boom: true, n: h.n, b: h.b };
       const n = h.n, dot = p.v[0] * n[0] + p.v[1] * n[1] + p.v[2] * n[2];
       p.v[0] -= 2 * dot * n[0]; p.v[1] -= 2 * dot * n[1]; p.v[2] -= 2 * dot * n[2];
       const damp = n[1] > .7 ? .45 : .6;
@@ -1289,20 +2738,21 @@ function projStep(W, p, dt) {
 const NAVS = {};
 function inLava(W, x, y, z) { for (const l of W.lava) if (x > l.min[0] && x < l.max[0] && z > l.min[2] && z < l.max[2] && y < l.max[1] + .05 && y > l.min[1] - .5) return true; return false; }
 function airtime(dy) { const disc = K.JUMP * K.JUMP - 2 * K.GRAV * dy; if (disc < 0) return 0; return (K.JUMP + Math.sqrt(disc)) / K.GRAV; }
-function buildNav(W) {
+function buildNav(W) { const prev = setPasa(-2); try { return buildNav0(W); } finally { setPasa(prev); } }   // las barreras no cuentan: se prohíben por equipo al buscar el camino
+function buildNav0(W) {
   const X0 = Math.floor(W.bounds.x0), Z0 = Math.floor(W.bounds.z0), NX = Math.ceil(W.bounds.x1) - X0, NZ = Math.ceil(W.bounds.z1) - Z0;
   const cells = new Array(NX * NZ), nodes = [];
   // bloques agrupados por columna (x) para no recorrer todo el mapa en cada celda: el armado tarda varias veces menos
   const cols = [];
-  for (let cx = 0; cx < NX; cx++) { const qx = X0 + cx + .5 + .013; cols.push(W.brushes.filter(b => !b.nc && !b.mover && b.min[0] < qx && b.max[0] > qx)); }
+  for (let cx = 0; cx < NX; cx++) { const qx = X0 + cx + .5 + .013; cols.push(W.brushes.filter(b => !b.nc && !b.mover && !b.nonav && !b.bar && b.min[0] < qx && b.max[0] > qx)); }
   for (let cz = 0; cz < NZ; cz++) for (let cx = 0; cx < NX; cx++) {
     const px = X0 + cx + .5, pz = Z0 + cz + .5, tops = [];
     for (const b of cols[cx]) {
       // se mira un poquito corrido del centro para no caer justo en el borde entre dos escalones
       const qx = px + .013, qz = pz + .017;
-      if (b.nc || b.mover || !(b.min[0] < qx && b.max[0] > qx && b.min[2] < qz && b.max[2] > qz)) continue;
+      if (b.nc || b.mover || b.nonav || !(b.min[0] < qx && b.max[0] > qx && b.min[2] < qz && b.max[2] > qz)) continue;
       const t = topAt(b, qx, qz, qx, qz);
-      if (t > 12.5) continue;
+      if (t > (W.navMaxY || 12.5)) continue;   // navMaxY: mapas muy altos (Pyramid) suben el tope de los nodos de navegación
       if (!tops.some(q => Math.abs(q - t) < .05)) tops.push(t);
     }
     const list = [];
@@ -1327,13 +2777,13 @@ function buildNav(W) {
       if (m) {
         if (dx && dz && (!near(at(cx + dx, cz), n.y, .6) || !near(at(cx, cz + dz), n.y, .6))) continue;
         // todos los nodos vecinos a menos de un escalón (en las escaleras puede haber dos en la misma celda)
-        for (const q of at(cx + dx, cz + dz)) if (Math.abs(q.y - n.y) <= .6) n.l.push([q.id, dx && dz ? 1.414 : 1, 0]);
+        for (const q of at(cx + dx, cz + dz)) if (Math.abs(q.y - n.y) <= .6 && !solidAt(W, (n.x + q.x) / 2, Math.max(n.y, q.y) + K.STEP + .01, (n.z + q.z) / 2, .3, 1.75 - K.STEP)) n.l.push([q.id, dx && dz ? 1.414 : 1, 0]);   // y que no haya una valla o pared finita justo en el límite entre las dos celdas (si no, el bot queda empujando contra ella)
       } else if (!dx || !dz) {
         edge = true;
         let low = null;
         for (const q of at(cx + dx, cz + dz)) if (q.y < n.y - .6 && q.y > n.y - 14 && (!low || q.y > low.y)) low = q;
         // solo si el cuerpo entra en la columna de al lado a la altura de partida (no atravesar paredes sobre puertas)
-        if (low && !solidAt(W, low.x, n.y + .05, low.z, .3, 1.7)) n.l.push([low.id, 1.5, 1]);
+        if (low && !solidAt(W, low.x, n.y + .05, low.z, .3, 1.7) && !solidAt(W, (n.x + low.x) / 2, n.y + K.STEP + .01, (n.z + low.z) / 2, .3, 1.75 - K.STEP)) n.l.push([low.id, 1.5, 1]);   // sin baranda ni valla en el borde
       }
     }
     if (edge) edges.push(n);
@@ -1376,13 +2826,41 @@ function buildNav(W) {
     const a = nodeAt(t.x, t.y + .1, t.z), b = nodeAt(t.to[0], t.to[1] + .1, t.to[2]);
     if (a && b) a.l.push([b.id, 3, 4]);
   }
+  // gravedad cero: desde la boca del pozo de cada nivel se puede ir a la boca de cualquier otro nivel (tipo 5: el bot flota hasta ahí, ver 7-bots.js)
+  const zlev = [];
+  for (const zb of W.zerog || []) {
+    const cx = (zb.min[0] + zb.max[0]) / 2, cz = (zb.min[2] + zb.max[2]) / 2, hx = (zb.max[0] - zb.min[0]) / 2, hz = (zb.max[2] - zb.min[2]) / 2;
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const px = cx + dx * (hx + .5), pz = cz + dz * (hz + .5);
+      const rim = at(Math.floor(px) - X0, Math.floor(pz) - Z0).filter(m => m.y >= zb.min[1] && m.y <= zb.max[1]).sort((a, b) => a.y - b.y);
+      for (let i = rim.length - 2; i >= 0; i--) if (rim[i + 1].y - rim[i].y < .3) rim.splice(i, 1);   // baldosa sobre ladrillo: dos nodos casi a la misma altura, queda el de arriba
+      for (const m of rim) if (!zlev.some(y => Math.abs(y - m.y) < .05)) zlev.push(m.y);
+      for (let i = 0; i < rim.length; i++) for (let j = 0; j < rim.length; j++) if (i !== j) rim[i].l.push([rim[j].id, 3 + Math.abs(rim[j].y - rim[i].y) * .4, 5]);
+    }
+  }
+  zlev.sort((a, b) => a - b);
   // adyacencia compacta para búsquedas rápidas
   const N = nodes.length; let E = 0; nodes.forEach(n => E += n.l.length);
-  const off = new Int32Array(N + 1), to = new Int32Array(E), cost = new Float32Array(E);
+  const off = new Int32Array(N + 1), to = new Int32Array(E), cost = new Float32Array(E), ebar = new Uint8Array(E);
   let k = 0;
   nodes.forEach((n, i) => { off[i] = k; n.l.forEach(l => { to[k] = l[0]; cost[k] = l[1]; k++; }); });
   off[N] = k;
-  return { X0, Z0, NX, NZ, cells, nodes, at, nodeAt, off, to, cost };
+  // Captura el dominio: nodos que caen dentro de una barrera (bar[nodo]) y tramos que la cruzan (ebar[tramo]).
+  // Los dos hacen falta: un salto largo puede pasar por el hueco del portón sin pisar ningún nodo de adentro.
+  const bar = new Uint8Array(N), barB = W.brushes.filter(b => b.bar);
+  for (const b of barB) for (const n of nodes) if (n.x > b.min[0] && n.x < b.max[0] && n.z > b.min[2] && n.z < b.max[2] && n.y > b.min[1] - .6 && n.y < b.max[1]) bar[n.id] = b.bar.i + 1;
+  if (barB.length) for (let i = 0; i < N; i++) {
+    const n = nodes[i];
+    for (let e = off[i]; e < off[i + 1]; e++) {
+      const m = nodes[to[e]], dx = m.x - n.x, dy = m.y - n.y, dz = m.z - n.z, L = Math.hypot(dx, dy, dz) || 1e-6;
+      const ix = inv(dx / L), iy = inv(dy / L), iz = inv(dz / L);
+      for (const b of barB) {
+        // el cuerpo del jugador es alto: se prueba a la altura de los pies y a la de la cabeza
+        if (slab(b, n.x, n.y + .2, n.z, ix, iy, iz, L) >= 0 || slab(b, n.x, n.y + 1.5, n.z, ix, iy, iz, L) >= 0) { ebar[e] = b.bar.i + 1; break; }
+      }
+    }
+  }
+  return { X0, Z0, NX, NZ, cells, nodes, at, nodeAt, off, to, cost, zlev, bar, ebar };
 }
 function getNav(W) { W = W || WORLD; if (!NAVS[W.id]) NAVS[W.id] = buildNav(W); return NAVS[W.id]; }
 function findNode(nav, x, y, z) {
@@ -1399,12 +2877,13 @@ function findNode(nav, x, y, z) {
     }
   return best;
 }
-function dijkstra(nav, start) {
+// ban (opcional): ban[barrera + 1] = 1 si esa barrera está cerrada para el que busca el camino
+function dijkstra(nav, start, ban) {
   // los arreglos se reutilizan entre búsquedas (menos basura = menos pausas del recolector)
   const N = nav.nodes.length;
   if (!nav._dist) { nav._dist = new Float64Array(N); nav._prev = new Int32Array(N); nav._hk = new Float64Array(1024); nav._hv = new Int32Array(1024); }
   const dist = nav._dist.fill(Infinity), prev = nav._prev.fill(-1);
-  const off = nav.off, to = nav.to, cost = nav.cost;
+  const off = nav.off, to = nav.to, cost = nav.cost, bar = nav.bar, ebar = nav.ebar;
   let cap = nav._hk.length, hk = nav._hk, hv = nav._hv, size = 0;
   const push = (i, d) => {
     if (size === cap) { cap *= 2; const a = new Float64Array(cap), b = new Int32Array(cap); a.set(hk); b.set(hv); hk = nav._hk = a; hv = nav._hv = b; }
@@ -1422,7 +2901,7 @@ function dijkstra(nav, start) {
       hk[c] = kd; hv[c] = kv;
     }
     if (d > dist[i]) continue;
-    for (let e = off[i], ee = off[i + 1]; e < ee; e++) { const nd = d + cost[e], j = to[e]; if (nd < dist[j]) { dist[j] = nd; prev[j] = i; push(j, nd); } }
+    for (let e = off[i], ee = off[i + 1]; e < ee; e++) { const nd = d + cost[e], j = to[e]; if (ban && (bar[j] && ban[bar[j]] || ebar[e] && ban[ebar[e]])) continue; if (nd < dist[j]) { dist[j] = nd; prev[j] = i; push(j, nd); } }
   }
   return { dist, prev };
 }
@@ -1500,6 +2979,14 @@ function cleanSkin(k, fallback) {
   const f = fallback || { c: COLORS[0], v: '#ffffff', a: 0 };
   if (!k || typeof k !== 'object') return Object.assign({}, f);
   const out = { c: HEX.test(k.c) ? k.c : f.c, v: HEX.test(k.v) ? k.v : f.v, a: Number.isInteger(k.a) && k.a >= 0 && k.a < ACCESSORIES.length ? k.a : 0 };
+  if (HEX.test(k.c2)) out.c2 = k.c2;   // partes secundarias/articulaciones (opcional: si falta, se deriva de c)
+  if (HEX.test(k.c3)) out.c3 = k.c3;   // detalles y luces (opcional)
+  if (HEX.test(k.cp)) out.cp = k.cp;   // pecho (opcional: si falta, vale c)
+  if (HEX.test(k.cb)) out.cb = k.cb;   // brazos y manos (opcional)
+  if (HEX.test(k.cl)) out.cl = k.cl;   // pelvis y piernas (opcional)
+  if (HEX.test(k.ck)) out.ck = k.ck;   // casco (opcional: si falta, vale c)
+  if (HEX.test(k.ce)) out.ce = k.ce;   // color del emblema del pecho (opcional: si falta, se elige claro u oscuro)
+  if (EMBLEMS.includes(k.em)) out.em = k.em;   // emblema del pecho (si falta, el ancla)
   if (okChestImg(k.img)) out.img = k.img;
   return out;
 }
@@ -1510,13 +2997,14 @@ const SHOP_BY_ID = {}; SHOP.forEach(it => SHOP_BY_ID[it.id] = it);
 class Game {
   constructor(o) {
     this.o = Object.assign({ fraglimit: 20, timelimit: 600, caplimit: 3, bots: null, botFill: 0, botSkill: 1, online: false, maxPlayers: 16, map: null, rotate: true, mode: 'arena' }, o || {});
+    if (MODE_ALIAS[this.o.mode]) this.o.mode = MODE_ALIAS[this.o.mode];
     if (!MODES[this.o.mode]) this.o.mode = 'arena';
     this.mode = MODES[this.o.mode];
     if (this.mode.timelimit) this.o.timelimit = this.mode.timelimit;   // la Arena dura 6 minutos, online y en práctica
-    this.shards = []; this.sid = 1; this.mapVotes = new Map(); this.voteOpts = null;
-    this.players = new Map(); this.nextId = 1; this.projs = []; this.fires = []; this.pid = 1; this.vote = null; this.bans = new Map(); this.kickN = new Map();
+    this.shards = []; this.sid = 1; this.crown = null; this.storm = null; this.mapVotes = new Map(); this.voteOpts = null;
+    this.players = new Map(); this.nextId = 1; this.projs = []; this.fires = []; this.pid = 1; this.vote = null; this.mvote = null; this.bans = new Map(); this.kickN = new Map();
     this.time = 0; this.snapT = 0; this.scT = 0; this.botT = 0; this.state = 'play'; this.left = this.o.timelimit; this.interT = 0;
-    this.ts = [0, 0]; this.flags = []; this.countT = 0;
+    this.ts = [0, 0]; this.flags = []; this.countT = 0; this.dom = null;
     if (this.mode.minPlayers && this.o.online) this.state = 'lobby';
     this.o.map = mapId(this.o.map);
     this.setMap(this.mode.maps.includes(this.o.map) ? this.o.map : this.mode.maps[0]);
@@ -1524,10 +3012,10 @@ class Game {
   setMap(id) {
     this.W = MAPS[id]; this.nav = getNav(this.W); safeSpawns(this.W);
     // en gungame no hay armas ni munición tiradas: cada uno tiene la de su nivel
-    const off = t => !!this.mode.gg; // en gungame no hay nada tirado: cada arma se gana con bajas
+    const off = t => !!this.mode.gg && t !== 'health'; // en gungame no hay armas ni munición tiradas (cada arma se gana con bajas), pero sí botiquines
     this.items = this.W.items.map((it, i) => ({ i, type: it.type, base: it.type, x: it.x, y: it.y, z: it.z, off: off(it.type), up: !off(it.type), t: 0 }));
     this.projs.length = 0; this.fires = [];
-    this.resetFlags();
+    this.resetFlags(); this.domSetup(); this.domMinSetup();
     updateMovers(this.W, this.time);
   }
   resetFlags() {
@@ -1548,16 +3036,18 @@ class Game {
     const p = this.players.get(id); if (!p) return;
     this.players.delete(id);
     this.dropCarried(p);
-    if (p.acct && this.state === 'play' && this.o.onXP) { const xp = this.matchXP(p, false, false); if (xp > 0) this.o.onXP(p, xp, { kills: p.kills, partida: 0, victoria: 0 }); }
+    if (p.acct && this.state === 'play' && this.o.onXP) { const xp = this.matchXP(p, false, false); if (xp > 0) this.o.onXP(p, xp, { kills: p.rkills, partida: 0, victoria: 0 }); }
     if (p.joined) { this.bcast({ t: 'ev', e: 'leave', id, n: p.name }); this.botT = 0; }
     if (this.vote) this.checkVote();
+    if (this.mvote) this.checkMapVote();
     if (this.state === 'inter') this.checkReady();
   }
   newPlayer(id, name, skin, bot) {
     return { id, name, skin, color: skin.c, bot, send: null, s: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, on: false }, yaw: 0, pitch: 0, w: 1,
       hp: 100, ar: 0, am: AMMO0(0), ow: OW0(), mag: {}, relT: {}, alive: false, deadT: 0,
-      frags: 0, deaths: 0, quadT: 0, lavaT: 0, megaT: 0, lastFire: -9, ping: 0, dirty: true, joined: false, ai: null, spawnT: 0, padT: 0,
-      cr: ECON.START, unl: OW0(), perk: { ar: 0, am: 0 }, streak: 0, lvl: 0, team: -1, caps: 0, kills: 0, dmg: 0, acct: null, plvl: 0, joinT: 0, role: id % 3 === 0 ? 'def' : 'att' };
+      kills: 0, deaths: 0, quadT: 0, lavaT: 0, megaT: 0, lastFire: -9, ping: 0, dirty: true, joined: false, ai: null, spawnT: 0, padT: 0,
+      cards: [], cof: null, cofT: 0, burnT: 0, burnBy: 0, burnTick: 0,
+      cr: ECON.START, unl: OW0(), eq: 1, perk: { ar: 0, am: 0 }, streak: 0, lvl: 0, team: -1, caps: 0, rkills: 0, dmg: 0, cpts: 0, ctime: 0, acct: null, plvl: 0, joinT: 0, role: id % 3 === 0 ? 'def' : 'att' };
   }
   // el servidor avisa qué cuenta tiene cada jugador (para su nivel y para sumarle experiencia)
   setAccount(id, a) { const p = this.players.get(id); if (!p) return; p.acct = a ? a.sub : null; p.plvl = a ? a.level : 0; if (p.joined) this.sendScores(); }
@@ -1568,7 +3058,7 @@ class Game {
     const parts = {
       partida: finished ? XP.PLAY : 0,
       minutos: Math.min(XP.MAX_MIN, Math.floor(mins)) * XP.PER_MIN,
-      bajas: p.kills * XP.KILL,
+      bajas: p.rkills * XP.KILL,
       aguante: Math.min(XP.MAX_SURVIVE, Math.floor(life / 60) * XP.SURVIVE),
       victoria: finished && won ? XP.WIN : 0,
       capturas: p.caps * XP.CAP
@@ -1588,7 +3078,7 @@ class Game {
   humanCount(all) { let n = 0; for (const p of this.players.values()) if (!p.bot && (all || p.joined)) n++; return n; }
   bcast(m, except) { for (const p of this.players.values()) if (p.send && p.joined && p.id !== except) p.send(m); }
   roster() { return [...this.players.values()].filter(p => p.joined).map(p => [p.id, p.name, p.color, p.bot ? 1 : 0, p.skin, p.team]); }
-  mult(p) { return p.quadT > 0 ? 4 : 1; }
+  mult(p) { return p.quadT > 0 ? 3 : 1; }   // el orbe violeta: daño triple
 
   /* ---- mensajes de clientes ---- */
   onMessage(id, m) {
@@ -1605,9 +3095,9 @@ class Game {
         p.name = this.uniqueName(cleanName(m.name));
         p.skin = cleanSkin(m.skin || { c: m.color }, p.skin); p.color = p.skin.c;
         if (this.mode.teams) this.setTeam(p, this.pickTeam(p));
-        p.joined = true; p.joinT = this.time; p.kills = 0; p.dmg = 0; p.bestLife = 0;
+        p.joined = true; p.joinT = this.time; p.rkills = 0; p.dmg = 0; p.bestLife = 0;
         if (this.mode.tdm && this.o.online && this.humanCount(false) <= 1 && Number.isInteger(m.fl) && m.fl >= 5 && m.fl <= 500) this.o.fraglimit = m.fl;
-        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts, sh: this.shards.map(s => [s.id, r3(s.x), r3(s.y), r3(s.z), r2(s.t)]), mv: this.voteState() });
+        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts, cd: p.cards.slice(), sh: this.shards.map(s => [s.id, r3(s.x), r3(s.y), r3(s.z), r2(s.t)]), cw: this.crownState(), st: this.stormInfo(), mv: this.voteState(), dm: this.domState(), mn: this.domMinState() });
         this.bcast({ t: 'ev', e: 'join', id, n: p.name, c: p.color, s: p.skin, tm: p.team }, id);
         this.spawn(p); this.botT = 0; this.sendScores();
         break;
@@ -1616,14 +3106,16 @@ class Game {
         if (!p.joined || !p.alive) return;
         const a = m.p, v = m.v;
         if (!Array.isArray(a) || a.length !== 3 || !a.every(Number.isFinite)) return;
-        p.s.x = clamp(a[0], -60, 60); p.s.y = clamp(a[1], -40, 60); p.s.z = clamp(a[2], -60, 60);
+        if (this.dom && this.domBlocked(p, a)) return;   // quiso cruzar una barrera rival: no se le acepta la posición
+        p.s.x = clamp(a[0], -260, 260); p.s.y = clamp(a[1], -40, 60); p.s.z = clamp(a[2], -260, 260);   // el mapa ancho y el agua llegan más allá de ±60
         if (Array.isArray(v) && v.length === 3 && v.every(Number.isFinite)) { p.s.vx = clamp(v[0], -80, 80); p.s.vy = clamp(v[1], -80, 80); p.s.vz = clamp(v[2], -80, 80); }
         if (Number.isFinite(m.y)) p.yaw = m.y; if (Number.isFinite(m.x)) p.pitch = clamp(m.x, -1.6, 1.6);
         if (Number.isInteger(m.w) && m.w >= 0 && m.w < NW && p.ow[m.w]) p.w = m.w;
-        p.s.on = !!m.o; p.s.crouch = !!m.c;
+        p.s.on = !!m.o; p.s.crouch = !!m.c; p.s.slide = !!m.sl; if (m.sl) p.slideT = this.time;
         break;
       }
       case 'fire': this.humanFire(p, m); break;
+      case 'chg': { const w = m.w | 0, W_ = WEAPONS[w]; if (W_ && W_.carga && p.alive && p.w === w) p.chgT = this.time; break; }   // empezó a cargar el plasma
       case 'reload': { const w = m.w | 0, W_ = WEAPONS[w]; if (W_ && W_.mag && p.alive && p.mag[w] < W_.mag && !(p.relT[w] > this.time)) p.relT[w] = this.time + W_.reload * .75; break; }
       case 'buy': this.buy(p, String(m.id || '')); break;
       case 'skin': {
@@ -1649,10 +3141,25 @@ class Game {
       case 'cfg': if (!this.o.online) this.configure(m); break;
       case 'kick': this.startKick(p, m.id | 0); break;
       case 'grab': this.grab(p); break;
+      case 'card': this.takeCard(p, m.i | 0); break;
+      case 'equip': this.equip(p, m.w | 0); break;
       case 'ready': if (this.state === 'inter' && p.joined && !p.bot && !p.ready) { p.ready = true; this.checkReady(); } break;
       case 'vote': this.castVote(p, !!m.y); break;
+      case 'mapchg': this.startMapVote(p, String(m.m || '')); break;
       case 'mapvote': this.castMapVote(p, String(m.m || '')); break;
     }
+  }
+  // Captura el dominio: el cliente manda su posición; si el tramo cruza una barrera rival activa se lo devuelve a donde estaba
+  domBlocked(p, a) {
+    const dx = a[0] - p.s.x, dy = a[1] - p.s.y, dz = a[2] - p.s.z, L = Math.hypot(dx, dy, dz);
+    if (L < 1e-4 || L > 12) return false;   // los saltos grandes son reapariciones o teletransportes
+    for (const b of this.W.brushes) {
+      if (!b.bar || b.bar.down || b.bar.team === p.team) continue;
+      if (slab(b, p.s.x, p.s.y + .9, p.s.z, inv(dx / L), inv(dy / L), inv(dz / L), L) < 0) continue;
+      if (p.send) p.send({ t: 'ev', e: 'fix', p: r3a([p.s.x, p.s.y, p.s.z]) });
+      return true;
+    }
+    return false;
   }
   // E: cambiar tu arma principal por la que está tirada al lado (como en CS); al reaparecer volvés a tener la comprada
   grab(p) {
@@ -1662,8 +3169,12 @@ class Game {
       const info = ITEMS[it.type]; if (!it.up || it.off || !info || info.weapon == null || !isPrimary(info.weapon) || p.ow[info.weapon]) continue;
       const d = Math.hypot(p.s.x - it.x, p.s.z - it.z); if (d < bd && Math.abs(p.s.y - it.y) < 1.6) { bd = d; best = it; }
     }
-    if (!best) return;
+    if (!best) {   // nada para agarrar del piso: tocar E vuelve a la principal anterior (como el cambio rápido de CS)
+      if (this.mode.shop && p.prev != null && p.prev !== primaryOf(p.ow)) this.equip(p, p.prev, false);
+      return;
+    }
     const info = ITEMS[best.type], old = primaryOf(p.ow);
+    if (old >= 0 && old !== info.weapon) p.prev = old;
     setPrimary(p, info.weapon); p.am[info.ammo] = Math.min(AMMO_MAX[info.ammo], p.am[info.ammo] + info.n); p.dirty = true;
     // si tenías un arma principal (que no sea la escopeta de base), queda tirada en el lugar de la que agarraste
     if (old >= 0 && old !== 1 && ITEMS['w' + old]) {
@@ -1698,11 +3209,52 @@ class Game {
     this.sendVote();
   }
   castVote(p, yes) {
+    if (this.mvote) return this.castMapYes(p, yes);
     const v = this.vote; if (!v || !p.joined || p.bot || p.id === v.target) return;
     v.yes.delete(p.id); v.no.delete(p.id); (yes ? v.yes : v.no).add(p.id);
     this.sendVote(); this.checkVote();
   }
+  /* ---- votación para cambiar de mapa (tecla Y): pasa solo si TODAS las personas de la partida votan que sí ---- */
+  startMapVote(p, id) {
+    const say = s => p.send && p.send({ t: 'ev', e: 'sys', m: s });
+    if (!p.joined || p.bot || this.state === 'inter') return;
+    if (this.vote || this.mvote) return say('Ya hay una votación en curso');
+    if (!MAPS[id] || !this.mode.maps.includes(id) || id === this.W.id) return say('Ese mapa no se puede elegir en ' + this.mode.name);
+    if ((p.mapCd || 0) > this.time) return say('Esperá ' + Math.ceil(p.mapCd - this.time) + ' s para pedir otro cambio de mapa');
+    if (this.voters().length <= 1) { this.bcast({ t: 'ev', e: 'sys', m: p.name + ' cambió el mapa a ' + MAPS[id].name }); this.restart(id); return; }   // solo en la partida: no hay a quién preguntarle
+    p.mapCd = this.time + 45;
+    this.mvote = { map: id, name: MAPS[id].name, by: p.name, yes: new Set([p.id]), no: new Set(), end: this.time + 30 };
+    this.bcast({ t: 'ev', e: 'sys', m: p.name + ' propone cambiar el mapa a ' + MAPS[id].name + ' (Y = sí · N = no; tienen que votar sí todos)' });
+    this.sendVote();
+  }
+  castMapYes(p, yes) {
+    const v = this.mvote; if (!v || !p.joined || p.bot) return;
+    v.yes.delete(p.id); v.no.delete(p.id); (yes ? v.yes : v.no).add(p.id);
+    this.sendVote(); this.checkMapVote();
+  }
+  checkMapVote() {
+    const v = this.mvote; if (!v) return;
+    const el = this.voters(), ids = new Set(el.map(q => q.id));
+    for (const s of [v.yes, v.no]) for (const id of [...s]) if (!ids.has(id)) s.delete(id);
+    if (this.state === 'inter') { this.mvote = null; this.sendVote(); return; }
+    if (el.length && el.every(q => v.yes.has(q.id))) {
+      this.mvote = null; this.sendVote();
+      this.bcast({ t: 'ev', e: 'sys', m: 'Votaron todos que sí: cambia el mapa a ' + v.name });
+      this.restart(v.map); return;
+    }
+    if (v.no.size > 0 || this.time >= v.end) {
+      this.mvote = null; this.sendVote();
+      this.bcast({ t: 'ev', e: 'sys', m: 'El cambio de mapa a ' + v.name + ' no pasó (' + v.yes.size + ' sí, ' + v.no.size + ' no)' });
+    }
+  }
   sendVote() {
+    const mv = this.mvote;
+    if (mv) {
+      const el = this.voters();
+      for (const q of this.players.values()) if (q.send && q.joined)
+        q.send({ t: 'vote', on: 1, kind: 'map', name: mv.name, by: mv.by, y: mv.yes.size, n: mv.no.size, need: el.length, left: Math.max(0, Math.ceil(mv.end - this.time)), me: mv.yes.has(q.id) ? 1 : mv.no.has(q.id) ? -1 : 0 });
+      return;
+    }
     const v = this.vote;
     if (!v) { this.bcast({ t: 'vote', on: 0 }); return; }
     const el = this.voters(this.players.get(v.target)).length, need = Math.floor(el / 2) + 1;
@@ -1752,6 +3304,7 @@ class Game {
   command(p, txt) {
     const parts = txt.slice(1).split(/\s+/), cmd = parts[0], arg = cmd === 'map' ? mapId(parts[1]) : parts[1];
     const say = s => p.send && p.send({ t: 'ev', e: 'sys', m: s });
+    if (this.domCommand(p, cmd, parts.slice(1))) return;
     if (cmd === 'kick' || cmd === 'echar') {
       const q = parts.slice(1).join(' ').toLowerCase(), t = [...this.players.values()].find(x => x.joined && !x.bot && x.name.toLowerCase() === q) || [...this.players.values()].find(x => x.joined && !x.bot && q && x.name.toLowerCase().startsWith(q));
       if (!t) return say('Uso: /echar NOMBRE (o desde el menú de pausa)');
@@ -1770,6 +3323,7 @@ class Game {
       if (this.mode.maps.includes(arg)) { this.bcast({ t: 'ev', e: 'sys', m: p.name + ' cambió el mapa a ' + MAPS[arg].name }); this.restart(arg); }
       else say('Mapas de ' + this.mode.name + ': ' + this.mode.maps.join(', '));
     }
+    else if (cmd === 'tiempo' && (!this.o.online || this.o.dev) && /^\d+$/.test(arg || '')) { this.left = +arg; this.sendScores(); }   // prueba: deja N segundos de partida (para ver la tormenta o el fin por tiempo)
     else if (cmd === 'restart') { this.bcast({ t: 'ev', e: 'sys', m: p.name + ' reinició la partida' }); this.restart(); }
     else say('Comandos: /echar NOMBRE · /bots N · /bots auto · /skill 0-3 · ' + (this.mode.ctf ? '/caplimit N' : '/fraglimit N') + ' · /map ' + this.mode.maps.join('|') + ' · /restart');
   }
@@ -1777,7 +3331,10 @@ class Game {
   /* ---- aparición ---- */
   pickSpawn(p) {
     const alive = [...this.players.values()].filter(q => q.alive && (!this.mode.teams || !p || q.team !== p.team));
-    const list = this.mode.teams && p && p.team >= 0 && this.W.tspawns ? this.W.tspawns[p.team] : this.W.spawns;
+    let list = this.mode.teams && p && p.team >= 0 && this.W.tspawns ? this.W.tspawns[p.team] : this.W.spawns;
+    if (this.stormOn() && this.storm) list = this.stormSpawns(list);
+    // Captura el dominio: si tu equipo ya abrió un carril rival, también se puede aparecer a mitad de ese carril
+    if (this.dom && DOM.FWD_SPAWN && p && p.team >= 0 && this.W.fspawns) { const fw = this.dom.bars.filter(b => b.team !== p.team && b.st === 2).map(b => this.W.fspawns[p.team][b.lane]); if (fw.length) list = list.concat(fw); }   // con la tormenta, solo apariciones dentro del círculo
     const scored = list.map(sp => {
       let d = 1e9; for (const q of alive) d = Math.min(d, Math.hypot(q.s.x - sp.x, q.s.y - sp.y, q.s.z - sp.z));
       return { sp, d: d + Math.random() * 6 };
@@ -1798,14 +3355,17 @@ class Game {
     }
     const mul = p.perk.am ? 2 : 1;
     p.ow = OW0(); p.am = AMMO0(0); p.am.shells = 10 * mul; p.am.bullets = 60 * mul;
-    for (const it of SHOP) if (it.w != null && it.pack && !it.once && p.unl[it.w]) { if (isPrimary(it.w)) setPrimary(p, it.w); else p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n * mul); }
-    if (primaryOf(p.ow) !== 1) p.ow[1] = 0;
+    // inventario: todo lo comprado vuelve con vos (con su munición), pero en las manos hay una sola principal; el resto se elige con la ruleta (E)
+    let pr = 1;
+    for (const it of SHOP) if (it.w != null && it.pack && !it.once && p.unl[it.w]) { if (isPrimary(it.w)) { if (p.bot) pr = it.w; } else p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n * mul); }
+    if (!p.bot && p.eq != null && p.eq !== 1 && p.unl[p.eq]) pr = p.eq;
+    setPrimary(p, pr); p.prev = pr !== 1 ? 1 : null;   // E = volver a la escopeta de base si reaparecés con otra
     p.ar = p.perk.ar; this.fillMags(p);
   }
   fillMags(p) { p.mag = {}; p.relT = {}; WEAPONS.forEach((W_, i) => { if (W_.mag) p.mag[i] = W_.mag; }); }
   spawn(p) {
     const sp = this.pickSpawn(p);
-    p.s = { x: sp.x, y: sp.y, z: sp.z, vx: 0, vy: 0, vz: 0, on: true };
+    p.s = { x: sp.x, y: sp.y, z: sp.z, vx: 0, vy: 0, vz: 0, on: true, tm: p.team };   // tm: el equipo, para las barreras (04-fisica.js)
     p.yaw = sp.yaw; p.pitch = 0; p.hp = 100; p.w = 1; p.quadT = 0; p.megaT = 0; p.lifeT0 = this.time;
     if (p.bot && this.mode.shop) this.botShop(p);
     this.loadout(p);
@@ -1824,7 +3384,12 @@ class Game {
     if (!this.live()) return no('La partida terminó');
     if (it.once && !p.alive) return no('Comprala cuando estés vivo: si te matan se pierde');
     if (it.once && p.am[it.pack[0]] >= AMMO_MAX[it.pack[0]]) return no('Ya llevás el máximo');
-    if (it.w != null && isPrimary(it.w) && primaryOf(p.ow) === it.w && (it.free || p.unl[it.w])) return no('Ya la tenés');
+    if (it.w != null && isPrimary(it.w) && (it.free || p.unl[it.w])) {   // ya es tuya: la tienda solo la pone en las manos
+      if (p.alive ? primaryOf(p.ow) === it.w : p.eq === it.w) return no('Ya la tenés en las manos');
+      if (p.alive) this.equip(p, it.w, true); else { p.eq = it.w; p.dirty = true; }
+      if (p.send) p.send({ t: 'ev', e: 'buy', id, ok: 1, eq: 1 });
+      return;
+    }
     if (it.free && !(it.w != null && isPrimary(it.w))) return no('No se puede comprar');
     if (it.w != null && !it.once && !isPrimary(it.w) && p.unl[it.w]) return no('Ya lo tenés');
     if (it.armor && p.perk.ar >= it.armor) return no('Ya tenés ese blindaje');
@@ -1833,9 +3398,9 @@ class Game {
     p.cr -= it.price;
     if (it.once) { p.ow[it.w] = 1; const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n); }
     else if (it.w != null && isPrimary(it.w)) {
-      // reemplaza a la principal que tenías (y es la que te toca al reaparecer)
-      for (const k of PRIMARY) p.unl[k] = 0; if (!it.free) p.unl[it.w] = 1;
-      if (p.alive) { setPrimary(p, it.w); if (it.pack) { const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n); } else p.am.shells = Math.max(p.am.shells, 10); }
+      // se suma al inventario (ruleta de armas) y queda en las manos; al reaparecer volvés con la que tenías equipada
+      p.unl[it.w] = 1; p.eq = it.w;
+      if (p.alive) { const old = primaryOf(p.ow); if (old >= 0 && old !== it.w) p.prev = old; setPrimary(p, it.w); if (it.pack) { const [k, n] = it.pack; p.am[k] = Math.min(AMMO_MAX[k], p.am[k] + n); } else p.am.shells = Math.max(p.am.shells, 10); }
     }
     else if (it.w != null) {
       p.unl[it.w] = 1;
@@ -1849,6 +3414,16 @@ class Game {
     p.dirty = true;
     if (p.send) p.send({ t: 'ev', e: 'buy', id, ok: 1 });
     this.sendScores();
+  }
+  // ruleta de armas (mantener E): cambia la principal por otra del inventario; la pistola y el cuchillo no se tocan
+  equip(p, w, free) {
+    if (!p.joined || !p.alive || !this.mode.shop || !this.live() || !Number.isInteger(w) || !isPrimary(w)) return;
+    if (!(w === 1 || p.unl[w]) || primaryOf(p.ow) === w) return;
+    if (!free && (p.eqT || 0) > this.time) return;   // no se spamea el cambio
+    p.eqT = this.time + .35;
+    const old = primaryOf(p.ow); if (old >= 0 && old !== w) p.prev = old;   // para volver con un toque de E
+    setPrimary(p, w); p.eq = w; p.dirty = true;
+    if (p.send) p.send({ t: 'ev', e: 'grab', w });
   }
   botShop(p) {
     for (const id of ['w5', 'w8', 'a1', 'w3', 'w9', 'w2', 'w6', 'a2', 'w4', 'am']) {
@@ -1865,6 +3440,12 @@ class Game {
   }
 
   /* ---- disparos ---- */
+  // daño del plasma según lo que se cargó: de DMG_MIN a DMG_MAX siguiendo la curva EXP
+  cargaDmg(W_, carga) {
+    const C_ = W_.carga; if (!C_) return W_.dmg;
+    const q = clamp((carga - C_.MIN) / (C_.MAX - C_.MIN), 0, 1);
+    return C_.DMG_MIN + (C_.DMG_MAX - C_.DMG_MIN) * Math.pow(q, C_.EXP);
+  }
   canFire(p, w) {
     const W_ = WEAPONS[w]; if (!W_ || !p.alive || !p.ow[w] || !this.live()) return false;
     if (W_.ammo && p.am[W_.ammo] < W_.cost && !this.mode.gg && !this.mode.inf) return false;
@@ -1886,21 +3467,35 @@ class Game {
     const d = [m.d[0] / dl, m.d[1] / dl, m.d[2] / dl];
     let o = m.o; const ex = p.s.x, ey = p.s.y + K.EYE, ez = p.s.z;
     if (Math.hypot(o[0] - ex, o[1] - ey, o[2] - ez) > 3) o = [ex, ey, ez];
-    this.consume(p, w);
     const W_ = WEAPONS[w];
+    // plasma: cuánto cargó lo mide el servidor con el reloj de la partida, no el cliente
+    if (W_.carga) {
+      const C_ = W_.carga;
+      p.carga = clamp(p.chgT ? this.time - p.chgT : 0, 0, C_.MAX);
+      p.chgT = 0;
+      if (p.carga < C_.MIN) return;   // apenas lo tocó: no sale el tiro
+    }
+    this.consume(p, w);
     const ns = !!W_.scope && !m.sc; // arma con mira disparada sin apuntar
     if (W_.type === 'proj') { this.spawnProj(p, w, o, d); this.projs[this.projs.length - 1].ns = ns; return; }
-    this.bcast({ t: 'ev', e: 'shot', id: p.id, w, o: r3a(o), d: r3a(d) }, p.id);
+    const pasa = setPasa(p.team);
+    try { this.humanHits(p, m, w, W_, o, d, ns); } finally { setPasa(pasa); }
+  }
+  humanHits(p, m, w, W_, o, d, ns) {
+    this.bcast({ t: 'ev', e: 'shot', id: p.id, w, o: r3a(o), d: r3a(d), cg: W_.carga ? r2(p.carga || 0) : 0 }, p.id);
     this.curNS = ns;
     const claims = Array.isArray(m.h) ? m.h.slice(0, 16) : [];
     const done = new Set();
     for (const c of claims) {
       if (!Array.isArray(c)) continue;
+      if (c[0] <= -1000) { if (!done.has(c[0])) { done.add(c[0]); this.domMinClaim(p, o, d, c[0] | 0, clamp(c[1] | 0, 0, W_.pel), W_); } continue; }   // minion
+      if (c[0] < 0) { if (!done.has(c[0])) { done.add(c[0]); this.domClaim(p, o, d, c[0] | 0, clamp(c[1] | 0, 0, W_.pel), c[2] | 0, W_); } continue; }   // generador o boss
       const t = this.players.get(c[0] | 0); if (!t || !t.alive || t === p || done.has(t.id)) continue;
       done.add(t.id);
       const n = clamp(c[1] | 0, 0, W_.pel), hs = clamp(c[2] | 0, 0, n); if (!n) continue;
       if (!this.validHit(o, d, t, W_, p)) continue;
-      const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? W_.dmg * (hs ? 1.5 : 1) : W_.head ? W_.dmg * (hs ? W_.head : 1) : (n + hs) * W_.dmg * falloff(W_, Math.hypot(t.s.x - o[0], t.s.y + 1 - o[1], t.s.z - o[2]));
+      const base = W_.carga ? this.cargaDmg(W_, p.carga || 0) : W_.dmg;
+      const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? base * (hs ? 1.5 : 1) : W_.head ? base * (hs ? W_.head : 1) : (n + hs) * base * falloff(W_, Math.hypot(t.s.x - o[0], t.s.y + 1 - o[1], t.s.z - o[2]));
       this.curHS = hs > 0 && !W_.melee;
       this.damage(t, dmg * this.mult(p), p, w, d, .05, 'frag');
       this.curHS = false;
@@ -1938,22 +3533,35 @@ class Game {
   }
   trace(o, d, range, shooter, pierce) {
     const wall = raycast(this.W, o[0], o[1], o[2], d[0], d[1], d[2], range);
-    const wt = wall ? wall.t : range, hits = [];
+    const wt = wall ? wall.t : range; let hits = [];
     for (const t of this.players.values()) {
       if (!t.alive || t === shooter || !t.joined) continue;
       const h = rayPlayer(t.s.x, t.s.y, t.s.z, o[0], o[1], o[2], d[0], d[1], d[2], t.s.crouch);
       if (h && h.t < wt) hits.push({ p: t, t: h.t, head: h.head });
     }
     hits.sort((a, b) => a.t - b.t);
-    return { wt, n: wall ? wall.n : null, hits: pierce ? hits : hits.slice(0, 1) };
+    hits = pierce ? hits : hits.slice(0, 1);
+    return { wt, n: wall ? wall.n : null, hits, st: this.dom && wall && !(hits.length && !pierce) ? this.domStruct(o, d, wall) : null };
+  }
+  // los bots cargan el plasma antes de soltarlo: cuanto mejor el bot, más lo carga
+  botCarga(W_) {
+    if (!W_.carga) return 0;
+    const sk = Math.max(0, Math.min(3, this.o.botSkill | 0)), C_ = W_.carga;
+    return C_.MIN + (C_.MAX - C_.MIN) * [.15, .4, .7, 1][sk];
   }
   botFire(p, w, o, d) {
     if (!this.canFire(p, w)) return;
     this.consume(p, w);
     const W_ = WEAPONS[w];
     if (W_.type === 'proj') { this.spawnProj(p, w, o, d); return; }
-    this.bcast({ t: 'ev', e: 'shot', id: p.id, w, o: r3a(o), d: r3a(d) });
-    const acc = new Map();
+    p.carga = this.botCarga(W_);
+    this.bcast({ t: 'ev', e: 'shot', id: p.id, w, o: r3a(o), d: r3a(d), cg: r2(p.carga) });
+    const pasa = setPasa(p.team);
+    try { this.botHits(p, w, W_, o, d); } finally { setPasa(pasa); }
+  }
+  botHits(p, w, W_, o, d) {
+    const BASE = W_.carga ? this.cargaDmg(W_, p.carga || 0) : W_.dmg;
+    const acc = new Map(), sacc = new Map();
     for (let i = 0; i < W_.pel; i++) {
       let dd = d;
       if (W_.spread) {
@@ -1965,10 +3573,22 @@ class Game {
       }
       const tr = this.trace(o, dd, W_.range || 300, p, W_.type === 'rail');
       for (const h of tr.hits) { const a = acc.get(h.p) || { n: 0, hs: 0 }; a.n++; if (h.head) a.hs++; acc.set(h.p, a); }
+      if (tr.st) { const k = tr.st.kind + tr.st.i + (tr.st.core ? 'c' : ''), a = sacc.get(k) || { st: tr.st, dmg: 0 }; a.dmg += BASE * falloff(W_, tr.wt); sacc.set(k, a); }
     }
     for (const [t, a] of acc) {
-      const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? W_.dmg * (a.hs ? 1.5 : 1) : W_.head ? W_.dmg * (a.hs ? W_.head : 1) : (a.n + a.hs) * W_.dmg * falloff(W_, Math.hypot(t.s.x - o[0], t.s.y + 1 - o[1], t.s.z - o[2]));
+      const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? BASE * (a.hs ? 1.5 : 1) : W_.head ? BASE * (a.hs ? W_.head : 1) : (a.n + a.hs) * BASE * falloff(W_, Math.hypot(t.s.x - o[0], t.s.y + 1 - o[1], t.s.z - o[2]));
       this.damage(t, dmg * this.mult(p) * this.skill().dmg, p, w, d, .05, 'frag');
+    }
+    for (const a of sacc.values()) this.domHit(p, a.st.kind, a.st.i, a.dmg * this.mult(p) * this.skill().dmg, a.st.core);
+    if (this.dom && this.dom.mins) for (const m of this.dom.mins) {   // los bots también le pegan a los minions
+      if (m.hp <= 0 || m.team === p.team) continue;
+      const cx = m.x - o[0], cy = m.y + 1 - o[1], cz = m.z - o[2], pr = cx * d[0] + cy * d[1] + cz * d[2];
+      if (pr < 0 || pr > (W_.range || 300)) continue;
+      if (Math.hypot(cx - d[0] * pr, cy - d[1] * pr, cz - d[2] * pr) > .85) continue;
+      const prev = setPasa(p.team), tapa = raycast(this.W, o[0], o[1], o[2], d[0], d[1], d[2], pr - .5); setPasa(prev);
+      if (tapa) continue;
+      this.domMinDamage(m, BASE * falloff(W_, pr) * this.mult(p) * this.skill().dmg * (W_.pel || 1) * .6, p);
+      break;
     }
   }
   spawnProj(p, w, o, d) {
@@ -1983,7 +3603,8 @@ class Game {
       const pr = this.projs[i]; if (!pr) continue;
       const ox = pr.x, oy = pr.y, oz = pr.z;
       pr.age += dt;
-      const res = projStep(this.W, pr, dt);
+      const own_ = this.players.get(pr.own), pasa = setPasa(own_ ? own_.team : -1);
+      let res; try { res = projStep(this.W, pr, dt); } finally { setPasa(pasa); }
       const dx = pr.x - ox, dy = pr.y - oy, dz = pr.z - oz, L = Math.hypot(dx, dy, dz);
       let direct = null, bt = Infinity;
       if (L > 1e-6) {
@@ -1994,11 +3615,20 @@ class Game {
         }
       }
       if (direct) { pr.x = ox + dx / L * bt; pr.y = oy + dy / L * bt; pr.z = oz + dz / L * bt; this.explode(pr, direct); this.projs.splice(i, 1); }
-      else if (res && res.boom) { this.explode(pr, null); this.projs.splice(i, 1); }
+      else if (res && res.boom) { pr.st = this.dom && res.b ? this.domStruct([ox, oy, oz], L > 1e-6 ? [dx / L, dy / L, dz / L] : [0, -1, 0], { b: res.b, t: L }) : null; this.explode(pr, null); this.projs.splice(i, 1); }
     }
   }
   explode(pr, direct) {
-    const W_ = WEAPONS[pr.w], own = this.players.get(pr.own);
+    const own = this.players.get(pr.own), pasa = setPasa(own ? own.team : -1);
+    try { this.explode0(pr, direct, own); } finally { setPasa(pasa); }
+  }
+  explode0(pr, direct, own) {
+    const W_ = WEAPONS[pr.w];
+    if (this.dom && own) {   // generadores y bosses: impacto directo y daño de área
+      if (pr.st && W_.direct) this.domHit(own, pr.st.kind, pr.st.i, W_.direct * pr.q, pr.st.core);
+      if (W_.rad) { this.domBlast(own, pr.x, pr.y, pr.z, W_.rad, W_.dmg * pr.q, W_.sfall || .6, pr.st && W_.direct ? pr.st : null); this.domMinBlast(own, pr.x, pr.y, pr.z, W_.rad, W_.dmg * pr.q, W_.sfall || .6); }
+      if (!this.live()) return;
+    }
     if (direct && W_.direct) {
       const sp = Math.hypot(pr.v[0], pr.v[1], pr.v[2]) || 1;
       if (pr.k === 'bullet' && own) this.huntReward(own, direct, pr);
@@ -2020,6 +3650,7 @@ class Game {
       if (dist >= W_.rad) continue;
       if (!los(this.W, pr.x, pr.y + .1, pr.z, t.s.x, t.s.y + .9, t.s.z) && !los(this.W, pr.x, pr.y + .1, pr.z, t.s.x, t.s.y + .2, t.s.z)) continue;
       const self = t.id === pr.own;
+      if (self && hasCard(t, 'cohetero')) continue;   // carta Cohetero: tus propias explosiones no te lastiman
       let dmg = W_.dmg * (1 - (W_.sfall || .6) * dist / W_.rad) * pr.q; if (self) dmg *= pr.k === 'rocket' ? .28 : .5;
       const cx = t.s.x - pr.x, cy = t.s.y + .9 - pr.y, cz = t.s.z - pr.z, cl = Math.hypot(cx, cy, cz) || 1;
       const ks = self && !t.bot ? 0 : .16;
@@ -2043,6 +3674,7 @@ class Game {
       if (f.tick > 0) continue;
       f.tick = f.every;
       const own = this.players.get(f.own);
+      if (this.dom && own) { this.domBlast(own, f.x, f.y + .5, f.z, f.r, f.hit, 0, null); this.domMinBlast(own, f.x, f.y + .5, f.z, f.r, f.hit, 0); if (!this.live()) return; }
       for (const t of this.players.values()) {
         if (!t.alive || !t.joined) continue;
         if (Math.hypot(t.s.x - f.x, t.s.z - f.z) > f.r || t.s.y < f.y - 1 || t.s.y > f.y + 1.6) continue;
@@ -2065,12 +3697,21 @@ class Game {
   /* ---- daño y muertes ---- */
   damage(t, amt, att, w, dir, ks, how) {
     if (!t.alive || !this.live() || amt <= 0) return;
+    t.chgT = 0;   // si te pegan mientras cargás el plasma, perdés la carga
+    if (this.dom && this.time - t.spawnT < DOM.SPAWN_INV && how !== 'void' && how !== 'water') return;   // recién aparecido: invulnerable un momento
     if (this.mode.teams && att && att !== t && att.team === t.team) return; // sin fuego amigo
+    if (att && att !== t && att.team !== t.team) att.aggT = this.time;      // los minions castigan al que le pega a un aliado
+    if (att && att !== t && hasCard(att, 'carnicero')) amt *= CARD_FX.DMG;   // carta Carnicero
+    if (hasCard(t, 'coraza')) amt *= CARD_FX.ARMOR;                          // carta Coraza
     if (this.mode.snipers && w === 8 && att && att !== t) amt = Math.max(amt, Math.ceil(t.hp + t.ar) + 1);   // en Francotiradores mata de un tiro
     let take = amt;
     // daño hecho (para la tabla final): solo lo que de verdad le sacaste, sin contar lo que sobra al matarlo
-    if (att && att !== t) att.dmg = (att.dmg || 0) + Math.min(amt, Math.max(0, t.hp) + t.ar);
-    if (t.ar > 0 && !(w != null && WEAPONS[w] && WEAPONS[w].melee)) { const save = Math.min(t.ar, Math.ceil(amt / 3)); t.ar -= save; take -= save; }
+    if (att && att !== t) {
+      const real = Math.min(amt, Math.max(0, t.hp) + t.ar);
+      att.dmg = (att.dmg || 0) + real;
+      if (att.alive && hasCard(att, 'vampiro')) { const h = Math.min(100 - att.hp, real * CARD_FX.VAMP); if (h > 0) { att.hp += h; att.dirty = true; } }   // carta Vampirismo
+    }
+    if (t.ar > 0 && how !== 'storm' && !(w != null && WEAPONS[w] && WEAPONS[w].melee)) { const save = Math.min(t.ar, Math.ceil(amt / 3)); t.ar -= save; take -= save; }
     t.hp -= take; t.dirty = true;
     const kick = dir && ks ? [dir[0] * amt * ks, dir[1] * amt * ks, dir[2] * amt * ks] : null;
     if (t.bot) {
@@ -2078,6 +3719,8 @@ class Game {
       if (att && att !== t && t.ai) { t.ai.hurtBy = att.id; t.ai.hurtT = 2; }
     } else if (t.send) t.send({ t: 'ev', e: 'dmg', a: att ? att.id : 0, n: Math.round(amt), k: kick ? r3a(kick) : null, from: att && att !== t ? r3a([att.s.x, att.s.y + 1, att.s.z]) : null });
     if (att && att !== t && att.send) att.send({ t: 'ev', e: 'hit', id: t.id, n: Math.round(amt), k: t.hp <= 0 ? 1 : 0, h: this.curHS ? 1 : 0 });
+    // carta Toque ígneo: al que golpeás lo dejás prendido fuego (el daño del fuego no lo vuelve a prender)
+    if (t.hp > 0 && att && att !== t && how !== 'fire' && hasCard(att, 'igneo')) this.ignite(t, att);
     if (t.hp <= 0) this.kill(t, att, w, how, amt);
   }
   kill(v, att, w, how) {
@@ -2086,19 +3729,30 @@ class Game {
     if (v.lifeT0 != null) { v.bestLife = Math.max(v.bestLife || 0, this.time - v.lifeT0); v.lifeT0 = null; }
     let k = 0;
     const carrier = this.flags.some(f => f.st === 1 && f.by === v.id), scoring = this.state === 'play';
+    const crowned = !!(this.crownOn() && this.crown && this.crown.by === v.id);
     if (!scoring) { v.deaths--; k = att && att !== v ? att.id : 0; }
     else if (att && att !== v) {
-      att.frags++; att.kills++; k = att.id; att.streak++;
+      att.kills++; att.rkills++; k = att.id; att.streak++;
       let n = ECON.KILL; const why = [];
       if (v.streak >= 3) { n += ECON.SHUTDOWN; why.push('cortaste una racha'); }
       if (w === 0) { n += ECON.PISTOL; why.push('con pistola'); }
       if (carrier) { n += 150; why.push('frenaste al de la bandera'); }
+      if (hasCard(att, 'botin')) { n = Math.round(n * CARD_FX.CASH); why.push('botín de guerra'); }   // carta Botín de guerra
       this.credit(att, n, why.join(' · '));
-    } else v.frags--;
-    v.streak = 0;
+      if (att.alive && hasCard(att, 'trofeo')) { att.ar = Math.min(100, att.ar + CARD_FX.KILL_AR); att.dirty = true; }        // carta Trofeo
+      if (att.alive && hasCard(att, 'sanguijuela')) { att.hp = Math.min(100, att.hp + CARD_FX.KILL_HP); att.dirty = true; }   // carta Hambre de sangre
+      if (crowned) {   // regicidio: puntos extra, los créditos son los normales de una baja
+        att.kills += CROWN.KILL_PTS; att.cpts += CROWN.KILL_PTS;
+        this.bcast({ t: 'ev', e: 'crw', a: 'regi', id: att.id, n: att.name, v: v.name, pts: CROWN.KILL_PTS });
+      }
+      this.checkCard(att);
+    } else if (how !== 'storm' && how !== 'boss' && how !== 'minion') v.kills--;   // la tormenta no le da puntos a nadie, pero tampoco te resta
+    v.streak = 0; v.burnT = 0;
     this.dropCarried(v);
     const ns = !!(this.curNS && k && k !== v.id && w != null && WEAPONS[w] && WEAPONS[w].scope);
     this.bcast({ t: 'ev', e: 'kill', k, v: v.id, w: w == null ? -1 : w, how: how || 'frag', gib: gib ? 1 : 0, ns: ns ? 1 : 0, p: r3a([v.s.x, v.s.y, v.s.z]) });
+    // kill mientras se desliza (o hasta 0,25 s después de soltar, por el lag): el servidor le avisa al que mató para que reciba el impulso de velocidad
+    if (scoring && att && att !== v && !att.bot && att.send && this.time - (att.slideT == null ? -9 : att.slideT) <= .25) att.send({ t: 'ev', e: 'boost' });
     if (scoring) this.dropShards(v);
     if (v.bot && v.ai) v.ai.path = null;
     let won = false;
@@ -2110,7 +3764,10 @@ class Game {
       this.bcast({ t: 'ev', e: 'sys', m: att.name + ' hizo una racha de 6 bajas: ¡desbloqueó la escopeta doble!' });
     }
     this.sendScores();
-    if (won || (scoring && !this.mode.gg && !this.mode.teams && att && att !== v && att.frags >= this.o.fraglimit)) this.endMatch();
+    // Arena termina siempre por tiempo: el límite de bajas no aportaba nada (5 minutos, casi nunca se llegaba).
+    // Queda detrás de `fragLimit` por si algún modo lo quiere de vuelta; los modos por equipos usan `teamLimit`.
+    if (won || (scoring && this.mode.fragLimit && !this.mode.gg && !this.mode.teams && att && att !== v && att.kills >= this.o.fraglimit)) this.endMatch();
+    if (scoring && hasCard(v, 'bomba')) this.deathBlast(v);   // carta Carga mortal: explota al morir
   }
   /* ---- gungame: subir y bajar de nivel ---- */
   ggKill(v, att, w) {
@@ -2134,6 +3791,7 @@ class Game {
   /* ---- captura la bandera ---- */
   flagEv(a, f, p) { this.bcast({ t: 'ev', e: 'flag', a, f: f.team, id: p ? p.id : 0, n: p ? p.name : '', fs: this.flagState(), ts: this.ts }); }
   dropCarried(p) {
+    this.dropCrown(p);
     for (const f of this.flags) {
       if (f.st !== 1 || f.by !== p.id) continue;
       const hit = raycast(this.W, p.s.x, p.s.y + .5, p.s.z, 0, -1, 0, 30);
@@ -2249,14 +3907,744 @@ class Game {
     }
   }
 
+  /* =====================================================================
+     CAPTURA EL DOMINIO — solo los modos con `dom` (constantes en DOM, 01-datos.js)
+     Todo es del servidor: generadores, barreras, bosses, ataques y quién gana. El cliente solo dibuja.
+     this.dom = { gens, bars, boss, orbs, zones, stat } ; stat[equipo] = lo que ESE equipo le rompió al rival.
+     Estado de una barrera: 0 activa · 1 debilitada (cayó un generador) · 2 caída.
+     Ataques del boss: DOM.ATK (1 latigazo · 2 agarre · 3 pisotón · 4 pulso · 5 salva · 6 rayo · 7 zona).
+     ===================================================================== */
+  domSetup() {
+    this.dom = null;
+    const M = MAPS[this.W.id];
+    if (!this.mode.dom || !M.bars) return;
+    // cada partida tiene su copia de las barreras: el estado no se comparte entre salas
+    this.W = Object.assign({}, M, { brushes: M.brushes.map(b => b.bar ? Object.assign({}, b, { bar: Object.assign({}, b.bar, { down: false }) }) : b) });
+    this.dom = {
+      gens: M.gens.map(g => ({ team: g.team, lane: g.lane, x: g.x, y: g.y, z: g.z, atk: g.atk, hp: DOM.GEN_HP })),
+      bars: M.bars.map(b => ({ team: b.team, lane: b.lane, st: 0, t: 0 })),
+      boss: M.bosses.map((b, t) => ({ team: t, x: b.x, y: b.y, z: b.z, yaw: b.yaw, yaw0: b.yaw, hp: DOM.BOSS_HP, atk: 0, ph: 0, t: 0, cd: 4, tgt: 0, p: null, aim: b.yaw, think: 0, seen: [], rage: -1, alertT: -99, hurtBy: 0 })),
+      orbs: [], zones: [], oid: 1, stat: [{ bars: 0, gens: 0, dmg: 0 }, { bars: 0, gens: 0, dmg: 0 }], first: [false, false], dirtyG: new Set(), bsKey: '', win: null, why: '', ban: [null, null]
+    };
+  }
+  domState() { const d = this.dom; return d ? { g: d.gens.map(g => Math.ceil(g.hp)), b: d.bars.map(b => b.st), h: d.boss.map(b => Math.ceil(b.hp)) } : null; }
+  domEv(m) { m.t = 'ev'; m.e = 'dom'; this.bcast(m); }
+  // qué barreras tiene cerradas un equipo (para la navegación de los bots)
+  domBan(team) {
+    const d = this.dom; if (!d) return null;
+    if (!d.ban[team]) { const a = new Uint8Array(d.bars.length + 1); d.bars.forEach((b, i) => { if (b.team !== team && b.st < 2) a[i + 1] = 1; }); d.ban[team] = a; }
+    return d.ban[team];
+  }
+  // daño a un generador ('g') o a un boss ('b'). Devuelve lo que de verdad le sacó
+  domHit(att, kind, i, amt, core) {
+    const d = this.dom; if (!d || this.state !== 'play' || !att || att.team < 0 || !(amt > 0)) return 0;
+    amt = Math.min(amt, DOM.HIT_CAP * this.mult(att));
+    if (hasCard(att, 'carnicero')) amt *= CARD_FX.DMG;
+    if (kind === 'g') {
+      const g = d.gens[i]; if (!g || g.hp <= 0 || g.team === att.team) return 0;
+      const real = Math.min(g.hp, amt); g.hp -= real; d.dirtyG.add(i);
+      this.domPay(att, real, false);
+      if (this.time - (g.alertT == null ? -99 : g.alertT) > DOM.ALERT_EVERY) { g.alertT = this.time; this.domEv({ a: 'genalert', i, b: g.team, hp: Math.round(100 * g.hp / DOM.GEN_HP) }); }
+      if (att.send) att.send({ t: 'ev', e: 'hit', id: -1 - i, n: Math.round(real), k: g.hp <= 0 ? 1 : 0, h: 0 });
+      if (g.hp <= 0) this.domGenDown(i, att);
+      return real;
+    }
+    const b = d.boss[i]; if (!b || b.hp <= 0 || b.team === att.team) return 0;
+    if (core) amt *= DOM.CORE_MULT;
+    const real = Math.min(b.hp, amt); b.hp -= real; b.hurtBy = att.id;
+    this.domPay(att, real, true);
+    if (att.send) att.send({ t: 'ev', e: 'hit', id: -101 - i, n: Math.round(real), k: b.hp <= 0 ? 1 : 0, h: core ? 1 : 0 });
+    if (this.time - b.alertT > DOM.ALERT_EVERY) { b.alertT = this.time; this.domEv({ a: 'alert', b: i }); }
+    if (b.hp <= 0) this.domBossDown(i, att);
+    return real;
+  }
+  domPay(att, real, boss) {
+    this.dom.stat[att.team].dmg += real; att.dmg = (att.dmg || 0) + real;
+    if (boss) att.bdmg = (att.bdmg || 0) + real;
+    att.domAcc = (att.domAcc || 0) + real;
+    if (att.domAcc >= DOM.PAY.STEP) { const n = Math.floor(att.domAcc / DOM.PAY.STEP); att.domAcc -= n * DOM.PAY.STEP; this.credit(att, n * (boss ? DOM.PAY.BOSS_HIT : DOM.PAY.GEN_HIT), boss ? 'daño al boss' : 'daño al generador'); }
+  }
+  domGenDown(i, att) {
+    const d = this.dom, g = d.gens[i];
+    g.hp = 0; d.stat[1 - g.team].gens++;
+    if (att) { att.caps++; att.gens = (att.gens || 0) + 1; this.credit(att, DOM.PAY.GEN, 'generador destruido'); }
+    this.domEv({ a: 'gen', i, id: att ? att.id : 0, n: att ? att.name : '', first: d.first[g.team] ? 0 : 1 });
+    d.first[g.team] = true;
+    const bi = d.bars.findIndex(b => b.team === g.team && b.lane === g.lane), bar = d.bars[bi];
+    if (!bar || bar.st === 2) return;
+    const dead = d.gens.filter(q => q.team === g.team && q.lane === g.lane && q.hp <= 0).length;
+    this.domBarSet(bi, dead >= DOM.BAR_NEED ? 2 : 1, att);
+    this.sendScores();
+  }
+  domBarSet(bi, st, att) {
+    const d = this.dom, bar = d.bars[bi]; if (!bar || bar.st === st) return;
+    const fell = st === 2 && bar.st !== 2;
+    bar.st = st; bar.t = fell ? DOM.BAR_REARM : 0;
+    for (const b of this.W.brushes) if (b.bar && b.bar.i === bi) b.bar.down = st === 2;
+    d.ban = [null, null];
+    if (fell) {
+      d.stat[1 - bar.team].bars++;
+      if (att) att.bars = (att.bars || 0) + 1;
+      for (const q of this.players.values()) if (q.joined && q.team === 1 - bar.team) this.credit(q, q === att ? DOM.PAY.BAR : DOM.PAY.BAR_TEAM, 'ruta ' + DOM.LANES[bar.lane] + ' abierta');
+      d.boss[bar.team].rage = bar.lane;
+    }
+    for (const q of this.players.values()) if (q.bot && q.ai) q.ai.replan = 0;
+    this.domEv({ a: 'bar', i: bi, st, n: att ? att.name : '' });
+  }
+  domBossDown(t, att) {
+    const d = this.dom, b = d.boss[t];
+    b.hp = 0; b.atk = 0; b.ph = 0; d.win = 1 - t; d.why = 'boss';
+    if (att) { att.caps += 3; this.credit(att, DOM.PAY.BOSS_KILL, 'mataste al boss'); }
+    this.domEv({ a: 'bossdown', b: t, id: att ? att.id : 0, n: att ? att.name : '' });
+    this.endMatch();
+  }
+  /* quién gana: el que mató al boss rival. Por tiempo: el que más vida porcentual le sacó al boss rival;
+     después más barreras tiradas, más generadores rotos y más daño total. Si todo empata, -1. */
+  domWinner() {
+    const d = this.dom; if (!d) return -1;
+    if (d.win != null) return d.win;
+    // por cada criterio, lo que logró cada equipo [rojo, azul]: gana el que tiene MÁS
+    const s = d.stat, cmp = [[1 - d.boss[1].hp / DOM.BOSS_HP, 1 - d.boss[0].hp / DOM.BOSS_HP, 'vida del boss'], [s[0].bars, s[1].bars, 'barreras'], [s[0].gens, s[1].gens, 'generadores'], [Math.round(s[0].dmg), Math.round(s[1].dmg), 'daño']];
+    for (const [a, b, why] of cmp) if (Math.abs(a - b) > 1e-9) { d.why = why; return a > b ? 0 : 1; }
+    d.why = 'empate'; return -1;
+  }
+  domSummary() { const d = this.dom; return d ? { why: d.why, hp: d.boss.map(b => Math.round(100 * b.hp / DOM.BOSS_HP)), bars: d.stat.map(s => s.bars), gens: d.stat.map(s => s.gens), dmg: d.stat.map(s => Math.round(s.dmg)) } : null; }
+  // qué golpeó un disparo: un generador o un boss (con o sin núcleo). o/d: origen y dirección; h: resultado de raycast
+  domStruct(o, d, h) {
+    const dm = this.dom; if (!dm || !h || !h.b) return null;
+    if (h.b.gen != null) return { kind: 'g', i: h.b.gen, core: false };
+    if (h.b.boss != null) return { kind: 'b', i: h.b.boss, core: this.domCore(dm.boss[h.b.boss], o, d, h.t, 1) };
+    return null;
+  }
+  // ¿el rayo pasa por el núcleo? Solo cuenta de frente (el núcleo está en el pecho)
+  domCore(b, o, d, t, tol) {
+    const f = dirFromAngles(b.yaw, 0);
+    if (d[0] * f[0] + d[2] * f[2] > -.15) return false;
+    const c = raySphere(o[0], o[1], o[2], d[0], d[1], d[2], b.x + f[0] * DOM.CORE_FWD, b.y + DOM.CORE_Y, b.z + f[2] * DOM.CORE_FWD, DOM.CORE_R * tol);
+    return c >= 0 && c < t + 3;
+  }
+  // un jugador dice que le pegó a un generador (-1-i) o a un boss (-101-equipo): se valida con el mundo del servidor
+  domClaim(p, o, d, id, n, hs, W_) {
+    const dm = this.dom; if (!dm) return;
+    const h = raycast(this.W, o[0], o[1], o[2], d[0], d[1], d[2], (W_.range || 300) + 3);
+    const boss = id <= -101, i = boss ? -101 - id : -1 - id;
+    // tolerancia: los perdigones se abren y el cliente apunta con su propio reloj; alcanza con que el tiro vaya a la estructura
+    let ok = !!(h && h.b && (boss ? h.b.boss === i : h.b.gen === i));
+    if (!ok) {
+      const c = boss ? dm.boss[i] : dm.gens[i]; if (!c) return;
+      const cy = c.y + (boss ? DOM.BOSS_H / 2 : 1.6), cx = c.x - o[0], cz = c.z - o[2], pr = cx * d[0] + (cy - o[1]) * d[1] + cz * d[2];
+      if (pr < 0) return;
+      const px = cx - d[0] * pr, py = (cy - o[1]) - d[1] * pr, pz = cz - d[2] * pr;
+      if (Math.hypot(px, pz) > (boss ? DOM.BOSS_R : 1) + 1 + pr * .1 || Math.abs(py) > (boss ? DOM.BOSS_H / 2 : 1.6) + 1 + pr * .1) return;
+      const far = h ? h.t : 1e9;   // nada macizo antes de llegar (una barrera rival frena el tiro)
+      if (far < pr - (boss ? DOM.BOSS_R : 1) * 1.5 - 1) return;
+      ok = true;
+    }
+    const core = boss && hs > 0 && this.domCore(dm.boss[i], o, d, h ? h.t : 1e9, 1.5);
+    const dist = h ? h.t : 0;
+    const base = W_.carga ? this.cargaDmg(W_, p.carga || 0) : W_.dmg;
+    const dmg = W_.melee ? base : W_.type === 'rail' ? base : W_.head ? base : n * base * falloff(W_, dist);
+    this.domHit(p, boss ? 'b' : 'g', i, dmg * this.mult(p), core);
+  }
+  // explosiones y fuego: daño de área a generadores y bosses rivales
+  domBlast(own, x, y, z, rad, dmg, sfall, skip) {
+    const dm = this.dom; if (!dm || !own || rad <= 0) return;
+    const bd = (c, hx, hy) => Math.hypot(Math.max(0, Math.abs(x - c.x) - hx), Math.max(0, c.y - y, y - (c.y + hy)), Math.max(0, Math.abs(z - c.z) - hx));
+    dm.gens.forEach((g, i) => { if (g.hp <= 0 || g.team === own.team || (skip && skip.kind === 'g' && skip.i === i)) return; const ds = bd(g, 1, 3.2); if (ds < rad) this.domHit(own, 'g', i, dmg * (1 - sfall * ds / rad), false); });
+    dm.boss.forEach((b, i) => { if (b.hp <= 0 || b.team === own.team || (skip && skip.kind === 'b' && skip.i === i)) return; const ds = bd(b, DOM.BOSS_R, DOM.BOSS_H); if (ds < rad) this.domHit(own, 'b', i, dmg * (1 - sfall * ds / rad), false); });
+  }
+  /* ================= LOS BOSSES =================
+     Cada ataque pasa por tres etapas (b.ph): 1 aviso · 2 golpe · 3 recuperación. Durante el aviso el boss gira
+     hacia su objetivo hasta la fracción `lock` y ahí fija la dirección: de ahí en más el ataque ya no te sigue.
+     El daño se calcula en el servidor con la MISMA figura que el cliente dibuja en el piso (DOM.ATK[k].forma),
+     en el instante en que empieza el golpe, con la dirección y el punto que quedaron fijados en el aviso. */
+  domTargets(b) {
+    const out = [];
+    for (const t of this.players.values()) {
+      if (!t.alive || !t.joined || t.team === b.team || t.team < 0) continue;
+      if (Math.hypot(t.s.x - b.x, t.s.z - b.z) > DOM.BOSS_SEE) continue;
+      if (!this.domSee(b, t)) continue;
+      out.push(t);
+    }
+    return out;
+  }
+  domSee(b, t) { return los(this.W, b.x, b.y + DOM.CORE_Y, b.z, t.s.x, t.s.y + 1, t.s.z) || los(this.W, b.x, b.y + DOM.BOSS_H - 1, b.z, t.s.x, t.s.y + 1.6, t.s.z); }
+  domFoes(b) { return [...this.players.values()].filter(t => t.alive && t.joined && t.team >= 0 && t.team !== b.team); }
+  tickDom(dt) {
+    const d = this.dom; if (!d || this.state !== 'play') return;
+    for (const b of d.boss) { const prev = setPasa(b.team); try { this.tickBoss(b, dt); } finally { setPasa(prev); } if (this.state !== 'play') return; }
+    this.tickOrbs(dt); if (this.state !== 'play') return;
+    this.tickZones(dt);
+    // avisos de tiempo: faltan 5 minutos, 2, 1 y los últimos 30 segundos
+    if (!d.avisoT) d.avisoT = {};
+    for (const n of DOM.AVISOS) if (this.left <= n && !d.avisoT[n]) { d.avisoT[n] = 1; this.domEv({ a: 'tiempo', n }); }
+    for (let i = 0; i < d.bars.length; i++) { const bar = d.bars[i]; if (bar.st === 2 && bar.t > 0) { bar.t -= dt; if (bar.t <= 0) { d.gens.forEach((g, k) => { if (g.team === bar.team && g.lane === bar.lane) { g.hp = DOM.GEN_HP; d.dirtyG.add(k); } }); this.domBarSet(i, 0, null); } } }
+  }
+  tickBoss(b, dt) {
+    const d = this.dom; if (b.hp <= 0) return;
+    // entra en furia al bajar del umbral de vida: se avisa una sola vez, a los dos equipos
+    if (!b.furia && b.hp / DOM.BOSS_HP < DOM.ENRAGE) { b.furia = 1; this.domEv({ a: 'furia', b: b.team }); }
+    b.think -= dt;
+    if (b.think <= 0) { b.think = .25; b.seen = this.domTargets(b); }
+    const ts = b.seen.filter(t => t.alive && t.team !== b.team);
+    if (b.ph) {   // está en medio de un ataque
+      const A = DOM.ATK[b.atk]; b.t -= dt;
+      if (b.ph === 1) {
+        const q = 1 - b.t / A.warn;
+        if (q < (A.lock || 0)) this.domTurn(b, this.players.get(b.tgt), dt);   // todavía te sigue
+        if (b.t <= 0) { b.ph = 2; b.t = A.hit; this.domStrike(b, A); if (this.state !== 'play') return; }
+      } else if (b.ph === 2) {
+        if (A.forma === 'barrido') { this.domBeam(b, A, dt); if (this.state !== 'play') return; }
+        if (b.t <= 0) { b.ph = 3; b.t = A.rec; }
+      } else if (b.t <= 0) {
+        b.ph = 0; b.atk = 0;
+        b.cd = (DOM.GCD[0] + Math.random() * (DOM.GCD[1] - DOM.GCD[0])) * (b.hp < DOM.ENRAGE * DOM.BOSS_HP ? DOM.ENRAGE_CD : 1);
+      }
+      return;
+    }
+    if (b.rage >= 0) {   // se abrió un carril: castiga la entrada con una tanda de zonas
+      const g = MAPS[this.W.id].defPts[b.team][b.rage]; b.rage = -1;
+      if (g) { for (let k = 0; k < DOM.ZONES_RAGE; k++) this.domZone(b, g.x + (k - 1) * 5.5, g.y, g.z + ((k * 7) % 5 - 2) * 3, DOM.ATK[7].warn + k * .45); this.domEv({ a: 'rage', b: b.team }); }
+    }
+    let tg = ts.find(t => t.id === b.hurtBy) || ts.find(t => t.id === b.tgt) || null;
+    if (!tg) for (const t of ts) if (!tg || Math.hypot(t.s.x - b.x, t.s.z - b.z) < Math.hypot(tg.s.x - b.x, tg.s.z - b.z)) tg = t;
+    b.tgt = tg ? tg.id : 0;
+    this.domTurn(b, tg, dt);
+    b.cd -= dt;
+    if (b.cd > 0 || !tg) return;
+    // elegir ataque: según distancia y cuántos rivales tiene encima
+    const dist = Math.hypot(tg.s.x - b.x, tg.s.z - b.z), cerca = ts.filter(t => Math.hypot(t.s.x - b.x, t.s.z - b.z) < 17).length;
+    const lista = Object.keys(DOM.ATK).filter(k => { const A = DOM.ATK[k]; return (A.team == null || A.team === b.team) && (!A.near || dist < A.r * .95) && (A.forma === 'circulo' || dist < (A.r || 99)); });
+    let k = lista.length ? +lista[(Math.random() * lista.length) | 0] : 7;
+    if (cerca >= 2) { const area = lista.filter(q => DOM.ATK[q].forma === 'anillo'); if (area.length && Math.random() < .7) k = +area[0]; }   // con varios encima prefiere el área
+    if (dist > 24 && Math.random() < .6) k = b.team ? (Math.random() < .5 ? 5 : 6) : 2;   // de lejos: a distancia
+    const A = DOM.ATK[k];
+    b.atk = k; b.ph = 1; b.t = A.warn; b.tgt = tg.id;
+    b.aim = Math.atan2(-(tg.s.x - b.x), -(tg.s.z - b.z));
+    b.p = A.suelo ? [tg.s.x, tg.s.y, tg.s.z] : null;
+    if (A.suelo) { const fl = raycast(this.W, b.p[0], b.p[1] + 1, b.p[2], 0, -1, 0, 12); if (fl) b.p[1] = b.p[1] + 1 - fl.t; }
+    this.domEv({ a: 'atk', b: b.team, k, t: r2(A.warn), id: tg.id, y: r2(b.aim), p: b.p ? r3a(b.p) : 0 });
+  }
+  domTurn(b, tg, dt) {
+    const want = tg && tg.alive ? Math.atan2(-(tg.s.x - b.x), -(tg.s.z - b.z)) : b.yaw0;
+    let dy = want - b.yaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
+    b.yaw += clamp(dy, -DOM.BOSS_TURN * dt, DOM.BOSS_TURN * dt);
+    b.aim = b.yaw;
+  }
+  domHurt(b, t, amt, dir, kick) { this.damage(t, amt, null, null, dir, kick / amt, 'boss'); }
+  // el golpe: se resuelve con la figura del ataque
+  domStrike(b, A) {
+    const f = dirFromAngles(b.aim, 0), foes = this.domFoes(b);
+    if (A.forma === 'orbes') return this.domOrbs(b, A);
+    if (A.forma === 'barrido') { b.swing = Math.random() < .5 ? -1 : 1; b.aim -= b.swing * A.barre * A.hit / 2; return; }   // el rayo arranca de un costado y barre cruzando al objetivo
+    if (A.forma === 'circulo') return;                       // la zona explota sola (tickZones)
+    for (const t of foes) {
+      const dx = t.s.x - b.x, dz = t.s.z - b.z, dl = Math.hypot(dx, dz) || 1e-6;
+      if (dl > A.r || Math.abs(t.s.y - b.y) > 9) continue;
+      if (A.forma === 'arco' && (dx * f[0] + dz * f[2]) / dl < A.cos) continue;
+      if (A.forma === 'linea') { const pr = dx * f[0] + dz * f[2]; if (pr < 0 || Math.hypot(dx - f[0] * pr, dz - f[2] * pr) > A.w) continue; }
+      if (A.aire && !t.s.on && t.s.y > b.y + 1.2) continue;   // el pisotón no alcanza al que saltó
+      if (!this.domSee(b, t)) continue;
+      if (A.pull) {   // el agarre arrastra hacia el boss
+        this.domHurt(b, t, A.dmg, [-dx / dl * .93, .34, -dz / dl * .93], A.pull);
+        this.domEv({ a: 'grab', b: b.team, id: t.id });
+        return;
+      }
+      this.domHurt(b, t, A.dmg, [dx / dl * .8, .6, dz / dl * .8], A.kick);
+      if (this.state !== 'play') return;
+    }
+    if (A.pull) this.domEv({ a: 'miss', b: b.team });   // la cadena vuelve vacía
+  }
+  // rayo del núcleo: barre mientras dura el golpe y quema al que toca
+  domBeam(b, A, dt) {
+    const A2 = DOM.ATK[b.atk], w = A2.barre || 0;
+    b.aim += w * dt * (b.swing || 1);
+    b.yaw = b.aim;
+    const f = dirFromAngles(b.aim, 0);
+    for (const t of this.domFoes(b)) {
+      const dx = t.s.x - b.x, dz = t.s.z - b.z, pr = dx * f[0] + dz * f[2];
+      if (pr < 1 || pr > A.r || Math.abs(t.s.y - b.y - 2) > 7) continue;
+      if (Math.hypot(dx - f[0] * pr, dz - f[2] * pr) > A.w) continue;
+      if (!this.domSee(b, t)) continue;
+      this.domHurt(b, t, A.dmg * dt / A.hit, [f[0] * .3, .25, f[2] * .3], 2);
+      if (this.state !== 'play') return;
+    }
+  }
+  domOrbs(b, A) {
+    const d = this.dom, ts = this.domFoes(b).filter(t => Math.hypot(t.s.x - b.x, t.s.z - b.z) <= A.r && this.domSee(b, t));
+    if (!ts.length) return;
+    for (let i = 0; i < DOM.ORBS.n; i++) {
+      const a = b.aim + (i - (DOM.ORBS.n - 1) / 2) * .8, f = dirFromAngles(a, .45);
+      d.orbs.push({ id: d.oid++, team: b.team, x: b.x + f[0] * 2.5, y: b.y + DOM.BOSS_H - .5, z: b.z + f[2] * 2.5, vx: f[0] * DOM.ORBS.speed, vy: f[1] * DOM.ORBS.speed, vz: f[2] * DOM.ORBS.speed, tgt: ts[i % ts.length].id, life: DOM.ORBS.life });
+    }
+  }
+  domZone(b, x, y, z, warn) {
+    const fl = raycast(this.W, x, y + 1, z, 0, -1, 0, 12), fy = fl ? y + 1 - fl.t : y;
+    this.dom.zones.push({ team: b.team, x, y: fy, z, r: DOM.ATK[7].r, t: warn });
+    this.domEv({ a: 'zone', b: b.team, p: r3a([x, fy, z]), r: DOM.ATK[7].r, t: r2(warn) });
+  }
+  tickOrbs(dt) {
+    const d = this.dom, O = DOM.ORBS;
+    for (let i = d.orbs.length - 1; i >= 0; i--) {
+      const o = d.orbs[i], t = this.players.get(o.tgt); o.life -= dt;
+      let gone = o.life <= 0, hit = null;
+      if (!gone && t && t.alive) {
+        const dx = t.s.x - o.x, dy = t.s.y + 1 - o.y, dz = t.s.z - o.z, dl = Math.hypot(dx, dy, dz) || 1;
+        if (dl < O.r) hit = t;
+        else { o.vx += dx / dl * O.turn * O.speed * dt; o.vy += dy / dl * O.turn * O.speed * dt; o.vz += dz / dl * O.turn * O.speed * dt; const vl = Math.hypot(o.vx, o.vy, o.vz) || 1; o.vx *= O.speed / vl; o.vy *= O.speed / vl; o.vz *= O.speed / vl; }
+      }
+      if (!gone && !hit) {
+        const L = O.speed * dt, prev = setPasa(o.team), h = raycast(this.W, o.x, o.y, o.z, o.vx / O.speed, o.vy / O.speed, o.vz / O.speed, L + .3); setPasa(prev);
+        if (h) gone = true; else { o.x += o.vx * dt; o.y += o.vy * dt; o.z += o.vz * dt; }
+      }
+      if (hit || gone) {
+        d.orbs.splice(i, 1);
+        this.domEv({ a: 'orbx', id: o.id, p: r3a([o.x, o.y, o.z]) });
+        if (hit) { this.damage(hit, O.dmg, null, null, [o.vx / O.speed, .2, o.vz / O.speed], .1, 'boss'); if (this.state !== 'play') return; }
+      }
+    }
+  }
+  tickZones(dt) {
+    const d = this.dom, Z = DOM.ATK[7];
+    for (let i = d.zones.length - 1; i >= 0; i--) {
+      const z = d.zones[i]; z.t -= dt; if (z.t > 0) continue;
+      d.zones.splice(i, 1);
+      this.domEv({ a: 'zx', p: r3a([z.x, z.y, z.z]), r: z.r, b: z.team });
+      for (const t of this.players.values()) {
+        if (!t.alive || !t.joined || t.team === z.team || t.team < 0) continue;
+        const dx = t.s.x - z.x, dz = t.s.z - z.z, dl = Math.hypot(dx, dz);
+        if (dl > z.r || Math.abs(t.s.y - z.y) > 3.5) continue;
+        this.damage(t, Z.dmg, null, null, [dl ? dx / dl * .5 : 0, .85, dl ? dz / dl * .5 : 0], Z.kick / Z.dmg, 'boss');
+        if (this.state !== 'play') return;
+      }
+    }
+  }
+
+  /* ---- bots ---- */
+  // a qué estructura le puede tirar este bot ahora (la tiene que ver)
+  domBotTarget(p) {
+    const d = this.dom; if (!d || p.team < 0 || this.state !== 'play') return null;
+    const ex = p.s.x, ey = p.s.y + K.EYE, ez = p.s.z, range = Math.max(40, this.skill().range);
+    const prev = setPasa(p.team);
+    try {
+      const see = (x, y, z, test) => { const dx = x - ex, dy = y - ey, dz = z - ez, dl = Math.hypot(dx, dy, dz); if (dl > range || dl < .5) return false; const h = raycast(this.W, ex, ey, ez, dx / dl, dy / dl, dz / dl, dl + 3); return !!(h && h.b && test(h.b)); };
+      const b = d.boss[1 - p.team];
+      if (b.hp > 0) { const f = dirFromAngles(b.yaw, 0), cx = b.x + f[0] * DOM.CORE_FWD, cz = b.z + f[2] * DOM.CORE_FWD; for (const y of [DOM.CORE_Y, 5, 2]) if (see(y === DOM.CORE_Y ? cx : b.x, b.y + y, y === DOM.CORE_Y ? cz : b.z, q => q.boss === b.team)) return { x: y === DOM.CORE_Y ? cx : b.x, y: b.y + y, z: y === DOM.CORE_Y ? cz : b.z }; }
+      let best = null, bd = 1e9;
+      d.gens.forEach((g, i) => { if (g.hp <= 0 || g.team === p.team) return; const ds = Math.hypot(g.x - ex, g.z - ez); if (ds < bd && see(g.x, g.y + 1.8, g.z, q => q.gen === i)) { bd = ds; best = { x: g.x, y: g.y + 1.8, z: g.z }; } });
+      return best;
+    } finally { setPasa(prev); }
+  }
+  // de dónde hay que salir corriendo: zonas marcadas y el alcance del ataque que el boss está avisando
+  domDanger(p) {
+    const d = this.dom; if (!d) return null;
+    for (const z of d.zones) if (z.team !== p.team && Math.hypot(p.s.x - z.x, p.s.z - z.z) < z.r + 1.5) return z;
+    const b = d.boss[1 - p.team];
+    if (b.hp > 0 && b.ph === 1) {
+      const A = DOM.ATK[b.atk], dx = p.s.x - b.x, dz = p.s.z - b.z, dl = Math.hypot(dx, dz);
+      if (A.forma === 'anillo' || A.forma === 'arco') { if (dl < A.r + 2) return b; }
+      else if (A.forma === 'linea' || A.forma === 'barrido') { const f = dirFromAngles(b.aim, 0), pr = dx * f[0] + dz * f[2]; if (pr > 0 && pr < A.r && Math.hypot(dx - f[0] * pr, dz - f[2] * pr) < A.w + 2.5) return b; }
+    }
+    return null;
+  }
+  // los atacantes se reparten por los tres carriles (id % 3); uno de cada DOM.BOT_DEF se queda a defender
+  domObjective(p) {
+    const d = this.dom, M = MAPS[this.W.id], me = p.team, en = 1 - me; if (!d || me < 0) return null;
+    const lane = p.id % 3, far = (q, r) => Math.hypot(p.s.x - q.x, p.s.z - q.z) > r;
+    if (p.id % DOM.BOT_DEF === DOM.BOT_DEF - 1) {
+      // defiende el portón con el generador más lastimado; si ya no queda ninguno, la sala del boss
+      let bi = -1, low = 1e9;
+      d.gens.forEach(g => { if (g.team !== me || g.hp <= 0) return; const bar = d.bars.find(b => b.team === me && b.lane === g.lane); if (bar && bar.st < 2 && g.hp < low) { low = g.hp; bi = g.lane; } });
+      const q = bi >= 0 ? M.defPts[me][bi] : M.bossPts[me][p.id % 2];
+      return far(q, 9) ? { x: q.x, y: q.y, z: q.z, pri: 60 } : null;
+    }
+    const open = d.bars.filter(b => b.team === en && b.st === 2);
+    if (open.length) { const q = M.bossPts[en][p.id % 2]; return far(q, 5) ? { x: q.x, y: q.y, z: q.z, pri: 100 } : null; }
+    let gs = d.gens.filter(g => g.team === en && g.hp > 0 && g.lane === lane);
+    if (!gs.length) gs = d.gens.filter(g => g.team === en && g.hp > 0);
+    if (!gs.length) return null;
+    const hurt = gs.find(g => g.hp < DOM.GEN_HP), g = hurt || gs[(p.id >> 2) % gs.length];   // todos al que ya está roto a medias
+    return far(g.atk, 2.5) ? { x: g.atk.x, y: g.atk.y, z: g.atk.z, pri: 100 } : null;
+  }
+  /* ---- comandos de prueba (solo en práctica, o en un servidor arrancado con dev) ---- */
+  domCommand(p, cmd, args) {
+    const d = this.dom, say = s => p.send && p.send({ t: 'ev', e: 'sys', m: s });
+    if (!d) return false;
+    if (!['gen', 'barrera', 'boss', 'tiempo', 'ir', 'dom'].includes(cmd)) return false;
+    if (this.o.online && !this.o.dev) { say('Los comandos de prueba son solo para la práctica'); return true; }
+    const n = parseInt(args[0], 10), fake = { team: 0, name: p.name, id: p.id, caps: 0, dmg: 0, send: null };
+    if (cmd === 'gen' && n >= 1 && n <= d.gens.length) { const g = d.gens[n - 1]; if (g.hp > 0) { fake.team = 1 - g.team; d.dirtyG.add(n - 1); this.domGenDown(n - 1, fake); } }
+    else if (cmd === 'barrera' && n >= 1 && n <= d.bars.length) { const bar = d.bars[n - 1]; fake.team = 1 - bar.team; d.gens.forEach((g, i) => { if (g.team === bar.team && g.lane === bar.lane && g.hp > 0) { d.dirtyG.add(i); this.domGenDown(i, fake); } }); }
+    else if (cmd === 'boss' && /^(rojo|azul)$/.test(args[0] || '') && Number.isFinite(+args[1])) { const t = args[0] === 'rojo' ? 0 : 1, b = d.boss[t]; b.hp = clamp(+args[1], 0, 100) / 100 * DOM.BOSS_HP; if (b.hp <= 0) { fake.team = 1 - t; this.domBossDown(t, fake); } }
+    else if (cmd === 'tiempo' && n >= 0) this.left = n;
+    else if (cmd === 'ir' && p.alive) {   // teletransporte: frente a un boss, a la plaza o a un generador
+      const M = MAPS[this.W.id], a = args[0], t = a === 'rojo' ? 0 : a === 'azul' ? 1 : -1;
+      const q = t >= 0 ? { x: M.bosses[t].x + (t ? 1 : -1) * 16, y: 0, z: 0, yaw: M.bosses[t].yaw + Math.PI } : a === 'centro' ? { x: 0, y: .5, z: 6, yaw: 0 } : n >= 1 && n <= d.gens.length ? { x: d.gens[n - 1].atk.x, y: d.gens[n - 1].atk.y, z: d.gens[n - 1].atk.z, yaw: Math.atan2(-(d.gens[n - 1].x - d.gens[n - 1].atk.x), -(d.gens[n - 1].z - d.gens[n - 1].atk.z)) } : null;
+      if (!q) return say('Uso: /ir rojo · /ir azul · /ir centro · /ir 1-12 (generador)'), true;
+      p.s.x = q.x; p.s.y = q.y; p.s.z = q.z; p.s.vx = p.s.vy = p.s.vz = 0; p.yaw = q.yaw;
+      if (p.send) p.send({ t: 'ev', e: 'fix', p: [q.x, q.y, q.z], yaw: q.yaw });
+    }
+    else say('Prueba: /gen 1-12 · /barrera 1-6 (1-3 rojas, 4-6 azules: norte, centro, sur) · /boss rojo|azul 0-100 · /tiempo SEGUNDOS · /ir rojo|azul|centro|1-12');
+    this.sendScores();
+    return true;
+  }
+
+  /* =====================================================================
+     MINIONS DEFENSORES (Captura el dominio)
+     Robotitos del color de su equipo que cuidan cada generador: patrullan alrededor, persiguen al que se
+     acerca, lo atacan y vuelven al puesto si se aleja. Son entidades del servidor, distintas de los bots
+     jugadores: no entran al marcador ni al tablero, dan créditos al matarlos y vuelven a aparecer cada
+     DOM.MIN.RESP mientras su generador siga en pie. Al caer el generador, los suyos se apagan.
+     Estados (m.st): 0 patrulla · 1 persigue · 2 ataca · 3 vuelve al puesto.
+     Los disparos contra ellos se validan con el mismo rebobinado que contra los jugadores (m.hist).
+     ===================================================================== */
+  domMinSetup() {
+    const d = this.dom; if (!d) return;
+    d.mins = []; d.mid = 1; d.minT = 0; d.minSent = new Map();
+    d.ola = 0; d.olaT = DOM.MIN.OLA_INI; d.rutas = {};
+    for (const p of this.players.values()) p.minSent = null;
+    d.gens.forEach((g, gi) => { for (let k = 0; k < DOM.MIN.POR_GEN; k++) this.domMinSpawn(gi, k); });
+  }
+  // cuánto crecieron los minions con el tiempo (vida y daño)
+  domMinEscala() { return 1 + DOM.MIN.CRECE * Math.floor((DOM.TIME - this.left) / DOM.MIN.CRECE_CADA); }
+  /* Ruta de una oleada: del frente de su propia muralla al frente de los generadores rivales del mismo
+     carril, por la navegación de los bots (cruza puentes y túneles igual que un jugador). Se calcula una
+     vez por partida y se guarda simplificada (un punto cada ~4 m). */
+  domRuta(team, lane, haciaBoss) {
+    const d = this.dom, key = team * 10 + lane + (haciaBoss ? 5 : 0);
+    if (d.rutas[key]) return d.rutas[key];
+    const media = gs => ({ x: gs.reduce((s, g) => s + g.atk.x, 0) / gs.length, y: gs.reduce((s, g) => s + g.atk.y, 0) / gs.length, z: gs.reduce((s, g) => s + g.atk.z, 0) / gs.length });
+    const mias = d.gens.filter(g => g.team === team && g.lane === lane), suyas = d.gens.filter(g => g.team !== team && g.lane === lane);
+    const a = media(mias), M = MAPS[this.W.id], bp = M.bossPts && M.bossPts[1 - team] && M.bossPts[1 - team][lane === 2 ? 1 : 0];
+    const b = haciaBoss && bp ? { x: bp.x, y: bp.y || 0, z: bp.z } : media(suyas);
+    const ini = haciaBoss ? media(suyas) : a;
+    let ruta = [ini, b];
+    try {
+      const nav = getNav(this.W), s = findNode(nav, ini.x, ini.y, ini.z), e = findNode(nav, b.x, b.y, b.z);
+      if (s && e) {
+        const { prev } = dijkstra(nav, e.id, this.domBan(team));
+        const pts = []; let i = s.id, n = 0;
+        while (i >= 0 && n++ < 5000) { const q = nav.nodes[i]; pts.push({ x: q.x + .5, y: q.y, z: q.z + .5 }); if (i === e.id) break; i = prev[i]; }
+        if (pts.length > 1 && i === e.id) ruta = pts.filter((p, k) => k % 4 === 0 || k === pts.length - 1);
+      }
+    } catch (er) { /* sin navegación: línea recta */ }
+    return d.rutas[key] = ruta;
+  }
+  // sale una oleada: por cada carril, cuerpo a cuerpo y a distancia (y asedio cada tanto)
+  domOla() {
+    const d = this.dom, K2 = DOM.MIN; d.ola++;
+    for (const team of [0, 1]) for (let lane = 0; lane < 3; lane++) {
+      const ruta = this.domRuta(team, lane), ini = ruta[0];
+      const tipos = []; for (let k = 0; k < K2.OLA_C; k++) tipos.push(0); for (let k = 0; k < K2.OLA_D; k++) tipos.push(1);
+      if (d.ola % K2.ASEDIO_CADA === 0) tipos.push(2);
+      tipos.forEach((kind, k) => {
+        if (d.mins.filter(m => m.ola && m.team === team && m.hp > 0).length >= K2.MAX) return;
+        // en fila detrás del primer punto de la ruta, siempre en un lugar libre (si no, quedaría encajado)
+        let px = ini.x, pz = ini.z;
+        for (const [ox, oz] of [[(k % 3 - 1) * 1.2, ((k / 3) | 0) * 1.4], [0, 0], [1.2, 0], [-1.2, 0], [0, 1.2], [0, -1.2], [2, 2], [-2, -2]]) {
+          if (!solidAt(this.W, ini.x + ox, ini.y + .05, ini.z + oz, DOM.MIN.R, DOM.MIN.H)) { px = ini.x + ox; pz = ini.z + oz; break; }
+        }
+        const m = this.domMinNuevo(team, -1, kind, px, ini.y, pz);
+        m.ola = 1; m.lane = lane; m.ruta = ruta; m.wp = 1;
+      });
+    }
+    this.domEv({ a: 'ola', n: d.ola });
+  }
+  domMinNuevo(team, gi, kind, x, y, z) {
+    const d = this.dom, K2 = DOM.MIN, es = this.domMinEscala(), hpMax = (kind === 2 ? K2.HP_AS : K2.HP) * es;
+    const m = { id: d.mid++, team, gen: gi, kind, x, y, z, yaw: team ? Math.PI / 2 : -Math.PI / 2, hp: hpMax, hpMax, es,
+      st: 0, t: 0, tgt: 0, tk: 0, cd: .5 + Math.random(), home: { x, y, z }, ph: Math.random() * 6, hist: [] };
+    d.mins.push(m);
+    this.domEv({ a: 'min+', i: m.id, p: r3a([m.x, m.y, m.z]), k: m.kind, b: m.team });
+    return m;
+  }
+  domMinSpawn(gi, k) {
+    const d = this.dom, g = d.gens[gi]; let hx2, hz2;
+    if (!d || !g || g.hp <= 0) return null;
+
+    // se plantan en el camino por el que entra el rival (entre el generador y su punto de ataque): son la
+    // primera línea. Ese tramo siempre es terreno abierto y transitable, en cualquiera de los tres carriles.
+    const lado = k % 3 === 0 ? 0 : k % 3 === 1 ? 1 : -1, f = .62 + (k >> 1) * .12;
+    const ax = g.atk.x - g.x, az = g.atk.z - g.z, al = Math.hypot(ax, az) || 1;
+    const hx = g.x + ax * f - az / al * lado * 2.3, hz = g.z + az * f + ax / al * lado * 2.3, y0 = g.y + (g.atk.y - g.y) * f;
+    // si justo ahí hay una caja o una columna, prueba unos lugares cerca antes de rendirse
+    // tiene que quedar parado en el PISO del carril, no arriba de un parapeto o una caja: si no, después
+    // no se puede bajar y se queda clavado. Se busca el piso desde poco más arriba del suelo esperado.
+    let px = hx, pz = hz, py = y0, ok = false;
+    for (const [ox, oz] of [[0, 0], [1.6, 0], [-1.6, 0], [0, 1.6], [0, -1.6], [2.6, 2.6], [-2.6, -2.6], [-3.5, 0], [-5, 1.5], [-5, -1.5], [-7, 0]]) {
+      const qx = hx + ox * Math.sign(g.x || 1), qz = hz + oz, h = raycast(this.W, qx, y0 + .9, qz, 0, -1, 0, 4);
+      if (!h) continue;
+      const qy = y0 + .9 - h.t;
+      if (Math.abs(qy - y0) > .8) continue;
+      if (solidAt(this.W, qx, qy + .05, qz, DOM.MIN.R, DOM.MIN.H)) continue;
+      px = qx; pz = qz; py = qy; ok = true; break;
+    }
+    if (!ok) { px = g.atk.x; pz = g.atk.z; py = g.atk.y; }   // último recurso: el punto de ataque, que siempre es piso abierto
+    const hy = py; hx2 = px; hz2 = pz;
+    const m = this.domMinNuevo(g.team, gi, k % 2, hx2, hy, hz2);   // 0 cuerpo a cuerpo, 1 a distancia
+    m.yaw = Math.atan2(-ax / al, -az / al); m.k = k;
+    return m;
+  }
+  /* Estado de red: lista plana y cuantizada (id, x, y, z, giro, vida·8+estado). `delta` manda solo los que
+     cambiaron desde la última vez; un minion en su puesto no gasta nada, porque quieto no cambia nada. */
+  domMinState(delta) {
+    const d = this.dom; if (!d || !d.mins) return null;
+    const out = [];
+    for (const m of d.mins) {
+      if (m.hp <= 0) continue;
+      // el último número lleva vida, estado, equipo y tipo juntos: así el que entra a mitad de partida
+      // puede armar los minions que todavía no vio aparecer
+      const v = [m.id, r1(m.x), r1(m.y), r1(m.z), Math.round(m.yaw * 10), ((Math.round(m.hp / m.hpMax * 100) * 4 + m.st) * 2 + m.team) * 4 + m.kind];
+      if (delta) { const a = d.minSent.get(m.id); if (a && a[1] === v[1] && a[2] === v[2] && a[3] === v[3] && a[4] === v[4] && a[5] === v[5]) continue; d.minSent.set(m.id, v); }
+      out.push(v[0], v[1], v[2], v[3], v[4], v[5]);
+    }
+    return out.length ? out : null;
+  }
+  // envío por jugador: los minions dentro de DOM.MIN.INTERES metros, con delta propio de cada uno
+  domMinEnviar() {
+    const d = this.dom, R2 = DOM.MIN.INTERES * DOM.MIN.INTERES;
+    for (const p of this.players.values()) {
+      if (p.bot || !p.send || !p.joined) continue;
+      const vist = p.minSent || (p.minSent = new Map()), out = [];
+      for (const m of d.mins) {
+        if (m.hp <= 0) { vist.delete(m.id); continue; }
+        const dx = m.x - p.s.x, dz = m.z - p.s.z;
+        if (dx * dx + dz * dz > R2 && vist.has(m.id)) continue;   // lejos y ya lo conoce: no se manda
+        const v = [m.id, r1(m.x), r1(m.y), r1(m.z), Math.round(m.yaw * 10), ((Math.round(m.hp / m.hpMax * 100) * 4 + m.st) * 2 + m.team) * 4 + m.kind];
+        const a = vist.get(m.id);
+        if (a && a[1] === v[1] && a[2] === v[2] && a[3] === v[3] && a[4] === v[4] && a[5] === v[5]) continue;
+        vist.set(m.id, v); out.push(...v);
+      }
+      if (out.length) p.send({ t: 'mn', l: out });
+    }
+  }
+  tickMins(dt) {
+    const d = this.dom, K2 = DOM.MIN; if (!d || !d.mins || this.state !== 'play') return;
+    d.minT -= dt; d.olaT -= dt;
+    if (d.olaT <= 0) { d.olaT = K2.OLA_CADA; this.domOla(); }
+    const reponer = d.minT <= 0; if (reponer) d.minT = 2;
+    for (let i = d.mins.length - 1; i >= 0; i--) {
+      const m = d.mins[i];
+      if (m.hp <= 0) { if (m.ola || this.time - m.t > 1.5) { d.mins.splice(i, 1); d.minSent.delete(m.id); } continue; }
+      if (!m.ola && d.gens[m.gen].hp <= 0) { this.domMinDown(m, null, true); continue; }   // sin generador no hay guardianes
+      if (m.ola) this.tickOla(m, dt); else this.tickMin(m, dt);
+      if (this.state !== 'play') return;
+      const h = m.hist; h.push([this.time, m.x, m.y, m.z]); if (h.length > 28) h.shift();
+    }
+    if (reponer) for (let gi = 0; gi < d.gens.length; gi++) {
+      if (d.gens[gi].hp <= 0) continue;
+      // cada guardián caído vuelve a aparecer en su lugar pasados RESP segundos
+      d.guardT = d.guardT || {};
+      for (let k = 0; k < K2.POR_GEN; k++) {
+        if (d.mins.some(m => !m.ola && m.gen === gi && m.k === k && m.hp > 0)) { d.guardT[gi * 10 + k] = 0; continue; }
+        const key = gi * 10 + k; if (!d.guardT[key]) d.guardT[key] = this.time;
+        if (this.time - d.guardT[key] > K2.RESP) { d.guardT[key] = 0; this.domMinSpawn(gi, k); }
+      }
+    }
+  }
+  tickMin(m, dt) {
+    const K2 = DOM.MIN, g = this.dom.gens[m.gen];
+    m.cd -= dt;
+    // a quién tiene cerca (lo recalcula cada 1/4 de segundo)
+    m.t2 = (m.t2 || 0) - dt;
+    if (m.t2 <= 0) {
+      m.t2 = .25; let mejor = null, md = 1e9;
+      for (const t of this.players.values()) {
+        if (!t.alive || !t.joined || t.team === m.team || t.team < 0) continue;
+        const dd = Math.hypot(t.s.x - m.x, t.s.z - m.z);
+        if (dd > K2.SEE || Math.abs(t.s.y - m.y) > 7) continue;
+        if (Math.hypot(t.s.x - m.home.x, t.s.z - m.home.z) > K2.LEASH) continue;
+        if (dd > 11 && !los(this.W, m.x, m.y + 1.2, m.z, t.s.x, t.s.y + 1.2, t.s.z) && !los(this.W, m.x, m.y + 1.2, m.z, t.s.x, t.s.y + .3, t.s.z)) continue;   // a menos de 8 m lo tiene encima: no hace falta verlo
+        if (dd < md) { md = dd; mejor = t; }
+      }
+      m.tgt = mejor ? mejor.id : 0;
+    }
+    const t = m.tgt > 0 ? this.players.get(m.tgt) : null;
+    const alcance = m.kind ? K2.RANGE_D : K2.RANGE_C;
+    let wx = 0, wz = 0;
+    if (t && t.alive) {
+      const dx = t.s.x - m.x, dz = t.s.z - m.z, dl = Math.hypot(dx, dz) || 1e-6;
+      m.yaw = Math.atan2(-dx, -dz);
+      if (dl > alcance * .85) { m.st = 1; wx = dx / dl; wz = dz / dl; }
+      else {
+        m.st = 2;
+        if (dl < alcance * .5 && m.kind) { wx = -dx / dl * .6; wz = -dz / dl * .6; }   // el de lejos se despega
+        if (m.cd <= 0) {
+          m.cd = m.kind ? K2.RATE_D : K2.RATE_C;
+          if (m.kind) this.domMinShoot(m, t); else { this.damage(t, K2.DMG_C * m.es, null, null, [dx / dl, .3, dz / dl], .04, 'minion'); this.domEv({ a: 'minhit', i: m.id }); }
+          if (this.state !== 'play') return;
+        }
+      }
+    } else {
+      // patrulla: camina tranquilo entre puntos al azar cerca de su puesto, con pausas cortas
+      m.patT = (m.patT || 0) - dt;
+      if (!m.pat || m.patT <= 0) { const a = Math.random() * 6.283, r = 1 + Math.random() * K2.PATRULLA; m.pat = { x: m.home.x + Math.cos(a) * r, z: m.home.z + Math.sin(a) * r }; m.patT = 3 + Math.random() * 3; }
+      const dx = m.pat.x - m.x, dz = m.pat.z - m.z, dl = Math.hypot(dx, dz);
+      if (dl > .4) { m.st = 3; wx = dx / dl * .55; wz = dz / dl * .55; m.yaw = Math.atan2(-dx, -dz); }
+      else m.st = 0;
+    }
+    // si choca con una caja o un parapeto, se corre de costado un momento y la rodea
+    if (m.rodeoT > 0) { m.rodeoT -= dt; const px = -wz || 1, pz = wx; wx = (wx + px * m.rodeo * 1.6) * .6; wz = (wz + pz * m.rodeo * 1.6) * .6; }
+    if (!this.domMinMove(m, wx, wz, dt) && (wx || wz) && m.rodeoT <= 0) { m.rodeo = Math.random() < .5 ? -1 : 1; m.rodeoT = .7; if (m.st === 3) m.patT = 0; }
+    if (Math.hypot(m.x - m.home.x, m.z - m.home.z) > DOM.MIN.LEASH * 1.4) { m.x = m.home.x; m.y = m.home.y; m.z = m.home.z; m.st = 0; m.tgt = 0; m.hist.length = 0; }   // red de seguridad
+  }
+  /* Oleada: avanza por su ruta y se frena a pelear. Prioridad (como en el LoL): 1) minions rivales,
+     2) jugadores rivales que dañaron a un aliado hace poco, 3) jugadores rivales, 4) generadores del carril
+     (y el boss, si la barrera ya cayó). Si no hay nada al alcance, sigue marchando. */
+  tickOla(m, dt) {
+    const K2 = DOM.MIN, d = this.dom; m.cd -= dt; m.t2 = (m.t2 || 0) - dt;
+    const alc = m.kind === 2 ? K2.RANGE_AS : m.kind ? K2.RANGE_D * .6 : K2.RANGE_C;
+    if (m.t2 <= 0) {
+      m.t2 = .3; m.tgt = 0; m.tk = 0; let md = K2.SEE_OLA, pri = 9;
+      const ve = (x, y, z) => los(this.W, m.x, m.y + 1.1, m.z, x, y, z);
+      const prev = setPasa(m.team);
+      try {
+        for (const o of d.mins) { if (o.hp <= 0 || o.team === m.team) continue; const dd = Math.hypot(o.x - m.x, o.z - m.z); if (dd < md && Math.abs(o.y - m.y) < 4 && ve(o.x, o.y + 1, o.z)) { md = dd; m.tgt = o.id; m.tk = 1; pri = 1; } }
+        if (pri > 1) for (const p of this.players.values()) {
+          if (!p.alive || !p.joined || p.team === m.team || p.team < 0) continue;
+          const dd = Math.hypot(p.s.x - m.x, p.s.z - m.z), pr = this.time - (p.aggT || -99) < K2.AGGRO ? 2 : 3;
+          if (dd > K2.SEE_OLA || Math.abs(p.s.y - m.y) > 5 || pr > pri || (pr === pri && dd >= md)) continue;
+          if (!ve(p.s.x, p.s.y + 1.2, p.s.z)) continue;
+          md = dd; pri = pr; m.tgt = p.id; m.tk = 2;
+        }
+        if (!m.tgt) {   // estructuras: generadores vivos de su carril, o el boss si la barrera ya cayó
+          d.gens.forEach((g, gi) => { if (g.hp <= 0 || g.team === m.team || g.lane !== m.lane) return; const dd = Math.hypot(g.x - m.x, g.z - m.z); if (dd < Math.max(md, alc + 3)) { md = dd; m.tgt = gi + 1; m.tk = 3; } });
+          const b = d.boss[1 - m.team];
+          if (!m.tgt && b && b.hp > 0) { const dd = Math.hypot(b.x - m.x, b.z - m.z); if (dd < alc + 7) { m.tgt = 1; m.tk = 4; } }
+        }
+      } finally { setPasa(prev); }
+    }
+    // dónde está el objetivo
+    let tx = 0, ty = 0, tz = 0, vivo = false, rad = 0;
+    if (m.tk === 1) { const o = d.mins.find(q => q.id === m.tgt); if (o && o.hp > 0) { tx = o.x; ty = o.y + 1; tz = o.z; vivo = true; } }
+    else if (m.tk === 2) { const p = this.players.get(m.tgt); if (p && p.alive) { tx = p.s.x; ty = p.s.y + 1; tz = p.s.z; vivo = true; } }
+    else if (m.tk === 3) { const g = d.gens[m.tgt - 1]; if (g && g.hp > 0) { tx = g.x; ty = g.y + 1.5; tz = g.z; vivo = true; rad = 1.6; } }
+    else if (m.tk === 4) { const b = d.boss[1 - m.team]; if (b && b.hp > 0) { tx = b.x; ty = 3; tz = b.z; vivo = true; rad = 4; } }
+    let wx = 0, wz = 0, sp = 1;
+    if (vivo) {
+      const dx = tx - m.x, dz = tz - m.z, dl = Math.hypot(dx, dz) || 1e-6;
+      m.yaw = Math.atan2(-dx, -dz);
+      if (dl - rad > alc * .9) { m.st = 1; wx = dx / dl; wz = dz / dl; }
+      else {
+        m.st = 2;
+        if (m.cd <= 0) {
+          m.cd = m.kind === 2 ? K2.RATE_AS : m.kind ? K2.RATE_D : K2.RATE_C;
+          const dmg = (m.kind === 2 ? K2.DMG_AS : m.kind ? K2.DMG_D : K2.DMG_C) * m.es;
+          this.domEv(m.kind ? { a: 'minfire', i: m.id, p: r3a([tx, ty, tz]) } : { a: 'minhit', i: m.id });
+          if (m.tk === 1) { const o = d.mins.find(q => q.id === m.tgt); if (o) this.domMinDamage(o, dmg, null); }
+          else if (m.tk === 2) { const p = this.players.get(m.tgt); if (p) this.damage(p, dmg, null, null, [dx / dl, .2, dz / dl], .03, 'minion'); }
+          else {
+            const gd = (m.kind === 2 ? K2.GEN_AS : m.kind ? K2.GEN_D : K2.GEN_C) * m.es * (m.tk === 4 ? K2.BOSS_F : 1);
+            const fake = { team: m.team, id: 0, name: 'Minions', caps: 0, cr: 0, dmg: 0, send: null };
+            this.domHit(fake, m.tk === 3 ? 'g' : 'b', m.tk === 3 ? m.tgt - 1 : 1 - m.team, gd, false);
+          }
+          if (this.state !== 'play') return;
+        }
+      }
+    } else {
+      // sigue la ruta; al llegar al final y no tener nada, si la barrera del carril cayó, sigue hacia el boss
+      const r = m.ruta; let w = r[Math.min(m.wp, r.length - 1)];
+      if (Math.hypot(w.x - m.x, w.z - m.z) < 1.6) {
+        if (m.wp < r.length - 1) m.wp++;
+        else { const bar = d.bars.find(b => b.team !== m.team && b.lane === m.lane); if (bar && bar.st === 2 && !m.alBoss) { m.alBoss = 1; m.ruta = this.domRuta(m.team, m.lane, true); m.wp = 1; } }
+        w = m.ruta[Math.min(m.wp, m.ruta.length - 1)];
+      }
+      const dx = w.x - m.x, dz = w.z - m.z, dl = Math.hypot(dx, dz);
+      if (dl > .3) { m.st = 3; wx = dx / dl; wz = dz / dl; m.yaw = Math.atan2(-dx, -dz); sp = K2.SPD_OLA / K2.SPD; } else m.st = 0;
+    }
+    // separación simple de los compañeros: nadie se amontona
+    for (const o of d.mins) { if (o === m || o.hp <= 0 || o.team !== m.team) continue; const ex = m.x - o.x, ez = m.z - o.z, e2 = ex * ex + ez * ez; if (e2 < K2.SEP * K2.SEP && e2 > 1e-6) { const e = Math.sqrt(e2), f = (K2.SEP - e) / K2.SEP * .8; wx += ex / e * f; wz += ez / e * f; } }
+    if (m.rodeoT > 0) { m.rodeoT -= dt; const px = -wz || 1, pz = wx; wx = (wx + px * m.rodeo * 1.6) * .6; wz = (wz + pz * m.rodeo * 1.6) * .6; }
+    const x0 = m.x, z0 = m.z;
+    if (!this.domMinMove(m, wx * sp, wz * sp, dt) && (wx || wz) && m.rodeoT <= 0) { m.rodeo = Math.random() < .5 ? -1 : 1; m.rodeoT = .7; }
+    // trabado: si en 2 s casi no se movió queriendo caminar, salta al punto siguiente; si sigue, se reubica en él
+    if (m.st === 3 && Math.hypot(m.x - x0, m.z - z0) < .02) m.trab = (m.trab || 0) + dt; else m.trab = 0;
+    if (m.trab > 2) { m.trab = 0; m.atasco = (m.atasco || 0) + 1; if (m.wp < m.ruta.length - 1) m.wp++; if (m.atasco > 2) { const w = m.ruta[Math.min(m.wp, m.ruta.length - 1)]; m.x = w.x; m.y = w.y; m.z = w.z; m.hist.length = 0; m.atasco = 0; } }
+  }
+  // movimiento sencillo: avanza pegado al piso y no atraviesa paredes ni barreras de otros
+  domMinMove(m, wx, wz, dt) {
+    if (!wx && !wz) return true;
+    const K2 = DOM.MIN, sp = K2.SPD * dt, prev = setPasa(m.team);
+    try {
+      for (const [ax, az] of [[wx * sp, wz * sp], [wx * sp, 0], [0, wz * sp]]) {
+        if (!ax && !az) continue;
+        const nx = m.x + ax, nz = m.z + az;
+        // escalón: busca el piso un poco más arriba y se deja caer
+        const h = raycast(this.W, nx, m.y + K.STEP + .4, nz, 0, -1, 0, 3.4);
+        if (!h) continue;                                   // no hay piso: no se tira al vacío
+        const ny = m.y + K.STEP + .4 - h.t;
+        if (ny - m.y > K.STEP + .06) continue;
+        if (solidAt(this.W, nx, ny + .05, nz, K2.R, K2.H)) continue;
+        m.x = nx; m.z = nz; m.y = ny; return true;
+      }
+      return false;
+    } finally { setPasa(prev); }
+  }
+  domMinShoot(m, t) {
+    const K2 = DOM.MIN, dx = t.s.x - m.x, dy = t.s.y + 1 - (m.y + 1.1), dz = t.s.z - m.z, dl = Math.hypot(dx, dy, dz) || 1;
+    this.domEv({ a: 'minfire', i: m.id, p: r3a([t.s.x, t.s.y + 1, t.s.z]) });
+    const prev = setPasa(m.team), h = raycast(this.W, m.x, m.y + 1.1, m.z, dx / dl, dy / dl, dz / dl, dl); setPasa(prev);
+    if (h) return;   // le pegó a una pared
+    this.damage(t, K2.DMG_D * (m.es || 1), null, null, [dx / dl, .2, dz / dl], .03, 'minion');
+  }
+  // un jugador dice que le pegó a un minion (id = -1000 - idMinion)
+  domMinClaim(p, o, d, id, n, W_) {
+    const dm = this.dom; if (!dm || !dm.mins) return;
+    const m = dm.mins.find(q => q.id === -1000 - id);
+    if (!m || m.hp <= 0 || m.team === p.team) return;
+    const falso = { s: { x: m.x, y: m.y, z: m.z, vx: 0, vz: 0 }, hist: m.hist.map(h => [h[0], h[1], h[2], h[3]]) };
+    if (!this.validHit(o, d, falso, W_, p)) return;
+    const dist = Math.hypot(m.x - o[0], m.y + 1 - o[1], m.z - o[2]);
+    const base = W_.carga ? this.cargaDmg(W_, p.carga || 0) : W_.dmg;
+    const dmg = W_.melee ? base : W_.type === 'rail' ? base : n * base * falloff(W_, dist);
+    this.domMinDamage(m, dmg * this.mult(p), p);
+  }
+  domMinDamage(m, amt, att) {
+    if (m.hp <= 0 || !(amt > 0)) return 0;
+    const real = Math.min(m.hp, amt); m.hp -= real;
+    if (att && att.send) att.send({ t: 'ev', e: 'hit', id: -1000 - m.id, n: Math.round(real), k: m.hp <= 0 ? 1 : 0, h: 0 });
+    if (m.hp <= 0) this.domMinDown(m, att, false);
+    return real;
+  }
+  domMinDown(m, att, apagado) {
+    m.hp = 0; m.t = this.time; m.st = 0; m.tgt = 0; m.hist.length = 0;
+    if (att && att.id > 0) { this.credit(att, DOM.MIN.CRED + DOM.MIN.LAST_HIT, 'último golpe a un minion'); att.mins = (att.mins || 0) + 1; }
+    this.domEv({ a: 'min-', i: m.id, p: r3a([m.x, m.y, m.z]), off: apagado ? 1 : 0, b: m.team });
+  }
+  // daño de área (explosiones y fuego) a los minions del equipo rival
+  domMinBlast(own, x, y, z, rad, dmg, sfall) {
+    const dm = this.dom; if (!dm || !dm.mins || !own) return;
+    for (const m of dm.mins) {
+      if (m.hp <= 0 || m.team === own.team) continue;
+      const ds = Math.hypot(x - m.x, Math.max(0, Math.abs(y - (m.y + .8)) - .8), z - m.z);
+      if (ds < rad) this.domMinDamage(m, dmg * (1 - sfall * ds / rad), own);
+    }
+  }
+  // para los bots: el minion rival más cercano que estorba y se puede ver
+  domMinTarget(p, range) {
+    const dm = this.dom; if (!dm || !dm.mins) return null;
+    let best = null, bd = 1e9;
+    const prev = setPasa(p.team);
+    try {
+      for (const m of dm.mins) {
+        if (m.hp <= 0 || m.team === p.team) continue;
+        const dd = Math.hypot(m.x - p.s.x, m.z - p.s.z);
+        if (dd > range || dd > bd) continue;
+        if (!los(this.W, p.s.x, p.s.y + K.EYE, p.s.z, m.x, m.y + 1, m.z)) continue;
+        bd = dd; best = m;
+      }
+    } finally { setPasa(prev); }
+    return best;
+  }
+
   /* ---- partida ---- */
   scores() {
     const gg = this.mode.gg;
     return [...this.players.values()].filter(p => p.joined)
-      .sort((a, b) => (gg ? b.lvl - a.lvl : 0) || (this.mode.teams ? b.caps - a.caps : 0) || b.frags - a.frags || a.deaths - b.deaths)
-      .map(p => [p.id, p.name, p.frags, p.deaths, p.bot ? 0 : p.ping, p.bot ? 1 : 0, p.color, p.cr, p.lvl, p.team, p.caps, p.plvl, Math.round(p.dmg || 0)]);
+      .sort((a, b) => (gg ? b.lvl - a.lvl : 0) || (this.mode.teams ? b.caps - a.caps : 0) || b.kills - a.kills || (this.mode.crown ? b.ctime - a.ctime : 0) || a.deaths - b.deaths)
+      .map(p => [p.id, p.name, p.kills, p.deaths, p.bot ? 0 : p.ping, p.bot ? 1 : 0, p.color, p.cr, p.lvl, p.team, p.caps, p.plvl, Math.round(p.dmg || 0), p.cpts || 0, Math.round(p.ctime || 0), this.dom ? [p.gens | 0, p.bars | 0, Math.round(p.bdmg || 0), p.mins | 0] : null]);
   }
-  sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, st: this.state, map: this.W.id, mode: this.o.mode, ts: this.ts, fs: this.flagState(), cd: Math.ceil(this.countT), hn: this.humanCount(false), mp: this.mode.minPlayers || 0 }); }
+  sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, st: this.state, map: this.W.id, mode: this.o.mode, ts: this.ts, fs: this.flagState(), cd: Math.ceil(this.countT), hn: this.humanCount(false), mp: this.mode.minPlayers || 0, cw: this.crownState(), dm: this.domState(), iu: this.items.map(it => it.up ? 1 : 0).join('') }); }   // iu: qué ítems están en pie; el cliente se resincroniza cada segundo, así un botiquín nunca queda "desaparecido" por un aviso perdido
   endMatch() {
     if (this.state !== 'play') return;
     this.state = 'inter'; this.interT = 25;
@@ -2267,19 +4655,21 @@ class Game {
     this.voteOpts = this.o.rotate && ms.length > 1 ? ms.slice() : null;
     const next = this.voteOpts ? null : this.W.id;
     this.nextMap = next;
+    // equipo ganador: en Captura el dominio lo dicen los bosses; en el resto, el marcador
+    const wt = !this.mode.teams ? -1 : this.dom ? this.domWinner() : this.ts[0] === this.ts[1] ? -1 : this.ts[0] > this.ts[1] ? 0 : 1;
     let w = l.length ? l[0][1] : '';
-    if (this.mode.teams) w = this.ts[0] === this.ts[1] ? '' : 'EQUIPO ' + TEAMS[this.ts[0] > this.ts[1] ? 0 : 1].name.toUpperCase();
+    if (this.mode.teams) w = wt < 0 ? '' : 'EQUIPO ' + TEAMS[wt].name.toUpperCase();
     // experiencia para los que tienen cuenta
     if (this.o.onXP) {
-      const wt = this.mode.teams ? (this.ts[0] === this.ts[1] ? -1 : this.ts[0] > this.ts[1] ? 0 : 1) : -1;
       for (const p of this.players.values()) {
         if (!p.joined || p.bot || !p.acct) continue;
         const won = this.mode.teams ? p.team === wt : !!(l.length && l[0][0] === p.id);
         const xp = this.matchXP(p, true, won);
-        if (xp > 0) this.o.onXP(p, xp, { kills: p.kills, partida: 1, victoria: won ? 1 : 0 });
+        if (xp > 0) this.o.onXP(p, xp, { kills: p.rkills, partida: 1, victoria: won ? 1 : 0 });
       }
     }
-    this.bcast({ t: 'end', l, w, wt: this.mode.teams ? (this.ts[0] === this.ts[1] ? -1 : this.ts[0] > this.ts[1] ? 0 : 1) : -1, ts: this.ts, next, nextName: next ? MAPS[next].name : '', mv: this.voteState(), secs: this.interT });
+    if (this.dom) { this.dom.orbs.length = 0; this.dom.zones.length = 0; }
+    this.bcast({ t: 'end', l, w, wt, dw: this.domSummary(), dm: this.domState(), ts: this.ts, next, nextName: next ? MAPS[next].name : '', mv: this.voteState(), secs: this.interT });
     this.projs.length = 0;
   }
   // resultado de la votación: el más votado; empate entre los más votados o sin votos → al azar
@@ -2298,18 +4688,21 @@ class Game {
     for (const q of this.players.values()) if (q.send && q.joined) q.send({ t: 'mv', o: st.o, c: st.c, me: this.mapVotes.get(q.id) || null });
   }
   restart(mapId) {
+    if (this.mvote) { this.mvote = null; this.sendVote(); }
     this.bans.clear(); this.kickN.clear();
     if (!mapId && !this.nextMap && this.voteOpts) this.nextMap = this.voteWinner();
     this.voteOpts = null; this.mapVotes.clear();
     for (const s of this.shards) this.bcast({ t: 'ev', e: 'shx', id: s.id }); this.shards.length = 0;
+    if (this.crown) { this.crown = null; this.bcast({ t: 'ev', e: 'crw', a: 'off' }); }
+    if (this.storm) { this.storm = null; this.bcast({ t: 'ev', e: 'stm', a: 'off' }); }
     const id = mapId || this.nextMap || this.W.id; this.nextMap = null;
-    if (id !== this.W.id) this.setMap(id); else this.resetFlags();
+    if (id !== this.W.id) this.setMap(id); else { this.resetFlags(); this.domSetup(); this.domMinSetup(); }
     this.state = 'play'; this.left = this.o.timelimit; this.projs.length = 0;
     if (this.mode.minPlayers && this.o.online && this.humanCount(false) < this.mode.minPlayers) this.state = 'lobby';
     for (const it of this.items) { it.up = !it.off; it.t = 0; it.type = it.base; }
-    this.bcast({ t: 'start', map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), tm: this.time, fs: this.flagState(), ts: this.ts });
+    this.bcast({ t: 'start', map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), tm: this.time, fs: this.flagState(), ts: this.ts, dm: this.domState(), mn: this.domMinState() });
     for (const p of this.players.values()) if (p.joined) {
-      p.ready = false; p.frags = 0; p.deaths = 0; p.cr = ECON.START; p.unl = OW0(); p.perk = { ar: 0, am: 0 }; p.streak = 0; p.lvl = 0; p.caps = 0; p.kills = 0; p.dmg = 0; p.bestLife = 0; p.lifeT0 = p.alive ? this.time : null; p.joinT = this.time; p.dirty = true;
+      p.ready = false; p.kills = 0; p.deaths = 0; p.cr = ECON.START; p.unl = OW0(); p.eq = 1; p.perk = { ar: 0, am: 0 }; p.cards = []; p.cof = null; p.cofT = 0; p.burnT = 0; p.streak = 0; p.lvl = 0; p.caps = 0; p.rkills = 0; p.cpts = 0; p.ctime = 0; p.stormT = 0; p.dmg = 0; p.bestLife = 0; p.lifeT0 = p.alive ? this.time : null; p.joinT = this.time; p.dirty = true;
       this.spawn(p);
     }
     this.sendScores();
@@ -2386,8 +4779,9 @@ class Game {
       if (tr.water) this.damage(p, 999, null, null, null, 0, 'water');
       if (p.alive && p.s.y < K.KILLY) this.damage(p, 999, null, null, null, 0, 'void');
     }
+    if (this.mvote) { this.mvT = (this.mvT || 0) - dt; if (this.mvT <= 0) { this.mvT = 1; this.checkMapVote(); if (this.mvote) this.sendVote(); } }
     if (this.vote) { this.voteT = (this.voteT || 0) - dt; if (this.voteT <= 0) { this.voteT = 1; this.checkVote(); if (this.vote) this.sendVote(); } }
-    if (this.live()) { this.tickProjs(dt); this.tickFires(dt); this.tickItems(dt); this.tickShards(dt); if (this.flags.length && this.state === 'play') this.tickFlags(dt); }
+    if (this.live()) { this.tickProjs(dt); this.tickFires(dt); this.tickItems(dt); this.tickShards(dt); this.tickBurn(dt); if (this.mode.cards) this.tickCards(dt); if (this.mode.crown) this.tickCrown(dt); if (this.mode.storm) this.tickStorm(dt); if (this.flags.length && this.state === 'play') this.tickFlags(dt); if (this.dom) { this.tickDom(dt); this.tickMins(dt); } }
     this.snapT -= dt;
     if (this.snapT <= 1e-6) { this.snapT += .05; if (this.snapT < 0) this.snapT = 0; this.snapshot(); }
     this.scT -= dt;
@@ -2397,35 +4791,333 @@ class Game {
     const ps = [];
     for (const p of this.players.values()) {
       if (!p.joined) continue;
-      ps.push([p.id, r2(p.s.x), r2(p.s.y), r2(p.s.z), r2(p.yaw), r2(p.pitch), p.w, (p.alive ? 1 : 0) | (p.quadT > 0 ? 2 : 0) | (p.s.on ? 4 : 0) | (p.s.crouch ? 8 : 0), r2(p.s.vx), r2(p.s.vy), r2(p.s.vz)]);
+      ps.push([p.id, r2(p.s.x), r2(p.s.y), r2(p.s.z), r2(p.yaw), r2(p.pitch), p.w, (p.alive ? 1 : 0) | (p.quadT > 0 ? 2 : 0) | (p.s.on ? 4 : 0) | (p.s.crouch ? 8 : 0) | (p.s.slide ? 16 : 0), r2(p.s.vx), r2(p.s.vy), r2(p.s.vz)]);
       if (p.bot && p.ai && this.flags.length && !p.alive) p.ai.path = null;
     }
-    this.bcast({ t: 'sn', tm: Math.round(this.time * 1000) / 1000, ps });
+    const sn = { t: 'sn', tm: Math.round(this.time * 1000) / 1000, ps };
+    if (this.dom) {   // Captura el dominio: solo viaja lo que cambió (vida y giro de los bosses, vida de generadores, orbes)
+      // bs por boss: vida, giro, ataque, etapa y lo que le queda a la etapa (en décimas). Se manda solo cuando
+      // cambia algo que se note, así un boss quieto no gasta red
+      const d = this.dom, bs = d.boss.map(b => [Math.ceil(b.hp), r2(b.yaw), b.atk, b.ph, Math.round(b.t * 10)]);
+      const key = d.boss.map(b => Math.ceil(b.hp) + ',' + Math.round(b.yaw * 12) + ',' + b.atk + b.ph).join();
+      if (key !== d.bsKey) { d.bsKey = key; sn.bs = bs; }
+      if (d.dirtyG.size) { sn.gh = [...d.dirtyG].map(i => [i, Math.ceil(d.gens[i].hp)]); d.dirtyG.clear(); }
+      if (d.orbs.length) sn.ob = d.orbs.map(o => [o.id, r2(o.x), r2(o.y), r2(o.z), o.team]);
+      // minions: cada dos snapshots (10 por segundo) y solo si alguno se movió o cambió
+      // minions: aparte, a cada jugador solo los que tiene cerca (radio de interés) y solo si cambiaron
+      if (d.mins && d.mins.length) { d.minN = (d.minN || 0) + 1; if (d.minN % DOM.MIN.RED_CADA === 0) this.domMinEnviar(); }
+    }
+    this.bcast(sn);
     for (const p of this.players.values()) {
       if (p.bot || !p.send || !p.joined || !p.dirty) continue;
       p.dirty = false;
-      p.send({ t: 'you', hp: Math.ceil(p.hp), ar: Math.ceil(p.ar), am: Object.assign({}, p.am), ow: p.ow.slice(), q: Math.ceil(p.quadT), al: p.alive ? 1 : 0, cr: p.cr, unl: p.unl.slice(), perk: Object.assign({}, p.perk), lvl: p.lvl });
+      p.send({ t: 'you', hp: Math.ceil(p.hp), ar: Math.ceil(p.ar), am: Object.assign({}, p.am), ow: p.ow.slice(), q: Math.ceil(p.quadT), al: p.alive ? 1 : 0, cr: p.cr, unl: p.unl.slice(), perk: Object.assign({}, p.perk), lvl: p.lvl, ck: this.mode.cards ? p.rkills : 0 });
     }
   }
 
   /* =====================================================================
      BOTS
      ===================================================================== */
+
+  /* =====================================================================
+     CARTAS DE MEJORA (estilo roguelike) — Arena, Team Deathmatch y Captura el dominio
+     A las 3, 7 y 12 bajas le aparecen 3 cartas al azar (de 9) y elige una con 1-2-3.
+     Son del servidor: el cliente solo las dibuja. Máximo 3 por partida y duran hasta el final.
+     ===================================================================== */
+
+  // se llama desde kill() cada vez que alguien sube una baja
+  checkCard(p) {
+    if (!this.mode.cards || p.cof || p.cards.length >= CARD_MAX) return;
+    if (p.rkills < CARD_AT[p.cards.length]) return;
+    this.offerCards(p);
+  }
+  // tres al azar entre las que todavía no tiene
+  offerCards(p) {
+    const pool = [];
+    for (const c of CARDS) if (!hasCard(p, c.id)) pool.push(c.id);
+    for (let i = pool.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0, t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+    const l = pool.slice(0, CARD_PICK);
+    if (!l.length) return;
+    p.cof = l; p.cofT = CARD_TIME;
+    if (p.bot) { this.takeCard(p, (Math.random() * l.length) | 0); return; }   // los bots eligen al azar y al toque, así no quedan en desventaja
+    if (p.send) p.send({ t: 'ev', e: 'cof', l, n: p.cards.length + 1, of: CARD_MAX, d: CARD_TIME });
+  }
+  takeCard(p, i) {
+    if (!p.cof || !p.cof.length) return;
+    const id = p.cof[clamp(i | 0, 0, p.cof.length - 1)];
+    p.cof = null; p.cofT = 0;
+    p.cards.push(id); p.dirty = true;
+    if (hasCard(p, 'trofeo') && p.alive) { p.ar = Math.min(100, p.ar + CARD_FX.KILL_AR); }   // la que da blindaje arranca cobrando la baja que la destrabó
+    if (p.send) p.send({ t: 'ev', e: 'card', id, l: p.cards.slice() });
+    if (!p.bot) this.bcast({ t: 'ev', e: 'sys', m: p.name + ' tomó la carta ' + CARD_BY[id].name });
+  }
+  // cuenta para atrás de la elección: si se le acaba el tiempo se queda con la primera
+  tickCards(dt) {
+    for (const p of this.players.values()) {
+      if (!p.cof) continue;
+      p.cofT -= dt;
+      if (p.cofT <= 0) this.takeCard(p, 0);
+    }
+  }
+
+  /* ---- toque ígneo: el golpeado queda prendido fuego y se va quemando ---- */
+  ignite(t, att) {
+    t.burnT = CARD_FX.BURN_T; t.burnBy = att.id; t.burnTick = CARD_FX.BURN_EVERY;
+    this.bcast({ t: 'ev', e: 'burn', id: t.id, d: CARD_FX.BURN_T });
+  }
+  tickBurn(dt) {
+    for (const t of this.players.values()) {
+      if (!(t.burnT > 0)) continue;
+      if (!t.alive || !t.joined) { t.burnT = 0; continue; }
+      t.burnT -= dt; t.burnTick -= dt;
+      if (t.burnTick > 0) continue;
+      t.burnTick = CARD_FX.BURN_EVERY;
+      this.damage(t, CARD_FX.BURN_DMG, this.players.get(t.burnBy) || null, null, null, 0, 'fire');
+      if (!this.live()) return;
+    }
+  }
+
+  /* ---- carga mortal: el que muere explota (se llama al final de kill()) ---- */
+  deathBlast(v) {
+    const R = CARD_FX.BLAST_R, D = CARD_FX.BLAST_DMG, ox = v.s.x, oy = v.s.y + .9, oz = v.s.z;
+    this.bcast({ t: 'ev', e: 'cblast', p: r3a([ox, oy, oz]), r: R });
+    for (const t of this.players.values()) {
+      if (!t.alive || !t.joined || t === v) continue;
+      if (this.mode.teams && t.team === v.team) continue;
+      const d = boxDist(ox, oy, oz, t.s.x, t.s.y, t.s.z);
+      if (d >= R) continue;
+      if (!los(this.W, ox, oy, oz, t.s.x, t.s.y + .9, t.s.z) && !los(this.W, ox, oy, oz, t.s.x, t.s.y + .2, t.s.z)) continue;
+      const cx = t.s.x - ox, cy = t.s.y + .9 - oy, cz = t.s.z - oz, cl = Math.hypot(cx, cy, cz) || 1;
+      this.damage(t, D * (1 - .5 * d / R), v, null, [cx / cl, cy / cl, cz / cl], .16, 'cblast');
+      if (!this.live()) return;
+    }
+  }
+
+  /* =====================================================================
+     LA CORONA — solo los modos con `crown` (hoy nomás Arena)
+     Hay una sola corona por partida y la lleva uno solo. Aparece a los 45 s de que arranca
+     el reloj (CROWN.AT) en un punto de aparición seguro y se avisa a todos.
+     Cada 15 s seguidos de tenerla (CROWN.EVERY) el portador suma 1 punto al tablero —el mismo
+     contador de bajas que define al ganador— y 100 créditos. Si la pierde, el reloj vuelve a cero.
+     Al que mata al portador le dan 2 puntos extra. Todo lo decide el servidor: el cliente dibuja.
+     ===================================================================== */
+
+  crownOn() { return !!this.mode.crown; }
+  // cada cuánto paga: la mitad mientras la tormenta está activa
+  crownEvery() { return this.stormOn() && this.stormActive() ? Math.min(CROWN.EVERY, STORM.CROWN_EVERY) : CROWN.EVERY; }
+
+  // un punto de aparición seguro, lejos de donde se perdió la corona
+  crownSpot(ax, az) {
+    let list = this.W.spawns;
+    if (!list || !list.length) return null;
+    if (this.stormOn() && this.storm) list = this.stormSpawns(list);   // con la tormenta, siempre dentro del círculo
+    const far = ax == null ? null : list.filter(sp => Math.hypot(sp.x - ax, sp.z - az) > CROWN.FAR);
+    const pool = far && far.length ? far : list;
+    return pool[(Math.random() * pool.length) | 0];
+  }
+
+  // cuánto lleva seguido el portador (el cliente lo calcula igual, con el reloj del servidor)
+  crownProg() { const c = this.crown; return c && c.by ? Math.max(0, this.time - c.t0) : 0; }
+  /* Estado completo, para el `welcome` y para resincronizar una vez por segundo en `sc`.
+     Va `t0` (cuándo arrancó la cuenta de los 15 s) y no el progreso: así el cliente lo calcula
+     solo con el reloj del servidor y el snapshot no tiene que llevar nada de la corona. */
+  crownState() {
+    if (!this.crownOn()) return null;
+    const c = this.crown;
+    if (!c) return [0, 0, 0, 0, 0, 0];
+    return [r2(c.x), r2(c.y), r2(c.z), c.by, r2(c.t0), c.dead > 0 ? 1 : 0];
+  }
+
+  spawnCrown() {
+    const sp = this.crownSpot(null, null); if (!sp) return;
+    this.crown = { x: sp.x, y: sp.y + .8, z: sp.z, by: 0, arm: 0, idle: 0, t0: 0, dead: 0, lx: null, lz: null };
+    this.bcast({ t: 'ev', e: 'crw', a: 'spawn', p: r3a([this.crown.x, this.crown.y, this.crown.z]) });
+    this.bcast({ t: 'ev', e: 'sys', m: '¡Apareció La Corona! Cada ' + CROWN.EVERY + ' s con ella puesta valen ' + CROWN.PTS + ' punto y ' + CROWN.CASH + ' créditos' });
+    this.sendScores();
+  }
+
+  // la muda a otro punto seguro (quedó sola mucho tiempo, o se cayó al vacío)
+  moveCrown(ax, az) {
+    const c = this.crown, sp = this.crownSpot(ax, az);
+    if (!c || !sp) return;
+    c.x = sp.x; c.y = sp.y + .8; c.z = sp.z;
+    c.by = 0; c.t0 = 0; c.idle = 0; c.arm = 0; c.dead = 0;
+    this.bcast({ t: 'ev', e: 'crw', a: 'move', p: r3a([c.x, c.y, c.z]) });
+  }
+
+  takeCrown(p) {
+    const c = this.crown;
+    if (!c || c.by || c.arm > 0 || c.dead > 0 || !p.alive || !p.joined) return false;
+    c.by = p.id; c.t0 = this.time; c.idle = 0;
+    c.x = p.s.x; c.y = p.s.y + CROWN.HEAD; c.z = p.s.z;
+    this.bcast({ t: 'ev', e: 'crw', a: 'take', id: p.id, n: p.name, t0: r2(c.t0) });
+    return true;
+  }
+
+  // se llama desde dropCarried(): vale para la muerte y para el que se desconecta
+  dropCrown(p) {
+    const c = this.crown;
+    if (!c || c.by !== p.id) return;
+    const oy = p.s.y + 1, hit = raycast(this.W, p.s.x, oy, p.s.z, 0, -1, 0, 16), tr = triggers(this.W, p.s);
+    c.by = 0; c.t0 = 0; c.idle = 0; c.arm = CROWN.ARM; c.lx = p.s.x; c.lz = p.s.z;
+    c.x = p.s.x; c.z = p.s.z; c.y = hit ? oy - hit.t + .8 : oy;
+    // en la lava, en el agua, fuera del mapa o colgada en el aire: se pierde y vuelve sola a un punto seguro
+    if (!hit || tr.lava || tr.water || p.s.y < K.KILLY + 2) c.dead = CROWN.VOID;
+    this.bcast({ t: 'ev', e: 'crw', a: 'drop', p: r3a([c.x, c.y, c.z]), v: c.dead > 0 ? 1 : 0, id: p.id });
+  }
+
+  tickCrown(dt) {
+    if (!this.crownOn() || this.state !== 'play') return;
+    const c = this.crown;
+    if (!c) { if (this.o.timelimit - this.left >= CROWN.AT) this.spawnCrown(); return; }
+
+    if (c.dead > 0) {                                   // se cayó al vacío: vuelve en CROWN.VOID segundos
+      c.dead -= dt;
+      if (c.dead <= 0) { c.dead = 0; this.moveCrown(c.lx, c.lz); }
+      return;
+    }
+
+    if (c.by) {                                         // la tiene alguien
+      const h = this.players.get(c.by);
+      if (!h || !h.joined) { c.by = 0; c.arm = CROWN.ARM; c.t0 = 0; c.idle = 0; return; }
+      if (!h.alive) { this.dropCrown(h); return; }
+      c.x = h.s.x; c.y = h.s.y + CROWN.HEAD; c.z = h.s.z;
+      h.ctime += dt;
+      const every = this.crownEvery();
+      while (this.time - c.t0 >= every) {
+        c.t0 += every;
+        h.kills += CROWN.PTS; h.cpts += CROWN.PTS; h.dirty = true;
+        this.credit(h, CROWN.CASH, 'la corona');
+        this.bcast({ t: 'ev', e: 'crw', a: 'pay', id: h.id, n: h.name, pts: CROWN.PTS, cr: CROWN.CASH, t0: r2(c.t0) });
+      }
+      return;
+    }
+
+    // suelta en el piso
+    if (c.arm > 0) c.arm -= dt;
+    c.idle += dt;
+    if (c.idle >= CROWN.IDLE) { this.moveCrown(c.lx, c.lz); return; }   // nadie la levanta: se muda lejos
+    if (this.stormOn() && this.outStorm(c.x, c.z)) { this.moveCrown(c.lx, c.lz); return; }   // quedó fuera de la zona: vuelve adentro
+    if (c.arm > 0) return;
+    for (const p of this.players.values()) {
+      if (!p.alive || !p.joined) continue;
+      if (Math.abs(p.s.x - c.x) < CROWN.R && Math.abs(p.s.z - c.z) < CROWN.R && p.s.y > c.y - 2 && p.s.y < c.y + 1.4) { this.takeCrown(p); break; }
+    }
+  }
+
+  /* =====================================================================
+     LA TORMENTA DEL ÚLTIMO MINUTO — solo los modos con `storm` (hoy nomás Arena)
+     Cuando quedan STORM.WARN segundos de partida (60, calculado sobre la duración real,
+     no un número fijo) se avisa a todos y suena la alerta. STORM.DELAY después (10 s)
+     arranca: la zona segura es un círculo que al principio contiene todo el área jugable
+     (`bounds` del mapa, o `stormCenter` si el mapa lo declara) y se achica de forma lineal
+     hacia el centro durante STORM.SHRINK segundos hasta STORM.MIN_R, y se queda así.
+     Afuera se recibe daño continuo que sube con el tiempo y que el blindaje NO frena.
+     Los parámetros van por red una sola vez: el cliente calcula el radio con `stormR()`
+     y el reloj del servidor. Mientras dura, la corona paga cada STORM.CROWN_EVERY.
+     ===================================================================== */
+
+  stormOn() { return !!this.mode.storm; }
+
+  // el círculo inicial: centro y radio que contienen el área jugable del mapa (se calcula una vez)
+  stormCircle() {
+    const W = this.W;
+    if (W._storm) return W._storm;
+    const b = W.bounds || { x0: -40, x1: 40, z0: -40, z1: 40 };
+    const cx = W.stormCenter ? W.stormCenter[0] : (b.x0 + b.x1) / 2;
+    const cz = W.stormCenter ? W.stormCenter[1] : (b.z0 + b.z1) / 2;
+    // el radio tiene que llegar a la esquina más lejana, así al arrancar nadie está afuera
+    let r = 0;
+    for (const x of [b.x0, b.x1]) for (const z of [b.z0, b.z1]) r = Math.max(r, Math.hypot(x - cx, z - cz));
+    for (const sp of W.spawns) r = Math.max(r, Math.hypot(sp.x - cx, sp.z - cz));
+    W._storm = { cx, cz, r0: Math.ceil(r + STORM.MARGIN), r1: W.stormR || STORM.MIN_R };
+    return W._storm;
+  }
+
+  // lo que viaja al cliente, una sola vez: [arranque, centro x, centro z, radio inicial, radio final, achique, daño inicial, daño final]
+  stormInfo() {
+    const s = this.storm;
+    return s ? [r2(s.t0), s.cx, s.cz, s.r0, s.r1, STORM.SHRINK, STORM.DMG0, STORM.DMG1] : null;
+  }
+  stormActive() { return !!(this.storm && this.time >= this.storm.t0); }
+  stormRadius() { return this.storm ? stormR(this.stormInfo(), this.time) : 0; }
+  // ¿está fuera de la zona segura?
+  outStorm(x, z) {
+    if (!this.stormActive()) return false;
+    const s = this.storm, r = this.stormRadius();
+    return Math.hypot(x - s.cx, z - s.cz) > r;
+  }
+  /* apariciones que quedan dentro de la zona; si no hay ninguna, la más cercana al centro
+     (siempre un punto de aparición de verdad, para no dejar a nadie dentro de una pared) */
+  stormSpawns(list) {
+    if (!this.storm) return list;
+    const s = this.storm, r = this.stormActive() ? this.stormRadius() : s.r0;
+    const dentro = list.filter(sp => Math.hypot(sp.x - s.cx, sp.z - s.cz) <= r * .9);
+    if (dentro.length) return dentro;
+    let best = list[0], bd = 1e9;
+    for (const sp of list) { const d = Math.hypot(sp.x - s.cx, sp.z - s.cz); if (d < bd) { bd = d; best = sp; } }
+    return best ? [best] : list;
+  }
+
+  // a dónde corre un bot que quedó afuera: la aparición dentro del círculo que le quede más cerca
+  stormRefuge(p) {
+    const l = this.stormSpawns(this.W.spawns);
+    let best = null, bd = 1e9;
+    for (const sp of l) { const d = Math.hypot(sp.x - p.s.x, sp.z - p.s.z); if (d < bd) { bd = d; best = sp; } }
+    return best;
+  }
+
+  tickStorm(dt) {
+    if (!this.stormOn() || this.state !== 'play') return;
+    const dur = this.o.timelimit;
+    if (dur <= STORM.WARN + STORM.DELAY) return;        // partida muy corta: no da para la tormenta
+    if (!this.storm) {
+      if (this.left > STORM.WARN) return;
+      const c = this.stormCircle();
+      this.storm = { t0: this.time + STORM.DELAY, cx: c.cx, cz: c.cz, r0: c.r0, r1: c.r1 };
+      this.bcast({ t: 'ev', e: 'stm', a: 'warn', i: this.stormInfo(), d: STORM.DELAY });
+      return;
+    }
+    if (!this.stormActive()) return;
+    if (!this.storm.on) { this.storm.on = 1; this.bcast({ t: 'ev', e: 'stm', a: 'go', i: this.stormInfo() }); }
+    // daño a los que están afuera, en pasos de STORM.STEP, sin que el blindaje lo frene
+    const dps = stormDmg(this.stormInfo(), this.time);
+    for (const p of this.players.values()) {
+      if (!p.joined || !p.alive) { if (p.stormT) p.stormT = 0; continue; }
+      if (!this.outStorm(p.s.x, p.s.z)) { p.stormT = 0; continue; }
+      p.stormT = (p.stormT || 0) - dt;
+      if (p.stormT <= 0) { p.stormT = STORM.STEP; this.damage(p, dps * STORM.STEP, null, null, null, 0, 'storm'); }
+    }
+  }
+  // gravedad cero: lleva al bot a la altura yb del borde de un nivel (piso en yb) y, ya a esa altura, hacia (tx, tz). Antes de llegar se queda dentro del pozo.
+  zgSteer(s, yb, tx, tz) {
+    const zb = this.W.zerog[0], cx = (zb.min[0] + zb.max[0]) / 2, cz = (zb.min[2] + zb.max[2]) / 2, inZ = inZeroG(this.W, s);
+    const dy = s.y - yb;
+    let up = false, cr = false, gx = cx, gz = cz;
+    if (inZ) {
+      if (dy > 1.4) cr = true;                 // más arriba del borde: bajar
+      else { up = dy < .9; if (dy >= .35) { gx = tx; gz = tz; } }   // a la altura justa: salir de costado
+    }
+    const ax = gx - s.x, az = gz - s.z, al = Math.hypot(ax, az) || 1;
+    return { wx: ax / al, wz: az / al, up, cr };
+  }
   newAI() { return { think: 0, replan: 0, path: null, pi: 0, tgt: 0, seeT: 0, lostT: 0, last: null, strafe: Math.random() < .5 ? 1 : -1, strafeT: 1, stuckT: 0, bestD: 1e9, hurtBy: 0, hurtT: 0, aimErrX: 0, aimErrY: 0, errT: 0, hopT: 0, goal: null, flyT: 0, noLook: 0 }; }
   skill() { return SKILL[this.o.botSkill] || SKILL[1]; }
   findTarget(p) {
     let best = null, bd = 1e9; const sk = this.skill();
+    const skI = Math.max(0, Math.min(3, this.o.botSkill | 0));
+    const cw = this.crownOn() && this.crown && this.crown.by !== p.id ? this.crown.by : 0;   // el de la corona es el objetivo preferido
     const ex = p.s.x, ey = p.s.y + K.EYE, ez = p.s.z;
     for (const t of this.players.values()) {
       if (t === p || !t.alive || !t.joined || (this.mode.teams && t.team === p.team)) continue;
       const d = Math.hypot(t.s.x - ex, t.s.y + 1 - ey, t.s.z - ez);
       const hurt = p.ai.hurtT > 0 && p.ai.hurtBy === t.id;
-      if (d > sk.range && !hurt) continue;
+      if (d > (this.W.theme.noche ? Math.min(sk.range, 30) : sk.range) && !hurt) continue;   // de noche los bots tampoco ven de lejos
       // campo de visión según la dificultad, salvo que lo hayan atacado o estés encima
       const f = dirFromAngles(p.yaw, 0), dot = ((t.s.x - ex) * f[0] + (t.s.z - ez) * f[2]) / (Math.hypot(t.s.x - ex, t.s.z - ez) || 1);
       if (dot < sk.fov && !hurt && d > 4 && t.id !== p.ai.tgt) continue;
       if (!los(this.W, ex, ey, ez, t.s.x, t.s.y + 1.2, t.s.z)) continue;
-      const score = d - (p.ai.hurtBy === t.id && p.ai.hurtT > 0 ? 15 : 0) - (t.id === p.ai.tgt ? 8 : 0);
+      const score = d - (p.ai.hurtBy === t.id && p.ai.hurtT > 0 ? 15 : 0) - (t.id === p.ai.tgt ? 8 : 0) - (t.id === cw ? CROWN.BOT_AIM[skI] : 0);
       if (score < bd) { bd = score; best = t; }
     }
     return best;
@@ -2441,7 +5133,7 @@ class Game {
     const ai = p.ai, nav = this.nav;
     const start = findNode(nav, p.s.x, p.s.y, p.s.z);
     if (!start) { ai.path = null; return; }
-    const dj = dijkstra(nav, start.id);
+    const dj = dijkstra(nav, start.id, this.domBan(p.team));
     let goal = null, best = -1;
     const t = ai.tgt ? this.players.get(ai.tgt) : null;
     const obj = this.objective(p);
@@ -2460,6 +5152,7 @@ class Game {
     if (best < 99) {
       for (const it of this.items) {
         if (!it.up) continue;
+        if (this.W.zerog && inZeroG(this.W, { x: it.x, y: it.y, z: it.z })) continue;   // los ítems que flotan en gravedad cero no los buscan
         const n = findNode(nav, it.x, it.y + .2, it.z); if (!n || dj.dist[n.id] === Infinity) continue;
         const info = ITEMS[it.type]; let v = 0;
         if (it.type === 'quad') v = 6;
@@ -2467,7 +5160,11 @@ class Game {
         else if (it.type === 'health') v = p.hp < 40 ? 5 : p.hp < 80 ? 2 : 0;
         else if (it.type === 'armorH') v = p.ar < 120 ? 4 : 0;
         else if (it.type === 'armor') v = p.ar < 80 ? 2.5 : 0;
-        else if (info.weapon != null) v = !p.ow[info.weapon] ? 4 + info.weapon * .3 : p.am[info.ammo] < AMMO_MAX[info.ammo] * .4 ? 1 : 0;
+        else if (info.weapon != null) {
+          // un arma principal nueva solo se levanta si tenés la escopeta de base (ver give()); si no, el bot se quedaba parado encima para siempre
+          const fresh = !p.ow[info.weapon], cur = primaryOf(p.ow);
+          v = fresh ? (isPrimary(info.weapon) && !this.mode.gg && cur !== -1 && cur !== 1 ? 0 : 4 + info.weapon * .3) : p.am[info.ammo] < AMMO_MAX[info.ammo] * .4 ? 1 : 0;
+        }
         else if (info.ammo) { const owns = WEAPONS.some((W_, i) => W_.ammo === info.ammo && p.ow[i]); v = owns && p.am[info.ammo] < AMMO_MAX[info.ammo] * .5 ? 1.2 : 0; }
         if (!v) continue;
         const sc = v / (1 + dj.dist[n.id] / 25);
@@ -2486,6 +5183,12 @@ class Game {
   }
   // CTF: qué hace cada bot según el estado de las banderas y su rol (ataque/defensa)
   objective(p) {
+    if (this.stormOn() && this.outStorm(p.s.x, p.s.z)) {   // afuera de la zona segura no hay nada más importante
+      const sp = this.stormRefuge(p);
+      if (sp) return { x: sp.x, y: sp.y, z: sp.z, pri: 160 };
+    }
+    const cr = this.crownObjective(p); if (cr) return cr;
+    if (this.dom) return this.domObjective(p);
     if (!this.mode.teams || this.flags.length < 2 || p.team < 0) return null;
     const own = this.flags[p.team], enemy = this.flags[1 - p.team], home = this.W.flags[p.team];
     if (enemy.st === 1 && enemy.by === p.id) return { x: home.x, y: home.y, z: home.z, pri: 200 };
@@ -2498,6 +5201,20 @@ class Game {
     if (Math.hypot(p.s.x - home.x, p.s.z - home.z) > 14) return { x: home.x + (Math.random() - .5) * 16, y: 0, z: home.z - Math.sign(home.z) * (4 + Math.random() * 8), pri: 50 };
     return null;
   }
+  /* la corona para los bots: la van a buscar si está suelta y cerca, y si la tiene otro lo persiguen.
+     Las distancias dependen de la dificultad (CROWN.BOT_GO). El que la lleva sigue jugando normal. */
+  crownObjective(p) {
+    if (!this.crownOn() || this.state !== 'play') return null;
+    const c = this.crown; if (!c || c.dead > 0) return null;
+    const k = Math.max(0, Math.min(3, this.o.botSkill | 0)), lejos = CROWN.BOT_GO[k];
+    if (!c.by) {
+      return Math.hypot(c.x - p.s.x, c.z - p.s.z) < lejos ? { x: c.x, y: c.y, z: c.z, pri: 120 } : null;
+    }
+    if (c.by === p.id) return null;
+    const h = this.players.get(c.by);
+    if (!h || !h.alive) return null;
+    return Math.hypot(h.s.x - p.s.x, h.s.z - p.s.z) < lejos * 1.3 ? { x: h.s.x, y: h.s.y, z: h.s.z, pri: 95 } : null;
+  }
   botThink(p, dt) {
     const ai = p.ai, s = p.s, nav = this.nav, sk = SKILL[this.o.botSkill] || SKILL[1];
     ai.think -= dt; ai.replan -= dt; ai.hurtT -= dt; ai.lostT -= dt; ai.errT -= dt; ai.flyT -= dt; ai.noLook -= dt;
@@ -2506,12 +5223,17 @@ class Game {
       const t = this.findTarget(p);
       if (t) { if (t.id !== ai.tgt) { ai.seeT = 0; ai.replan = Math.min(ai.replan, .2); } ai.tgt = t.id; ai.last = [t.s.x, t.s.y, t.s.z]; ai.lostT = 3; }
       else if (ai.tgt) { ai.tgt = 0; ai.replan = 0; }
+      // sin rivales a la vista: primero los minions que estorban, después el generador o el boss
+      ai.min = null;
+      if (!t && this.dom) { const mm = this.domMinTarget(p, Math.max(26, this.skill().range * .6)); if (mm) { ai.min = mm; ai.st = { x: mm.x, y: mm.y + .9, z: mm.z, min: mm.id }; } }
+      ai.st = ai.st && ai.min ? ai.st : (!t && this.dom ? this.domBotTarget(p) : null);
+      if (this.dom && (ai.dodge == null || Math.random() < .05)) ai.dodge = Math.random() < DOM.BOT_DODGE[Math.max(0, Math.min(3, this.o.botSkill | 0))];
     }
     if (ai.replan <= 0 && s.on) { if (this.planBudget > 0) { this.planBudget--; ai.replan = .7 + Math.random() * .5; this.planBot(p); } else ai.replan = .03; }
     const tgt = ai.tgt ? this.players.get(ai.tgt) : null;
     if (tgt) ai.seeT += dt;
     // --- movimiento ---
-    let wx = 0, wz = 0, jump = false;
+    let wx = 0, wz = 0, jump = false, zg = null;   // zg: {up, cr} cuando el bot flota en el pozo de gravedad cero
     let nextLink = 0;
     if (ai.path && ai.pi < ai.path.length && ai.flyT <= 0) {
       let n = nav.nodes[ai.path[ai.pi]];
@@ -2531,16 +5253,24 @@ class Game {
         const ax = aim.x - s.x, az = aim.z - s.z, al = Math.hypot(ax, az) || 1;
         wx = ax / al; wz = az / al;
         const d = Math.hypot(n.x - s.x, n.z - s.z);
+        if (nextLink === 5) { zg = this.zgSteer(s, n.y, n.x, n.z); wx = zg.wx; wz = zg.wz; ai.stuckT = 0; ai.bestD = 1e9; }   // gravedad cero: flota hasta el nivel del próximo nodo
         if (nextLink === 2 && s.on) {
           const prev = nav.nodes[ai.path[ai.pi - 1]];
           if (Math.hypot(prev.x - s.x, prev.z - s.z) < 1.1 || d < 4.5) { jump = true; ai.flyT = .05; }
         }
-        if (d < ai.bestD - .2) { ai.bestD = d; ai.stuckT = 0; } else ai.stuckT += dt;
+        if (nextLink === 5) { /* flotando: no cuenta como trabado */ } else if (d < ai.bestD - .2) { ai.bestD = d; ai.stuckT = 0; } else ai.stuckT += dt;
         if (ai.stuckT > 1.2) { jump = true; ai.replan = 0; ai.stuckT = 0; ai.noLook = 1.5; }
       } else ai.path = null;
     } else if (!ai.path && !findNode(nav, s.x, s.y, s.z)) { jump = true; }
+    if (!zg && this.W.zerog && inZeroG(this.W, s)) {   // cayó al pozo sin querer: sube hasta el borde del nivel de arriba y sale de costado
+      const lv = nav.zlev || [0]; let yb = lv[lv.length - 1];
+      for (const y of lv) if (y >= s.y - 1.4) { yb = y; break; }
+      const zb = this.W.zerog[0], dx = s.x - (zb.min[0] + zb.max[0]) / 2, dz = s.z - (zb.min[2] + zb.max[2]) / 2;
+      const ex = Math.abs(dx) > Math.abs(dz) ? s.x + Math.sign(dx || 1) * 6 : s.x, ez = Math.abs(dx) > Math.abs(dz) ? s.z : s.z + Math.sign(dz || 1) * 6;
+      zg = this.zgSteer(s, yb, ex, ez); wx = zg.wx; wz = zg.wz;
+    }
     // combate: esquivar de costado y acercarse/alejarse
-    if (tgt) {
+    if (tgt && !zg) {
       const dx = tgt.s.x - s.x, dz = tgt.s.z - s.z, dist = Math.hypot(dx, dz) || 1;
       ai.strafeT -= dt; if (ai.strafeT <= 0) { ai.strafe *= -1; ai.strafeT = .5 + Math.random() * 1.2; }
       const melee = !!WEAPONS[p.w].melee;
@@ -2554,8 +5284,9 @@ class Game {
       const fx = s.x + wx * 1.2, fz = s.z + wz * 1.2;
       if (s.on && !nav.nodeAt(fx, s.y, fz)) { wx = -wx * .3; wz = -wz * .3; }
     }
+    if (this.dom && ai.dodge) { const dg = this.domDanger(p); if (dg) { const ax = s.x - dg.x, az = s.z - dg.z, al = Math.hypot(ax, az) || 1; wx = ax / al; wz = az / al; } }   // sale del área de un ataque avisado
     const was = s.on;
-    pmove(this.W, s, { wx, wz, jump }, dt);
+    pmove(this.W, s, zg ? { wx, wz, jump: false, up: zg.up, crouch: zg.cr } : { wx, wz, jump }, dt);
     const landed = was !== s.on && s.on;
     if (landed) ai.flyT = 0;
     // plataformas de salto y teletransportadores
@@ -2587,6 +5318,14 @@ class Game {
       if (ai.seeT > sk.react && Math.abs(dy) < .12 + 1 / (dist + 1) && this.canFire(p, w) && this.time - p.lastFire >= W_.rate * sk.fire) {
         if (W_.type !== 'proj' || dist > 3) this.botFire(p, w, [ex, ey, ez], dirFromAngles(p.yaw, p.pitch));
       }
+    } else if (ai.st) {   // Captura el dominio: apunta y dispara a la estructura o al minion que tenga enfrente
+      const q = ai.st, ex = s.x, ey = s.y + K.EYE, ez = s.z, dist = Math.hypot(q.x - ex, q.y - ey, q.z - ez);
+      const w = this.chooseWeapon(p, Math.max(dist, 8)); if (w !== p.w) { p.w = w; p.lastFire = Math.max(p.lastFire, this.time - WEAPONS[w].rate * .5); }
+      const W_ = WEAPONS[w], ty = q.y + (W_.proj === 'grenade' ? dist * .06 : 0);
+      const wantYaw = Math.atan2(-(q.x - ex), -(q.z - ez)), wantPitch = Math.atan2(ty - ey, Math.hypot(q.x - ex, q.z - ez));
+      let dy = wantYaw - p.yaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
+      const mt = sk.turn * dt; p.yaw += clamp(dy, -mt, mt); p.pitch += clamp(wantPitch - p.pitch, -mt, mt);
+      if (Math.abs(dy) < .06 && Math.abs(wantPitch - p.pitch) < .06 && !W_.melee && this.canFire(p, w) && this.time - p.lastFire >= W_.rate * sk.fire) this.botFire(p, w, [ex, ey, ez], dirFromAngles(p.yaw, p.pitch));
     } else {
       const sp = Math.hypot(s.vx, s.vz);
       if (sp > 1) { const want = Math.atan2(-s.vx, -s.vz); let dy = want - p.yaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2; p.yaw += clamp(dy, -6 * dt, 6 * dt); }
@@ -2601,5 +5340,5 @@ class Game {
   }
 }
 
-return { PRIMARY, primaryOf, censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, SKILL, topAt, pmove, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav };
+return { PRIMARY, primaryOf, censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, MODE_ALIAS, DOM, CARGA, setPasa, gridOf, slab, rayBrush, inv, findNode, r1, CARDS, CARD_BY, CARD_AT, CARD_MAX, CARD_FX, hasCard, CROWN, STORM, stormR, stormDmg, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, EMBLEMS, SKILL, topAt, pmove, inZeroG, triggers, launchPad, padVel, raycast, solidAt, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav, dijkstra };
 });

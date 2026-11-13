@@ -2,16 +2,27 @@
    Cada arma tiene un "rig": según el tiempo desde el último tiro (f) y el avance de la recarga (u, de 0 a 1) mueve sus piezas
    (bombeo, cargador, cerrojo, tambor, celda), mueve el arma entera y dice dónde va la mano izquierda (en coordenadas del arma)
    y qué lleva en la mano (un cartucho, un cohete, una granada). La mano derecha va fija en la empuñadura. */
-function vHand(m,r){   // mano que envuelve un caño de radio r a lo largo de z: palma del lado -x, dedos por abajo y puntas del otro lado
+function vHand(m,r){   // mano robótica que envuelve un caño de radio r a lo largo de z: palma del lado -x, dedos por abajo y puntas del otro lado; nudillos y muñeca oscuros
   const h=new THREE.Group();r=r||.028;
   h.add(vRB(.024,.07,.088,.01,m,-r-.012,-.006,0));
   for(let k=0;k<4;k++){const z=-.031+k*.0205,l=.0185;
     h.add(vRB(.019,.026,l,.007,m,-r-.002,-r*.8-.006,z,0,0,.5));
     h.add(vRB(.03,.018,l,.007,m,0,-r-.011,z));
-    h.add(vRB(.018,.024,l*.95,.007,m,r*.75+.004,-r*.55,z,0,0,-.8));}
+    h.add(vRB(.018,.024,l*.95,.007,m,r*.75+.004,-r*.55,z,0,0,-.8));
+    h.add(vRB(.013,.013,l*.62,.004,mArmB,-r-.01,-r*.5-.004,z,0,0,.5),vRB(.013,.013,l*.62,.004,mArmB,r*.28,-r-.012,z));}   // articulaciones de los dedos
   h.add(vRB(.018,.019,.052,.008,m,-r*.45,r*.85,-.016,0,.3,0),vRB(.036,.052,.042,.012,m,-r-.018,-.014,.058));
+  h.add(vRB(.044,.062,.012,.005,mArmB,-r-.018,-.014,.084));   // aro de la muñeca
   return vMerge(h);}
-const vArmGeo=(()=>{const g=new THREE.CylinderGeometry(.04,.032,1,10);g.rotateX(Math.PI/2);g.translate(0,0,.5);return g;})();
+const vArmGeo=(()=>{const g=new THREE.CylinderGeometry(.04,.032,1,12);g.rotateX(Math.PI/2);g.translate(0,0,.5);return g;})();
+// antebrazo del personaje: caño (largo variable, ver vArmLen) con anillo de muñeca, muñequera de color y tira de luz
+function vMkArm(){
+  const g=new THREE.Group(),sh=new THREE.Mesh(vArmGeo,mSleeve);g.add(sh);g.userData.shaft=sh;
+  const ring=(r,h,z,m)=>{const c=new THREE.CylinderGeometry(r,r,h,14);c.rotateX(Math.PI/2);c.translate(0,0,z);return new THREE.Mesh(c,m);};
+  g.add(ring(.047,.016,.04,mArmB),ring(.05,.05,.1,mArmC),ring(.046,.012,.16,mArmB));
+  const l=new THREE.Mesh(new THREE.BoxGeometry(.01,.006,.09),mArmV);l.position.set(0,.044,.21);g.add(l);
+  return g;
+}
+function vArmLen(a,len){a.userData.shaft.scale.z=len;}
 // mano derecha fija en la empuñadura de cada arma: posición, inclinación de la empuñadura y hacia dónde sale el brazo
 const RH={0:[0,-.068,.044,1.27,.02],1:[0,-.048,.215,.25,.024],2:[0,-.046,.175,.25,.024],3:[0,-.078,.072,1.2,.02],4:[0,-.085,.068,1.25,.02],
   5:[0,-.125,.0,1.38,.02],6:[0,-.1,.065,1.23,.02],8:[0,-.075,.1,1.25,.02],9:[0,-.062,.13,1.2,.02]};
@@ -19,11 +30,11 @@ function vAddHands(i,g){const R_=RH[i];if(!R_)return;
   const rh=vGrp('rh');const hd=vHand(mGlove,R_[4]);
   // mano derecha = la izquierda en espejo, girada para envolver la empuñadura con la palma del lado derecho
   hd.scale.x=-1;hd.rotation.set(R_[3],0,0);rh.add(hd);
-  const arm=new THREE.Mesh(vArmGeo,mSleeve);arm.position.set(.03,-.03,.05);arm.lookAt(.2,-.5,.45);arm.scale.set(1,1,.75);rh.add(arm);
+  const arm=vMkArm();arm.position.set(.03,-.03,.05);arm.lookAt(.2,-.5,.45);vArmLen(arm,.75);rh.add(arm);
   rh.position.set(R_[0],R_[1],R_[2]);g.add(rh);g.userData.rh=rh;g.userData.rh0=rh.position.clone();}
 // mano izquierda: una sola, que el rig lleva a donde haga falta; con los objetos que puede llevar
 const lhG=new THREE.Group(),lhHand=vHand(mGlove,.028);lhG.add(lhHand);
-const lhArm=new THREE.Mesh(vArmGeo,mSleeve);
+const lhArm=vMkArm();
 const lhHold={shell:vShellM(),shell2:vGrp('',vShellM(),vShellM()),rocket:vRocketM(),nade:vNadeM(),brass:vGrp(''),round:vGrp('',vT(.006,.006,.045,vBrass,0,0,.0,8),vCone(.0055,.016,vBrass,0,0,-.03,8))};
 lhHold.shell2.children[0].position.x=-.012;lhHold.shell2.children[1].position.x=.014;
 lhHold.rocket.position.set(0,.0,-.03);lhHold.rocket.scale.setScalar(1.25);lhHold.nade.position.set(.0,.0,-.0);
@@ -64,7 +75,7 @@ function vPlaceHand(g){
   for(const k in lhHold)lhHold[k].visible=k===H.hold;
   lhG.visible=true;lhG.updateMatrixWorld(true);
   lhW.set(-.046,-.018,.075).applyMatrix4(lhG.matrixWorld);
-  lhArm.position.copy(lhW);lhArm.lookAt(lhAnchor);lhArm.scale.set(1,1,Math.max(.05,lhW.distanceTo(lhAnchor)+.12));lhArm.visible=true;}
+  lhArm.position.copy(lhW);lhArm.lookAt(lhAnchor);vArmLen(lhArm,Math.max(.05,lhW.distanceTo(lhAnchor)+.12));lhArm.visible=true;}
 
 // piezas móviles por nombre y mano derecha en cada arma nueva
 vms.forEach((g,i)=>{const P={};let n=0;g.traverse(o=>{if(o.name){P[o.name]=o;n++;}});P.__ok=n>0;g.userData.parts=P;vAddHands(i,g);});
@@ -98,8 +109,7 @@ vms.forEach((g,i)=>{const P={};let n=0;g.traverse(o=>{if(o.name){P[o.name]=o;n++
   const arm=(x,y,z,rx,ry,len)=>{const a=new THREE.Mesh(new THREE.BoxGeometry(.06,.06,len),mSleeve);a.geometry.translate(0,0,len/2);a.position.set(x,y,z);a.rotation.set(rx,ry,0,'YXZ');return a;};
 })();
 // antebrazo del cuchillo: va desde abajo a la derecha de la pantalla hasta la mano y la sigue en cada movimiento
-const knArm=new THREE.Group(),knArmM=new THREE.Mesh(new THREE.BoxGeometry(.05,.05,1),mSleeve);knArmM.geometry.translate(0,0,.5);knArm.add(knArmM);
-const knCuff=new THREE.Mesh(new THREE.BoxGeometry(.085,.085,.05),mGlove);knArm.visible=false;wScene.add(knArm);
+const knArm=vMkArm();knArm.visible=false;wScene.add(knArm);
 const knHand=new THREE.Vector3(),knAnchor=new THREE.Vector3(.34,-.62,.05);
 /* ráfaga del tajo: una media luna blanca que barre delante de la cámara y se desvanece (como el barrido de Minecraft) */
 const sweepTex=(()=>{const c=document.createElement('canvas');c.width=256;c.height=128;const g=c.getContext('2d');
@@ -114,7 +124,7 @@ function updSweep(dt){sweepT+=dt;const k=sweepT/.2;if(k>=1){sweep.material.opaci
   sweep.material.opacity=Math.sin(k*Math.PI)*.85;sweep.rotation.set(0,0,sweepD*(.5-k)*.9);sweep.scale.set(.85+k*.35,.85+k*.35,1);}
 function updKnifeArm(){const g=vms[7];if(!g.visible){knArm.visible=false;return;}g.updateMatrixWorld(true);
   knHand.set(-.004,-.008,.11).applyMatrix4(g.matrixWorld);knArm.position.copy(knHand);knArm.lookAt(knAnchor);
-  knArm.scale.set(1,1,Math.max(.05,knHand.distanceTo(knAnchor)+.15));knArm.visible=true;}
+  vArmLen(knArm,Math.max(.05,knHand.distanceTo(knAnchor)+.15));knArm.visible=true;}
 wScene.add(new THREE.AmbientLight(0x8a7a66,.75));
 const wDir=new THREE.DirectionalLight(0xffe2c0,.85);wDir.position.set(1,2,1.5);wScene.add(wDir);
 const wMuz=new THREE.PointLight(0xffaa44,0,2.5);wScene.add(wMuz);

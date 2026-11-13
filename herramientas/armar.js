@@ -21,9 +21,14 @@ const pegar = dir => piezas(dir).map(p => fs.readFileSync(p, 'utf8')).join('');
 function armar() {
   const nucleo = pegar(path.join(RAIZ, 'src/nucleo'));
   const C = path.join(RAIZ, 'src/cliente');
+  const estilos = fs.readFileSync(path.join(C, 'estilos.css'), 'utf8'), codigo = pegar(path.join(C, 'js'));
+  // versión del build: huella del código fuente. Se ve en el menú y en la consola, y va en game.js?v= para
+  // que el navegador nunca mezcle un index.html nuevo con un game.js viejo guardado en caché.
+  const ver = require('crypto').createHash('sha1').update(nucleo + estilos + codigo).digest('hex').slice(0, 8);
   const pagina = fs.readFileSync(path.join(C, 'pagina.html'), 'utf8')
-    .replace('@@ESTILOS@@\n', () => fs.readFileSync(path.join(C, 'estilos.css'), 'utf8'))
-    .replace('@@CODIGO@@\n', () => pegar(path.join(C, 'js')));
+    .replace('@@ESTILOS@@\n', () => estilos)
+    .replace('@@CODIGO@@\n', () => codigo)
+    .split('@@VERSION@@').join(ver);
   return { 'public/game.js': nucleo, 'public/index.html': pagina };
 }
 const salida = armar(), revisar = process.argv.includes('--revisar');

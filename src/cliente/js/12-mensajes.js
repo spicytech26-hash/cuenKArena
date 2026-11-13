@@ -41,6 +41,7 @@ function onMsg(m){
       if(me.grabW!=null&&me.ow[me.grabW]&&me.alive){const g=me.grabW;me.grabW=null;selectWeapon(g,true);}
       updateHUD();if(!$('shop').hidden)renderShop();break;
     }
+    case 'mn': if(MODE==='dominio')mnSet(m.l);break;
     case 'sn': {
       const now=performance.now()/1000,sample=m.tm-now;
       if(CLK.off===null||sample>CLK.off)CLK.off=sample;else CLK.off+=(sample-CLK.off)*.003;

@@ -4,6 +4,7 @@
     t.chgT = 0;   // si te pegan mientras cargás el plasma, perdés la carga
     if (this.dom && this.time - t.spawnT < DOM.SPAWN_INV && how !== 'void' && how !== 'water') return;   // recién aparecido: invulnerable un momento
     if (this.mode.teams && att && att !== t && att.team === t.team) return; // sin fuego amigo
+    if (att && att !== t && att.team !== t.team) att.aggT = this.time;      // los minions castigan al que le pega a un aliado
     if (att && att !== t && hasCard(att, 'carnicero')) amt *= CARD_FX.DMG;   // carta Carnicero
     if (hasCard(t, 'coraza')) amt *= CARD_FX.ARMOR;                          // carta Coraza
     if (this.mode.snipers && w === 8 && att && att !== t) amt = Math.max(amt, Math.ceil(t.hp + t.ar) + 1);   // en Francotiradores mata de un tiro

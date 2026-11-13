@@ -7,6 +7,8 @@
    5. todos los botiquines y escudos se pueden agarrar
    6. Captura el dominio: barreras, bloqueo por equipo, núcleo del boss, fin de partida y desempates
    7. Rifle de plasma: curva de daño por carga, instakill solo al máximo, techo de carga y cooldown
+   10. Oleadas de minions: salen a tiempo, marchan, se frenan en la barrera, dañan generadores y se pelean
+   9. Colisiones: nada visible sin colisión; cada bloque frena al jugador y a los disparos
    8. Avisos del locutor, estadísticas de objetivos en el tablero y puestos de reabastecimiento
    Uso:  node herramientas/probar.js            (todo)
          node herramientas/probar.js lacuenca   (solo ese mapa) */
@@ -274,7 +276,7 @@ if (!solo || solo === 'santuario') try {
     const { g, d, azul } = nueva(), K2 = D.MIN;
     const m = d.mins.find(q => q.team === 0), cr0 = azul.cr, k0 = azul.kills;
     while (m.hp > 0) g.domMinDamage(m, 10, azul);
-    if (azul.cr !== cr0 + K2.CRED) return 'tendría que dar ' + K2.CRED + ' créditos (dio ' + (azul.cr - cr0) + ')';
+    if (azul.cr !== cr0 + K2.CRED + K2.LAST_HIT) return 'tendría que dar ' + (K2.CRED + K2.LAST_HIT) + ' créditos (dio ' + (azul.cr - cr0) + ')';
     if (azul.kills !== k0) return 'contó como baja en el marcador';
     if (azul.mins !== 1) return 'no se anotó el minion bajado';
     for (let k = 0; k < (K2.RESP + 3) * 40; k++) g.tick(dt);
@@ -484,6 +486,77 @@ if (!solo || solo === 'santuario') try {
     return rojo2[15][0] === 0 || 'le anotó objetivos al que no hizo nada';
   });
 } catch (e) { mal('Avisos y estadísticas: ' + (e && e.stack || e)); }
+
+console.log('9. Colisiones del Santuario: todo lo que se ve choca');
+if (!solo || solo === 'santuario') try {
+  const M = C.MAPS.santuario, W = { brushes: M.brushes.map(b => ({ ...b })), bounds: M.bounds };
+  // ningún bloque visible sin colisión (solo se permite lo marcado a propósito como atravesable)
+  const fantasma = M.brushes.filter(b => b.nc && !b.atravesable);
+  if (fantasma.length) mal(fantasma.length + ' bloques se ven pero no chocan, por ejemplo en ' + fantasma.slice(0, 3).map(b => b.min.map(v => v.toFixed(0)).join(',')).join(' · '));
+  else ok('no hay geometría visible sin colisión (' + M.brushes.length + ' bloques)');
+  // cada bloque sólido existe en la colisión: un jugador metido adentro choca, y un tiro que lo cruza se frena
+  let cuerpo = 0, tiro = 0, prob = 0; const malos = [];
+  for (const b of W.brushes) {
+    if (b.bar || b.nc || b.ramp) continue; prob++;   // las rampas chocan por su pendiente, no por la caja entera
+    const cx = (b.min[0] + b.max[0]) / 2, cy = (b.min[1] + b.max[1]) / 2, cz = (b.min[2] + b.max[2]) / 2;
+    const H = b.max[1] - b.min[1];
+    if (!C.solidAt(W, cx, b.min[1] + H * .25, cz, .01, Math.min(1.7, H * .5))) { cuerpo++; if (malos.length < 3) malos.push('cuerpo ' + [cx, cy, cz].map(v => v.toFixed(1))); }
+    // el tiro sale de afuera (si el punto de salida está metido en otro bloque, ese costado no se puede pisar ni disparar: se saltea)
+    const ox = b.min[0] - 2.5;
+    if (C.solidAt(W, ox, cy - .01, cz, .01, .02)) continue;
+    const h = C.raycast(W, ox, cy, cz, 1, 0, 0, 6);
+    if (!h || h.t > 2.5 + 1e-3) { tiro++; if (malos.length < 3) malos.push('tiro ' + [cx, cy, cz].map(v => v.toFixed(1))); }
+  }
+  if (cuerpo || tiro) mal('se atraviesan ' + cuerpo + ' bloques caminando y ' + tiro + ' con disparos (de ' + prob + '): ' + malos.join(' · '));
+  else ok('los ' + prob + ' bloques sólidos frenan al jugador y a los disparos');
+} catch (e) { mal('Colisiones: ' + (e && e.stack || e)); }
+
+console.log('10. Oleadas de minions (estilo LoL)');
+if (!solo || solo === 'santuario') try {
+  const D4 = C.DOM, dt = 1 / 40;
+  const prueba = (nombre, f) => { try { const r = f(); if (r === true) ok(nombre); else mal(nombre + (r ? ': ' + r : '')); } catch (e) { mal(nombre + ': ' + (e && e.stack || e)); } };
+  const partida = () => { const g = new C.Game({ mode: 'dominio', bots: 0 }); const id = g.addClient(() => {}); g.onMessage(id, { t: 'join', name: 'x' }); const p = g.players.get(id); p.s.y = -500; p.alive = false; return g; };
+  prueba('la primera oleada sale a los ' + D4.MIN.OLA_INI + ' s con ' + (D4.MIN.OLA_C + D4.MIN.OLA_D) + ' minions por carril y equipo', () => {
+    const g = partida();
+    for (let k = 0; k < 40 * (D4.MIN.OLA_INI - 1); k++) g.tick(dt);
+    if (g.dom.mins.some(m => m.ola)) return 'salió antes de tiempo';
+    for (let k = 0; k < 80; k++) g.tick(dt);
+    for (const tm of [0, 1]) for (const l of [0, 1, 2]) { const n = g.dom.mins.filter(m => m.ola && m.team === tm && m.lane === l).length; if (n !== D4.MIN.OLA_C + D4.MIN.OLA_D) return 'equipo ' + tm + ' carril ' + l + ': ' + n; }
+    return true;
+  });
+  prueba('sin rivales, cada oleada marcha por su carril, se frena en la barrera enemiga y daña los generadores', () => {
+    const g = partida(), d = g.dom;
+    g.domOla(); for (const m of d.mins) if (m.team === 1) m.hp = 0;   // solo el equipo rojo, sin guardianes azules
+    const res = [];
+    for (let k = 0; k < 40 * 70; k++) { g.tick(dt); for (const m of d.mins) if (m.team === 1 && m.hp > 0) { m.hp = 0; } }
+    for (let l = 0; l < 3; l++) {
+      const ms = d.mins.filter(m => m.ola && m.team === 0 && m.lane === l && m.hp > 0);
+      const bar = C.MAPS.santuario.bars.find(b => b.team === 1 && b.lane === l);
+      if (!ms.length) return 'el carril ' + l + ' se quedó sin minions';
+      if (ms.some(m => m.x < bar.x - .5)) return 'un minion del carril ' + l + ' cruzó la barrera azul cerrada';
+      const gs = d.gens.filter(q => q.team === 1 && q.lane === l), daño = gs.reduce((s, q) => s + D4.GEN_HP - q.hp, 0);
+      if (!(daño > 0)) return 'el carril ' + l + ' no les sacó vida a los generadores (minions en x≈' + Math.round(ms[0].x) + ')';
+      if (daño > D4.GEN_HP) return 'el carril ' + l + ' hizo demasiado daño (' + Math.round(daño) + ')';
+      res.push(Math.round(daño));
+    }
+    return true;
+  });
+  prueba('dos oleadas que se cruzan se pelean', () => {
+    const g = partida(), d = g.dom;
+    for (const m of d.mins) m.hp = 0;
+    g.domOla(); const n0 = d.mins.filter(m => m.ola && m.hp > 0).length;
+    for (let k = 0; k < 40 * 30; k++) g.tick(dt);
+    const n1 = d.mins.filter(m => m.ola && m.hp > 0).length;
+    return n1 < n0 || 'no murió ninguno en 30 s (' + n0 + ' → ' + n1 + ')';
+  });
+  prueba('los guardianes son ' + D4.MIN.POR_GEN + ' por generador y el último golpe da créditos con bono', () => {
+    const g = partida(), d = g.dom;
+    for (let gi = 0; gi < d.gens.length; gi++) { const n = d.mins.filter(m => !m.ola && m.gen === gi && m.hp > 0).length; if (n !== D4.MIN.POR_GEN) return 'el generador ' + gi + ' tiene ' + n; }
+    const id = g.addClient(() => {}); g.onMessage(id, { t: 'join', name: 'y' }); const p = g.players.get(id); const cr0 = p.cr;
+    const m = d.mins.find(q => q.team !== p.team && q.hp > 0); g.domMinDamage(m, 1e4, p);
+    return p.cr - cr0 === D4.MIN.CRED + D4.MIN.LAST_HIT || 'dio ' + (p.cr - cr0) + ' créditos';
+  });
+} catch (e) { mal('Oleadas: ' + (e && e.stack || e)); }
 
 console.log(fallas ? '\n' + fallas + ' problema(s).' : '\nTodo bien.');
 process.exit(fallas ? 1 : 0);

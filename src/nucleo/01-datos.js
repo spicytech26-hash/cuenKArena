@@ -31,7 +31,7 @@ const WEAPONS = [
   { name: 'Lanzagranadas',  ammo: 'grenades', cost: 1, rate: .75, type: 'proj', proj: 'grenade', speed: 26, dmg: 110, rad: 5.5, direct: 40, clean: 100, fuse: 1, mag: 4, reload: 2 },
   { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 60, rad: 4.5, sfall: .75, direct: 70, mag: 4, reload: 3.6 },   // como el del Soldier: 4 cohetes y ~2,7 s para recargar todo   // nerf: antes 100/105, después 80/85; ahora 70 directo y 60 de área (nunca más que el directo) que cae rápido con la distancia
   // plasma: se mantiene el botón para cargar y al soltar sale el rayo. Un toque pincha, la carga llena mata.
-  { name: 'Rifle de plasma', ammo: 'slugs',    cost: 1, rate: .45, type: 'rail', pel: 1,  dmg: 30, range: 400, mag: 5, reload: 2.2, carga: CARGA },
+  { name: 'Cañón de plasma', ammo: 'slugs',    cost: 1, rate: .45, type: 'rail', pel: 1,  dmg: 30, range: 400, mag: 5, reload: 2.2, carga: CARGA },
   // cuchillo mariposa: el segundo tajo sobre la misma víctima (dentro de 4 s) mata siempre
   { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 55, back: 1.8, range: 1.9, melee: true },   // alcance corto como el cuchillo del espía de TF2 o el del CS:GO
   { name: 'Francotirador',  ammo: 'sniper',   cost: 1, rate: 1.25, type: 'hit', pel: 1,  spread: .002, hip: .045, dmg: 115, head: 2, range: 500, scope: true, mag: 5, reload: 2.2 },
@@ -89,7 +89,7 @@ const SHOP = [
   // la molotov es de un solo uso: se compra estando vivo y si te matan la perdés
   { id: 'w10', cat: 'Bombas', name: 'Bomba molotov', w: 10, price: 300, once: 1, pack: ['molotov', 3], desc: 'Tecla G. 3 molotovs que dejan el piso en llamas 6 s. Si te matan, las perdés' },
   { id: 'w5', cat: 'Misiles', name: 'Lanzacohetes', w: 5, price: 1300, pack: ['rockets', 10], desc: 'Daño en área y rocket jump' },
-  { id: 'w6', cat: 'Rifles', name: 'Rifle de plasma', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Mantené el botón para cargar: un toque pincha, la carga llena mata de un tiro. Atraviesa a todos los que estén en línea' },
+  { id: 'w6', cat: 'Rifles', name: 'Cañón de plasma', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Mantené el botón para cargar: un toque pincha, la carga llena mata de un tiro. Atraviesa a todos los que estén en línea' },
   { id: 'w8', cat: 'Rifles', name: 'Francotirador', w: 8, price: 1500, pack: ['sniper', 10], desc: 'Click derecho para apuntar con mira. Mata de un tiro a quien no tiene blindaje' },
   { id: 'w9', cat: 'Rifles', name: 'Rifle de caza', w: 9, price: 1400, pack: ['caza', 8], desc: 'La bala viaja y cae: cualquier impacto mata. Tiros largos o al aire dan premio' },
   { id: 'w7', cat: 'Cuerpo a cuerpo', name: 'Cuchillo', w: 7, price: 0, free: 1, desc: 'Cuchillo mariposa: dos puñaladas matan siempre. No lo frena el blindaje' },
@@ -157,15 +157,32 @@ const DOM = {
   /* Minions defensores (07-partida/5c-minions.js): dos por generador, uno cuerpo a cuerpo y otro a distancia.
      Molestan y obligan a entrar en equipo, pero no son un muro. */
   MIN: {
-    POR_GEN: 2,     // cuántos cuida cada generador
-    HP: 55,
+    POR_GEN: 3,     // guardianes fijos que cuida cada generador
+    // OLEADAS (como los súbditos del LoL): salen de cada fortaleza por los tres carriles y marchan solas
+    OLA_INI: 15,    // la primera oleada sale a los 15 s
+    OLA_CADA: 30,   // y después una cada 30 s
+    OLA_C: 3, OLA_D: 2,   // por carril: 3 cuerpo a cuerpo y 2 a distancia
+    ASEDIO_CADA: 3, // cada 3 oleadas se suma un minion de asedio
+    HP_AS: 240, DMG_AS: 18, RATE_AS: 1.6, RANGE_AS: 6,   // asedio: mucha vida, pega fuerte y lejos
+    GEN_C: 8, GEN_D: 5, GEN_AS: 40,   // daño por golpe a generadores (bajo: ayudan, no reemplazan a los jugadores)
+    BOSS_F: .5,     // contra el boss pegan la mitad que contra un generador
+    SPD_OLA: 4.2,   // marchan más lento que lo que corre un guardián
+    SEE_OLA: 14,    // a qué distancia se trenzan con algo
+    AGGRO: 3,       // castigan al jugador que dañó a un aliado en los últimos 3 s
+    SEP: 1.1,       // se separan de sus compañeros a esta distancia (no se amontonan)
+    CRECE: .10, CRECE_CADA: 180,   // +10 % de vida y daño cada 3 minutos
+    LAST_HIT: 40,
+    INTERES: 70,    // a cada jugador se le mandan solo los minions a menos de 70 m
+    RED_CADA: 3,    // cada cuántos snapshots (20 por segundo) se mandan: 3 = casi 7 por segundo   // bono de créditos para el que da el último golpe
+    PATRULLA: 4,    // radio en metros en el que patrullan alrededor de su puesto cuando no hay nadie
+    HP: 45,
     DMG_C: 11, RATE_C: .85, RANGE_C: 2.8,    // cuerpo a cuerpo: daño, cada cuánto pega y alcance
     DMG_D: 8,  RATE_D: 1.5, RANGE_D: 20,     // a distancia
     SPD: 5.4,       // a cuánto corre (el jugador va a 10)
     SEE: 21,        // a qué distancia te ve
     LEASH: 25,      // si te alejás más de esto de su puesto, te deja y vuelve
     RESP: 25,       // cuánto tarda en volver a aparecer
-    MAX: 18,        // tope de minions vivos por equipo
+    MAX: 30,        // tope de minions de oleada vivos por equipo (los guardianes van aparte: 3 por generador)
     CRED: 60,       // créditos por matarlo (no cuenta como baja)
     R: .45, H: 1.5  // radio y alto
   },

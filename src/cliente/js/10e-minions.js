@@ -17,16 +17,18 @@ function mnGeos() {
     }
     return dmGeo(p);
   };
-  MN.geo = { cuerpo: [cuerpo(0), cuerpo(1)], nucleo: new THREE.SphereGeometry(.13, 8, 6), halo: new THREE.SphereGeometry(.3, 8, 6) };
+  MN.geo = { cuerpo: [cuerpo(0), cuerpo(1), cuerpo(0)], nucMat: [0, 1].map(t => new THREE.MeshBasicMaterial({ color: DCOL[t], fog: false })), nucleo: new THREE.SphereGeometry(.13, 8, 6), halo: new THREE.SphereGeometry(.3, 8, 6) };
   return MN.geo;
 }
 function mnBuild(team, kind) {
   const G_ = mnGeos(), g = new THREE.Group();
   const cuerpo = new THREE.Mesh(G_.cuerpo[kind], dmMat());
-  const nuc = new THREE.Mesh(G_.nucleo, new THREE.MeshBasicMaterial({ color: DCOL[team], fog: false }));
+  // dos mallas por minion y materiales compartidos por equipo: cien minions no cambian de shader ni de estado
+  const nuc = new THREE.Mesh(G_.nucleo, G_.nucMat[team]);
   nuc.position.set(0, .95, -.2);
-  const halo = new THREE.Mesh(G_.halo, dmGlow(DCOL[team], .22)); halo.position.copy(nuc.position);
-  g.add(cuerpo, nuc, halo);
+  const halo = { material: { opacity: 0 }, visible: false };   // el halo transparente se sacó: costaba una malla por minion
+  if (kind === 2) g.scale.setScalar(1.55);                      // asedio: el grandote
+  g.add(cuerpo, nuc);
   return { g, cuerpo, nuc, halo };
 }
 function mnClear() { for (const o of MN.m.values()) scene.remove(o.g); MN.m.clear(); MN.on = false; }
@@ -36,7 +38,7 @@ function mnSet(arr) {
   if (!arr) return;
   for (let i = 0; i < arr.length; i += 6) {
     const id = arr[i], x = arr[i + 1], y = arr[i + 2], z = arr[i + 3], yaw = arr[i + 4] / 10, hs = arr[i + 5];
-    const kind = hs & 1, team = (hs >> 1) & 1, st = (hs >> 2) & 3, hp = (hs >> 4) / 100;
+    const kind = hs & 3, team = (hs >> 2) & 1, st = (hs >> 3) & 3, hp = (hs >> 5) / 100;
     let o = MN.m.get(id);
     if (!o) { o = mnArma(id, team, kind, x, y, z); o.nace = 0; }   // entró a mitad de partida: lo arma sin efecto
     o.tx = x; o.ty = y; o.tz = z; o.tyaw = yaw; o.hp = hp; o.st = st;
@@ -85,10 +87,9 @@ function updMins(dt) {
     o.g.position.set(o.x, o.y + bob, o.z);
     o.g.rotation.y = o.yaw + (o.st === 0 ? Math.sin(o.t * .5 + o.ph) * .5 : 0);   // en el puesto mira para los costados
     o.g.rotation.x = and ? .1 : 0 + (o.golpe > 0 ? -o.golpe * 1.2 : 0);
-    o.g.scale.setScalar(o.nace > 0 ? 1 - o.nace * 1.3 : 1);
-    o.halo.scale.setScalar(.8 + .3 * Math.sin(o.t * 3 + o.ph) + o.golpe * 2);
+    o.g.scale.setScalar((o.kind === 2 ? 1.55 : 1) * (o.nace > 0 ? 1 - o.nace * 1.3 : 1));
     o.halo.material.opacity = (.14 + .1 * o.hp) + o.golpe * .4;
-    o.nuc.material.color.setHex(o.hp < .4 && Math.sin(o.t * 16) > 0 ? 0xffffff : DCOL[o.team]);
+    o.nuc.scale.setScalar(o.hp < .4 && Math.sin(o.t * 16) > 0 ? 1.6 : 1);
   }
 }
 // el jugador les dispara: se cobra igual que a un rival, con id negativo (-1000 - id del minion)

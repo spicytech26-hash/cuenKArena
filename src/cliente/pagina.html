@@ -3,7 +3,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" as="script" crossorigin>
-<link rel="preload" href="game.js" as="script">
+<link rel="preload" href="game.js?v=@@VERSION@@" as="script">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -66,7 +66,7 @@
     <div class="tm tb" id="ctfB"><span class="sc" id="tsB">0</span><span class="fs" id="fsB">en base</span></div>
   </div>
   <div id="domBox" hidden><div class="dside dr" id="domS0"></div><div class="dmid"><b id="domT">15:00</b><i>EL DOMINIO</i></div><div class="dside db" id="domS1"></div></div>
-  <canvas id="domMap" width="320" height="96" hidden></canvas>
+  <canvas id="domMap" width="188" height="136" hidden></canvas>
   <div id="lobbyBox" hidden><div class="lt" id="lobbyT"></div><div class="ls" id="lobbyS"></div></div>
   <div id="carry" hidden>LLEVÁS LA BANDERA · VOLVÉ A TU BASE</div>
   <div id="crwBox" hidden><span class="cbi"><svg viewBox="0 0 24 17" aria-hidden="true"><path d="M2.4 15.4h19.2l-1.5-9.6-4.3 3.6L12 1.6 8.2 9.4 3.9 5.8z"/></svg></span><span class="cbt"><b id="crwWho">SIN DUEÑO</b><i id="crwSub">andá a buscarla</i></span><span class="cbp"><i id="crwBar"></i></span></div>
@@ -391,7 +391,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin></script>
 <script>/* "Probar en práctica" desde el editor de mapas (editor.html): index.html?editor carga el mapa que dejó guardado el editor */
 if(/[?&]editor\b/.test(location.search)){try{self.CK_MAPA_EDITOR=JSON.parse(localStorage.getItem('cuenk_mapa_editor')||'null');}catch(e){}}</script>
-<script src="game.js"></script>
+<script src="game.js?v=@@VERSION@@"></script>
+<script>console.log("%cCuenkArena build @@VERSION@@","color:#ff7a20;font-weight:bold");</script>
+<div id="buildVer">build @@VERSION@@</div>
 <script>
 @@CODIGO@@
 </script>

@@ -173,9 +173,17 @@ function warmShaders(){
     add(buildPlayer({c:'#e8542a',v:'#ffffff',a:1},'x',true).g);
     for(const k of ['rocket','grenade','bullet','molotov']){spawnProjVis(k,[0,-999,0],[0,0,0],false,-1,0);}
     const vis=vms.map(v=>v.visible);vms.forEach(v=>v.visible=true);
+    if(typeof mnBuild==='function')for(const tm of [0,1])for(const k of [0,1,2])add(mnBuild(tm,k).g);
+    if(typeof mercBuild==='function'&&typeof mercVa==='function'&&mercVa())mercBuild();
+    // TODO se dibuja una vez: sin recorte por cámara y con lo oculto visible, así ningún shader se compila en medio
+    // de la partida (antes solo se precalentaba lo que la cámara veía al cargar, y el resto daba tirones la primera vez)
+    const ocultos=[],corte=[];
+    const destapar=r=>r.traverse(o=>{if(!o.visible){ocultos.push(o);o.visible=true;}if(o.frustumCulled){corte.push(o);o.frustumCulled=false;}});
+    destapar(scene);destapar(wScene);if(typeof MD!=='undefined'&&MD.sc)destapar(MD.sc);
     // render de verdad a una textura chiquita (renderer.compile falla con las sombras en three r128)
     const rt=warmShaders.rt||(warmShaders.rt=new THREE.WebGLRenderTarget(8,8));
-    try{renderer.shadowMap.needsUpdate=true;renderer.setRenderTarget(rt);renderer.clear();renderer.render(scene,camera);renderer.render(wScene,wCam);}finally{renderer.setRenderTarget(null);}
+    try{renderer.shadowMap.needsUpdate=true;renderer.setRenderTarget(rt);renderer.clear();renderer.render(scene,camera);renderer.render(wScene,wCam);if(typeof MD!=='undefined'&&MD.sc)renderer.render(MD.sc,MD.cam);}
+    finally{renderer.setRenderTarget(null);ocultos.forEach(o=>o.visible=false);corte.forEach(o=>o.frustumCulled=true);}
     vms.forEach((v,i)=>v.visible=vis[i]);
   }catch(e){console.warn('warmShaders',e);}
   // pase lo que pase, el muñeco de prueba y los proyectiles de prueba se sacan (si no, quedaba un "bot congelado" en el mapa)

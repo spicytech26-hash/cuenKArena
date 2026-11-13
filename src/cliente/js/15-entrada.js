@@ -92,7 +92,7 @@ function renderVote(m){
 let chatDraft='';
 function openChat(){chatOpen=true;$('chat').classList.add('open');const i=$('chatIn');i.hidden=false;i.value=chatDraft;i.focus();for(const k in keys)keys[k]=false;mouseDown=false;selfUnlock();}
 // relock=false cuando el que cierra es un clic en el juego (ese mismo clic ya pide el mouse)
-function closeChat(send,relock=true){if(!chatOpen)return;const i=$('chatIn');const txt=i.value.trim();if(send&&txt&&net)net.send({t:'chat',m:txt});chatDraft=send?'':i.value;chatOpen=false;i.hidden=true;$('chat').classList.remove('open');i.blur();if(inGame&&relock)lockPointer();}
+function closeChat(send,relock=true){if(!chatOpen)return;const i=$('chatIn');const txt=i.value.trim();if(send&&txt==='/colisiones'){verColisiones();}else if(send&&txt&&net)net.send({t:'chat',m:txt});chatDraft=send?'':i.value;chatOpen=false;i.hidden=true;$('chat').classList.remove('open');i.blur();if(inGame&&relock)lockPointer();}
 // si el chat pierde el foco (clic afuera, Alt+Tab) se cierra solo: nunca te deja trabado
 $('chatIn').addEventListener('blur',()=>{if(chatOpen)setTimeout(()=>{if(chatOpen&&document.activeElement!==$('chatIn'))closeChat(false,false);},0);});
 $('chatIn').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();closeChat(true);}else if(e.key==='Escape'){e.preventDefault();closeChat(false,false);if(inGame)announce('','Hacé click para volver al juego');}});
@@ -143,3 +143,17 @@ addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyE')wheelKey(fals
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouseDown=false;WH.down=false;closeWheel(false);});
 function changeBots(d){S.bots=Math.max(0,Math.min(15,S.bots+d));saveS();syncSettings();if(net&&!online){net.send({t:'cfg',bots:S.bots});sysChat('Bots en la arena: '+S.bots);}}
 
+
+/* /colisiones: dibuja en wireframe todas las cajas con las que choca el jugador (rojo = sólido, cian = barrera,
+   amarillo = clip invisible). Lo que se ve y no tiene caja encima, se atraviesa. Otra vez /colisiones lo apaga. */
+let colWire=null;
+function verColisiones(){
+  if(colWire){scene.remove(colWire);colWire.geometry.dispose();colWire=null;sysChat('Colisiones: ocultas');return;}
+  const P=[],Cc=[],E=[[0,1],[1,3],[3,2],[2,0],[4,5],[5,7],[7,6],[6,4],[0,4],[1,5],[2,6],[3,7]];let n=0;
+  for(const b of W.brushes){if(b.nc)continue;n++;const a=b.min,c=b.max,col=b.bar?[0,1,1]:b.clip?[1,1,0]:[1,.2,.2];
+    const v=[];for(let k=0;k<8;k++)v.push([k&1?c[0]:a[0],k&2?c[1]:a[1],k&4?c[2]:a[2]]);
+    for(const [i,j] of E){P.push(...v[i],...v[j]);Cc.push(...col,...col);}}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('color',new THREE.Float32BufferAttribute(Cc,3));
+  colWire=new THREE.LineSegments(g,new THREE.LineBasicMaterial({vertexColors:true,depthTest:false,transparent:true,opacity:.7}));colWire.renderOrder=999;scene.add(colWire);
+  sysChat('Colisiones: '+n+' cajas sólidas · '+W.brushes.filter(b=>b.nc).length+' sin colisión');
+}

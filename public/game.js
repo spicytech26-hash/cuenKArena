@@ -43,7 +43,7 @@ const WEAPONS = [
   { name: 'Lanzagranadas',  ammo: 'grenades', cost: 1, rate: .75, type: 'proj', proj: 'grenade', speed: 26, dmg: 110, rad: 5.5, direct: 40, clean: 100, fuse: 1, mag: 4, reload: 2 },
   { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 60, rad: 4.5, sfall: .75, direct: 70, mag: 4, reload: 3.6 },   // como el del Soldier: 4 cohetes y ~2,7 s para recargar todo   // nerf: antes 100/105, después 80/85; ahora 70 directo y 60 de área (nunca más que el directo) que cae rápido con la distancia
   // plasma: se mantiene el botón para cargar y al soltar sale el rayo. Un toque pincha, la carga llena mata.
-  { name: 'Rifle de plasma', ammo: 'slugs',    cost: 1, rate: .45, type: 'rail', pel: 1,  dmg: 30, range: 400, mag: 5, reload: 2.2, carga: CARGA },
+  { name: 'Cañón de plasma', ammo: 'slugs',    cost: 1, rate: .45, type: 'rail', pel: 1,  dmg: 30, range: 400, mag: 5, reload: 2.2, carga: CARGA },
   // cuchillo mariposa: el segundo tajo sobre la misma víctima (dentro de 4 s) mata siempre
   { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 55, back: 1.8, range: 1.9, melee: true },   // alcance corto como el cuchillo del espía de TF2 o el del CS:GO
   { name: 'Francotirador',  ammo: 'sniper',   cost: 1, rate: 1.25, type: 'hit', pel: 1,  spread: .002, hip: .045, dmg: 115, head: 2, range: 500, scope: true, mag: 5, reload: 2.2 },
@@ -101,7 +101,7 @@ const SHOP = [
   // la molotov es de un solo uso: se compra estando vivo y si te matan la perdés
   { id: 'w10', cat: 'Bombas', name: 'Bomba molotov', w: 10, price: 300, once: 1, pack: ['molotov', 3], desc: 'Tecla G. 3 molotovs que dejan el piso en llamas 6 s. Si te matan, las perdés' },
   { id: 'w5', cat: 'Misiles', name: 'Lanzacohetes', w: 5, price: 1300, pack: ['rockets', 10], desc: 'Daño en área y rocket jump' },
-  { id: 'w6', cat: 'Rifles', name: 'Rifle de plasma', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Mantené el botón para cargar: un toque pincha, la carga llena mata de un tiro. Atraviesa a todos los que estén en línea' },
+  { id: 'w6', cat: 'Rifles', name: 'Cañón de plasma', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Mantené el botón para cargar: un toque pincha, la carga llena mata de un tiro. Atraviesa a todos los que estén en línea' },
   { id: 'w8', cat: 'Rifles', name: 'Francotirador', w: 8, price: 1500, pack: ['sniper', 10], desc: 'Click derecho para apuntar con mira. Mata de un tiro a quien no tiene blindaje' },
   { id: 'w9', cat: 'Rifles', name: 'Rifle de caza', w: 9, price: 1400, pack: ['caza', 8], desc: 'La bala viaja y cae: cualquier impacto mata. Tiros largos o al aire dan premio' },
   { id: 'w7', cat: 'Cuerpo a cuerpo', name: 'Cuchillo', w: 7, price: 0, free: 1, desc: 'Cuchillo mariposa: dos puñaladas matan siempre. No lo frena el blindaje' },
@@ -169,15 +169,32 @@ const DOM = {
   /* Minions defensores (07-partida/5c-minions.js): dos por generador, uno cuerpo a cuerpo y otro a distancia.
      Molestan y obligan a entrar en equipo, pero no son un muro. */
   MIN: {
-    POR_GEN: 2,     // cuántos cuida cada generador
-    HP: 55,
+    POR_GEN: 3,     // guardianes fijos que cuida cada generador
+    // OLEADAS (como los súbditos del LoL): salen de cada fortaleza por los tres carriles y marchan solas
+    OLA_INI: 15,    // la primera oleada sale a los 15 s
+    OLA_CADA: 30,   // y después una cada 30 s
+    OLA_C: 3, OLA_D: 2,   // por carril: 3 cuerpo a cuerpo y 2 a distancia
+    ASEDIO_CADA: 3, // cada 3 oleadas se suma un minion de asedio
+    HP_AS: 240, DMG_AS: 18, RATE_AS: 1.6, RANGE_AS: 6,   // asedio: mucha vida, pega fuerte y lejos
+    GEN_C: 8, GEN_D: 5, GEN_AS: 40,   // daño por golpe a generadores (bajo: ayudan, no reemplazan a los jugadores)
+    BOSS_F: .5,     // contra el boss pegan la mitad que contra un generador
+    SPD_OLA: 4.2,   // marchan más lento que lo que corre un guardián
+    SEE_OLA: 14,    // a qué distancia se trenzan con algo
+    AGGRO: 3,       // castigan al jugador que dañó a un aliado en los últimos 3 s
+    SEP: 1.1,       // se separan de sus compañeros a esta distancia (no se amontonan)
+    CRECE: .10, CRECE_CADA: 180,   // +10 % de vida y daño cada 3 minutos
+    LAST_HIT: 40,
+    INTERES: 70,    // a cada jugador se le mandan solo los minions a menos de 70 m
+    RED_CADA: 3,    // cada cuántos snapshots (20 por segundo) se mandan: 3 = casi 7 por segundo   // bono de créditos para el que da el último golpe
+    PATRULLA: 4,    // radio en metros en el que patrullan alrededor de su puesto cuando no hay nadie
+    HP: 45,
     DMG_C: 11, RATE_C: .85, RANGE_C: 2.8,    // cuerpo a cuerpo: daño, cada cuánto pega y alcance
     DMG_D: 8,  RATE_D: 1.5, RANGE_D: 20,     // a distancia
     SPD: 5.4,       // a cuánto corre (el jugador va a 10)
     SEE: 21,        // a qué distancia te ve
     LEASH: 25,      // si te alejás más de esto de su puesto, te deja y vuelve
     RESP: 25,       // cuánto tarda en volver a aparecer
-    MAX: 18,        // tope de minions vivos por equipo
+    MAX: 30,        // tope de minions de oleada vivos por equipo (los guardianes van aparte: 3 por generador)
     CRED: 60,       // créditos por matarlo (no cuenta como baja)
     R: .45, H: 1.5  // radio y alto
   },
@@ -1950,9 +1967,8 @@ MAPDEFS.pyramid = buildPyramid;
      centro z   0, plaza con el punto de poder y dos puentes de piedra
      sur    z  44, túnel a -7 m por dentro del arco de roca, con canal y rejas
 
-   Está armado con un kit de piezas que se repiten (columna, arco, muro roto, escalera, balcón, caño, caja,
-   barril, engranaje, farola, reja, escombro). Las piezas que son solo adorno llevan `nc: 1`: no chocan, no
-   entran al índice de colisión y no cuestan nada al servidor, pero el cliente las dibuja igual.
+   Está armado con un kit de piezas simples que se repiten (columna, arco, muro roto, escalera, caño, caja,
+   barril, farola, reja, escombro, vitral, lápida). TODO lo que se ve choca: no hay adornos fantasma.
    Nada de Math.random acá: el mapa se arma igual en el cliente y en el servidor, así que el azar es con semilla. */
 function buildSantuario() {
   const { lava, spawns, lights, add, ramp, wall, stairs, D, face, I, finish } = mapKit();
@@ -1965,28 +1981,22 @@ function buildSantuario() {
   const rr = () => ((SEED = (SEED * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
   const vr = (a, b) => a + (b - a) * rr();
 
-  /* ================= EL KIT ================= */
-  const D_ = { nc: 1 };                                            // adorno: se ve, no choca
+  /* ================= EL KIT =================
+     Todo lo que se ve a la altura de un jugador CHOCA: nada de paredes, caños o columnas fantasma.
+     Las piezas son simples (bloques grandes y pocos): se leen de lejos y no cuestan FPS. */
   const caja = (x, z, y, w, h, d, m) => add(x - w / 2, y, z - d / 2, x + w / 2, y + h, z + d / 2, m || 'crate');
-  const barril = (x, z, y) => { add(x - .45, y, z - .45, x + .45, y + 1.1, z + .45, 'metal'); add(x - .5, y + .25, z - .5, x + .5, y + .38, z + .5, 'metal', D_); add(x - .5, y + .72, z - .5, x + .5, y + .85, z + .5, 'metal', D_); };
-  // columna con base y capitel (el fuste choca, el resto es adorno)
+  const barril = (x, z, y) => add(x - .45, y, z - .45, x + .45, y + 1.1, z + .45, 'metal');
+  // columna: basa, fuste y capitel (la basa mide menos que un escalón: se camina por encima)
   const columna = (x, z, y, h, r, m) => {
-    add(x - r * 1.45, y, z - r * 1.45, x + r * 1.45, y + .45, z + r * 1.45, m || 'pillar', D_);
-    add(x - r, y, z - r, x + r, y + h - .5, z + r, m || 'pillar');
-    add(x - r * 1.45, y + h - .5, z - r * 1.45, x + r * 1.45, y + h, z + r * 1.45, m || 'pillar', D_);
+    add(x - r * 1.4, y, z - r * 1.4, x + r * 1.4, y + .4, z + r * 1.4, m || 'pillar');
+    add(x - r, y + .4, z - r, x + r, y + h - .5, z + r, m || 'pillar');
+    add(x - r * 1.4, y + h - .5, z - r * 1.4, x + r * 1.4, y + h, z + r * 1.4, m || 'pillar');
   };
-  // arco gótico: dos columnas y el vano escalonado entre ellas (eje = por dónde se pasa)
+  // arco: dos columnas y un dintel macizo arriba (eje = por dónde se pasa)
   const arco = (x, z, y, luz, h, eje, m) => {
     const q = luz / 2, mat = m || 'brick';
-    if (eje === 'z') {
-      columna(x, z - q, y, h, .5, mat); columna(x, z + q, y, h, .5, mat);
-      for (let k = 0; k < 3; k++) { const o = q - .35 - k * .55, yy = y + h - .5 + k * .5; add(x - .5, yy, z - o, x + .5, yy + .5, z + o, mat, D_); }
-      add(x - .55, y + h + 1, z - q - .5, x + .55, y + h + 1.5, z + q + .5, mat, D_);
-    } else {
-      columna(x - q, z, y, h, .5, mat); columna(x + q, z, y, h, .5, mat);
-      for (let k = 0; k < 3; k++) { const o = q - .35 - k * .55, yy = y + h - .5 + k * .5; add(x - o, yy, z - .5, x + o, yy + .5, z + .5, mat, D_); }
-      add(x - q - .5, y + h + 1, z - .55, x + q + .5, y + h + 1.5, z + .55, mat, D_);
-    }
+    if (eje === 'z') { columna(x, z - q, y, h, .5, mat); columna(x, z + q, y, h, .5, mat); add(x - .6, y + h, z - q - .7, x + .6, y + h + .8, z + q + .7, mat); }
+    else { columna(x - q, z, y, h, .5, mat); columna(x + q, z, y, h, .5, mat); add(x - q - .7, y + h, z - .6, x + q + .7, y + h + .8, z + .6, mat); }
   };
   // muro derruido: altura irregular, con mordiscos arriba
   const muroRoto = (x0, z0, x1, z1, y, h, m) => {
@@ -1996,51 +2006,44 @@ function buildSantuario() {
       if (ejeX) add(a, y, z0, b, y + hh, z1, m || 'brick'); else add(x0, y, a, x1, y + hh, b, m || 'brick');
     }
   };
-  // caño de bronce (adorno) de un punto a otro, sobre un eje
+  // caño de bronce de un punto a otro, sobre un eje (macizo)
   const cano = (x, z, y, L, eje, r) => {
     r = r || .3;
-    if (eje === 'x') { add(x, y - r, z - r, x + L, y + r, z + r, 'metal', D_); for (let k = 1; k < Math.abs(L) / 6; k++) { const q = x + L * k / Math.ceil(Math.abs(L) / 6); add(q - .2, y - r - .12, z - r - .12, q + .2, y + r + .12, z + r + .12, 'metal', D_); } }
-    else if (eje === 'z') { add(x - r, y - r, z, x + r, y + r, z + L, 'metal', D_); for (let k = 1; k < Math.abs(L) / 6; k++) { const q = z + L * k / Math.ceil(Math.abs(L) / 6); add(x - r - .12, y - r - .12, q - .2, x + r + .12, y + r + .12, q + .2, 'metal', D_); } }
-    else add(x - r, y, z - r, x + r, y + L, z + r, 'metal', D_);
+    if (eje === 'x') add(Math.min(x, x + L), y - r, z - r, Math.max(x, x + L), y + r, z + r, 'metal');
+    else if (eje === 'z') add(x - r, y - r, Math.min(z, z + L), x + r, y + r, Math.max(z, z + L), 'metal');
+    else add(x - r, y, z - r, x + r, y + L, z + r, 'metal');
   };
-  const engranaje = (x, z, y, r) => { add(x - r, y - .2, z - .25, x + r, y + r * 2 - .2, z + .25, 'metal', D_); for (let k = 0; k < 8; k++) { const a = k / 8 * 6.2832, cx = x + Math.cos(a) * r * .92, cy = y + r - .2 + Math.sin(a) * r * .92; add(cx - .22, cy - .22, z - .3, cx + .22, cy + .22, z + .3, 'metal', D_); } };
-  const farola = (x, z, y, col) => { add(x - .16, y, z - .16, x + .16, y + 3.2, z + .16, 'metal', D_); add(x - .45, y + 3.2, z - .45, x + .45, y + 3.9, z + .45, col, D_); lights.push({ x, y: y + 3.5, z, c: col === 'neonR' ? 0xff7a20 : 0x3a8bff, i: .9, d: 17 }); };
+  const farola = (x, z, y, col) => { add(x - .18, y, z - .18, x + .18, y + 3.2, z + .18, 'metal'); add(x - .45, y + 3.2, z - .45, x + .45, y + 3.9, z + .45, col); lights.push({ x, y: y + 3.5, z, c: col === 'neonR' ? 0xff7a20 : 0x3a8bff, i: .9, d: 17 }); };
   const reja = (x0, z0, x1, z1, y, h) => add(x0, y, z0, x1, y + h, z1, 'grate');
   const baranda = (x0, z0, x1, z1, y) => add(x0, y, z0, x1, y + .95, z1, 'rail');
-  // escombro: dos o tres bloques apilados, sirven de cobertura baja
-  const escombro = (x, z, y, r) => { add(x - r, y, z - r, x + r, y + r * vr(.7, 1.2), z + r, 'rock'); add(x - r * .6 + vr(-.4, .4), y, z - r * .6 + vr(-.4, .4), x + r * .55, y + r * vr(1, 1.7), z + r * .55, 'rock'); };
-  // vitral: paño de vidrio de color con su marco (puro adorno)
+  // escombro: dos bloques apilados, sirven de cobertura baja
+  const escombro = (x, z, y, r) => { add(x - r, y, z - r, x + r, y + r * vr(.7, 1.2), z + r, 'rock'); add(x - r * .6, y, z - r * .6, x + r * .55, y + r * vr(1, 1.6), z + r * .55, 'rock'); };
+  // vitral: paño de vidrio de color con su marco (macizo)
   const vitral = (x, z, y, w, h, eje, col) => {
-    if (eje === 'z') { add(x - .12, y, z - w / 2, x + .12, y + h, z + w / 2, col, D_); add(x - .3, y + h, z - w / 2 - .3, x + .3, y + h + .4, z + w / 2 + .3, 'brick', D_); add(x - .3, y - .4, z - w / 2 - .3, x + .3, y, z + w / 2 + .3, 'brick', D_); }
-    else { add(x - w / 2, y, z - .12, x + w / 2, y + h, z + .12, col, D_); add(x - w / 2 - .3, y + h, z - .3, x + w / 2 + .3, y + h + .4, z + .3, 'brick', D_); }
+    if (eje === 'z') { add(x - .15, y, z - w / 2, x + .15, y + h, z + w / 2, col); add(x - .3, y + h, z - w / 2 - .3, x + .3, y + h + .4, z + w / 2 + .3, 'brick'); add(x - .3, y - .4, z - w / 2 - .3, x + .3, y, z + w / 2 + .3, 'brick'); }
+    else { add(x - w / 2, y, z - .15, x + w / 2, y + h, z + .15, col); add(x - w / 2 - .3, y + h, z - .3, x + w / 2 + .3, y + h + .4, z + .3, 'brick'); }
   };
-  // cúpula escalonada (adorno) sobre la arena del boss
-  const cupula = (x, z, y, r, n, col) => {
-    for (let k = 0; k < n; k++) {
-      const t = k / n, rr2 = r * Math.cos(t * 1.45), yy = y + r * .62 * Math.sin(t * 1.45), gr = r * .1 + .35;
-      for (let a = 0; a < 12; a++) { const an = a / 12 * 6.2832 + k * .13, cx = x + Math.cos(an) * rr2, cz = z + Math.sin(an) * rr2; add(cx - gr, yy, cz - gr, cx + gr, yy + r * .14, cz + gr, k % 2 ? 'brick' : 'pillar', D_); }
-      if (k % 2 === 0) for (let a = 0; a < 6; a++) { const an = a / 6 * 6.2832 + .5, cx = x + Math.cos(an) * rr2, cz = z + Math.sin(an) * rr2; add(cx - .35, yy, cz - .35, cx + .35, yy + r * .13, cz + .35, col, D_); }
-    }
-    add(x - .5, y + r * .66, z - .5, x + .5, y + r * .66 + 1.6, z + .5, 'metal', D_);
-    add(x - 1.1, y + r * .66 + 1.6, z - 1.1, x + 1.1, y + r * .66 + 2.3, z + 1.1, col, D_);
-  };
+  // baldosa sobre el piso: lámina de 2 cm, así no te hundís en ella
+  const lamina = (x0, y, z0, x1, z1, m) => add(Math.min(x0, x1), y, z0, Math.max(x0, x1), y + .02, z1, m || 'tiles');
+  // lápida: cobertura baja
+  const lapida = (x, z, y, eje) => eje === 'x' ? add(x - .7, y, z - .2, x + .7, y + 1.1, z + .2, 'rock') : add(x - .2, y, z - .7, x + .2, y + 1.1, z + .7, 'rock');
 
   /* ================= EL CAÑÓN Y EL RÍO ================= */
   add(-CX, -18, -68, CX, CY, 68, 'canyon');                       // fondo
   lava.push({ min: [-CX, CY, -68], max: [CX, CY + 1.7, 68], dps: 999, water: 1 });
-  for (const s of [-1, 1]) {                                       // paredes del cañón: cornisas y caños rotos
-    for (let z = -64; z < 68; z += 8) { add(s * CX - s * 2.2, CY + vr(1, 4), z, s * CX, CY + vr(2, 5.5), z + vr(3, 6), 'rock', D_); if (rr() < .45) cano(s * CX - s * .4, z + 2, CY + vr(3, 8), s * 3, 'x', .25); }
+  for (const s of [-1, 1]) {                                       // paredes del cañón: cornisas de roca
+    for (let z = -64; z < 68; z += 16) add(Math.min(s * CX, s * (CX - 2.2)), CY + 1, z, Math.max(s * CX, s * (CX - 2.2)), CY + vr(2.5, 5), z + vr(4, 7), 'rock');
     for (const z of [-56, -24, 10, 50]) { add(s * CX - s * 5, CY, z - 3, s * CX, CY + .6, z + 3, 'rock'); escombro(s * (CX - 3), z, CY + .6, 1.6); }
   }
   // puente alto del norte (carril norte, y = 6) con sus arcos
   add(-CX - 1, 5, -53, CX + 1, 6, -35, 'step');
-  for (const x of [-20, -10, 0, 10, 20]) { add(x - 1.4, -2, -52, x + 1.4, 5, -36, 'pillar'); for (let k = 0; k < 3; k++) add(x - 2 - k * .5, 5 - 1 - k * .9, -52.5, x + 2 + k * .5, 5 - k * .9, -35.5, 'brick', D_); }
+  for (const x of [-20, -10, 0, 10, 20]) add(x - 1.4, -2, -52, x + 1.4, 5, -36, 'pillar');
   baranda(-CX, -53.2, CX, -52.6, 6); baranda(-CX, 35.6 - 71, CX, 36.2 - 71, 6);
   for (let x = -24; x <= 24; x += 8) { farola(x, -52.2, 6, 'light'); }
   // puentes del centro (y = 0) y plaza con el punto de poder
   for (const zc of [-13, 13]) {
     add(-CX - 1, -1, zc - 4, CX + 1, 0, zc + 4, 'step');
-    for (const x of [-18, -6, 6, 18]) { add(x - 1.2, -8, zc - 3.6, x + 1.2, -1, zc + 3.6, 'pillar'); add(x - 1.9, -1.9, zc - 4.2, x + 1.9, -1, zc + 4.2, 'brick', D_); }
+    for (const x of [-18, -6, 6, 18]) add(x - 1.2, -8, zc - 3.6, x + 1.2, -1, zc + 3.6, 'pillar');
     baranda(-CX, zc - 4.3, CX, zc - 3.75, 0); baranda(-CX, zc + 3.75, CX, zc + 4.3, 0);
   }
   // arco de roca del sur: por arriba se cruza a cielo abierto, por dentro sigue el túnel
@@ -2048,7 +2051,14 @@ function buildSantuario() {
   add(-CX - 1, -7, 30, CX + 1, 0, 36, 'rock'); add(-CX - 1, -7, 52, CX + 1, 0, 58, 'rock');
   add(-CX - 1, -2.2, 36, CX + 1, 0, 52, 'rock');
   for (const x of [-18, -6, 6, 18]) { add(x - 1.2, -14, 31, x + 1.2, -7, 34, 'pillar'); add(x - 1.2, -14, 54, x + 1.2, -7, 57, 'pillar'); }
-  for (let x = -22; x <= 22; x += 11) { add(x - 2.5, -7, 36, x + 2.5, -6.6, 52, 'tiles', D_); lights.push({ x, y: -3, z: 44, c: 0xffb060, i: .8, d: 15 }); }
+  for (let x = -22; x <= 22; x += 11) { lamina(x - 2.5, -7, 36, x + 2.5, 52); lights.push({ x, y: -3, z: 44, c: 0xffb060, i: .8, d: 15 }); }
+  // arriba del arco de roca: ruinas de un puente caído, para no cruzar a campo pelado
+  for (const s of [-1, 1]) {
+    columna(s * 13, 35, 0, vr(3, 5), .7, 'pillar'); columna(s * 13, 53, 0, vr(3, 5), .7, 'pillar');
+    escombro(s * 6, 40, 0, 1.4); escombro(s * 6, 48, 0, 1.2);
+    muroRoto(s * 18 - 1, 41, s * 18 + 1, 47, 0, 3);
+  }
+  add(-2.5, 0, 42, 2.5, 1.3, 46, 'rock');
   add(-15, -18, -9, 15, 0, 9, 'rock');                             // la isla de la plaza
   add(-11, 0, -7, 11, .5, 7, 'tiles'); add(-5.5, .5, -5.5, 5.5, 1, 5.5, 'tiles');
   add(-2.2, 1, -2.2, 2.2, 2.2, 2.2, 'pillar'); I('quad', 0, 2.2, 0);
@@ -2080,10 +2090,10 @@ function buildSantuario() {
     A(CX, -7, 30, 57, 0, 36, 'brick'); A(CX, -7, 52, 57, 0, 58, 'brick');   // paredes del túnel…
     A(XW, -7, 30, 92, 0, 36, 'brick'); A(XW, -7, 52, 92, 0, 58, 'brick');   // …cortadas donde están los fosos de los generadores
     A(CX, -2.2, 36, 42, 0, 52, 'brick'); A(42, -2.2, 43, XW + 2, 0, 52, 'brick');   // techo, con el hueco de la rampa
-    A(CX, -7, 36, 58, -6.6, 52, 'tiles', D_);                      // piso embaldosado
+    A(CX, -7, 36, 58, -6.98, 52, 'tiles');                         // piso embaldosado (lámina)
     for (let u = CX + 4; u < 92; u += 7) {                         // arcos del túnel y farolas
-      A(u - .4, -2.6, 36, u + .4, -2.2, 52, 'pillar', D_);
-      A(u - .5, -7, 36, u + .5, -2.6, 36.6, 'pillar', D_); A(u - .5, -7, 51.4, u + .5, -2.6, 52, 'pillar', D_);
+      A(u - .4, -2.6, 36, u + .4, -2.2, 52, 'pillar');
+      A(u - .5, -7, 36, u + .5, -2.6, 36.6, 'pillar'); A(u - .5, -7, 51.4, u + .5, -2.6, 52, 'pillar');
       if (u % 14 < 7) { lights.push({ x: sx * u, y: -3, z: 44, c: 0xffb060, i: .85, d: 15 }); }
     }
     A(CX, -7, 36.6, 92, -6.2, 38.4, 'grate');                      // canal inundado con reja a un costado
@@ -2102,17 +2112,32 @@ function buildSantuario() {
     stairs(sx * 56, -30, sx * 62, -18, 0, .55, 11, 'z', -1);        // bajada de servicio del lado de la fortaleza
     for (let u = CX + 5; u < XG; u += 9) {                         // nave de la catedral: dos filas de columnas
       col_(u, -58, 6, 8, .65, 'pillar'); col_(u, -40, 6, 8, .65, 'pillar');
-      A(u - .7, 13.5, -58.8, u + .7, 14.4, -39.2, 'brick', D_);
-      if (rr() < .6) { A(u - 3, 6, -50, u + 3, 6.6, -46, 'tiles', D_); }
+      A(u - .7, 13.5, -58.8, u + .7, 14.4, -39.2, 'brick');
     }
     muroRoto(sx * CX + (sx > 0 ? 2 : -8), -66, sx * CX + (sx > 0 ? 8 : -2), -62, 6, 9);
     for (let u = CX + 6; u < XG; u += 11) { muroRoto(sx * u - 1, -67, sx * u + 1, -60, 6, 8); vit_(u, -63.5, 9, 3, 5, 'x'); }
     A(CX + 2, 6, -67, XG, 10, -64, 'brick');                       // balcón corrido sobre la nave
     A(CX + 2, 10, -67, XG, 10.6, -60, 'step'); baranda(sx * (CX + 2), -60.6, sx * XG, -60, 10.6);
     for (let u = CX + 8; u < XG; u += 14) { A(u - 3, 6, -60.5, u + 3, 10, -59.5, 'step', { ramp: { axis: 'z', dir: -1, lo: 0, hi: 4 } }); }
-    for (let u = CX + 7; u < XG; u += 8) { esc_(u, vr(-56, -34), 6, vr(1, 2)); if (rr() < .5) caj_(u + 2, vr(-54, -36), 6, 1.8, 1.5, 1.8); }
+    for (let u = CX + 9; u < XG - 6; u += 10) { esc_(u, vr(-54, -36), 6, vr(1.1, 1.8)); caj_(u + 4, vr(-52, -38), 6, 1.8, 1.5, 1.8); }
     for (const u of [34, 48, 58]) { arc_(u, -44, 6, 7, 7, 'z'); far_(u, -36, 6); }
-    A(CX, 6, -34, XG, 6.6, -31, 'step', D_);
+
+    /* ---------- SUPERFICIE SUR: cementerio y cripta sobre el túnel ----------
+       Arriba del túnel había un llano pelado. Ahora: una cripta con dos puertas, lápidas para cubrirse,
+       un mirador al que se sube por escalera y un muro roto que tapa del carril del centro. */
+    A(30, 0, 54, 32.6, 3.2, 54.8, 'brick'); A(34.6, 0, 54, 37, 3.2, 54.8, 'brick');      // cripta: frente con puerta
+    A(30, 0, 61.2, 37, 3.2, 62, 'brick'); A(30, 0, 54, 30.8, 3.2, 62, 'brick');
+    A(36.2, 0, 54, 37, 3.2, 57, 'brick'); A(36.2, 0, 59, 37, 3.2, 62, 'brick');           // costado con otra puerta
+    A(29.6, 3.2, 53.6, 37.4, 3.7, 62.4, 'step');                                         // techo
+    lamina(sx * 30.8, 0, 54.8, sx * 36.2, 61.2, 'tiles');
+    lights.push({ x: sx * 33.5, y: 2.6, z: 58, c: luz, i: .8, d: 9 });
+    for (const u of [40, 44.5, 49, 53.5]) for (const z of [56.5, 60.5, 64.5]) if (!(u === 53.5 && z === 56.5)) A(u - .7, 0, z - .2, u + .7, 1.1, z + .2, 'rock');   // lápidas
+    A(46, 0, 45.5, 54, 2.5, 50.5, 'brick'); baranda(sx * 46, 45.5, sx * 54, 46.1, 2.5);   // mirador sobre la boca del túnel
+    stairs(sx * 48, 50.5, sx * 52, 55.5, 0, .5, 5, 'z', -1);
+    muroRoto(Math.min(sx * 28, sx * 39), 31, Math.max(sx * 28, sx * 39), 32, 0, 3.4);   // tapa del carril del centro
+    col_(30, 45, 0, 5.5, .6, 'pillar'); col_(38, 49, 0, 4, .6, 'pillar');
+    caj_(40, 46.5, 0, 1.6, 1.3, 1.6); esc_(32, 38.5, 0, 1.3);
+    far_(34, 44, 0); far_(52, 63, 0);
 
     /* ---------- CARRIL CENTRO: ruinas abiertas ---------- */
     for (const [u, z] of [[34, -18], [34, 18], [46, -10], [46, 10], [56, -20], [56, 20], [40, 0], [52, 0]]) { col_(u, z, 0, 7, .6, 'pillar'); }
@@ -2123,8 +2148,8 @@ function buildSantuario() {
     stairs(sx * 34, -3, sx * 44, 3, 0, .55, 8, 'x', -sx);
     baranda(sx * 29.6, -14, sx * 30.2, 14, 4.6);
     for (const z of [-24, 24]) { arc_(36, z, 0, 8, 7, 'x'); }
-    for (let u = CX + 8; u < XG; u += 10) { barril(sx * u, vr(-26, 26), 0); if (rr() < .5) barril(sx * u + sx, vr(-26, 26), 0); }
-    for (const z of [-20, 0, 20]) far_(58, z, 0);
+    for (let u = CX + 8; u < XG - 6; u += 10) barril(sx * u, vr(-26, 26), 0);
+    for (const z of [-20, 20]) far_(56, z, 0);   // a los costados: el medio del carril queda libre hasta el portón
 
     /* ---------- MURO DE LA FORTALEZA Y LAS TRES BARRERAS ---------- */
     const puertas = [D(LANES[0].z - GW / 2, LANES[0].z + GW / 2, 6, 12), D(-GW / 2, GW / 2, 0, 6), D(LANES[2].z - GW / 2, LANES[2].z + GW / 2, -7, -2.2)];
@@ -2142,15 +2167,12 @@ function buildSantuario() {
       for (const s of [-1, 1]) {
         const zg = L.z + s * 11;
         // puesto fortificado del generador: plataforma, parapeto con huecos y cobertura alrededor
-        A(XG - 4, L.y, zg - 4, XG + 3, L.y + .6, zg + 4, 'tiles');
-        for (let q = -4.6; q < 4.5; q += 2.6) A(XG - 4.6, L.y + .6, zg + q, XG - 3.4, L.y + 2, zg + q + 1.6, 'brick');   // parapeto almenado: cubre, pero deja ver y tirar
-        A(XG - 4.6, L.y + .6, zg + s * 4, XG + 3, L.y + 2.2, zg + s * 4.6, 'brick');
-        col_(XG + 2.5, zg - 3.5, L.y + .6, 3.4, .45, 'pillar'); col_(XG + 2.5, zg + 3.5, L.y + .6, 3.4, .45, 'pillar');
-        A(XG - 8, L.y, zg - 1.2, XG - 6, L.y + 1.4, zg + 1.2, 'crate');
-        esc_(XG - 7, zg + s * 3.5, L.y, 1.3);
-        A(XG + 3, L.y, zg - .45, XW, L.y + .9, zg + .45, 'metal', D_);     // caño de alimentación hasta la barrera
-        cano(sx * XG, zg + s * .9, L.y + 2.6, sx * (XW - XG), 'x', .25);
-        engranaje(sx * (XG - 3.6), zg - s * 2.4, L.y + .6, 1.1);
+        A(XG - 4, L.y, zg - 4, XG + 3, L.y + .4, zg + 4, 'tiles');
+        for (let q = -4.6; q < 4.5; q += 3.2) A(XG - 4.6, L.y + .4, zg + q, XG - 3.4, L.y + 1.8, zg + q + 1.6, 'brick');   // parapeto almenado: cubre, pero deja ver y tirar
+        A(XG - 4.6, L.y + .4, zg + s * 4, XG + 3, L.y + 2.2, zg + s * 4.6, 'brick');
+        col_(XG + 2.5, zg - 3.5, L.y + .4, 3.4, .45, 'pillar'); col_(XG + 2.5, zg + 3.5, L.y + .4, 3.4, .45, 'pillar');
+        esc_(XG - 9, zg + s * 3.5, L.y, 1.2);
+        cano(sx * XG, zg + s * .9, L.y + 2.6, sx * (XW - XG), 'x', .25);   // caño de energía hasta la barrera
         A(XG - 1.6, L.y, zg - 1.6, XG + 1.6, L.y + 3.2, zg + 1.6, 'clip', { gen: gens.length });
         // desde dónde lo ataca un bot: a cubierto, del lado de afuera
         const atk = lane === 0 ? P(XG - 9, 6, zg + s * 2) : lane === 1 ? P(XG - 9, 0, zg + s * 1.5) : P(XG - 7, -7, 44 - s * 4);
@@ -2162,10 +2184,9 @@ function buildSantuario() {
       const rx = XG - 13, muni = ['slugs', 'bullets', 'shells'][lane];
       A(rx - 3, L.y, L.z - 3.4, rx + 3, L.y + .4, L.z + 3.4, 'tiles');                  // tarima
       A(rx + 2, L.y + .4, L.z - 3.4, rx + 3.2, L.y + 2.2, L.z + 3.4, 'brick');          // parapeto que te tapa de los generadores
-      A(rx - 3, L.y + .4, L.z - 3.6, rx + 3.2, L.y + 2.6, L.z - 3, 'brick', D_); A(rx - 3, L.y + .4, L.z + 3, rx + 3.2, L.y + 2.6, L.z + 3.6, 'brick', D_);
-      A(rx - 3.4, L.y + 2.4, L.z - 3.8, rx + 3.4, L.y + 2.8, L.z + 3.8, 'metal', D_);   // techito
-      caj_(rx - 1.8, L.z - 2.2, L.y + .4, 1.4, 1.2, 1.4); caj_(rx - 1.8, L.z + 2.2, L.y + .4, 1.4, 1, 1.4, 'crate');
-      barril(sx * (rx + 1.2), L.z + 2.4, L.y + .4); cano(sx * (rx + 2.6), L.z, L.y + 1.9, 6.2, 'z', .18);
+      A(rx - 3, L.y + .4, L.z - 3.6, rx + 3.2, L.y + 2.4, L.z - 3, 'brick'); A(rx - 3, L.y + .4, L.z + 3, rx + 3.2, L.y + 2.4, L.z + 3.6, 'brick');
+      A(rx - 3.4, L.y + 2.4, L.z - 3.8, rx + 3.4, L.y + 2.8, L.z + 3.8, 'metal');   // techito (se puede subir)
+      caj_(rx - 1.8, L.z + 2.2, L.y + .4, 1.4, 1, 1.4, 'crate');
       lights.push({ x: sx * rx, y: L.y + 2.3, z: L.z, c: 0x9fe8ff, i: .9, d: 11 });
       deco.push({ t: 'glow', x: sx * rx, y: L.y + 2.2, z: L.z, c: 0x8fe4ff, s: 1.1 });
       I('health', sx * rx, L.y + .5, L.z + 1.4);
@@ -2174,17 +2195,16 @@ function buildSantuario() {
     });
 
     /* ---------- FORTALEZA ---------- */
-    A(XW + 2, 0, -68, 92, .5, 68, 'tiles', D_);                    // piso embaldosado
+    lamina(sx * (XW + 2), 0, -68, sx * 92, 36); lamina(sx * (XW + 2), 0, 52, sx * 92, 68); lamina(sx * 82, 0, 36, sx * 92, 52);   // piso embaldosado (sin tapar la rampa del túnel)
     // bajada del portón norte (y 6) al patio (y 0)
     A(XW + 2, 0, -53, XW + 16, 6, -35, 'floor', { ramp: { axis: 'x', dir: -sx, lo: 0, hi: 6 } });
-    A(XW + 2, 0, -68, 92, 6, -56, 'rock'); A(XW + 2, 0, -32, 92, 2.5, -24, 'rock', D_);
+    A(XW + 2, 0, -68, 92, 6, -56, 'rock'); esc_(XW + 9, -28, 0, 1.6); esc_(XW + 20, -27, 0, 1.4);
     // arena circular del boss: anillo de columnas, gradas y cúpula
     const bx = sx * XB;
     add(bx - 15, -18, -15, bx + 15, 0, 15, 'floor');
     add(bx - 13, 0, -13, bx + 13, .35, 13, 'tiles'); add(bx - 9, .35, -9, bx + 9, .7, 9, 'tiles');
     add(bx - 3.2, .7, -3.2, bx + 3.2, 1.4, 3.2, 'pillar');
-    for (let a = 0; a < 10; a++) { const an = a / 10 * 6.2832 + .31, cx2 = bx + Math.cos(an) * 14.5, cz = Math.sin(an) * 14.5; if (Math.abs(cz) > 13.6 || Math.abs(cx2 - bx) > 13.6) continue; columna(cx2, cz, 0, 13, .75, 'pillar'); add(cx2 - 1, 13, cz - 1, cx2 + 1, 14.5, cz + 1, 'brick', D_); }
-    cupula(bx, 0, 15, 15, 5, col);
+    for (let a = 0; a < 10; a++) { const an = a / 10 * 6.2832 + .31, cx2 = bx + Math.cos(an) * 14.5, cz = Math.sin(an) * 14.5; if (Math.abs(cz) > 13.6 || Math.abs(cx2 - bx) > 13.6) continue; columna(cx2, cz, 0, 9, .75, 'pillar'); }
     for (const z of [-26, -16, 16, 26]) vitral(sx * 91.5, z, 4, 7, 10, 'z', vid);          // vitrales del fondo de la fortaleza
     for (const s of [-1, 1]) { add(bx - 8.9, 0, s * 11, bx - 7.4, 12, s * 17, 'brick'); vitral(bx - 9.05, s * 14, 3, 5, 7, 'z', vid); }   // y dos en los machones de la arena
     for (const [u, z] of [[XB - 11, -11], [XB - 11, 11], [XB + 11, -11], [XB + 11, 11]]) { caj_(u, z, 0, 2, 1.5, 2); }
@@ -2196,16 +2216,13 @@ function buildSantuario() {
       A(XS - 5, 0, s * 20, 92, 8, s * 21, 'brick'); A(XS - 5, 0, s * 38, 92, 8, s * 39, 'brick');
       // el frente es un claustro de arcos abierto al patio del boss, no una pared
       for (const z of [24, 29.5, 35]) { arco(sx * (XS - 4.5), s * z, 0, 4.6, 5, 'z', 'pillar'); }
-      A(XS - 5, 6.5, s * 21, XS - 4, 8, s * 38, 'brick'); A(XS - 5.6, 8, s * 20, XS - 3.4, 8.6, s * 39, 'step', D_);
-      A(XS - 4, 0, s * 20.6, 92, .5, s * 21, 'tiles', D_);
-      A(XS - 4, 0, s * 24, XS - 3.4, 4.5, s * 35, 'brick', D_);
-      for (const z of [26, 31, 36]) { A(XS + 2, 0, s * z, XS + 5, .45, s * z + s * 2, 'tiles', D_); tspawns[team].push({ x: sx * (XS + 3), y: 0, z: s * z, yaw: face(sx * (XS + 3), s * z, 0, s * z) }); }
+      A(XS - 5, 6.5, s * 21, XS - 4, 8, s * 38, 'brick'); A(XS - 5.6, 8, s * 20, XS - 3.4, 8.6, s * 39, 'step');
+      for (const z of [26, 31, 36]) { tspawns[team].push({ x: sx * (XS + 3), y: 0, z: s * z, yaw: face(sx * (XS + 3), s * z, 0, s * z) }); }
       vit_(91.6, s * 30, 3, 6, 5, 'z');
       lights.push({ x: sx * XS, y: 5, z: s * 30, c: 0xffe0b0, i: 1, d: 20 });
       far_(XW + 6, s * 12, 0);
     }
     lights.push({ x: bx, y: 11, z: 0, c: luz, i: 1.8, d: 34 });
-    deco.push({ t: 'glow', x: bx, y: 17, z: 0, c: team ? 0x3a8bff : 0xff7a20, s: 7 });
     // reaparición adelantada: a mitad del carril que tu equipo ya abrió, del lado de afuera
     fspawns[1 - team] = [P(44, 6, -44), P(40, 0, 13), P(40, -7, 44)].map(p => ({ x: p.x, y: p.y, z: p.z, yaw: face(p.x, p.z, sx * 92, p.z) }));
 
@@ -3683,6 +3700,7 @@ class Game {
     t.chgT = 0;   // si te pegan mientras cargás el plasma, perdés la carga
     if (this.dom && this.time - t.spawnT < DOM.SPAWN_INV && how !== 'void' && how !== 'water') return;   // recién aparecido: invulnerable un momento
     if (this.mode.teams && att && att !== t && att.team === t.team) return; // sin fuego amigo
+    if (att && att !== t && att.team !== t.team) att.aggT = this.time;      // los minions castigan al que le pega a un aliado
     if (att && att !== t && hasCard(att, 'carnicero')) amt *= CARD_FX.DMG;   // carta Carnicero
     if (hasCard(t, 'coraza')) amt *= CARD_FX.ARMOR;                          // carta Coraza
     if (this.mode.snipers && w === 8 && att && att !== t) amt = Math.max(amt, Math.ceil(t.hp + t.ar) + 1);   // en Francotiradores mata de un tiro
@@ -4283,35 +4301,88 @@ class Game {
   domMinSetup() {
     const d = this.dom; if (!d) return;
     d.mins = []; d.mid = 1; d.minT = 0; d.minSent = new Map();
-    const M = MAPS[this.W.id];
+    d.ola = 0; d.olaT = DOM.MIN.OLA_INI; d.rutas = {};
+    for (const p of this.players.values()) p.minSent = null;
     d.gens.forEach((g, gi) => { for (let k = 0; k < DOM.MIN.POR_GEN; k++) this.domMinSpawn(gi, k); });
+  }
+  // cuánto crecieron los minions con el tiempo (vida y daño)
+  domMinEscala() { return 1 + DOM.MIN.CRECE * Math.floor((DOM.TIME - this.left) / DOM.MIN.CRECE_CADA); }
+  /* Ruta de una oleada: del frente de su propia muralla al frente de los generadores rivales del mismo
+     carril, por la navegación de los bots (cruza puentes y túneles igual que un jugador). Se calcula una
+     vez por partida y se guarda simplificada (un punto cada ~4 m). */
+  domRuta(team, lane, haciaBoss) {
+    const d = this.dom, key = team * 10 + lane + (haciaBoss ? 5 : 0);
+    if (d.rutas[key]) return d.rutas[key];
+    const media = gs => ({ x: gs.reduce((s, g) => s + g.atk.x, 0) / gs.length, y: gs.reduce((s, g) => s + g.atk.y, 0) / gs.length, z: gs.reduce((s, g) => s + g.atk.z, 0) / gs.length });
+    const mias = d.gens.filter(g => g.team === team && g.lane === lane), suyas = d.gens.filter(g => g.team !== team && g.lane === lane);
+    const a = media(mias), M = MAPS[this.W.id], bp = M.bossPts && M.bossPts[1 - team] && M.bossPts[1 - team][lane === 2 ? 1 : 0];
+    const b = haciaBoss && bp ? { x: bp.x, y: bp.y || 0, z: bp.z } : media(suyas);
+    const ini = haciaBoss ? media(suyas) : a;
+    let ruta = [ini, b];
+    try {
+      const nav = getNav(this.W), s = findNode(nav, ini.x, ini.y, ini.z), e = findNode(nav, b.x, b.y, b.z);
+      if (s && e) {
+        const { prev } = dijkstra(nav, e.id, this.domBan(team));
+        const pts = []; let i = s.id, n = 0;
+        while (i >= 0 && n++ < 5000) { const q = nav.nodes[i]; pts.push({ x: q.x + .5, y: q.y, z: q.z + .5 }); if (i === e.id) break; i = prev[i]; }
+        if (pts.length > 1 && i === e.id) ruta = pts.filter((p, k) => k % 4 === 0 || k === pts.length - 1);
+      }
+    } catch (er) { /* sin navegación: línea recta */ }
+    return d.rutas[key] = ruta;
+  }
+  // sale una oleada: por cada carril, cuerpo a cuerpo y a distancia (y asedio cada tanto)
+  domOla() {
+    const d = this.dom, K2 = DOM.MIN; d.ola++;
+    for (const team of [0, 1]) for (let lane = 0; lane < 3; lane++) {
+      const ruta = this.domRuta(team, lane), ini = ruta[0];
+      const tipos = []; for (let k = 0; k < K2.OLA_C; k++) tipos.push(0); for (let k = 0; k < K2.OLA_D; k++) tipos.push(1);
+      if (d.ola % K2.ASEDIO_CADA === 0) tipos.push(2);
+      tipos.forEach((kind, k) => {
+        if (d.mins.filter(m => m.ola && m.team === team && m.hp > 0).length >= K2.MAX) return;
+        // en fila detrás del primer punto de la ruta, siempre en un lugar libre (si no, quedaría encajado)
+        let px = ini.x, pz = ini.z;
+        for (const [ox, oz] of [[(k % 3 - 1) * 1.2, ((k / 3) | 0) * 1.4], [0, 0], [1.2, 0], [-1.2, 0], [0, 1.2], [0, -1.2], [2, 2], [-2, -2]]) {
+          if (!solidAt(this.W, ini.x + ox, ini.y + .05, ini.z + oz, DOM.MIN.R, DOM.MIN.H)) { px = ini.x + ox; pz = ini.z + oz; break; }
+        }
+        const m = this.domMinNuevo(team, -1, kind, px, ini.y, pz);
+        m.ola = 1; m.lane = lane; m.ruta = ruta; m.wp = 1;
+      });
+    }
+    this.domEv({ a: 'ola', n: d.ola });
+  }
+  domMinNuevo(team, gi, kind, x, y, z) {
+    const d = this.dom, K2 = DOM.MIN, es = this.domMinEscala(), hpMax = (kind === 2 ? K2.HP_AS : K2.HP) * es;
+    const m = { id: d.mid++, team, gen: gi, kind, x, y, z, yaw: team ? Math.PI / 2 : -Math.PI / 2, hp: hpMax, hpMax, es,
+      st: 0, t: 0, tgt: 0, tk: 0, cd: .5 + Math.random(), home: { x, y, z }, ph: Math.random() * 6, hist: [] };
+    d.mins.push(m);
+    this.domEv({ a: 'min+', i: m.id, p: r3a([m.x, m.y, m.z]), k: m.kind, b: m.team });
+    return m;
   }
   domMinSpawn(gi, k) {
     const d = this.dom, g = d.gens[gi]; let hx2, hz2;
     if (!d || !g || g.hp <= 0) return null;
-    if (d.mins.filter(m => m.team === g.team && m.hp > 0).length >= DOM.MIN.MAX) return null;
+
     // se plantan en el camino por el que entra el rival (entre el generador y su punto de ataque): son la
     // primera línea. Ese tramo siempre es terreno abierto y transitable, en cualquiera de los tres carriles.
-    const lado = k % 2 ? 1 : -1, f = .45 + (k >> 1) * .15;
+    const lado = k % 3 === 0 ? 0 : k % 3 === 1 ? 1 : -1, f = .62 + (k >> 1) * .12;
     const ax = g.atk.x - g.x, az = g.atk.z - g.z, al = Math.hypot(ax, az) || 1;
     const hx = g.x + ax * f - az / al * lado * 2.3, hz = g.z + az * f + ax / al * lado * 2.3, y0 = g.y + (g.atk.y - g.y) * f;
     // si justo ahí hay una caja o una columna, prueba unos lugares cerca antes de rendirse
-    let px = hx, pz = hz, py = y0;
-    for (const [ox, oz] of [[0, 0], [1.6, 0], [-1.6, 0], [0, 1.6], [0, -1.6], [2.6, 2.6], [-2.6, -2.6]]) {
-      const qx = hx + ox, qz = hz + oz, h = raycast(this.W, qx, y0 + 2.2, qz, 0, -1, 0, 7);
+    // tiene que quedar parado en el PISO del carril, no arriba de un parapeto o una caja: si no, después
+    // no se puede bajar y se queda clavado. Se busca el piso desde poco más arriba del suelo esperado.
+    let px = hx, pz = hz, py = y0, ok = false;
+    for (const [ox, oz] of [[0, 0], [1.6, 0], [-1.6, 0], [0, 1.6], [0, -1.6], [2.6, 2.6], [-2.6, -2.6], [-3.5, 0], [-5, 1.5], [-5, -1.5], [-7, 0]]) {
+      const qx = hx + ox * Math.sign(g.x || 1), qz = hz + oz, h = raycast(this.W, qx, y0 + .9, qz, 0, -1, 0, 4);
       if (!h) continue;
-      const qy = y0 + 2.2 - h.t;
+      const qy = y0 + .9 - h.t;
+      if (Math.abs(qy - y0) > .8) continue;
       if (solidAt(this.W, qx, qy + .05, qz, DOM.MIN.R, DOM.MIN.H)) continue;
-      px = qx; pz = qz; py = qy; break;
+      px = qx; pz = qz; py = qy; ok = true; break;
     }
+    if (!ok) { px = g.atk.x; pz = g.atk.z; py = g.atk.y; }   // último recurso: el punto de ataque, que siempre es piso abierto
     const hy = py; hx2 = px; hz2 = pz;
-    const m = {
-      id: d.mid++, team: g.team, gen: gi, kind: k % 2,   // 0 cuerpo a cuerpo, 1 a distancia
-      x: hx2, y: hy, z: hz2, yaw: Math.atan2(-ax / al, -az / al),
-      hp: DOM.MIN.HP, st: 0, t: 0, tgt: 0, cd: .5 + Math.random(), home: { x: hx2, y: hy, z: hz2 }, ph: Math.random() * 6, hist: []
-    };
-    d.mins.push(m);
-    this.domEv({ a: 'min+', i: m.id, p: r3a([m.x, m.y, m.z]), k: m.kind, b: m.team });
+    const m = this.domMinNuevo(g.team, gi, k % 2, hx2, hy, hz2);   // 0 cuerpo a cuerpo, 1 a distancia
+    m.yaw = Math.atan2(-ax / al, -az / al); m.k = k;
     return m;
   }
   /* Estado de red: lista plana y cuantizada (id, x, y, z, giro, vida·8+estado). `delta` manda solo los que
@@ -4323,28 +4394,52 @@ class Game {
       if (m.hp <= 0) continue;
       // el último número lleva vida, estado, equipo y tipo juntos: así el que entra a mitad de partida
       // puede armar los minions que todavía no vio aparecer
-      const v = [m.id, r1(m.x), r1(m.y), r1(m.z), Math.round(m.yaw * 10), ((Math.round(m.hp / DOM.MIN.HP * 100) * 4 + m.st) * 2 + m.team) * 2 + m.kind];
+      const v = [m.id, r1(m.x), r1(m.y), r1(m.z), Math.round(m.yaw * 10), ((Math.round(m.hp / m.hpMax * 100) * 4 + m.st) * 2 + m.team) * 4 + m.kind];
       if (delta) { const a = d.minSent.get(m.id); if (a && a[1] === v[1] && a[2] === v[2] && a[3] === v[3] && a[4] === v[4] && a[5] === v[5]) continue; d.minSent.set(m.id, v); }
       out.push(v[0], v[1], v[2], v[3], v[4], v[5]);
     }
     return out.length ? out : null;
   }
+  // envío por jugador: los minions dentro de DOM.MIN.INTERES metros, con delta propio de cada uno
+  domMinEnviar() {
+    const d = this.dom, R2 = DOM.MIN.INTERES * DOM.MIN.INTERES;
+    for (const p of this.players.values()) {
+      if (p.bot || !p.send || !p.joined) continue;
+      const vist = p.minSent || (p.minSent = new Map()), out = [];
+      for (const m of d.mins) {
+        if (m.hp <= 0) { vist.delete(m.id); continue; }
+        const dx = m.x - p.s.x, dz = m.z - p.s.z;
+        if (dx * dx + dz * dz > R2 && vist.has(m.id)) continue;   // lejos y ya lo conoce: no se manda
+        const v = [m.id, r1(m.x), r1(m.y), r1(m.z), Math.round(m.yaw * 10), ((Math.round(m.hp / m.hpMax * 100) * 4 + m.st) * 2 + m.team) * 4 + m.kind];
+        const a = vist.get(m.id);
+        if (a && a[1] === v[1] && a[2] === v[2] && a[3] === v[3] && a[4] === v[4] && a[5] === v[5]) continue;
+        vist.set(m.id, v); out.push(...v);
+      }
+      if (out.length) p.send({ t: 'mn', l: out });
+    }
+  }
   tickMins(dt) {
     const d = this.dom, K2 = DOM.MIN; if (!d || !d.mins || this.state !== 'play') return;
-    d.minT -= dt;
+    d.minT -= dt; d.olaT -= dt;
+    if (d.olaT <= 0) { d.olaT = K2.OLA_CADA; this.domOla(); }
     const reponer = d.minT <= 0; if (reponer) d.minT = 2;
     for (let i = d.mins.length - 1; i >= 0; i--) {
       const m = d.mins[i];
-      if (m.hp <= 0) { if (this.time - m.t > K2.RESP) { d.mins.splice(i, 1); this.domMinSpawn(m.gen, m.id % DOM.MIN.POR_GEN); } continue; }
-      if (d.gens[m.gen].hp <= 0) { this.domMinDown(m, null, true); continue; }   // sin generador no hay minions
-      this.tickMin(m, dt);
+      if (m.hp <= 0) { if (m.ola || this.time - m.t > 1.5) { d.mins.splice(i, 1); d.minSent.delete(m.id); } continue; }
+      if (!m.ola && d.gens[m.gen].hp <= 0) { this.domMinDown(m, null, true); continue; }   // sin generador no hay guardianes
+      if (m.ola) this.tickOla(m, dt); else this.tickMin(m, dt);
       if (this.state !== 'play') return;
       const h = m.hist; h.push([this.time, m.x, m.y, m.z]); if (h.length > 28) h.shift();
     }
     if (reponer) for (let gi = 0; gi < d.gens.length; gi++) {
       if (d.gens[gi].hp <= 0) continue;
-      const vivos = d.mins.filter(m => m.gen === gi && m.hp > 0).length;
-      if (vivos < K2.POR_GEN && !d.mins.some(m => m.gen === gi && m.hp <= 0)) this.domMinSpawn(gi, vivos);
+      // cada guardián caído vuelve a aparecer en su lugar pasados RESP segundos
+      d.guardT = d.guardT || {};
+      for (let k = 0; k < K2.POR_GEN; k++) {
+        if (d.mins.some(m => !m.ola && m.gen === gi && m.k === k && m.hp > 0)) { d.guardT[gi * 10 + k] = 0; continue; }
+        const key = gi * 10 + k; if (!d.guardT[key]) d.guardT[key] = this.time;
+        if (this.time - d.guardT[key] > K2.RESP) { d.guardT[key] = 0; this.domMinSpawn(gi, k); }
+      }
     }
   }
   tickMin(m, dt) {
@@ -4364,7 +4459,7 @@ class Game {
       }
       m.tgt = mejor ? mejor.id : 0;
     }
-    const t = m.tgt ? this.players.get(m.tgt) : null;
+    const t = m.tgt > 0 ? this.players.get(m.tgt) : null;
     const alcance = m.kind ? K2.RANGE_D : K2.RANGE_C;
     let wx = 0, wz = 0;
     if (t && t.alive) {
@@ -4376,19 +4471,95 @@ class Game {
         if (dl < alcance * .5 && m.kind) { wx = -dx / dl * .6; wz = -dz / dl * .6; }   // el de lejos se despega
         if (m.cd <= 0) {
           m.cd = m.kind ? K2.RATE_D : K2.RATE_C;
-          if (m.kind) this.domMinShoot(m, t); else { this.damage(t, K2.DMG_C, null, null, [dx / dl, .3, dz / dl], .04, 'minion'); this.domEv({ a: 'minhit', i: m.id }); }
+          if (m.kind) this.domMinShoot(m, t); else { this.damage(t, K2.DMG_C * m.es, null, null, [dx / dl, .3, dz / dl], .04, 'minion'); this.domEv({ a: 'minhit', i: m.id }); }
           if (this.state !== 'play') return;
         }
       }
     } else {
-      const dh = Math.hypot(m.x - m.home.x, m.z - m.home.z);
-      if (dh > 1.2) { m.st = 3; wx = (m.home.x - m.x) / dh; wz = (m.home.z - m.z) / dh; }
-      else m.st = 0;   // en su puesto: se queda quieto (el vaivén de mirar alrededor lo hace el cliente)
+      // patrulla: camina tranquilo entre puntos al azar cerca de su puesto, con pausas cortas
+      m.patT = (m.patT || 0) - dt;
+      if (!m.pat || m.patT <= 0) { const a = Math.random() * 6.283, r = 1 + Math.random() * K2.PATRULLA; m.pat = { x: m.home.x + Math.cos(a) * r, z: m.home.z + Math.sin(a) * r }; m.patT = 3 + Math.random() * 3; }
+      const dx = m.pat.x - m.x, dz = m.pat.z - m.z, dl = Math.hypot(dx, dz);
+      if (dl > .4) { m.st = 3; wx = dx / dl * .55; wz = dz / dl * .55; m.yaw = Math.atan2(-dx, -dz); }
+      else m.st = 0;
     }
     // si choca con una caja o un parapeto, se corre de costado un momento y la rodea
     if (m.rodeoT > 0) { m.rodeoT -= dt; const px = -wz || 1, pz = wx; wx = (wx + px * m.rodeo * 1.6) * .6; wz = (wz + pz * m.rodeo * 1.6) * .6; }
-    if (!this.domMinMove(m, wx, wz, dt) && (wx || wz) && m.rodeoT <= 0) { m.rodeo = Math.random() < .5 ? -1 : 1; m.rodeoT = .7; }
+    if (!this.domMinMove(m, wx, wz, dt) && (wx || wz) && m.rodeoT <= 0) { m.rodeo = Math.random() < .5 ? -1 : 1; m.rodeoT = .7; if (m.st === 3) m.patT = 0; }
     if (Math.hypot(m.x - m.home.x, m.z - m.home.z) > DOM.MIN.LEASH * 1.4) { m.x = m.home.x; m.y = m.home.y; m.z = m.home.z; m.st = 0; m.tgt = 0; m.hist.length = 0; }   // red de seguridad
+  }
+  /* Oleada: avanza por su ruta y se frena a pelear. Prioridad (como en el LoL): 1) minions rivales,
+     2) jugadores rivales que dañaron a un aliado hace poco, 3) jugadores rivales, 4) generadores del carril
+     (y el boss, si la barrera ya cayó). Si no hay nada al alcance, sigue marchando. */
+  tickOla(m, dt) {
+    const K2 = DOM.MIN, d = this.dom; m.cd -= dt; m.t2 = (m.t2 || 0) - dt;
+    const alc = m.kind === 2 ? K2.RANGE_AS : m.kind ? K2.RANGE_D * .6 : K2.RANGE_C;
+    if (m.t2 <= 0) {
+      m.t2 = .3; m.tgt = 0; m.tk = 0; let md = K2.SEE_OLA, pri = 9;
+      const ve = (x, y, z) => los(this.W, m.x, m.y + 1.1, m.z, x, y, z);
+      const prev = setPasa(m.team);
+      try {
+        for (const o of d.mins) { if (o.hp <= 0 || o.team === m.team) continue; const dd = Math.hypot(o.x - m.x, o.z - m.z); if (dd < md && Math.abs(o.y - m.y) < 4 && ve(o.x, o.y + 1, o.z)) { md = dd; m.tgt = o.id; m.tk = 1; pri = 1; } }
+        if (pri > 1) for (const p of this.players.values()) {
+          if (!p.alive || !p.joined || p.team === m.team || p.team < 0) continue;
+          const dd = Math.hypot(p.s.x - m.x, p.s.z - m.z), pr = this.time - (p.aggT || -99) < K2.AGGRO ? 2 : 3;
+          if (dd > K2.SEE_OLA || Math.abs(p.s.y - m.y) > 5 || pr > pri || (pr === pri && dd >= md)) continue;
+          if (!ve(p.s.x, p.s.y + 1.2, p.s.z)) continue;
+          md = dd; pri = pr; m.tgt = p.id; m.tk = 2;
+        }
+        if (!m.tgt) {   // estructuras: generadores vivos de su carril, o el boss si la barrera ya cayó
+          d.gens.forEach((g, gi) => { if (g.hp <= 0 || g.team === m.team || g.lane !== m.lane) return; const dd = Math.hypot(g.x - m.x, g.z - m.z); if (dd < Math.max(md, alc + 3)) { md = dd; m.tgt = gi + 1; m.tk = 3; } });
+          const b = d.boss[1 - m.team];
+          if (!m.tgt && b && b.hp > 0) { const dd = Math.hypot(b.x - m.x, b.z - m.z); if (dd < alc + 7) { m.tgt = 1; m.tk = 4; } }
+        }
+      } finally { setPasa(prev); }
+    }
+    // dónde está el objetivo
+    let tx = 0, ty = 0, tz = 0, vivo = false, rad = 0;
+    if (m.tk === 1) { const o = d.mins.find(q => q.id === m.tgt); if (o && o.hp > 0) { tx = o.x; ty = o.y + 1; tz = o.z; vivo = true; } }
+    else if (m.tk === 2) { const p = this.players.get(m.tgt); if (p && p.alive) { tx = p.s.x; ty = p.s.y + 1; tz = p.s.z; vivo = true; } }
+    else if (m.tk === 3) { const g = d.gens[m.tgt - 1]; if (g && g.hp > 0) { tx = g.x; ty = g.y + 1.5; tz = g.z; vivo = true; rad = 1.6; } }
+    else if (m.tk === 4) { const b = d.boss[1 - m.team]; if (b && b.hp > 0) { tx = b.x; ty = 3; tz = b.z; vivo = true; rad = 4; } }
+    let wx = 0, wz = 0, sp = 1;
+    if (vivo) {
+      const dx = tx - m.x, dz = tz - m.z, dl = Math.hypot(dx, dz) || 1e-6;
+      m.yaw = Math.atan2(-dx, -dz);
+      if (dl - rad > alc * .9) { m.st = 1; wx = dx / dl; wz = dz / dl; }
+      else {
+        m.st = 2;
+        if (m.cd <= 0) {
+          m.cd = m.kind === 2 ? K2.RATE_AS : m.kind ? K2.RATE_D : K2.RATE_C;
+          const dmg = (m.kind === 2 ? K2.DMG_AS : m.kind ? K2.DMG_D : K2.DMG_C) * m.es;
+          this.domEv(m.kind ? { a: 'minfire', i: m.id, p: r3a([tx, ty, tz]) } : { a: 'minhit', i: m.id });
+          if (m.tk === 1) { const o = d.mins.find(q => q.id === m.tgt); if (o) this.domMinDamage(o, dmg, null); }
+          else if (m.tk === 2) { const p = this.players.get(m.tgt); if (p) this.damage(p, dmg, null, null, [dx / dl, .2, dz / dl], .03, 'minion'); }
+          else {
+            const gd = (m.kind === 2 ? K2.GEN_AS : m.kind ? K2.GEN_D : K2.GEN_C) * m.es * (m.tk === 4 ? K2.BOSS_F : 1);
+            const fake = { team: m.team, id: 0, name: 'Minions', caps: 0, cr: 0, dmg: 0, send: null };
+            this.domHit(fake, m.tk === 3 ? 'g' : 'b', m.tk === 3 ? m.tgt - 1 : 1 - m.team, gd, false);
+          }
+          if (this.state !== 'play') return;
+        }
+      }
+    } else {
+      // sigue la ruta; al llegar al final y no tener nada, si la barrera del carril cayó, sigue hacia el boss
+      const r = m.ruta; let w = r[Math.min(m.wp, r.length - 1)];
+      if (Math.hypot(w.x - m.x, w.z - m.z) < 1.6) {
+        if (m.wp < r.length - 1) m.wp++;
+        else { const bar = d.bars.find(b => b.team !== m.team && b.lane === m.lane); if (bar && bar.st === 2 && !m.alBoss) { m.alBoss = 1; m.ruta = this.domRuta(m.team, m.lane, true); m.wp = 1; } }
+        w = m.ruta[Math.min(m.wp, m.ruta.length - 1)];
+      }
+      const dx = w.x - m.x, dz = w.z - m.z, dl = Math.hypot(dx, dz);
+      if (dl > .3) { m.st = 3; wx = dx / dl; wz = dz / dl; m.yaw = Math.atan2(-dx, -dz); sp = K2.SPD_OLA / K2.SPD; } else m.st = 0;
+    }
+    // separación simple de los compañeros: nadie se amontona
+    for (const o of d.mins) { if (o === m || o.hp <= 0 || o.team !== m.team) continue; const ex = m.x - o.x, ez = m.z - o.z, e2 = ex * ex + ez * ez; if (e2 < K2.SEP * K2.SEP && e2 > 1e-6) { const e = Math.sqrt(e2), f = (K2.SEP - e) / K2.SEP * .8; wx += ex / e * f; wz += ez / e * f; } }
+    if (m.rodeoT > 0) { m.rodeoT -= dt; const px = -wz || 1, pz = wx; wx = (wx + px * m.rodeo * 1.6) * .6; wz = (wz + pz * m.rodeo * 1.6) * .6; }
+    const x0 = m.x, z0 = m.z;
+    if (!this.domMinMove(m, wx * sp, wz * sp, dt) && (wx || wz) && m.rodeoT <= 0) { m.rodeo = Math.random() < .5 ? -1 : 1; m.rodeoT = .7; }
+    // trabado: si en 2 s casi no se movió queriendo caminar, salta al punto siguiente; si sigue, se reubica en él
+    if (m.st === 3 && Math.hypot(m.x - x0, m.z - z0) < .02) m.trab = (m.trab || 0) + dt; else m.trab = 0;
+    if (m.trab > 2) { m.trab = 0; m.atasco = (m.atasco || 0) + 1; if (m.wp < m.ruta.length - 1) m.wp++; if (m.atasco > 2) { const w = m.ruta[Math.min(m.wp, m.ruta.length - 1)]; m.x = w.x; m.y = w.y; m.z = w.z; m.hist.length = 0; m.atasco = 0; } }
   }
   // movimiento sencillo: avanza pegado al piso y no atraviesa paredes ni barreras de otros
   domMinMove(m, wx, wz, dt) {
@@ -4414,7 +4585,7 @@ class Game {
     this.domEv({ a: 'minfire', i: m.id, p: r3a([t.s.x, t.s.y + 1, t.s.z]) });
     const prev = setPasa(m.team), h = raycast(this.W, m.x, m.y + 1.1, m.z, dx / dl, dy / dl, dz / dl, dl); setPasa(prev);
     if (h) return;   // le pegó a una pared
-    this.damage(t, K2.DMG_D, null, null, [dx / dl, .2, dz / dl], .03, 'minion');
+    this.damage(t, K2.DMG_D * (m.es || 1), null, null, [dx / dl, .2, dz / dl], .03, 'minion');
   }
   // un jugador dice que le pegó a un minion (id = -1000 - idMinion)
   domMinClaim(p, o, d, id, n, W_) {
@@ -4437,7 +4608,7 @@ class Game {
   }
   domMinDown(m, att, apagado) {
     m.hp = 0; m.t = this.time; m.st = 0; m.tgt = 0; m.hist.length = 0;
-    if (att) { this.credit(att, DOM.MIN.CRED, 'minion'); att.mins = (att.mins || 0) + 1; }
+    if (att && att.id > 0) { this.credit(att, DOM.MIN.CRED + DOM.MIN.LAST_HIT, 'último golpe a un minion'); att.mins = (att.mins || 0) + 1; }
     this.domEv({ a: 'min-', i: m.id, p: r3a([m.x, m.y, m.z]), off: apagado ? 1 : 0, b: m.team });
   }
   // daño de área (explosiones y fuego) a los minions del equipo rival
@@ -4473,7 +4644,7 @@ class Game {
       .sort((a, b) => (gg ? b.lvl - a.lvl : 0) || (this.mode.teams ? b.caps - a.caps : 0) || b.kills - a.kills || (this.mode.crown ? b.ctime - a.ctime : 0) || a.deaths - b.deaths)
       .map(p => [p.id, p.name, p.kills, p.deaths, p.bot ? 0 : p.ping, p.bot ? 1 : 0, p.color, p.cr, p.lvl, p.team, p.caps, p.plvl, Math.round(p.dmg || 0), p.cpts || 0, Math.round(p.ctime || 0), this.dom ? [p.gens | 0, p.bars | 0, Math.round(p.bdmg || 0), p.mins | 0] : null]);
   }
-  sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, st: this.state, map: this.W.id, mode: this.o.mode, ts: this.ts, fs: this.flagState(), cd: Math.ceil(this.countT), hn: this.humanCount(false), mp: this.mode.minPlayers || 0, cw: this.crownState(), dm: this.domState(), mn: this.domMinState(), iu: this.items.map(it => it.up ? 1 : 0).join('') }); }   // iu: qué ítems están en pie; el cliente se resincroniza cada segundo, así un botiquín nunca queda "desaparecido" por un aviso perdido
+  sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, st: this.state, map: this.W.id, mode: this.o.mode, ts: this.ts, fs: this.flagState(), cd: Math.ceil(this.countT), hn: this.humanCount(false), mp: this.mode.minPlayers || 0, cw: this.crownState(), dm: this.domState(), iu: this.items.map(it => it.up ? 1 : 0).join('') }); }   // iu: qué ítems están en pie; el cliente se resincroniza cada segundo, así un botiquín nunca queda "desaparecido" por un aviso perdido
   endMatch() {
     if (this.state !== 'play') return;
     this.state = 'inter'; this.interT = 25;
@@ -4633,7 +4804,8 @@ class Game {
       if (d.dirtyG.size) { sn.gh = [...d.dirtyG].map(i => [i, Math.ceil(d.gens[i].hp)]); d.dirtyG.clear(); }
       if (d.orbs.length) sn.ob = d.orbs.map(o => [o.id, r2(o.x), r2(o.y), r2(o.z), o.team]);
       // minions: cada dos snapshots (10 por segundo) y solo si alguno se movió o cambió
-      if (d.mins && d.mins.length) { d.minN = (d.minN || 0) + 1; if (d.minN % 2 === 0) { const mn = this.domMinState(true); if (mn) sn.mn = mn; } }
+      // minions: aparte, a cada jugador solo los que tiene cerca (radio de interés) y solo si cambiaron
+      if (d.mins && d.mins.length) { d.minN = (d.minN || 0) + 1; if (d.minN % DOM.MIN.RED_CADA === 0) this.domMinEnviar(); }
     }
     this.bcast(sn);
     for (const p of this.players.values()) {
@@ -5168,5 +5340,5 @@ class Game {
   }
 }
 
-return { PRIMARY, primaryOf, censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, MODE_ALIAS, DOM, CARGA, setPasa, gridOf, slab, rayBrush, inv, findNode, r1, CARDS, CARD_BY, CARD_AT, CARD_MAX, CARD_FX, hasCard, CROWN, STORM, stormR, stormDmg, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, EMBLEMS, SKILL, topAt, pmove, inZeroG, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav, dijkstra };
+return { PRIMARY, primaryOf, censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, MODE_ALIAS, DOM, CARGA, setPasa, gridOf, slab, rayBrush, inv, findNode, r1, CARDS, CARD_BY, CARD_AT, CARD_MAX, CARD_FX, hasCard, CROWN, STORM, stormR, stormDmg, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, EMBLEMS, SKILL, topAt, pmove, inZeroG, triggers, launchPad, padVel, raycast, solidAt, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav, dijkstra };
 });

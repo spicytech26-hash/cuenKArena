@@ -3,7 +3,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" as="script" crossorigin>
-<link rel="preload" href="game.js" as="script">
+<link rel="preload" href="game.js?v=14b134ed" as="script">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -360,7 +360,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 .lgWrap{position:relative}
 .lgBase{display:block;width:100%;height:auto;overflow:visible}
 .lgDrips{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none}
-.dr{transform-box:fill-box;transform-origin:50% 0;animation:drip var(--t) ease-in-out var(--d) infinite alternate;filter:drop-shadow(0 0 3px rgba(255,20,10,.6))}
+.dr{transform-box:fill-box;transform-origin:50% 0;animation:drip var(--t) ease-in-out var(--d) infinite alternate;will-change:transform}
 .dp{animation:dropFall var(--t) ease-in var(--d) infinite}
 #mTitle small{display:block;margin-top:4px;font-family:var(--mono);font-size:clamp(11px,1.5vw,16px);letter-spacing:.42em;color:#ff4a3a;margin:2px 0 0 6px;text-shadow:0 0 12px rgba(255,40,20,.6)}
 #mTitle small i{color:var(--pump2);font-style:normal}
@@ -527,7 +527,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 #menu .keys kbd{background:#2a0c12;color:var(--pump2);border-radius:0}
 .mpane:has(.panel:not([hidden])) .keys{display:none}
 #menu .legal{text-align:center}
-@keyframes slam{0%{transform:translateY(-130px) scale(1.55);opacity:0;filter:blur(10px)}50%{transform:translateY(0) scale(.95);opacity:1;filter:blur(0)}64%{transform:translate(-8px,5px) scale(1.01)}78%{transform:translate(6px,-4px)}90%{transform:translate(-2px,1px)}100%{transform:none}}
+@keyframes slam{0%{transform:translateY(-130px) scale(1.55);opacity:0;}50%{transform:translateY(0) scale(.95);opacity:1}64%{transform:translate(-8px,5px) scale(1.01)}78%{transform:translate(6px,-4px)}90%{transform:translate(-2px,1px)}100%{transform:none}}
 @keyframes btnIn{from{transform:translateX(-90px) skewX(-14deg);opacity:0}}
 @keyframes panIn{from{transform:translateY(14px) scale(.97);opacity:0}}
 @keyframes flashIn{0%{opacity:.9}100%{opacity:0}}
@@ -537,7 +537,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 @keyframes glowP{0%,100%{opacity:.5}50%{opacity:.85}}
 @keyframes moonP{0%,100%{opacity:.42}50%{opacity:.62}}
 @keyframes fogD{from{background-position:0 0}to{background-position:70% 0}}
-@keyframes primP{0%,100%{filter:brightness(1)}50%{filter:brightness(1.22)}}
+@keyframes primP{0%,100%{opacity:1}50%{opacity:.86}}
 @media (max-width:900px){.mmain{grid-template-columns:minmax(0,1fr)}.sbody{grid-template-columns:minmax(0,1fr)}.stabs{flex-direction:row;flex-wrap:wrap}.stabs button{padding-left:34px}.locker{grid-template-columns:minmax(0,1fr)}.lockdoor{max-width:250px}}
 @media (max-width:620px){.sensrow{grid-template-columns:minmax(0,1fr) auto}.sensrow input[type=range]{grid-column:1 / 3;grid-row:2}}
 @media (prefers-reduced-motion:reduce){#menu *,.mmoon,.mfog,.mflash{animation:none!important;transition:none!important}}
@@ -659,7 +659,7 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 .card:hover:not(:disabled){border-color:#8dff3a;transform:translateY(-1px);box-shadow:0 0 16px rgba(141,255,58,.18)}
 .card:focus-visible{outline:2px solid #8dff3a;outline-offset:1px}
 .card:disabled{cursor:default}
-.card img{width:100%;height:62px;object-fit:contain;filter:drop-shadow(0 2px 0 rgba(0,0,0,.7))}
+.card img{width:100%;height:62px;object-fit:contain}
 .card .nm{font-size:14px;color:var(--bone)}
 .card .pr{font-size:13px;color:var(--cash);font-variant-numeric:tabular-nums}
 .card .ds{font-size:11px;line-height:1.35;color:var(--muted)}
@@ -1104,9 +1104,10 @@ body.noche #ngrain{display:block;inset:-12%;opacity:.05;background-image:url("da
 #domBox .dmid{align-self:center;display:flex;flex-direction:column;align-items:center;background:rgba(11,9,7,.85);padding:4px 12px;border-block:1px solid #000}
 #domBox .dmid b{font-size:24px;line-height:1;color:#fff;font-variant-numeric:tabular-nums}#domBox .dmid b.low{color:#ff5a4a;animation:blink .6s steps(2) infinite}
 #domBox .dmid i{font-style:normal;font-size:9px;letter-spacing:.18em;color:var(--muted)}
-#domMap{position:fixed;left:12px;top:40%;width:320px;height:96px;border:1px solid #000;box-shadow:0 3px 0 #000;pointer-events:none;image-rendering:pixelated}
+/* minimapa chico, en la esquina de arriba a la izquierda debajo de bajas/créditos: no tapa la vista */
+#domMap{position:fixed;left:12px;top:78px;width:150px;height:108px;border:1px solid #000;pointer-events:none;opacity:.82}
 @media (min-width:1700px){#domBox{top:calc(8px + env(safe-area-inset-top,0px))}}
-@media (max-width:900px){#domBox .dside{min-width:150px}#domBox .lane s{display:none}#domMap{width:200px;height:60px;top:auto;bottom:calc(150px + env(safe-area-inset-bottom,0px))}}
+@media (max-width:900px){#domBox .dside{min-width:150px}#domBox .lane s{display:none}#domMap{width:110px;height:80px}}
 
 /* ---------- Celulares y tablets: controles táctiles (15b-tactil.js) ---------- */
 #tc{position:fixed;inset:0;z-index:3;pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
@@ -1141,7 +1142,7 @@ body.tactil #bar{transform:translateX(-50%) scale(.72);transform-origin:center b
 body.tactil #stmBox{right:auto;left:50%;transform:translateX(-50%) scale(.85);bottom:auto;top:calc(42px + env(safe-area-inset-top,0px))}
 body.tactil #domBox{top:calc(40px + env(safe-area-inset-top,0px));transform:translateX(-50%) scale(.74);transform-origin:center top}
 body.tactil #domBox .lane s{display:none}
-body.tactil #domMap{left:auto;right:calc(8px + env(safe-area-inset-right,0px));top:calc(42px + env(safe-area-inset-top,0px));width:176px;height:53px;opacity:.9}
+body.tactil #domMap{left:auto;right:calc(8px + env(safe-area-inset-right,0px));top:calc(42px + env(safe-area-inset-top,0px));width:104px;height:75px;opacity:.85}
 #shopX{display:none}
 body.tactil #shopX{display:block;position:fixed;right:calc(10px + env(safe-area-inset-right,0px));top:calc(8px + env(safe-area-inset-top,0px));z-index:5;padding:10px 16px;font:700 13px/1 var(--mono);letter-spacing:.1em;color:#fff;background:#b3140f;border:2px solid #fff;border-radius:6px}
 body.tactil #crwBox,body.tactil #ctfBox{transform:translateX(-50%) scale(.8);transform-origin:center top}
@@ -1166,9 +1167,9 @@ body.tactil #killRow~#feed,body.tactil #feed{top:calc(100px + env(safe-area-inse
 #cargaRing svg{width:100%;height:100%;transform:rotate(-90deg)}
 #cargaRing circle{fill:none;stroke-width:7;stroke-linecap:butt}
 #cargaRing .bg{stroke:rgba(0,0,0,.45)}
-#cargaRing .fg{stroke:#49d6ff;stroke-dasharray:264;stroke-dashoffset:264;filter:drop-shadow(0 0 4px #49d6ff)}
-#cargaRing.full .fg{stroke:#fff;filter:drop-shadow(0 0 7px #8ef0ff);animation:blink .18s steps(2) infinite}
-#cargaRing.sobra .fg{stroke:#ff5a3c;filter:drop-shadow(0 0 7px #ff7a33)}
+#cargaRing .fg{stroke:#49d6ff;stroke-dasharray:264;stroke-dashoffset:264}
+#cargaRing.full .fg{stroke:#fff;animation:blink .18s steps(2) infinite}
+#cargaRing.sobra .fg{stroke:#ff5a3c}
 
 /* detalle de objetivos en el tablero de Captura el dominio */
 #board td.objd{white-space:nowrap;font-size:12px}
@@ -1176,6 +1177,10 @@ body.tactil #killRow~#feed,body.tactil #feed{top:calc(100px + env(safe-area-inse
 #board td.objd i{font-style:normal;opacity:.55;margin-left:3px}
 #board td.objd s{text-decoration:none;opacity:.35;margin:0 5px}
 #board td.objd .nada{opacity:.3}
+
+/* versión del build, abajo a la derecha del menú */
+#buildVer{position:fixed;right:8px;bottom:6px;font:11px monospace;color:#fff;opacity:.45;pointer-events:none;z-index:50}
+body.ingame #buildVer{display:none}
 </style>
 
 <canvas id="c"></canvas>
@@ -1233,7 +1238,7 @@ body.tactil #killRow~#feed,body.tactil #feed{top:calc(100px + env(safe-area-inse
     <div class="tm tb" id="ctfB"><span class="sc" id="tsB">0</span><span class="fs" id="fsB">en base</span></div>
   </div>
   <div id="domBox" hidden><div class="dside dr" id="domS0"></div><div class="dmid"><b id="domT">15:00</b><i>EL DOMINIO</i></div><div class="dside db" id="domS1"></div></div>
-  <canvas id="domMap" width="320" height="96" hidden></canvas>
+  <canvas id="domMap" width="188" height="136" hidden></canvas>
   <div id="lobbyBox" hidden><div class="lt" id="lobbyT"></div><div class="ls" id="lobbyS"></div></div>
   <div id="carry" hidden>LLEVÁS LA BANDERA · VOLVÉ A TU BASE</div>
   <div id="crwBox" hidden><span class="cbi"><svg viewBox="0 0 24 17" aria-hidden="true"><path d="M2.4 15.4h19.2l-1.5-9.6-4.3 3.6L12 1.6 8.2 9.4 3.9 5.8z"/></svg></span><span class="cbt"><b id="crwWho">SIN DUEÑO</b><i id="crwSub">andá a buscarla</i></span><span class="cbp"><i id="crwBar"></i></span></div>
@@ -1558,7 +1563,9 @@ body.tactil #killRow~#feed,body.tactil #feed{top:calc(100px + env(safe-area-inse
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin></script>
 <script>/* "Probar en práctica" desde el editor de mapas (editor.html): index.html?editor carga el mapa que dejó guardado el editor */
 if(/[?&]editor\b/.test(location.search)){try{self.CK_MAPA_EDITOR=JSON.parse(localStorage.getItem('cuenk_mapa_editor')||'null');}catch(e){}}</script>
-<script src="game.js"></script>
+<script src="game.js?v=14b134ed"></script>
+<script>console.log("%cCuenkArena build 14b134ed","color:#ff7a20;font-weight:bold");</script>
+<div id="buildVer">build 14b134ed</div>
 <script>
 (function(){
 'use strict';
@@ -2057,9 +2064,17 @@ function warmShaders(){
     add(buildPlayer({c:'#e8542a',v:'#ffffff',a:1},'x',true).g);
     for(const k of ['rocket','grenade','bullet','molotov']){spawnProjVis(k,[0,-999,0],[0,0,0],false,-1,0);}
     const vis=vms.map(v=>v.visible);vms.forEach(v=>v.visible=true);
+    if(typeof mnBuild==='function')for(const tm of [0,1])for(const k of [0,1,2])add(mnBuild(tm,k).g);
+    if(typeof mercBuild==='function'&&typeof mercVa==='function'&&mercVa())mercBuild();
+    // TODO se dibuja una vez: sin recorte por cámara y con lo oculto visible, así ningún shader se compila en medio
+    // de la partida (antes solo se precalentaba lo que la cámara veía al cargar, y el resto daba tirones la primera vez)
+    const ocultos=[],corte=[];
+    const destapar=r=>r.traverse(o=>{if(!o.visible){ocultos.push(o);o.visible=true;}if(o.frustumCulled){corte.push(o);o.frustumCulled=false;}});
+    destapar(scene);destapar(wScene);if(typeof MD!=='undefined'&&MD.sc)destapar(MD.sc);
     // render de verdad a una textura chiquita (renderer.compile falla con las sombras en three r128)
     const rt=warmShaders.rt||(warmShaders.rt=new THREE.WebGLRenderTarget(8,8));
-    try{renderer.shadowMap.needsUpdate=true;renderer.setRenderTarget(rt);renderer.clear();renderer.render(scene,camera);renderer.render(wScene,wCam);}finally{renderer.setRenderTarget(null);}
+    try{renderer.shadowMap.needsUpdate=true;renderer.setRenderTarget(rt);renderer.clear();renderer.render(scene,camera);renderer.render(wScene,wCam);if(typeof MD!=='undefined'&&MD.sc)renderer.render(MD.sc,MD.cam);}
+    finally{renderer.setRenderTarget(null);ocultos.forEach(o=>o.visible=false);corte.forEach(o=>o.frustumCulled=true);}
     vms.forEach((v,i)=>v.visible=vis[i]);
   }catch(e){console.warn('warmShaders',e);}
   // pase lo que pase, el muñeco de prueba y los proyectiles de prueba se sacan (si no, quedaba un "bot congelado" en el mapa)
@@ -2944,24 +2959,57 @@ vRigs[5]=(g,P,u,f)=>{
   else{H.p=vMix(PK,[0,-.11,-.32],vss((u-.87)/.11));P.loaded.visible=true;}
   if(VEV.cyc(.13,.87,n,.64))SFX.rocketIn();
 };
-/* ===== 6 · Rifle de plasma =====
+/* ===== 6 · Cañón de plasma =====
    VMOD[6]: el modelo (primera persona, tienda, ítem en el piso y en la mano de los demás). Devuelve la punta del caño.
    vRigs[6]: animaciones de disparo y recarga (ver 08-armas-animacion.js). */
-VMOD[6]=function(g){let tip=[0,0,-.5];
-    // rifle de plasma (en la línea del railgun de Quake): cuerpo de metal con bobinas que brillan, aletas, celda de energía abajo
-    const glow=new THREE.MeshBasicMaterial({color:0x8fe4ff});g.userData.glow=glow;
-    g.add(vRB(.08,.1,.46,.014,vSci,0,0,-.14),vRB(.084,.03,.36,.006,vSciD,0,.04,-.16),vRB(.024,.016,.3,.004,vSciD,0,.064,-.14),
-      vRB(.036,.03,.07,.006,vSciD,0,.08,.0),vT(.016,.016,.03,vSciD,0,.08,-.04,10),vSph(.012,glow,0,.08,-.056,10,8),
-      vRB(.018,.018,.3,.004,vSciD,-.026,-.02,-.5),vRB(.018,.018,.3,.004,vSciD,.026,-.02,-.5),vRB(.014,.04,.024,.004,vSciD,0,-.01,-.64),
-      vT(.016,.016,.36,glow,0,.0,-.48,12),
-      vP([[.02,-.05],[.07,-.05],[.1,-.16],[.055,-.165]],.036,vPoly,0,0,0,.005),vRB(.07,.06,.2,.016,vSciD,0,-.012,.17),vRB(.072,.1,.03,.008,vRubber,0,-.03,.27),
-      vRB(.05,.03,.12,.008,vSciD,0,-.064,-.27));
-    for(let k=0;k<4;k++){g.add(vRing(.03,.008,glow,0,0,-.42-k*.06,16));g.add(vRB(.09,.012,.012,.003,vSciD,0,.02,-.06-k*.05));}
-    for(let k=0;k<5;k++)g.add(vRB(.086,.004,.02,.001,vBlack,0,-.01,-.26+k*.04));
+// panal de abejas celeste para las rejillas de los costados (textura compartida)
+const vHexTex=(()=>{const c=cv(64,64,(g,w,h)=>{g.fillStyle='#06151c';g.fillRect(0,0,w,h);
+  const r=6.2,dx=r*1.732,dy=r*1.5;
+  for(let row=-1;row*dy<h+r;row++)for(let col=-1;col*dx<w+r;col++){const cx=col*dx+(row&1?dx/2:0),cy=row*dy;
+    g.beginPath();for(let k=0;k<6;k++){const a=Math.PI/6+k*Math.PI/3,rr=r-1.3;g.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr);}g.closePath();
+    const gr=g.createRadialGradient(cx,cy,0,cx,cy,r);gr.addColorStop(0,'#bff8ff');gr.addColorStop(.6,'#2fd2ff');gr.addColorStop(1,'#0b6f96');g.fillStyle=gr;g.fill();}});
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;return t;})();
+VMOD[6]=function(g){
+    /* Cañón de plasma: cuerpo cilíndrico gris oscuro, un tubo de vidrio grande en el medio con el plasma girando
+       adentro, rejillas hexagonales celestes a los costados, aletas arriba y una boca ancha con un aro de luz. */
+    const glow=new THREE.MeshBasicMaterial({color:0x8fe4ff});g.userData.glow=glow;                       // núcleo de plasma (se aviva al cargar)
+    const vid=new THREE.MeshPhongMaterial({color:0xaee9ff,transparent:true,opacity:.28,shininess:140,specular:0xffffff,depthWrite:false});
+    const hexM=new THREE.MeshBasicMaterial({map:vHexTex});
+    const Y=.028;   // el eje del cañón va un poco más arriba que el de antes: así la empuñadura y las manos quedan donde estaban
+    // culata redondeada y cuerpo trasero
+    g.add(vT(.062,.084,.12,vSciD,0,Y,.17,20),vSph(.062,vSciD,0,Y,.23,16,12),vT(.088,.088,.13,vSci,0,Y,.055,22));
+    g.add(vT(.094,.094,.03,vSciD,0,Y,-.025,22),vRing(.092,.006,vBlack,0,Y,-.01,24));                     // collar de atrás del vidrio
+    // tubo de vidrio con el plasma
+    g.add(vT(.071,.071,.27,vid,0,Y,-.175,24,true));
+    g.add(vT(.044,.044,.27,glow,0,Y,-.175,14));
+    for(let k=0;k<4;k++){const a=Math.PI/4+k*Math.PI/2;g.add(vRB(.012,.012,.27,.004,vSciD,Math.cos(a)*.076,Y+Math.sin(a)*.076,-.175));}   // varillas que sujetan el vidrio
+    // hebras de plasma que giran adentro del vidrio (pieza móvil: 'swirl')
+    const sw=new THREE.MeshBasicMaterial({color:0xd8fbff,transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false});g.userData.swirl=sw;
+    const hebras=new THREE.Group();hebras.name='swirl';hebras.position.set(0,Y,-.175);
+    for(let k=0;k<3;k++){const pts=[];for(let s=0;s<=40;s++){const z=-.13+s/40*.26,a=k*2.094+s/40*9.4,r=.05+Math.sin(s*.7+k)*.008;pts.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,z));}
+      hebras.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),60,.0045,5,false),sw));}
+    g.add(hebras);
+    // collar de adelante y sección delantera con las rejillas
+    g.add(vT(.094,.094,.03,vSciD,0,Y,-.325,22),vRing(.092,.006,vBlack,0,Y,-.34,24));
+    g.add(vT(.084,.078,.15,vSci,0,Y,-.415,22));
+    for(const s of [-1,1]){
+      const hx=vM(new THREE.CylinderGeometry(.034,.034,.012,6),vSciD,s*.077,Y,-.415,0,0,Math.PI/2);hx.rotation.set(Math.PI/6,0,Math.PI/2);g.add(hx);   // marco hexagonal
+      const hp=vM(new THREE.CylinderGeometry(.027,.027,.014,6),hexM,s*.079,Y,-.415);hp.rotation.set(Math.PI/6,0,Math.PI/2);g.add(hp);
+      const hb=vM(new THREE.CylinderGeometry(.03,.03,.01,6),vSciD,s*.085,Y,.07);hb.rotation.set(Math.PI/6,0,Math.PI/2);g.add(hb);                       // y otra chica atrás
+      const hb2=vM(new THREE.CylinderGeometry(.023,.023,.012,6),hexM,s*.087,Y,.07);hb2.rotation.set(Math.PI/6,0,Math.PI/2);g.add(hb2);
+    }
+    // boca: aro ancho con luz y el ánima oscura
+    g.add(vT(.078,.07,.06,vSciD,0,Y,-.52,22),vRing(.05,.008,glow,0,Y,-.552,22),vT(.034,.034,.02,vBlack,0,Y,-.548,16));
+    // aletas de arriba: adelante (radiador) y atrás, con ranuras de luz entre las de atrás
+    for(let k=0;k<4;k++)g.add(vRB(.05,.03,.01,.003,vSciD,0,Y+.088,-.37-k*.028));
+    for(let k=0;k<3;k++){g.add(vRB(.044,.034,.012,.004,vSciD,0,Y+.094,.03+k*.034));g.add(vRB(.03,.012,.008,.002,glow,0,Y+.094,.047+k*.034));}
+    g.add(vRB(.03,.02,.2,.006,vSciD,0,Y+.09,-.175));   // lomo sobre el vidrio
+    // empuñadura, guardamonte y celda de energía (la celda es la pieza que se cambia al recargar)
+    g.add(vP([[.02,-.05],[.07,-.05],[.1,-.16],[.055,-.165]],.036,vPoly,0,0,0,.005),vRB(.07,.05,.2,.016,vSciD,0,-.035,.13),vRB(.072,.1,.03,.008,vRubber,0,-.03,.27));
+    g.add(vRB(.05,.03,.12,.008,vSciD,0,-.064,-.27));
     const cm=new THREE.MeshBasicMaterial({color:0x6ee8ff});g.userData.cellGlow=cm;
     const cell=vGrp('cell',vRB(.05,.05,.09,.01,vSciD,0,0,0),vRB(.052,.012,.07,.003,cm,0,-.004,0),vRB(.03,.008,.03,.004,vSteelL,0,.028,0));cell.position.set(0,-.06,.03);g.add(cell);
-    tip=[0,0,-.64];
-  return tip;};
+  return [0,Y,-.57];};
 // ---- rifle de plasma: las bobinas se cargan después de cada tiro; cambia la celda de energía ----
 vRigs[6]=(g,P,u,f)=>{
   const gl=g.userData.glow,cg=g.userData.cellGlow;
@@ -2980,6 +3028,10 @@ vRigs[6]=(g,P,u,f)=>{
     H.p=vKF(u,[[0,[0,-.07,-.3]],[.1,grab],[.26,[0,-.16,.05]],[.4,PK],[.42,PK],[.56,[0,-.24,.06]],[.66,grab],[.72,grab],[.86,[0,-.07,-.3]]]);
   }
   const b=.25+.75*charge;gl.color.setRGB(.56*b+.3*(1-charge)*0,.89*b,1*b);cg.color.setRGB(.43*b,.91*b,1*b);
+  const qq=typeof me!=='undefined'&&me.cg?Math.min(1,me.cg/C.CARGA.MAX):0;
+  const dtv=Math.max(0,Math.min(.05,G.time-(g.userData.tPrev??G.time)));g.userData.tPrev=G.time;
+  if(P.swirl){P.swirl.rotation.z-=(1.2+charge*1.5+qq*14)*dtv;P.swirl.scale.set(1+qq*.12,1+qq*.12,1);}
+  if(g.userData.swirl)g.userData.swirl.opacity=.35+.55*charge+qq*.1;
   // mientras mantenés el botón: el tubo se llena de luz hasta quedar blanco y el rifle empieza a vibrar
   const q=typeof me!=='undefined'&&me.cg?Math.min(1,me.cg/C.CARGA.MAX):0;
   if(q>0){
@@ -4351,6 +4403,7 @@ function domEvent(m){
       break;}
     case 'alert': if(mine(m.b)&&G.time-DM.alertT>6){DM.alertT=G.time;announce('ATACAN A TU BOSS','volvé a defenderlo');SFX.domAlert();}break;
     // están rompiendo un generador tuyo: solo lo escucha el que lo defiende
+    case 'ola':{if(!DM.olaN||m.n<=2||m.n%3===0)announce(m.n%3===0?'OLEADA DE ASEDIO':'OLEADA '+m.n,'los minions marchan por los tres carriles');SFX.domTick(60);DM.olaN=m.n;break;}
     case 'genalert':{const g=W.gens[m.i];if(!g||!mine(m.b))break;
       if(G.time-DM.genT>5){DM.genT=G.time;announce('ATACAN UN GENERADOR','ruta '+C.DOM.LANES[g.lane]+' · le queda '+m.hp+'%');SFX.domAlert();}
       break;}
@@ -4536,6 +4589,7 @@ function domMap(){
   g.clearRect(0,0,cvs.width,cvs.height);g.drawImage(DM.bg,0,0);
   DM.bars.forEach((o,i)=>{const st=DM.b[i];if(st===2)return;g.fillStyle=DCSS[o.team];g.globalAlpha=st===1&&Math.sin(G.time*12)>0?.3:1;g.fillRect(X(o.x)-1.5,Z(o.z-o.w/2),3,o.w*sh);g.globalAlpha=1;});
   DM.gens.forEach((o,i)=>{g.fillStyle=DM.g[i]>0?DCSS[o.team]:'#555';g.fillRect(X(o.x)-2.5,Z(o.z)-2.5,5,5);if(DM.g[i]>0){g.strokeStyle='#000';g.lineWidth=1;g.strokeRect(X(o.x)-2.5,Z(o.z)-2.5,5,5);}});
+  if(typeof MN!=='undefined')for(const o of MN.m.values()){if(o.dead)continue;g.fillStyle=DCSS[o.team];g.fillRect(X(o.x)-1,Z(o.z)-1,o.kind===2?3:2,o.kind===2?3:2);}
   DM.boss.forEach((o,i)=>{g.fillStyle=DM.h[i]>0?DCSS[i]:'#555';g.beginPath();g.arc(X(o.x),Z(o.z),5.5,0,7);g.fill();g.strokeStyle='#fff';g.lineWidth=1.2;g.stroke();});
   const q=level.items.find(o=>o.ty==='quad');if(q){g.fillStyle=q.g.visible?'#c060ff':'#4a3a5a';g.save();g.translate(X(q.it.x),Z(q.it.z));g.rotate(.785);g.fillRect(-3,-3,6,6);g.restore();}
   for(const p of players.values())if(p.alive&&p.team===myTeam&&p.id!==myId){g.fillStyle=DCSS[myTeam<0?0:myTeam];g.fillRect(X(p.x)-1.5,Z(p.z)-1.5,3,3);}
@@ -4584,16 +4638,18 @@ function mnGeos() {
     }
     return dmGeo(p);
   };
-  MN.geo = { cuerpo: [cuerpo(0), cuerpo(1)], nucleo: new THREE.SphereGeometry(.13, 8, 6), halo: new THREE.SphereGeometry(.3, 8, 6) };
+  MN.geo = { cuerpo: [cuerpo(0), cuerpo(1), cuerpo(0)], nucMat: [0, 1].map(t => new THREE.MeshBasicMaterial({ color: DCOL[t], fog: false })), nucleo: new THREE.SphereGeometry(.13, 8, 6), halo: new THREE.SphereGeometry(.3, 8, 6) };
   return MN.geo;
 }
 function mnBuild(team, kind) {
   const G_ = mnGeos(), g = new THREE.Group();
   const cuerpo = new THREE.Mesh(G_.cuerpo[kind], dmMat());
-  const nuc = new THREE.Mesh(G_.nucleo, new THREE.MeshBasicMaterial({ color: DCOL[team], fog: false }));
+  // dos mallas por minion y materiales compartidos por equipo: cien minions no cambian de shader ni de estado
+  const nuc = new THREE.Mesh(G_.nucleo, G_.nucMat[team]);
   nuc.position.set(0, .95, -.2);
-  const halo = new THREE.Mesh(G_.halo, dmGlow(DCOL[team], .22)); halo.position.copy(nuc.position);
-  g.add(cuerpo, nuc, halo);
+  const halo = { material: { opacity: 0 }, visible: false };   // el halo transparente se sacó: costaba una malla por minion
+  if (kind === 2) g.scale.setScalar(1.55);                      // asedio: el grandote
+  g.add(cuerpo, nuc);
   return { g, cuerpo, nuc, halo };
 }
 function mnClear() { for (const o of MN.m.values()) scene.remove(o.g); MN.m.clear(); MN.on = false; }
@@ -4603,7 +4659,7 @@ function mnSet(arr) {
   if (!arr) return;
   for (let i = 0; i < arr.length; i += 6) {
     const id = arr[i], x = arr[i + 1], y = arr[i + 2], z = arr[i + 3], yaw = arr[i + 4] / 10, hs = arr[i + 5];
-    const kind = hs & 1, team = (hs >> 1) & 1, st = (hs >> 2) & 3, hp = (hs >> 4) / 100;
+    const kind = hs & 3, team = (hs >> 2) & 1, st = (hs >> 3) & 3, hp = (hs >> 5) / 100;
     let o = MN.m.get(id);
     if (!o) { o = mnArma(id, team, kind, x, y, z); o.nace = 0; }   // entró a mitad de partida: lo arma sin efecto
     o.tx = x; o.ty = y; o.tz = z; o.tyaw = yaw; o.hp = hp; o.st = st;
@@ -4652,10 +4708,9 @@ function updMins(dt) {
     o.g.position.set(o.x, o.y + bob, o.z);
     o.g.rotation.y = o.yaw + (o.st === 0 ? Math.sin(o.t * .5 + o.ph) * .5 : 0);   // en el puesto mira para los costados
     o.g.rotation.x = and ? .1 : 0 + (o.golpe > 0 ? -o.golpe * 1.2 : 0);
-    o.g.scale.setScalar(o.nace > 0 ? 1 - o.nace * 1.3 : 1);
-    o.halo.scale.setScalar(.8 + .3 * Math.sin(o.t * 3 + o.ph) + o.golpe * 2);
+    o.g.scale.setScalar((o.kind === 2 ? 1.55 : 1) * (o.nace > 0 ? 1 - o.nace * 1.3 : 1));
     o.halo.material.opacity = (.14 + .1 * o.hp) + o.golpe * .4;
-    o.nuc.material.color.setHex(o.hp < .4 && Math.sin(o.t * 16) > 0 ? 0xffffff : DCOL[o.team]);
+    o.nuc.scale.setScalar(o.hp < .4 && Math.sin(o.t * 16) > 0 ? 1.6 : 1);
   }
 }
 // el jugador les dispara: se cobra igual que a un rival, con id negativo (-1000 - id del minion)
@@ -4767,19 +4822,19 @@ function startGame(isOnline,mode,auto){
   if(isOnline){
     const tries=G.reTry||0;G.reTry=0;
     net=new WSNet(wsURL+'?mode='+mode,()=>{G.reTry=0;join();},(wasOk)=>{
-      net=null;inGame=false;
+      net=null;inGame=false;document.body.classList.remove('ingame');
       // si se corta en medio de la partida (el servidor se reinicia al publicar una actualización), se reintenta solo
       if((wasOk||tries)&&tries<20){showMenu();toast('Se cortó la conexión · reconectando'+(tries?' (intento '+(tries+1)+')':'')+'…');
         clearTimeout(G.reT);G.reT=setTimeout(()=>{if(!inGame&&!$('menu').hidden){G.reTry=tries+1;startGame(true,mode,true);}},tries?3000:1200);return;}
       showMenu();toast(wasOk?'Se cortó la conexión con el servidor':'No se pudo conectar al servidor');});
   }else{net=new LocalNet(mode);join();}
-  inGame=true;paused=false;$('bLeave').hidden=false;$('tPingBox').hidden=!isOnline;
+  inGame=true;paused=false;document.body.classList.add('ingame');$('bLeave').hidden=false;$('tPingBox').hidden=!isOnline;
   hideMenu();if(!TACTIL)lockPointer();else tcLandscape();
 }
 function leaveGame(){
   if(net){net.close();net=null;}renderVote(null);C.setPasa(-1);
   spEnd();
-  inGame=false;me.alive=false;$('bLeave').hidden=true;$('hud').hidden=true;$('board').hidden=true;$('inter').hidden=true;closeShop(true);
+  inGame=false;document.body.classList.remove('ingame');me.alive=false;$('bLeave').hidden=true;$('hud').hidden=true;$('board').hidden=true;$('inter').hidden=true;closeShop(true);
   if(level)for(const o of level.items)o.g.visible=true;
 }
 // cartel flotante cuando te echan por votación (1ª vez: podés volver; 2ª: cuenta regresiva hasta que termina la partida)
@@ -4846,6 +4901,7 @@ function onMsg(m){
       if(me.grabW!=null&&me.ow[me.grabW]&&me.alive){const g=me.grabW;me.grabW=null;selectWeapon(g,true);}
       updateHUD();if(!$('shop').hidden)renderShop();break;
     }
+    case 'mn': if(MODE==='dominio')mnSet(m.l);break;
     case 'sn': {
       const now=performance.now()/1000,sample=m.tm-now;
       if(CLK.off===null||sample>CLK.off)CLK.off=sample;else CLK.off+=(sample-CLK.off)*.003;
@@ -5888,7 +5944,7 @@ function updMerc(dt) {
   const quieto = !!S.mred;   // "reducir movimiento": sin flotar, sin mecerse, sin titilar
   if (MD.on) MD.t = Math.min(1, MD.t + dt / MERC.ENTRA);
   else MD.t -= dt / MERC.SALE;
-  if (MD.t <= 0) { MD.t = 0; mercFree(); return; }
+  if (MD.t <= 0) { MD.t = 0; return; }   // queda armado (oculto): rearmarlo recompilaba shaders y daba un tirón justo al matar
   const k = MD.t < 1 ? 1 - Math.pow(1 - MD.t, 3) : 1, T = G.time;
   const a = MERC.OPACO * k;
   for (const m of MD.mats) m.opacity = m.blending === THREE.AdditiveBlending ? a * (quieto ? .35 : .55) : a;
@@ -6013,7 +6069,7 @@ function renderVote(m){
 let chatDraft='';
 function openChat(){chatOpen=true;$('chat').classList.add('open');const i=$('chatIn');i.hidden=false;i.value=chatDraft;i.focus();for(const k in keys)keys[k]=false;mouseDown=false;selfUnlock();}
 // relock=false cuando el que cierra es un clic en el juego (ese mismo clic ya pide el mouse)
-function closeChat(send,relock=true){if(!chatOpen)return;const i=$('chatIn');const txt=i.value.trim();if(send&&txt&&net)net.send({t:'chat',m:txt});chatDraft=send?'':i.value;chatOpen=false;i.hidden=true;$('chat').classList.remove('open');i.blur();if(inGame&&relock)lockPointer();}
+function closeChat(send,relock=true){if(!chatOpen)return;const i=$('chatIn');const txt=i.value.trim();if(send&&txt==='/colisiones'){verColisiones();}else if(send&&txt&&net)net.send({t:'chat',m:txt});chatDraft=send?'':i.value;chatOpen=false;i.hidden=true;$('chat').classList.remove('open');i.blur();if(inGame&&relock)lockPointer();}
 // si el chat pierde el foco (clic afuera, Alt+Tab) se cierra solo: nunca te deja trabado
 $('chatIn').addEventListener('blur',()=>{if(chatOpen)setTimeout(()=>{if(chatOpen&&document.activeElement!==$('chatIn'))closeChat(false,false);},0);});
 $('chatIn').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();closeChat(true);}else if(e.key==='Escape'){e.preventDefault();closeChat(false,false);if(inGame)announce('','Hacé click para volver al juego');}});
@@ -6064,6 +6120,20 @@ addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyE')wheelKey(fals
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouseDown=false;WH.down=false;closeWheel(false);});
 function changeBots(d){S.bots=Math.max(0,Math.min(15,S.bots+d));saveS();syncSettings();if(net&&!online){net.send({t:'cfg',bots:S.bots});sysChat('Bots en la arena: '+S.bots);}}
 
+
+/* /colisiones: dibuja en wireframe todas las cajas con las que choca el jugador (rojo = sólido, cian = barrera,
+   amarillo = clip invisible). Lo que se ve y no tiene caja encima, se atraviesa. Otra vez /colisiones lo apaga. */
+let colWire=null;
+function verColisiones(){
+  if(colWire){scene.remove(colWire);colWire.geometry.dispose();colWire=null;sysChat('Colisiones: ocultas');return;}
+  const P=[],Cc=[],E=[[0,1],[1,3],[3,2],[2,0],[4,5],[5,7],[7,6],[6,4],[0,4],[1,5],[2,6],[3,7]];let n=0;
+  for(const b of W.brushes){if(b.nc)continue;n++;const a=b.min,c=b.max,col=b.bar?[0,1,1]:b.clip?[1,1,0]:[1,.2,.2];
+    const v=[];for(let k=0;k<8;k++)v.push([k&1?c[0]:a[0],k&2?c[1]:a[1],k&4?c[2]:a[2]]);
+    for(const [i,j] of E){P.push(...v[i],...v[j]);Cc.push(...col,...col);}}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('color',new THREE.Float32BufferAttribute(Cc,3));
+  colWire=new THREE.LineSegments(g,new THREE.LineBasicMaterial({vertexColors:true,depthTest:false,transparent:true,opacity:.7}));colWire.renderOrder=999;scene.add(colWire);
+  sysChat('Colisiones: '+n+' cajas sólidas · '+W.brushes.filter(b=>b.nc).length+' sin colisión');
+}
 /* =================== VOTACIÓN PARA CAMBIAR DE MAPA (Y) ===================
    Y abre la lista de mapas del modo; al elegir uno se abre una votación y el mapa cambia solo si votan que sí TODAS las personas
    de la partida (Y = sí, N = no). Si estás solo, cambia al instante. El que decide es el servidor (mensaje `mapchg`). */
@@ -7585,6 +7655,6 @@ function frame(now){
 requestAnimationFrame(frame);
 setTimeout(warmIcons,2500);   // los íconos de la tienda se arman mientras estás en el menú
 // gancho de depuración para las pruebas automáticas del proyecto (no lo usa el juego)
-window.DBG=()=>({scene,level,W,DM,MN,me,camera,renderer,THREE});
+window.DBG=()=>({scene,level,W,DM,MN,me,net,camera,renderer,THREE});
 })();
 </script>

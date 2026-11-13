@@ -135,7 +135,7 @@ function updMerc(dt) {
   const quieto = !!S.mred;   // "reducir movimiento": sin flotar, sin mecerse, sin titilar
   if (MD.on) MD.t = Math.min(1, MD.t + dt / MERC.ENTRA);
   else MD.t -= dt / MERC.SALE;
-  if (MD.t <= 0) { MD.t = 0; mercFree(); return; }
+  if (MD.t <= 0) { MD.t = 0; return; }   // queda armado (oculto): rearmarlo recompilaba shaders y daba un tirón justo al matar
   const k = MD.t < 1 ? 1 - Math.pow(1 - MD.t, 3) : 1, T = G.time;
   const a = MERC.OPACO * k;
   for (const m of MD.mats) m.opacity = m.blending === THREE.AdditiveBlending ? a * (quieto ? .35 : .55) : a;

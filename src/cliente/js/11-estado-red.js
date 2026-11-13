@@ -84,19 +84,19 @@ function startGame(isOnline,mode,auto){
   if(isOnline){
     const tries=G.reTry||0;G.reTry=0;
     net=new WSNet(wsURL+'?mode='+mode,()=>{G.reTry=0;join();},(wasOk)=>{
-      net=null;inGame=false;
+      net=null;inGame=false;document.body.classList.remove('ingame');
       // si se corta en medio de la partida (el servidor se reinicia al publicar una actualización), se reintenta solo
       if((wasOk||tries)&&tries<20){showMenu();toast('Se cortó la conexión · reconectando'+(tries?' (intento '+(tries+1)+')':'')+'…');
         clearTimeout(G.reT);G.reT=setTimeout(()=>{if(!inGame&&!$('menu').hidden){G.reTry=tries+1;startGame(true,mode,true);}},tries?3000:1200);return;}
       showMenu();toast(wasOk?'Se cortó la conexión con el servidor':'No se pudo conectar al servidor');});
   }else{net=new LocalNet(mode);join();}
-  inGame=true;paused=false;$('bLeave').hidden=false;$('tPingBox').hidden=!isOnline;
+  inGame=true;paused=false;document.body.classList.add('ingame');$('bLeave').hidden=false;$('tPingBox').hidden=!isOnline;
   hideMenu();if(!TACTIL)lockPointer();else tcLandscape();
 }
 function leaveGame(){
   if(net){net.close();net=null;}renderVote(null);C.setPasa(-1);
   spEnd();
-  inGame=false;me.alive=false;$('bLeave').hidden=true;$('hud').hidden=true;$('board').hidden=true;$('inter').hidden=true;closeShop(true);
+  inGame=false;document.body.classList.remove('ingame');me.alive=false;$('bLeave').hidden=true;$('hud').hidden=true;$('board').hidden=true;$('inter').hidden=true;closeShop(true);
   if(level)for(const o of level.items)o.g.visible=true;
 }
 // cartel flotante cuando te echan por votación (1ª vez: podés volver; 2ª: cuenta regresiva hasta que termina la partida)

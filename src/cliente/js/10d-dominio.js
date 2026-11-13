@@ -212,6 +212,7 @@ function domEvent(m){
       break;}
     case 'alert': if(mine(m.b)&&G.time-DM.alertT>6){DM.alertT=G.time;announce('ATACAN A TU BOSS','volvé a defenderlo');SFX.domAlert();}break;
     // están rompiendo un generador tuyo: solo lo escucha el que lo defiende
+    case 'ola':{if(!DM.olaN||m.n<=2||m.n%3===0)announce(m.n%3===0?'OLEADA DE ASEDIO':'OLEADA '+m.n,'los minions marchan por los tres carriles');SFX.domTick(60);DM.olaN=m.n;break;}
     case 'genalert':{const g=W.gens[m.i];if(!g||!mine(m.b))break;
       if(G.time-DM.genT>5){DM.genT=G.time;announce('ATACAN UN GENERADOR','ruta '+C.DOM.LANES[g.lane]+' · le queda '+m.hp+'%');SFX.domAlert();}
       break;}
@@ -397,6 +398,7 @@ function domMap(){
   g.clearRect(0,0,cvs.width,cvs.height);g.drawImage(DM.bg,0,0);
   DM.bars.forEach((o,i)=>{const st=DM.b[i];if(st===2)return;g.fillStyle=DCSS[o.team];g.globalAlpha=st===1&&Math.sin(G.time*12)>0?.3:1;g.fillRect(X(o.x)-1.5,Z(o.z-o.w/2),3,o.w*sh);g.globalAlpha=1;});
   DM.gens.forEach((o,i)=>{g.fillStyle=DM.g[i]>0?DCSS[o.team]:'#555';g.fillRect(X(o.x)-2.5,Z(o.z)-2.5,5,5);if(DM.g[i]>0){g.strokeStyle='#000';g.lineWidth=1;g.strokeRect(X(o.x)-2.5,Z(o.z)-2.5,5,5);}});
+  if(typeof MN!=='undefined')for(const o of MN.m.values()){if(o.dead)continue;g.fillStyle=DCSS[o.team];g.fillRect(X(o.x)-1,Z(o.z)-1,o.kind===2?3:2,o.kind===2?3:2);}
   DM.boss.forEach((o,i)=>{g.fillStyle=DM.h[i]>0?DCSS[i]:'#555';g.beginPath();g.arc(X(o.x),Z(o.z),5.5,0,7);g.fill();g.strokeStyle='#fff';g.lineWidth=1.2;g.stroke();});
   const q=level.items.find(o=>o.ty==='quad');if(q){g.fillStyle=q.g.visible?'#c060ff':'#4a3a5a';g.save();g.translate(X(q.it.x),Z(q.it.z));g.rotate(.785);g.fillRect(-3,-3,6,6);g.restore();}
   for(const p of players.values())if(p.alive&&p.team===myTeam&&p.id!==myId){g.fillStyle=DCSS[myTeam<0?0:myTeam];g.fillRect(X(p.x)-1.5,Z(p.z)-1.5,3,3);}

@@ -32,4 +32,6 @@ function frame(now){
 }
 requestAnimationFrame(frame);
 setTimeout(warmIcons,2500);   // los íconos de la tienda se arman mientras estás en el menú
+// gancho de depuración para las pruebas automáticas del proyecto (no lo usa el juego)
+window.DBG=()=>({scene,level,W,DM,camera,renderer,THREE});
 })();

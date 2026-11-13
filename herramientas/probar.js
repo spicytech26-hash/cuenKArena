@@ -81,6 +81,7 @@ if (!solo || solo === 'santuario') try {
     return { g, d: g.dom, fin, rojo, azul };
   };
   const cerca = (a, b, e) => Math.abs(a - b) <= (e || 1e-6);
+  const MS = C.MAPS.santuario, BAR = MS.bars[1], XMURO = Math.abs(BAR.x), FUERA = XMURO - 4, DENTRO = XMURO + 6;   // barrera 1 = portón del centro rojo
   const prueba = (nombre, f) => { try { const r = f(); if (r === true) ok(nombre); else mal(nombre + (r ? ': ' + r : '')); } catch (e) { mal(nombre + ': ' + (e && e.stack || e)); } };
 
   prueba('equipos repartidos y 15 minutos de partida', () => { const { g, rojo, azul } = nueva(); return !!rojo && !!azul && g.left === D.TIME && C.MODES.dominio.timelimit === D.TIME || 'equipos o duración mal'; });
@@ -101,56 +102,56 @@ if (!solo || solo === 'santuario') try {
 
   prueba('la barrera frena al rival y deja pasar al defensor', () => {
     const { g, d, azul, rojo } = nueva();
-    const corre = (p, x, dir) => { p.s = { x, y: 0, z: 0, vx: 0, vy: 0, vz: 0, on: true, tm: p.team }; for (let k = 0; k < 60; k++) C.pmove(g.W, p.s, { wx: dir, wz: 0 }, dt); return p.s.x; };
-    let x = corre(azul, 108, 1); if (x > 112) return 'el rival atravesó la barrera (x = ' + x.toFixed(1) + ')';
-    x = corre(rojo, 117, -1); if (x > 111) return 'el defensor no pudo salir por su barrera (x = ' + x.toFixed(1) + ')';
-    x = corre(rojo, 108, 1); if (x < 115) return 'el defensor no pudo entrar por su barrera';
+    // arranca un poco en el aire: adentro de la fortaleza el piso tiene gradas y si no queda clavado en una
+    const corre = (p, x, dir) => { p.s = { x, y: BAR.y + 1.2, z: BAR.z, vx: 0, vy: 0, vz: 0, on: false, tm: p.team }; for (let k = 0; k < 120; k++) C.pmove(g.W, p.s, { wx: dir, wz: 0 }, dt); return p.s.x; };
+    let x = corre(azul, FUERA, 1); if (x > XMURO) return 'el rival atravesó la barrera (x = ' + x.toFixed(1) + ')';
+    x = corre(rojo, DENTRO, -1); if (x > XMURO - 1) return 'el defensor no pudo salir por su barrera (x = ' + x.toFixed(1) + ')';
+    x = corre(rojo, FUERA, 1); if (x < XMURO + 2) return 'el defensor no pudo entrar por su barrera (x = ' + x.toFixed(1) + ')';
     while (d.gens[2].hp > 0) g.domHit(azul, 'g', 2, 200, false); while (d.gens[3].hp > 0) g.domHit(azul, 'g', 3, 200, false);
-    x = corre(azul, 108, 1); return x > 115 || 'con la barrera caída el rival tendría que pasar (x = ' + x.toFixed(1) + ')';
+    x = corre(azul, FUERA, 1); return x > XMURO + 2 || 'con la barrera caída el rival tendría que pasar (x = ' + x.toFixed(1) + ')';
   });
 
   prueba('la barrera frena los disparos y proyectiles del rival, no los del defensor', () => {
     const { g } = nueva();
-    const rayo = eq => { const o = C.setPasa(eq); try { return C.raycast(g.W, 100, 1.5, 0, 1, 0, 0, 80); } finally { C.setPasa(o); } };
+    const X0_ = XMURO - 10, Y_ = BAR.y + 1.5;
+    const rayo = eq => { const o = C.setPasa(eq); try { return C.raycast(g.W, X0_, Y_, BAR.z, 1, 0, 0, 40); } finally { C.setPasa(o); } };
     const a = rayo(1), r = rayo(0);
-    if (!a || !a.b.bar || !cerca(a.t, 12, .01)) return 'la bala rival no pegó en la barrera';
-    if (!r || r.b.bar || r.t < 20) return 'la bala del defensor se frenó en su barrera';
-    const cohete = eq => { const o = C.setPasa(eq), pr = { k: 'rocket', x: 100, y: 1.5, z: 0, v: [44, 0, 0], life: 6 }; try { for (let k = 0; k < 40; k++) if (C.projStep(g.W, pr, dt)) break; return pr.x; } finally { C.setPasa(o); } };
-    if (cohete(1) > 112.1) return 'el cohete rival atravesó la barrera';
-    if (cohete(0) < 120) return 'el cohete del defensor explotó en su barrera';
-    const o = C.setPasa(1), ve = C.los(g.W, 100, 1.5, 0, 118, 1.5, 0); C.setPasa(o);
+    if (!a || !a.b.bar || a.b.bar.i !== 1 || a.t > 10.1) return 'la bala rival no pegó en la barrera';
+    if (r && r.b.bar) return 'la bala del defensor se frenó en su barrera';
+    const cohete = eq => { const o = C.setPasa(eq), pr = { k: 'rocket', x: X0_, y: Y_, z: BAR.z, v: [44, 0, 0], life: 6 }; try { for (let k = 0; k < 40; k++) if (C.projStep(g.W, pr, dt)) break; return pr.x; } finally { C.setPasa(o); } };
+    if (cohete(1) > XMURO + .2) return 'el cohete rival atravesó la barrera';
+    if (cohete(0) < XMURO + 4) return 'el cohete del defensor explotó en su barrera';
+    const o = C.setPasa(1), ve = C.los(g.W, X0_, Y_, BAR.z, XMURO + 8, Y_, BAR.z); C.setPasa(o);
     return !ve || 'hay línea de visión a través de la barrera rival';
   });
 
   prueba('la única entrada a la fortaleza es un portón con la barrera caída (ni por arriba del muro)', () => {
-    const { g, d, azul } = nueva(), M = C.MAPS.santuario;
-    // por arriba del muro (y = 30) y por el borde del mapa (z = 48,5, encima del muro perimetral): campo permanente
-    for (const [y, z] of [[30, 0], [19, -20], [14, 48.5], [14, -48.5], [60, 30]]) {
-      let o = C.setPasa(1); const h = C.raycast(g.W, 100, y, z, 1, 0, 0, 40); C.setPasa(o);
-      if (!h || !h.b.bar || h.t > 12.1) return 'un rival pasa por arriba del muro en y = ' + y + ', z = ' + z;
-      o = C.setPasa(0); const libre = C.raycast(g.W, 100, y, z, 1, 0, 0, 40); C.setPasa(o);
-      if (libre && libre.b.bar) return 'el campo de arriba frena al defensor';
+    const { g, d, azul } = nueva(), M = MS;
+    // a cualquier altura y en cualquier z, el rival se encuentra con algo macizo en el plano del muro
+    for (let z = -66; z <= 66; z += 3) for (const y of [2, 8, 14, 20, 34, 60]) {
+      const o = C.setPasa(1), h = C.raycast(g.W, XMURO - 12, y, z, 1, 0, 0, 24); C.setPasa(o);
+      if (!h || h.t > 12.2) return 'un rival pasa el muro por y = ' + y + ', z = ' + z;
     }
-    azul.s = { x: 111, y: 20, z: 0, vx: 12, vy: 9, vz: 0, on: false, tm: 1 };
+    azul.s = { x: XMURO - 3, y: 20, z: 0, vx: 12, vy: 9, vz: 0, on: false, tm: 1 };
     for (let k = 0; k < 80; k++) C.pmove(g.W, azul.s, { wx: 1, wz: 0 }, dt);
-    if (azul.s.x > 112) return 'un rival en el aire a 20 m cruzó el muro';
-    // tirar todas las barreras no apaga el campo de arriba
+    if (azul.s.x > XMURO) return 'un rival en el aire a 20 m cruzó el muro';
+    // tirar todas las barreras abre los portones, pero no el campo de arriba
     d.gens.forEach((q, i) => { if (q.team === 0) while (q.hp > 0) g.domHit(azul, 'g', i, 200, false); });
-    const o = C.setPasa(1), h = C.raycast(g.W, 100, 30, 0, 1, 0, 0, 40), puerta = C.raycast(g.W, 100, 2, 0, 1, 0, 0, 16); C.setPasa(o);
-    if (!h || !h.b.bar) return 'con las barreras caídas se abrió también el campo de arriba';
+    const o = C.setPasa(1), arriba = C.raycast(g.W, XMURO - 12, 34, 0, 1, 0, 0, 24), puerta = C.raycast(g.W, XMURO - 12, BAR.y + 2, BAR.z, 1, 0, 0, 14); C.setPasa(o);
+    if (!arriba || !arriba.b.bar) return 'con las barreras caídas se abrió también el campo de arriba';
     if (puerta) return 'con la barrera del centro caída el portón sigue cerrado';
     // cada barrera tiene sus 2 generadores pegados a sus dos extremos, del lado de afuera
     for (const [i, b] of M.bars.entries()) {
       const gs = M.gens.filter(q => q.team === b.team && q.lane === b.lane), lados = gs.map(q => Math.sign(q.z - b.z));
       if (gs.length !== 2 || lados[0] === lados[1]) return 'la barrera ' + (i + 1) + ' no tiene un generador en cada extremo';
-      for (const q of gs) if (Math.abs(Math.abs(q.z - b.z) - b.w / 2) > 3 || Math.abs(q.x) >= Math.abs(b.x)) return 'un generador de la barrera ' + (i + 1) + ' no está pegado a su extremo, del lado atacante';
+      for (const q of gs) if (Math.abs(Math.abs(q.z - b.z) - b.w / 2) > 4 || Math.abs(q.x) >= Math.abs(b.x)) return 'un generador de la barrera ' + (i + 1) + ' no está pegado a su extremo, del lado atacante';
     }
     return true;
   });
 
   prueba('ni disparos ni explosiones dañan la barrera: solo los generadores', () => {
     const { g, d, azul } = nueva();
-    g.domBlast(azul, 111.5, 2, 0, 4.5, 60, .75, null);   // explosión pegada a la barrera, lejos de los generadores
+    g.domBlast(azul, XMURO - .5, BAR.y + 2, BAR.z, 4.5, 60, .75, null);   // explosión pegada a la barrera, lejos de los generadores
     return d.bars[1].st === 0 && d.gens.every(q => q.hp === D.GEN_HP) || 'la explosión contra la barrera cambió algo';
   });
 
@@ -160,7 +161,7 @@ if (!solo || solo === 'santuario') try {
     if (!cerca(cuerpo, 100) || !cerca(nucleo, 100 * D.CORE_MULT)) return 'cuerpo ' + cuerpo + ', núcleo ' + nucleo;
     // geometría: de frente y a la altura del pecho es núcleo; a los pies o por la espalda, cuerpo
     const b = d.boss[0], f = C.dirFromAngles(b.yaw, 0), tiro = (ox, oy, oz) => { const dx = b.x - ox, dz = b.z - oz, l = Math.hypot(dx, dz), dir = [dx / l, 0, dz / l], o = C.setPasa(0); try { return g.domStruct([ox, oy, oz], dir, C.raycast(g.W, ox, oy, oz, dir[0], dir[1], dir[2], 60)); } finally { C.setPasa(o); } };
-    const frente = tiro(b.x + f[0] * 12, b.y + D.CORE_Y, b.z + f[2] * 12), pies = tiro(b.x + f[0] * 12, b.y + 2, b.z + f[2] * 12), espalda = tiro(b.x - f[0] * 12, b.y + D.CORE_Y, b.z - f[2] * 12);
+    const frente = tiro(b.x + f[0] * 10, b.y + D.CORE_Y, b.z + f[2] * 10), pies = tiro(b.x + f[0] * 10, b.y + 2, b.z + f[2] * 10), espalda = tiro(b.x - f[0] * 10, b.y + D.CORE_Y, b.z - f[2] * 10);
     if (!frente || frente.kind !== 'b' || !frente.core) return 'el tiro al pecho de frente no contó como núcleo';
     if (!pies || pies.core) return 'el tiro a los pies contó como núcleo';
     return (espalda && !espalda.core) || 'el tiro por la espalda contó como núcleo';
@@ -209,23 +210,42 @@ if (!solo || solo === 'santuario') try {
 
   prueba('los bots no cruzan una barrera rival cerrada y sí una abierta', () => {
     const { g, d, azul } = nueva(), nav = g.nav, M = C.MAPS.santuario;
-    const ini = C.MAPS.santuario.tspawns[1][0], meta = M.bossPts[0][0];
-    const a = nav.nodeAt(ini.x, ini.y + .2, ini.z), b = nav.nodeAt(meta.x, meta.y + .2, meta.z);
+    const ini = M.tspawns[1][1], meta = M.bossPts[0][0];
+    const a = C.findNode(nav, ini.x, ini.y + .2, ini.z), b = C.findNode(nav, meta.x, meta.y + .3, meta.z);
     if (!a || !b) return 'faltan nodos de navegación';
     if (C.dijkstra(nav, a.id, g.domBan(1)).dist[b.id] < Infinity) return 'hay camino al boss rojo con las tres barreras cerradas';
-    if (!(C.dijkstra(nav, C.MAPS.santuario.tspawns[0][0] && nav.nodeAt(M.tspawns[0][0].x, .2, M.tspawns[0][0].z).id, g.domBan(0)).dist[nav.nodeAt(0, .6, 6).id] < Infinity)) return 'el defensor no puede salir de su fortaleza';
-    while (d.gens[0].hp > 0) g.domHit(azul, 'g', 0, 200, false); while (d.gens[1].hp > 0) g.domHit(azul, 'g', 1, 200, false);
+    const ir = C.findNode(nav, M.tspawns[0][1].x, M.tspawns[0][1].y + .2, M.tspawns[0][1].z), plaza = C.findNode(nav, 0, 1.2, 6);
+    if (!(C.dijkstra(nav, ir.id, g.domBan(0)).dist[plaza.id] < Infinity)) return 'el defensor no puede salir de su fortaleza';
+    for (const i of [0, 1]) while (d.gens[i].hp > 0) g.domHit(azul, 'g', i, 200, false);
     const dist = C.dijkstra(nav, a.id, g.domBan(1)).dist[b.id];
     if (!(dist < Infinity)) return 'con la ruta norte abierta no hay camino al boss';
     const seg = dist / C.K.MAXSPD;
-    console.log('      de la aparición azul al boss rojo por el norte: ' + Math.round(dist) + ' m, ' + seg.toFixed(0) + ' s corriendo');
-    return seg > 28 && seg < 45 || 'cruzar el mapa tarda ' + seg.toFixed(0) + ' s (tendría que andar entre 30 y 40)';
+    console.log('      de la aparición azul al boss rojo por el norte: ' + Math.round(dist) + ' m, ' + seg.toFixed(1) + ' s corriendo');
+    return seg > 16 && seg < 23 || 'cruzar el mapa tarda ' + seg.toFixed(1) + ' s (tendría que andar entre 18 y 22)';
   });
 
-  prueba('el mapa mide al menos 2,5 veces el más grande de los demás', () => {
-    const area = W_ => (W_.bounds.x1 - W_.bounds.x0) * (W_.bounds.z1 - W_.bounds.z0), yo = area(C.MAPS.santuario);
+  prueba('los puntos de ataque, defensa y aparición caen en sitios alcanzables', () => {
+    const g = new C.Game({ mode: 'dominio', bots: 0 }), nav = g.nav, M = MS;
+    const base = C.findNode(nav, M.tspawns[0][1].x, M.tspawns[0][1].y + .2, M.tspawns[0][1].z);
+    const dj = C.dijkstra(nav, base.id, null);
+    const malo = (p, q) => { const n = C.findNode(nav, p.x, p.y + .3, p.z); if (!n) return q + ': sin nodo cerca'; if (!(dj.dist[n.id] < Infinity)) return q + ': nodo aislado'; return null; };
+    for (const [i, q] of M.gens.entries()) { const r = malo(q.atk, 'punto de ataque del generador ' + (i + 1)); if (r) return r; }
+    for (const t of [0, 1]) {
+      for (const [i, q] of M.defPts[t].entries()) { const r = malo(q, 'punto de defensa ' + i + ' del equipo ' + t); if (r) return r; }
+      for (const [i, q] of M.bossPts[t].entries()) { const r = malo(q, 'punto del boss ' + i + ' del equipo ' + t); if (r) return r; }
+      for (const q of M.tspawns[t]) { const r = malo(q, 'aparición del equipo ' + t); if (r) return r; }
+      for (const q of M.fspawns[t]) { const r = malo(q, 'aparición adelantada del equipo ' + t); if (r) return r; }
+    }
+    return true;
+  });
+
+  prueba('sigue siendo el mapa más grande, y es una arena ancha y no un pasillo', () => {
+    const area = W_ => (W_.bounds.x1 - W_.bounds.x0) * (W_.bounds.z1 - W_.bounds.z0), B = MS.bounds, yo = area(MS);
     const otro = Math.max(...C.MAP_IDS.filter(k => k !== 'santuario').map(k => area(C.MAPS[k])));
-    return yo >= otro * 2.5 || 'mide ' + (yo / otro).toFixed(2) + ' veces';
+    const largo = B.x1 - B.x0, ancho = B.z1 - B.z0;
+    console.log('      ' + largo + ' x ' + ancho + ' m = ' + yo + ' m², ' + (yo / otro).toFixed(2) + ' veces el más grande de los otros, ' + MS.brushes.length + ' bloques');
+    if (yo < otro * 2) return 'mide ' + (yo / otro).toFixed(2) + ' veces el más grande de los otros';
+    return largo / ancho < 1.6 || 'es un pasillo: ' + (largo / ancho).toFixed(2) + ' de largo por ancho';
   });
 
   prueba('partida entera con bots: abren una ruta y se pegan con el boss sin errores', () => {

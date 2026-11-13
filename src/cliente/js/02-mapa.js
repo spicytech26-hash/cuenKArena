@@ -82,15 +82,18 @@ function loadMap(id){
   {const ut=th.tex==='ut'||th.tex==='ruina';UTcur=!ut?null:th.tex==='ruina'?(UTruin||(UTruin=buildUT(true))):(UTset||(UTset=buildUT()));const nm=ut?UTcur.mats:MATS;if(nm!==MATSX){MATSX=nm;for(const k in matCache)delete matCache[k];}}
   scene.fog.color.setHex(th.fog);scene.fog.density=th.fogD;scene.background.setHex(th.fog);
   sky.material.map=skyTex[th.sky]||skyTex.dusk;sky.material.color.setScalar(th.skyDim||1);sky.material.needsUpdate=true;   // skyDim: oscurece el cielo (noche cerrada)
-  const groups={};
+  const groups={},neon=[];
   for(const b of M.brushes){
     if(b.mat==='clip')continue;   // bloque de colisión invisible
-    if(NEON[b.mat]){const m=new THREE.Mesh(new THREE.BoxGeometry(b.max[0]-b.min[0],b.max[1]-b.min[1],b.max[2]-b.min[2]),new THREE.MeshBasicMaterial({color:NEON[b.mat]}));m.position.set((b.min[0]+b.max[0])/2,(b.min[1]+b.max[1])/2,(b.min[2]+b.max[2])/2);group.add(m);continue;}
+    // los neones van todos a una sola malla con color por vértice: el Santuario tiene decenas y antes
+    // cada uno era un dibujado aparte
+    if(NEON[b.mat]){const g=new THREE.BoxGeometry(b.max[0]-b.min[0],b.max[1]-b.min[1],b.max[2]-b.min[2]);g.translate((b.min[0]+b.max[0])/2,(b.min[1]+b.max[1])/2,(b.min[2]+b.max[2])/2);neon.push([g,NEON[b.mat]]);continue;}
     if(b.mover)continue;
     const g=groups[b.mat]||(groups[b.mat]={p:[],n:[],u:[],c:[],i:[]});
     brushFaces(g,b,(MATSX[b.mat]||MATSX.wall).sc);
   }
   for(const m in groups)group.add(new THREE.Mesh(geoOf(groups[m]),matOf(m)));
+  if(neon.length)group.add(new THREE.Mesh(dmGeo(neon),new THREE.MeshBasicMaterial({vertexColors:true})));
   for(const b of M.movers){
     const m0=b.mover,d={p:[],n:[],u:[],c:[],i:[]};
     brushFaces(d,{min:m0.min0,max:m0.max0},(MATSX[b.mat]||MATSX.wall).sc,m0.min0[0],m0.min0[1],m0.min0[2]);

@@ -97,7 +97,10 @@ function buildBar(b){
   const m=new THREE.Mesh(new THREE.PlaneGeometry(b.w,b.h),mat);m.position.set(b.x,b.y+b.h/2,b.z);m.rotation.y=1.5708;m.renderOrder=4;
   return {m,mat,st:0,fall:0,x:b.x,y:b.y,z:b.z,w:b.w,h:b.h,team:b.team,lane:b.lane};
 }
-/* ---- arte fijo: marcos de los portones, tuberías de bronce, cúpulas y vitrales (dos mallas por equipo) ---- */
+/* ---- arte de fondo: lo que enmarca el mapa ----
+   Las ruinas, arcos, columnas, vitrales y caños del Santuario son bloques del mapa (02-mapas/9-santuario.js),
+   así que el cliente los dibuja con el resto del nivel. Acá va solo lo que no puede ser un bloque:
+   los acantilados y las ruinas lejanas del horizonte, el resplandor de las cúpulas y las brasas en el aire. */
 function dmVitral(team){
   return new THREE.CanvasTexture(cv(64,128,(g)=>{const base=team?[40,120,255]:[255,120,30];g.fillStyle='#07080c';g.fillRect(0,0,64,128);
     for(let y=0;y<16;y++)for(let x=0;x<6;x++){const px=4+x*9.5+(y%2?4.7:0),py=6+y*7.6,inArch=Math.hypot((px-32)/30,(Math.min(py,40)-40)/36)<1;if(!inArch||px>60)continue;
@@ -105,25 +108,26 @@ function dmVitral(team){
     g.strokeStyle='#07080c';g.lineWidth=3;g.beginPath();g.moveTo(32,4);g.lineTo(32,128);g.moveTo(4,64);g.lineTo(60,64);g.stroke();}));
 }
 function dmArt(group,M){
+  const B=M.bounds,far=[];
+  // acantilados: un anillo de moles oscuras bien lejos, hundidas, para que el mapa no termine en el vacío
+  const roca=(x,z,w,d,h,col)=>{for(let k=0;k<4;k++){const t=k/4,ww=w*(1-t*.42),dd=d*(1-t*.42);far.push([dmBox(ww,h/4+2,dd,x+(k%2?6:-5),-70+h*t+h/8,z+(k%3?-6:7)),k%2?col:col+0x060a0e]);}};
+  const R0=Math.max(B.x1,B.z1)+150;
+  for(let a2=0;a2<36;a2++){
+    const an=a2/36*6.2832,rad=R0+((a2*37)%70),h=90+((a2*53)%90);
+    roca(Math.cos(an)*rad*1.25,Math.sin(an)*rad,46+((a2*17)%30),44+((a2*29)%26),h,0x0e131d);
+  }
+  // ruinas lejanas: torres y campanarios recortados contra el cielo
+  for(let a2=0;a2<14;a2++){
+    const an=a2/14*6.2832+.22,rad=R0+90+((a2*61)%90),x=Math.cos(an)*rad*1.3,z=Math.sin(an)*rad,h=60+((a2*43)%70),w=14+((a2*23)%12);
+    far.push([dmBox(w,h,w,x,h/2-10,z),0x131926],[dmBox(w*1.6,4,w*1.6,x,h-10,z),0x171e2d],[dmBox(w*.35,h*.55,w*.35,x+w*.9,h*.27-10,z+w*.5),0x131926]);
+    if(a2%3===0)far.push([dmCyl(.5,w*.5,h*.45,6,x,h*1.18-10,z),0x171e2d]);
+  }
+  const m=new THREE.Mesh(dmGeo(far),new THREE.MeshLambertMaterial({vertexColors:true,flatShading:true}));
+  m.castShadow=false;m.receiveShadow=false;m.frustumCulled=false;group.add(m);
+  // vitral de la cúpula, visto desde adentro de cada arena
   for(const team of [0,1]){
-    const sx=team?-1:1,p=[],vit=[],xo=sx*111.6;
-    for(const b of M.bars){if(b.team!==team)continue;
-      for(const s of [-1,1]){p.push([dmBox(.9,7,.9,xo,3.5,b.z+s*(b.w/2+.45)),DBZD],[dmCyl(.5,.62,1,8,xo,7.4,b.z+s*(b.w/2+.45)),DBZ],[dmSph(.42,xo,8.1,b.z+s*(b.w/2+.45)),DBZ]);}
-      p.push([dmBox(.7,.8,b.w+2,xo,6.6,b.z),DBZD]);
-      const vg=new THREE.PlaneGeometry(4.2,8);vg.rotateY(sx>0?-1.5708:1.5708);vg.translate(sx*111.93,11.5,b.z);vit.push(vg);
-      for(const s of [-1,1]){const v2=new THREE.PlaneGeometry(3,6);v2.rotateY(sx>0?-1.5708:1.5708);v2.translate(sx*111.93,10.5,b.z+s*8.5);vit.push(v2);}
-    }
-    for(const y of [8.6,9.5,16.5])p.push([dmCyl(.24,.24,96,6,xo+sx*.1,y,0,1.5708),y>10?DBZD:DBZ]);
-    for(let z=-44;z<=44;z+=11)p.push([dmCyl(.2,.2,9,6,xo+sx*.1,13,z+2.5),DBZ],[dmT(new THREE.TorusGeometry(.34,.1,5,8),xo+sx*.1,9.05,z+2.5,0,1.5708),DDK]);
-    for(const g of M.gens)if(g.team===team)p.push([dmCyl(.09,.09,3.6,5,g.x+sx*1.8,2.6,g.z,0,0,sx*.95),DDK]);
-    for(const z of [-47,47])p.push([dmT(new THREE.SphereGeometry(3,10,6,0,6.2832,0,1.5708),sx*113,18,z),team?0x1f4d8c:0x9a4a14],[dmCyl(.08,.3,2,5,sx*113,21.9,z),DBZ]);
-    // muro que tapa al boss: vitrales del lado de adentro y columnas
-    for(const z of [-16,-8,0,8,16]){const v=new THREE.PlaneGeometry(4.5,9);v.rotateY(sx>0?1.5708:-1.5708);v.translate(sx*124.07,10,z);vit.push(v);p.push([dmBox(.8,18,.8,sx*124.4,9,z+4),DBZD]);}
-    for(const a of [0,1,2,3]){const ax=sx*142+Math.cos(a*1.5708+.785)*7,az=Math.sin(a*1.5708+.785)*7;p.push([dmCyl(.55,.75,9,8,ax,4.5,az),DMT],[dmSph(.8,ax,9.4,az),team?0x2a6ad0:0xd06a1a]);}
-    const mm=new THREE.Mesh(dmGeo(p),dmMat());mm.castShadow=false;mm.receiveShadow=true;group.add(mm);
-    const P=[],U=[],N=[];for(const v of vit){const q=v.toNonIndexed();P.push(...q.attributes.position.array);U.push(...q.attributes.uv.array);N.push(...q.attributes.normal.array);}
-    const vg=new THREE.BufferGeometry();vg.setAttribute('position',new THREE.Float32BufferAttribute(P,3));vg.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));vg.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));
-    group.add(new THREE.Mesh(vg,new THREE.MeshBasicMaterial({map:dmVitral(team),side:THREE.DoubleSide})));
+    const bo=M.bosses[team],g=new THREE.PlaneGeometry(11,11);g.rotateX(-1.5708);g.translate(bo.x,15.4,bo.z);
+    group.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:dmVitral(team),side:THREE.DoubleSide,transparent:true,opacity:.75})));
   }
 }
 /* ---- cargar y sincronizar ---- */
@@ -139,7 +143,7 @@ function domLoad(group,M){
   DM.gens=M.gens.map(g=>{const o=buildGen(g.team,g.x,g.y,g.z);DM.grp.add(o.g);return o;});
   DM.bars=M.bars.map(b=>{const o=buildBar(b);DM.grp.add(o.m);return o;});
   DM.boss=M.bosses.map((b,t)=>{const o=buildBoss(t);o.g.position.set(b.x,b.y,b.z);o.x=b.x;o.y=b.y;o.z=b.z;o.yaw=o.yawT=b.yaw;o.g.rotation.y=b.yaw;DM.grp.add(o.g);DM.grp.add(o.beam);return o;});
-  if(S.q)dmArt(DM.grp,M);
+  if(S.q)dmArt(DM.grp,M);   // en calidad Liviana no se dibuja el fondo lejano
   DM.g=M.gens.map(()=>C.DOM.GEN_HP);DM.b=M.bars.map(()=>0);DM.h=[C.DOM.BOSS_HP,C.DOM.BOSS_HP];
   $('domBox').hidden=false;$('domMap').hidden=false;
 }
@@ -277,21 +281,35 @@ function domHud(){
     $('domS'+t).innerHTML=h+'</div>';$('domS'+t).classList.toggle('mine',t===myTeam);
   }
 }
-/* ---- minimapa: norte arriba; generadores, barreras, bosses, punto de poder, compañeros y vos ---- */
+/* ---- minimapa: norte arriba. El fondo se dibuja una sola vez a partir de los bloques del mapa
+   (planta del nivel entre -8 y 10 m), así sirve para cualquier mapa sin tener que dibujarlo a mano ---- */
+function domMapBg(cvs){
+  const b=W.bounds,sw=cvs.width/(b.x1-b.x0),sh=cvs.height/(b.z1-b.z0),X=x=>(x-b.x0)*sw,Z=z=>(z-b.z0)*sh;
+  const c=document.createElement('canvas');c.width=cvs.width;c.height=cvs.height;const g=c.getContext('2d');
+  g.fillStyle='rgba(8,10,16,.84)';g.fillRect(0,0,c.width,c.height);
+  // mitades de cada equipo apenas teñidas
+  const xm=Math.abs(W.bars[0].x);
+  g.fillStyle='rgba(58,139,255,.1)';g.fillRect(0,0,X(-xm),c.height);
+  g.fillStyle='rgba(255,122,32,.1)';g.fillRect(X(xm),0,c.width-X(xm),c.height);
+  // agua
+  for(const l of W.lava||[])if(l.water){g.fillStyle='#071318';g.fillRect(X(l.min[0]),Z(l.min[2]),(l.max[0]-l.min[0])*sw,(l.max[2]-l.min[2])*sh);}
+  // planta: cada bloque del nivel, más claro cuanto más alto
+  for(const q of W.brushes){
+    if(q.nc||q.mat==='clip'||q.bar)continue;
+    const top=q.max[1];if(top<-8||q.min[1]>10)continue;
+    const k=Math.max(0,Math.min(1,(top+8)/18));
+    g.fillStyle='rgba('+(42+k*95|0)+','+(46+k*95|0)+','+(54+k*100|0)+',.9)';
+    g.fillRect(X(q.min[0]),Z(q.min[2]),Math.max(1,(q.max[0]-q.min[0])*sw),Math.max(1,(q.max[2]-q.min[2])*sh));
+  }
+  g.strokeStyle='rgba(255,255,255,.22)';g.strokeRect(.5,.5,c.width-1,c.height-1);
+  return c;
+}
 function domMap(){
   const cvs=$('domMap'),g=cvs.getContext('2d'),B=W.bounds,sw=cvs.width/(B.x1-B.x0),sh=cvs.height/(B.z1-B.z0),X=x=>(x-B.x0)*sw,Z=z=>(z-B.z0)*sh;
-  if(!DM.bg){const b=DM.bg=document.createElement('canvas');b.width=cvs.width;b.height=cvs.height;const q=b.getContext('2d');
-    q.fillStyle='rgba(10,12,18,.82)';q.fillRect(0,0,b.width,b.height);
-    q.fillStyle='rgba(58,139,255,.13)';q.fillRect(0,0,X(-112),b.height);q.fillStyle='rgba(255,122,32,.13)';q.fillRect(X(112),0,b.width,b.height);
-    q.fillStyle='#04070c';q.fillRect(X(-34),0,X(34)-X(-34),b.height);
-    q.fillStyle='#4a4f58';q.fillRect(X(-14),Z(-14),X(14)-X(-14),Z(14)-Z(-14));q.fillRect(X(-34),Z(-4),X(34)-X(-34),Z(4)-Z(-4));q.fillRect(X(-40),Z(-40),X(40)-X(-40),Z(-32)-Z(-40));
-    q.fillStyle='#2c3038';q.fillRect(X(-34),Z(30),X(34)-X(-34),Z(42)-Z(30));
-    q.fillStyle='rgba(255,255,255,.07)';for(const s of [-1,1]){q.fillRect(X(Math.min(s*40,s*100)),Z(-48),X(100)-X(40),Z(-24)-Z(-48));}
-    q.fillStyle='#8a8f98';for(const s of [-1,1]){q.fillRect(X(s*113)-1,0,2,b.height);q.fillRect(X(s*123)-1,Z(-22),2,Z(22)-Z(-22));}
-    q.strokeStyle='rgba(255,255,255,.25)';q.strokeRect(.5,.5,b.width-1,b.height-1);}
+  if(!DM.bg)DM.bg=domMapBg(cvs);
   g.clearRect(0,0,cvs.width,cvs.height);g.drawImage(DM.bg,0,0);
-  DM.bars.forEach((o,i)=>{const st=DM.b[i];g.fillStyle='#04070c';g.fillRect(X(o.x)-2,Z(o.z-o.w/2),4,o.w*sh);if(st===2)return;g.fillStyle=DCSS[o.team];g.globalAlpha=st===1&&Math.sin(G.time*12)>0?.3:1;g.fillRect(X(o.x)-1.5,Z(o.z-o.w/2),3,o.w*sh);g.globalAlpha=1;});
-  DM.gens.forEach((o,i)=>{g.fillStyle=DM.g[i]>0?DCSS[o.team]:'#555';g.fillRect(X(o.x)-2.5,Z(o.z)-2.5,5,5);if(DM.g[i]>0){g.strokeStyle='#000';g.strokeRect(X(o.x)-2.5,Z(o.z)-2.5,5,5);}});
+  DM.bars.forEach((o,i)=>{const st=DM.b[i];if(st===2)return;g.fillStyle=DCSS[o.team];g.globalAlpha=st===1&&Math.sin(G.time*12)>0?.3:1;g.fillRect(X(o.x)-1.5,Z(o.z-o.w/2),3,o.w*sh);g.globalAlpha=1;});
+  DM.gens.forEach((o,i)=>{g.fillStyle=DM.g[i]>0?DCSS[o.team]:'#555';g.fillRect(X(o.x)-2.5,Z(o.z)-2.5,5,5);if(DM.g[i]>0){g.strokeStyle='#000';g.lineWidth=1;g.strokeRect(X(o.x)-2.5,Z(o.z)-2.5,5,5);}});
   DM.boss.forEach((o,i)=>{g.fillStyle=DM.h[i]>0?DCSS[i]:'#555';g.beginPath();g.arc(X(o.x),Z(o.z),5.5,0,7);g.fill();g.strokeStyle='#fff';g.lineWidth=1.2;g.stroke();});
   const q=level.items.find(o=>o.ty==='quad');if(q){g.fillStyle=q.g.visible?'#c060ff':'#4a3a5a';g.save();g.translate(X(q.it.x),Z(q.it.z));g.rotate(.785);g.fillRect(-3,-3,6,6);g.restore();}
   for(const p of players.values())if(p.alive&&p.team===myTeam&&p.id!==myId){g.fillStyle=DCSS[myTeam<0?0:myTeam];g.fillRect(X(p.x)-1.5,Z(p.z)-1.5,3,3);}

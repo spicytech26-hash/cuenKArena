@@ -17,9 +17,79 @@ function setPasa(t) { const o = PASA; PASA = t == null ? -1 : t; return o; }
 const barOpen = b => b.bar.down || PASA === -2 || b.bar.team === PASA;
 const overlapXZ = (b, x0, z0, x1, z1) => b.min[0] < x1 && b.max[0] > x0 && b.min[2] < z1 && b.max[2] > z0;
 
+/* ---------- índice espacial (rejilla de GC metros en XZ) ----------
+   El Santuario Dual tiene cientos de bloques y antes cada paso de cada jugador y cada disparo los recorría todos.
+   Cada celda guarda los índices de los bloques que la tocan; los móviles y los enormes (un piso entero) quedan
+   en `sueltos` y se prueban siempre. Se arma una vez por mapa y los índices sirven igual para la copia del mundo
+   que hace cada partida de Captura el dominio, porque el orden de los bloques no cambia.
+   gBox y gRay dejan los candidatos en SCR (sin repetidos): no se pueden anidar dos recorridos. */
+const GC = 8, GBIG = 48;
+function gridOf(W) {
+  if (W.gridx) return W.gridx;
+  const B = W.brushes;
+  let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
+  for (const b of B) { if (b.min[0] < x0) x0 = b.min[0]; if (b.min[2] < z0) z0 = b.min[2]; if (b.max[0] > x1) x1 = b.max[0]; if (b.max[2] > z1) z1 = b.max[2]; }
+  if (!B.length) { x0 = z0 = 0; x1 = z1 = 1; }
+  const NX = Math.max(1, Math.ceil((x1 - x0) / GC) + 1), NZ = Math.max(1, Math.ceil((z1 - z0) / GC) + 1);
+  const cells = new Array(NX * NZ), loose = [];
+  for (let i = 0; i < B.length; i++) {
+    const b = B[i];
+    const cx0 = Math.floor((b.min[0] - x0) / GC), cx1 = Math.floor((b.max[0] - x0) / GC);
+    const cz0 = Math.floor((b.min[2] - z0) / GC), cz1 = Math.floor((b.max[2] - z0) / GC);
+    if (b.nc) continue;   // decoración sin colisión: no entra al índice, así adornar el mapa no cuesta nada
+    if (b.mover || (cx1 - cx0 + 1) * (cz1 - cz0 + 1) > GBIG) { loose.push(i); continue; }
+    for (let cz = cz0; cz <= cz1; cz++) for (let cx = cx0; cx <= cx1; cx++) { const k = cx + cz * NX; (cells[k] || (cells[k] = [])).push(i); }
+  }
+  return W.gridx = { x0, z0, NX, NZ, cells, loose };
+}
+let SCR = new Int32Array(256), MARK = null, MARKW = null, MARKV = 0;
+function scrStart(W, G) {
+  if (MARKW !== W.brushes || MARK.length < W.brushes.length) { MARKW = W.brushes; MARK = new Int32Array(W.brushes.length); MARKV = 0; }
+  if (SCR.length < W.brushes.length) SCR = new Int32Array(W.brushes.length);
+  if (++MARKV > 2e9) { MARK.fill(0); MARKV = 1; }
+  let n = 0;
+  for (const i of G.loose) { MARK[i] = MARKV; SCR[n++] = i; }
+  return n;
+}
+function gCell(G, n, cx, cz) {
+  if (cx < 0 || cz < 0 || cx >= G.NX || cz >= G.NZ) return n;
+  const c = G.cells[cx + cz * G.NX];
+  if (c) for (let k = 0; k < c.length; k++) { const i = c[k]; if (MARK[i] !== MARKV) { MARK[i] = MARKV; SCR[n++] = i; } }
+  return n;
+}
+function gBox(W, x0, z0, x1, z1) {
+  const G = gridOf(W);
+  let n = scrStart(W, G);
+  const cx0 = Math.max(0, Math.floor((x0 - G.x0) / GC)), cx1 = Math.min(G.NX - 1, Math.floor((x1 - G.x0) / GC));
+  const cz0 = Math.max(0, Math.floor((z0 - G.z0) / GC)), cz1 = Math.min(G.NZ - 1, Math.floor((z1 - G.z0) / GC));
+  for (let cz = cz0; cz <= cz1; cz++) for (let cx = cx0; cx <= cx1; cx++) n = gCell(G, n, cx, cz);
+  return n;
+}
+// celdas que toca un rayo, caminándolas en orden (DDA en XZ)
+function gRay(W, ox, oz, dx, dz, maxT) {
+  const G = gridOf(W);
+  let n = scrStart(W, G);
+  let cx = Math.floor((ox - G.x0) / GC), cz = Math.floor((oz - G.z0) / GC);
+  const sx = dx > 1e-9 ? 1 : dx < -1e-9 ? -1 : 0, sz = dz > 1e-9 ? 1 : dz < -1e-9 ? -1 : 0;
+  const tdx = sx ? Math.abs(GC / dx) : Infinity, tdz = sz ? Math.abs(GC / dz) : Infinity;
+  let tmx = sx ? (G.x0 + (cx + (sx > 0 ? 1 : 0)) * GC - ox) / dx : Infinity;
+  let tmz = sz ? (G.z0 + (cz + (sz > 0 ? 1 : 0)) * GC - oz) / dz : Infinity;
+  if (tmx < 0) tmx = Infinity; if (tmz < 0) tmz = Infinity;
+  for (let guard = G.NX + G.NZ + 4; guard >= 0; guard--) {
+    n = gCell(G, n, cx, cz);
+    const t = tmx < tmz ? tmx : tmz;
+    if (!(t <= maxT)) break;
+    if (tmx < tmz) { cx += sx; tmx += tdx; } else { cz += sz; tmz += tdz; }
+    if ((cx < 0 && sx <= 0) || (cx >= G.NX && sx >= 0) || (cz < 0 && sz <= 0) || (cz >= G.NZ && sz >= 0)) break;
+  }
+  return n;
+}
+
 function solidAt(W, x, y, z, r, h) {
   const x0 = x - r, x1 = x + r, z0 = z - r, z1 = z + r;
-  for (const b of W.brushes) {
+  const N = gBox(W, x0, z0, x1, z1);
+  for (let k = 0; k < N; k++) {
+    const b = W.brushes[SCR[k]];
     if (b.nc || (b.bar && barOpen(b)) || !overlapXZ(b, x0, z0, x1, z1)) continue;
     if (b.min[1] >= y + h - EPS) continue;
     if (topAt(b, x0, z0, x1, z1) <= y + EPS) continue;
@@ -32,7 +102,9 @@ function stepAxis(W, s, ax, d) {
   const nx = ax === 0 ? s.x + d : s.x, nz = ax === 2 ? s.z + d : s.z, r = K.R, H = hOf(s);
   const x0 = nx - r, x1 = nx + r, z0 = nz - r, z1 = nz + r;
   let rise = 0;
-  for (const b of W.brushes) {
+  const N = gBox(W, x0, z0, x1, z1);
+  for (let k = 0; k < N; k++) {
+    const b = W.brushes[SCR[k]];
     if (b.nc || (b.bar && barOpen(b)) || !overlapXZ(b, x0, z0, x1, z1)) continue;
     if (b.min[1] >= s.y + H - EPS) continue;
     const top = topAt(b, x0, z0, x1, z1);
@@ -50,9 +122,11 @@ function stepAxis(W, s, ax, d) {
 function stepY(W, s, h, wasOn) {
   const r = K.R, H = hOf(s), x0 = s.x - r, x1 = s.x + r, z0 = s.z - r, z1 = s.z + r;
   const ny = s.y + s.vy * h;
+  const N = gBox(W, x0, z0, x1, z1), CAND = [];
+  for (let k = 0; k < N; k++) CAND.push(W.brushes[SCR[k]]);   // copia: más abajo se llama a solidAt, que vuelve a usar SCR
   if (s.vy <= 0) {
     let ground = -Infinity, gb = null;
-    for (const b of W.brushes) {
+    for (const b of CAND) {
       if (b.nc || (b.bar && barOpen(b)) || !overlapXZ(b, x0, z0, x1, z1)) continue;
       const top = topAt(b, x0, z0, x1, z1);
       if (top <= s.y + .02 && top > ground) { ground = top; gb = b; }
@@ -66,7 +140,7 @@ function stepY(W, s, h, wasOn) {
     } else { s.y = ny; s.on = false; s.gb = null; }
   } else {
     let ceil = Infinity;
-    for (const b of W.brushes) {
+    for (const b of CAND) {
       if (b.nc || (b.bar && barOpen(b)) || !overlapXZ(b, x0, z0, x1, z1)) continue;
       if (b.min[1] >= s.y + H - .02 && b.min[1] < ceil) ceil = b.min[1];
     }
@@ -300,7 +374,9 @@ const inv = v => Math.abs(v) < 1e-9 ? Infinity : 1 / v;
 function raycast(W, ox, oy, oz, dx, dy, dz, maxT) {
   let best = maxT, n = null, hb = null;
   const ix = inv(dx), iy = inv(dy), iz = inv(dz);
-  for (const b of W.brushes) {
+  const N = gRay(W, ox, oz, dx, dz, maxT);
+  for (let k = 0; k < N; k++) {
+    const b = W.brushes[SCR[k]];
     if (b.nc || (b.bar && barOpen(b)) || slab(b, ox, oy, oz, ix, iy, iz, best) < 0) continue;
     const h = rayBrush(b, ox, oy, oz, dx, dy, dz);
     if (h && h.t < best) { best = h.t; n = h.n; hb = b; }
@@ -311,7 +387,9 @@ function raycast(W, ox, oy, oz, dx, dy, dz, maxT) {
 function los(W, ax, ay, az, bx, by, bz) {
   const dx = bx - ax, dy = by - ay, dz = bz - az, d = Math.hypot(dx, dy, dz) || 1e-6, L = d - .05;
   const ux = dx / d, uy = dy / d, uz = dz / d, ix = inv(ux), iy = inv(uy), iz = inv(uz);
-  for (const b of W.brushes) {
+  const N = gRay(W, ax, az, ux, uz, L);
+  for (let k = 0; k < N; k++) {
+    const b = W.brushes[SCR[k]];
     if (b.nc || (b.bar && barOpen(b)) || slab(b, ax, ay, az, ix, iy, iz, L) < 0) continue;
     const h = rayBrush(b, ax, ay, az, ux, uy, uz);
     if (h && h.t < L) return false;

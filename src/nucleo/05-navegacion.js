@@ -107,14 +107,26 @@ function buildNav0(W) {
   zlev.sort((a, b) => a - b);
   // adyacencia compacta para búsquedas rápidas
   const N = nodes.length; let E = 0; nodes.forEach(n => E += n.l.length);
-  const off = new Int32Array(N + 1), to = new Int32Array(E), cost = new Float32Array(E);
+  const off = new Int32Array(N + 1), to = new Int32Array(E), cost = new Float32Array(E), ebar = new Uint8Array(E);
   let k = 0;
   nodes.forEach((n, i) => { off[i] = k; n.l.forEach(l => { to[k] = l[0]; cost[k] = l[1]; k++; }); });
   off[N] = k;
-  // nodos que quedan dentro de una barrera (Captura el dominio): bar[nodo] = barrera + 1
-  const bar = new Uint8Array(N);
-  for (const b of W.brushes) if (b.bar) for (const n of nodes) if (n.x > b.min[0] && n.x < b.max[0] && n.z > b.min[2] && n.z < b.max[2] && n.y > b.min[1] - .6 && n.y < b.max[1]) bar[n.id] = b.bar.i + 1;
-  return { X0, Z0, NX, NZ, cells, nodes, at, nodeAt, off, to, cost, zlev, bar };
+  // Captura el dominio: nodos que caen dentro de una barrera (bar[nodo]) y tramos que la cruzan (ebar[tramo]).
+  // Los dos hacen falta: un salto largo puede pasar por el hueco del portón sin pisar ningún nodo de adentro.
+  const bar = new Uint8Array(N), barB = W.brushes.filter(b => b.bar);
+  for (const b of barB) for (const n of nodes) if (n.x > b.min[0] && n.x < b.max[0] && n.z > b.min[2] && n.z < b.max[2] && n.y > b.min[1] - .6 && n.y < b.max[1]) bar[n.id] = b.bar.i + 1;
+  if (barB.length) for (let i = 0; i < N; i++) {
+    const n = nodes[i];
+    for (let e = off[i]; e < off[i + 1]; e++) {
+      const m = nodes[to[e]], dx = m.x - n.x, dy = m.y - n.y, dz = m.z - n.z, L = Math.hypot(dx, dy, dz) || 1e-6;
+      const ix = inv(dx / L), iy = inv(dy / L), iz = inv(dz / L);
+      for (const b of barB) {
+        // el cuerpo del jugador es alto: se prueba a la altura de los pies y a la de la cabeza
+        if (slab(b, n.x, n.y + .2, n.z, ix, iy, iz, L) >= 0 || slab(b, n.x, n.y + 1.5, n.z, ix, iy, iz, L) >= 0) { ebar[e] = b.bar.i + 1; break; }
+      }
+    }
+  }
+  return { X0, Z0, NX, NZ, cells, nodes, at, nodeAt, off, to, cost, zlev, bar, ebar };
 }
 function getNav(W) { W = W || WORLD; if (!NAVS[W.id]) NAVS[W.id] = buildNav(W); return NAVS[W.id]; }
 function findNode(nav, x, y, z) {
@@ -137,7 +149,7 @@ function dijkstra(nav, start, ban) {
   const N = nav.nodes.length;
   if (!nav._dist) { nav._dist = new Float64Array(N); nav._prev = new Int32Array(N); nav._hk = new Float64Array(1024); nav._hv = new Int32Array(1024); }
   const dist = nav._dist.fill(Infinity), prev = nav._prev.fill(-1);
-  const off = nav.off, to = nav.to, cost = nav.cost, bar = nav.bar;
+  const off = nav.off, to = nav.to, cost = nav.cost, bar = nav.bar, ebar = nav.ebar;
   let cap = nav._hk.length, hk = nav._hk, hv = nav._hv, size = 0;
   const push = (i, d) => {
     if (size === cap) { cap *= 2; const a = new Float64Array(cap), b = new Int32Array(cap); a.set(hk); b.set(hv); hk = nav._hk = a; hv = nav._hv = b; }
@@ -155,7 +167,7 @@ function dijkstra(nav, start, ban) {
       hk[c] = kd; hv[c] = kv;
     }
     if (d > dist[i]) continue;
-    for (let e = off[i], ee = off[i + 1]; e < ee; e++) { const nd = d + cost[e], j = to[e]; if (ban && bar[j] && ban[bar[j]]) continue; if (nd < dist[j]) { dist[j] = nd; prev[j] = i; push(j, nd); } }
+    for (let e = off[i], ee = off[i + 1]; e < ee; e++) { const nd = d + cost[e], j = to[e]; if (ban && (bar[j] && ban[bar[j]] || ebar[e] && ban[ebar[e]])) continue; if (nd < dist[j]) { dist[j] = nd; prev[j] = i; push(j, nd); } }
   }
   return { dist, prev };
 }

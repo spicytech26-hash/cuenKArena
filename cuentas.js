@@ -105,27 +105,61 @@ async function fnCall(body, tries = 2) {
   if (r.status !== 200 || !j) throw new Error('base de datos: ' + r.status + ' ' + r.body.slice(0, 120));
   return j;
 }
-async function dbGet(sub) {
-  if (cache.has(sub)) return cache.get(sub);
-  let row = null;
-  if (FN_URL && FN_SECRET) row = (await fnCall({ op: 'get', sub })).row || null;
-  else if (SB_URL && SB_KEY) {
-    const r = await request(SB_URL + '/rest/v1/jugadores?sub=eq.' + encodeURIComponent(sub) + '&select=*', { method: 'GET', headers: sbHeaders() });
+/* Lectura y escritura reales (Supabase, la función intermediaria o el archivo local). */
+async function dbGetReal(sub) {
+  if (FN_URL && FN_SECRET) return (await fnCall({ op: 'get', sub })).row || null;
+  if (SB_URL && SB_KEY) {
+    const r = await request(SB_URL + '/rest/v1/jugadores?sub=eq.' + encodeURIComponent(sub) + '&select=*', { method: 'GET', headers: sbHeaders() }, null, 8000);
     if (r.status !== 200) throw new Error('base de datos: ' + r.status);
-    row = JSON.parse(r.body)[0] || null;
-  } else row = fileLoad()[sub] || null;
+    return JSON.parse(r.body)[0] || null;
+  }
+  return fileLoad()[sub] || null;
+}
+async function dbPutReal(row) {
+  const limpio = Object.assign({}, row); delete limpio._temp; delete limpio._d; delete limpio._pend;
+  if (FN_URL && FN_SECRET) await fnCall({ op: 'put', row: limpio });
+  else if (SB_URL && SB_KEY) {
+    const r = await request(SB_URL + '/rest/v1/jugadores', { method: 'POST', headers: sbHeaders({ Prefer: 'resolution=merge-duplicates,return=minimal' }) }, JSON.stringify(limpio), 8000);
+    if (r.status >= 300) throw new Error('base de datos: ' + r.status + ' ' + r.body.slice(0, 120));
+  } else { fileLoad()[row.sub] = limpio; fileSave(); }
+}
+/* MODO SIN BASE: si la base de cuentas no responde (por ejemplo, Supabase pausado o reiniciándose), igual
+   se puede iniciar sesión. El perfil queda en memoria marcado como provisorio (_temp) y se anota lo que se
+   gana (_d). Cuando la base vuelve, se lee el perfil de verdad y se le suma lo ganado: nunca se pisa el
+   progreso guardado con un perfil vacío. Las escrituras que fallan se reintentan cada minuto. */
+const vacio = sub => ({ sub, nombre: 'Jugador', skin: cleanSkin(null), mira: cleanMira(null), xp: 0, kills: 0, partidas: 0, victorias: 0 });
+let baseCaida = 0;
+async function dbGet(sub) {
+  const c = cache.get(sub);
+  if (c && !c._temp) return c;
+  if (c && c._temp && Date.now() - baseCaida < 30000) return c;   // recién falló: no insistir en cada pedido
+  let row;
+  try { row = await dbGetReal(sub); baseCaida = 0; }
+  catch (e) {
+    baseCaida = Date.now();
+    console.warn('Base de cuentas sin respuesta, perfil provisorio para ' + sub.slice(0, 6) + '…: ' + e.message);
+    if (c) return c;
+    const t = Object.assign(vacio(sub), { _temp: 1, _d: { xp: 0, kills: 0, partidas: 0, victorias: 0, perfil: 0 } });
+    cache.set(sub, t); return t;
+  }
+  if (c && c._temp) {   // volvió la base: se suma lo que ganó mientras estuvo caída
+    const r = row || vacio(sub), d = c._d;
+    r.xp = (r.xp | 0) + d.xp; r.kills = (r.kills | 0) + d.kills; r.partidas = (r.partidas | 0) + d.partidas; r.victorias = (r.victorias | 0) + d.victorias;
+    if (d.perfil || !row) { r.nombre = c.nombre; r.skin = c.skin; r.mira = c.mira; }
+    cache.set(sub, r); dbPut(r).catch(() => {});
+    return r;
+  }
   if (row) cache.set(sub, row);
   return row;
 }
 async function dbPut(row) {
   row.visto = new Date().toISOString();
   cache.set(row.sub, row);
-  if (FN_URL && FN_SECRET) await fnCall({ op: 'put', row });
-  else if (SB_URL && SB_KEY) {
-    const r = await request(SB_URL + '/rest/v1/jugadores', { method: 'POST', headers: sbHeaders({ Prefer: 'resolution=merge-duplicates,return=minimal' }) }, JSON.stringify(row));
-    if (r.status >= 300) throw new Error('base de datos: ' + r.status + ' ' + r.body.slice(0, 120));
-  } else { fileLoad()[row.sub] = row; fileSave(); }
+  if (row._temp) return;                       // provisorio: se guarda cuando vuelva la base
+  try { await dbPutReal(row); row._pend = 0; }
+  catch (e) { row._pend = 1; baseCaida = Date.now(); console.warn('No se pudo guardar el perfil (se reintenta):', e.message); }
 }
+setInterval(() => { for (const r of cache.values()) if (r._pend && !r._temp) dbPut(r); }, 60000).unref();
 
 /* ---------- perfil público ---------- */
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -161,8 +195,9 @@ if (FN_URL && FN_SECRET) {
 async function login(credential) {
   const g = await verifyGoogle(credential);
   let row = await dbGet(g.sub);
+  if (row && row._temp && !row._d.perfil && row.nombre === 'Jugador') row.nombre = cleanName(g.name);
   if (!row) { row = { sub: g.sub, nombre: cleanName(g.name), skin: cleanSkin(null), mira: cleanMira(null), xp: 0, kills: 0, partidas: 0, victorias: 0 }; await dbPut(row); }
-  return { token: makeSession(g.sub), perfil: profile(row) };
+  return { token: makeSession(g.sub), perfil: profile(row), provisorio: row._temp ? 1 : 0 };
 }
 async function me(tok) { const sub = readSession(tok); if (!sub) return null; const row = await dbGet(sub); return row ? { sub, row, perfil: profile(row) } : null; }
 async function update(tok, data) {
@@ -171,6 +206,7 @@ async function update(tok, data) {
   if (data.nombre !== undefined) row.nombre = cleanName(data.nombre);
   if (data.skin !== undefined) row.skin = cleanSkin(data.skin);
   if (data.mira !== undefined) row.mira = cleanMira(data.mira);
+  if (row._temp) row._d.perfil = 1;
   await dbPut(row);
   return profile(row);
 }
@@ -183,6 +219,7 @@ function addXP(sub, gain, info) {
     const before = levelInfo(row.xp).level;
     row.xp = Math.max(0, (row.xp | 0) + (gain | 0));
     row.kills = (row.kills | 0) + (info.kills | 0); row.partidas = (row.partidas | 0) + (info.partida | 0); row.victorias = (row.victorias | 0) + (info.victoria | 0);
+    if (row._temp) { const d = row._d; d.xp += gain | 0; d.kills += info.kills | 0; d.partidas += info.partida | 0; d.victorias += info.victoria | 0; }
     await dbPut(row);
     return { antes: before, perfil: profile(row) };
   }).catch(e => { console.error('No se pudo sumar experiencia:', e.message); return null; });
@@ -198,4 +235,4 @@ if (SB_URL && SB_KEY && !process.env.SIN_DESPERTADOR) {
     .catch(e => console.warn('Supabase no responde (¿proyecto pausado?): ' + e.message));
   setTimeout(despertar, 20000).unref(); setInterval(despertar, 12 * 3600 * 1000).unref();
 }
-module.exports = { _test: { makeSession, dbPut }, enabled, persistent, clientId: () => CLIENT_ID, login, me, update, addXP, readSession, levelInfo };
+module.exports = { _test: { makeSession, dbPut, dbGet, addXP: (...a) => addXP(...a) }, enabled, persistent, clientId: () => CLIENT_ID, login, me, update, addXP, readSession, levelInfo };

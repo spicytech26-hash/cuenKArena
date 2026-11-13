@@ -98,7 +98,8 @@
       console.error("Error silencioso evitado al procesar la muerte del boss:", e);
     }
     
-    // Ahora endMatch() se ejecuta incondicionalmente
+    // Forzamos el tiempo a 0 para que el servidor cierre la partida al instante
+    this.left = 0;
     this.endMatch();
   }
   /* quién gana: el que mató al boss rival. Por tiempo: el que más vida porcentual le sacó al boss rival;

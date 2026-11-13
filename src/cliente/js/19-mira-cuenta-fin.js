@@ -144,8 +144,8 @@ function renderAcct(){if(typeof renderCombos==='function'){lkAdding=false;render
     if(window.google&&google.accounts&&google.accounts.id)google.accounts.id.renderButton($('gBtn'),{theme:'filled_black',size:'large',text:'signin_with',shape:'rectangular',locale:'es'});
   }
 }
-function applyProfile(pf,fresh){
-  const isNew=fresh&&!pf.xp&&!pf.partidas;ACC=pf;
+function applyProfile(pf,fresh,prov){
+  const isNew=fresh&&!prov&&!pf.xp&&!pf.partidas;ACC=pf;
   if(isNew){acctSave(true);}               // cuenta nueva: se lleva el personaje y la mira que ya tenías
   else{
     if(pf.nombre){S.name=pf.nombre;$('pName').value=S.name;}
@@ -164,8 +164,8 @@ function logout(){ACC=null;ACCTOK=null;try{localStorage.removeItem('cuenk_tok');
 function onGoogleCredential(resp){
   fetch('/auth/google',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:resp.credential})}).then(r=>r.json()).then(j=>{
     if(!j.token){acctError(j.error);return;}
-    ACCTOK=j.token;try{localStorage.setItem('cuenk_tok',ACCTOK);}catch(e){}applyProfile(j.perfil,true);SFX.ui();
-    if(j.provisorio)sysNote('La base de cuentas se está reiniciando: entraste igual y lo que ganes se suma a tu perfil cuando vuelva.');
+    ACCTOK=j.token;try{localStorage.setItem('cuenk_tok',ACCTOK);}catch(e){}applyProfile(j.perfil,true,j.provisorio);SFX.ui();
+    if(j.provisorio)sysNote('La base de cuentas se está reiniciando: tu nivel guardado no se perdió, vuelve solo en cuanto la base responda (y lo que ganes ahora se le suma).');
   }).catch(()=>acctError());
 }
 function sysNote(msg){const n=$('netTxt');if(n)n.textContent=msg;}

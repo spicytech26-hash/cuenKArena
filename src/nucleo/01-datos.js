@@ -18,6 +18,10 @@ const falloff = (W_, d) => { const f = W_.fall; if (!f) return 1; if (d <= f[0])
 /* Daño pensado para combates cortos: 100 de salud cae en ~1 segundo de fuego sostenido.
    mag/reload: armas con cargador (la escopeta doble tira 2 y recarga).
    hip: dispersión del francotirador sin mira (con mira usa spread). */
+/* Carga del rifle de plasma. El servidor es el que mide: anota cuándo empezó a cargar (mensaje 'chg') y al
+   disparar usa ese tiempo, nunca el que diga el cliente. MIN es el toque más corto que ya dispara, MAX la
+   carga llena, y pasado MAX + SOBRA el arma se descarga sola para que nadie la deje cargada eternamente. */
+const CARGA = { MIN: .02, MAX: 1.2, SOBRA: 2.5, DMG_MIN: 30, DMG_MAX: 200, EXP: 1.5, HAZ_MIN: .15, HAZ_MAX: .4, LENTO: .75 };
 const WEAPONS = [
   { name: 'Pistola',        ammo: 'bullets',  cost: 1, rate: .17, type: 'hit',  pel: 1,  spread: .005, dmg: 22, range: 300, mag: 12, reload: 1.3 },
   { name: 'Escopeta',       ammo: 'shells',   cost: 1, rate: .85, type: 'hit',  pel: 10, spread: .06,  dmg: 9, range: 120, mag: 6, reload: 1.8, fall: [4, 20, .45] },   // como la de TF2: 90 de cerca, baja hasta ~40 de lejos
@@ -26,7 +30,8 @@ const WEAPONS = [
   // granada: explota al segundo; si le pega de lleno a alguien antes de rebotar, explota en el acto con daño extra y premio
   { name: 'Lanzagranadas',  ammo: 'grenades', cost: 1, rate: .75, type: 'proj', proj: 'grenade', speed: 26, dmg: 110, rad: 5.5, direct: 40, clean: 100, fuse: 1, mag: 4, reload: 2 },
   { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 60, rad: 4.5, sfall: .75, direct: 70, mag: 4, reload: 3.6 },   // como el del Soldier: 4 cohetes y ~2,7 s para recargar todo   // nerf: antes 100/105, después 80/85; ahora 70 directo y 60 de área (nunca más que el directo) que cae rápido con la distancia
-  { name: 'Rifle de plasma', ammo: 'slugs',    cost: 1, rate: 1.4, type: 'rail', pel: 1,  dmg: 110, range: 400, mag: 4, reload: 2.2 },
+  // plasma: se mantiene el botón para cargar y al soltar sale el rayo. Un toque pincha, la carga llena mata.
+  { name: 'Rifle de plasma', ammo: 'slugs',    cost: 1, rate: .45, type: 'rail', pel: 1,  dmg: 30, range: 400, mag: 5, reload: 2.2, carga: CARGA },
   // cuchillo mariposa: el segundo tajo sobre la misma víctima (dentro de 4 s) mata siempre
   { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 55, back: 1.8, range: 1.9, melee: true },   // alcance corto como el cuchillo del espía de TF2 o el del CS:GO
   { name: 'Francotirador',  ammo: 'sniper',   cost: 1, rate: 1.25, type: 'hit', pel: 1,  spread: .002, hip: .045, dmg: 115, head: 2, range: 500, scope: true, mag: 5, reload: 2.2 },
@@ -84,7 +89,7 @@ const SHOP = [
   // la molotov es de un solo uso: se compra estando vivo y si te matan la perdés
   { id: 'w10', cat: 'Bombas', name: 'Bomba molotov', w: 10, price: 300, once: 1, pack: ['molotov', 3], desc: 'Tecla G. 3 molotovs que dejan el piso en llamas 6 s. Si te matan, las perdés' },
   { id: 'w5', cat: 'Misiles', name: 'Lanzacohetes', w: 5, price: 1300, pack: ['rockets', 10], desc: 'Daño en área y rocket jump' },
-  { id: 'w6', cat: 'Rifles', name: 'Rifle de plasma', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Atraviesa a todos los que estén en línea' },
+  { id: 'w6', cat: 'Rifles', name: 'Rifle de plasma', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Mantené el botón para cargar: un toque pincha, la carga llena mata de un tiro. Atraviesa a todos los que estén en línea' },
   { id: 'w8', cat: 'Rifles', name: 'Francotirador', w: 8, price: 1500, pack: ['sniper', 10], desc: 'Click derecho para apuntar con mira. Mata de un tiro a quien no tiene blindaje' },
   { id: 'w9', cat: 'Rifles', name: 'Rifle de caza', w: 9, price: 1400, pack: ['caza', 8], desc: 'La bala viaja y cae: cualquier impacto mata. Tiros largos o al aire dan premio' },
   { id: 'w7', cat: 'Cuerpo a cuerpo', name: 'Cuchillo', w: 7, price: 0, free: 1, desc: 'Cuchillo mariposa: dos puñaladas matan siempre. No lo frena el blindaje' },

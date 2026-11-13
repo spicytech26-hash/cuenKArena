@@ -143,7 +143,7 @@ function onEvent(m){
       const end=[o[0]+d[0]*L,o[1]+d[1]*L,o[2]+d[2]*L];
       const gp=p&&p.model?gunTip(p):o;
       if(W_.melee){SFX[7](vAt(o[0],o[1],o[2]));if(p)p.fire=.2;break;}
-      if(m.w===6)fxRail(gp,end,p?new THREE.Color(p.color).getHex():0xa8e6ff);
+      if(m.w===6)fxRail(gp,end,p?new THREE.Color(p.color).getHex():0xa8e6ff,W_.carga?.45+(m.cg||0)/C.CARGA.MAX*1.7:1);
       else{fxTracer(gp,end);if(h)fxSparks(end[0]-d[0]*.05,end[1]-d[1]*.05,end[2]-d[2]*.05,h.n,W_.pel>1?8:5);}
       flashLight(gp[0],gp[1],gp[2],0xffaa50,.06);
       SFX[m.w](vAt(o[0],o[1],o[2]));

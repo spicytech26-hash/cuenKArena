@@ -34,4 +34,13 @@ vRigs[6]=(g,P,u,f)=>{
     H.p=vKF(u,[[0,[0,-.07,-.3]],[.1,grab],[.26,[0,-.16,.05]],[.4,PK],[.42,PK],[.56,[0,-.24,.06]],[.66,grab],[.72,grab],[.86,[0,-.07,-.3]]]);
   }
   const b=.25+.75*charge;gl.color.setRGB(.56*b+.3*(1-charge)*0,.89*b,1*b);cg.color.setRGB(.43*b,.91*b,1*b);
+  // mientras mantenés el botón: el tubo se llena de luz hasta quedar blanco y el rifle empieza a vibrar
+  const q=typeof me!=='undefined'&&me.cg?Math.min(1,me.cg/C.CARGA.MAX):0;
+  if(q>0){
+    const e=.3+2.1*q*q,w=q*q*.9;
+    gl.color.setRGB(.56*e+w,.89*e+w*.5,e+w*.2);cg.color.setRGB(.43*e+w,.91*e+w*.5,e+w*.2);
+    const tt=G.time,v=.0016*q*q;
+    g.position.x+=Math.sin(tt*63)*v;g.position.y+=Math.cos(tt*79)*v;g.rotation.z+=Math.sin(tt*51)*.012*q*q;
+    if(q>=1){const p=.5+.5*Math.sin(tt*34);gl.color.offsetHSL(0,0,p*.18);}
+  }
 };

@@ -30,6 +30,10 @@ const falloff = (W_, d) => { const f = W_.fall; if (!f) return 1; if (d <= f[0])
 /* Daño pensado para combates cortos: 100 de salud cae en ~1 segundo de fuego sostenido.
    mag/reload: armas con cargador (la escopeta doble tira 2 y recarga).
    hip: dispersión del francotirador sin mira (con mira usa spread). */
+/* Carga del rifle de plasma. El servidor es el que mide: anota cuándo empezó a cargar (mensaje 'chg') y al
+   disparar usa ese tiempo, nunca el que diga el cliente. MIN es el toque más corto que ya dispara, MAX la
+   carga llena, y pasado MAX + SOBRA el arma se descarga sola para que nadie la deje cargada eternamente. */
+const CARGA = { MIN: .02, MAX: 1.2, SOBRA: 2.5, DMG_MIN: 30, DMG_MAX: 200, EXP: 1.5, HAZ_MIN: .15, HAZ_MAX: .4, LENTO: .75 };
 const WEAPONS = [
   { name: 'Pistola',        ammo: 'bullets',  cost: 1, rate: .17, type: 'hit',  pel: 1,  spread: .005, dmg: 22, range: 300, mag: 12, reload: 1.3 },
   { name: 'Escopeta',       ammo: 'shells',   cost: 1, rate: .85, type: 'hit',  pel: 10, spread: .06,  dmg: 9, range: 120, mag: 6, reload: 1.8, fall: [4, 20, .45] },   // como la de TF2: 90 de cerca, baja hasta ~40 de lejos
@@ -38,7 +42,8 @@ const WEAPONS = [
   // granada: explota al segundo; si le pega de lleno a alguien antes de rebotar, explota en el acto con daño extra y premio
   { name: 'Lanzagranadas',  ammo: 'grenades', cost: 1, rate: .75, type: 'proj', proj: 'grenade', speed: 26, dmg: 110, rad: 5.5, direct: 40, clean: 100, fuse: 1, mag: 4, reload: 2 },
   { name: 'Lanzacohetes',   ammo: 'rockets',  cost: 1, rate: .8,  type: 'proj', proj: 'rocket',  speed: 44, dmg: 60, rad: 4.5, sfall: .75, direct: 70, mag: 4, reload: 3.6 },   // como el del Soldier: 4 cohetes y ~2,7 s para recargar todo   // nerf: antes 100/105, después 80/85; ahora 70 directo y 60 de área (nunca más que el directo) que cae rápido con la distancia
-  { name: 'Rifle de plasma', ammo: 'slugs',    cost: 1, rate: 1.4, type: 'rail', pel: 1,  dmg: 110, range: 400, mag: 4, reload: 2.2 },
+  // plasma: se mantiene el botón para cargar y al soltar sale el rayo. Un toque pincha, la carga llena mata.
+  { name: 'Rifle de plasma', ammo: 'slugs',    cost: 1, rate: .45, type: 'rail', pel: 1,  dmg: 30, range: 400, mag: 5, reload: 2.2, carga: CARGA },
   // cuchillo mariposa: el segundo tajo sobre la misma víctima (dentro de 4 s) mata siempre
   { name: 'Cuchillo',       ammo: null,       cost: 0, rate: .5,  type: 'hit',  pel: 1,  spread: 0, dmg: 55, back: 1.8, range: 1.9, melee: true },   // alcance corto como el cuchillo del espía de TF2 o el del CS:GO
   { name: 'Francotirador',  ammo: 'sniper',   cost: 1, rate: 1.25, type: 'hit', pel: 1,  spread: .002, hip: .045, dmg: 115, head: 2, range: 500, scope: true, mag: 5, reload: 2.2 },
@@ -96,7 +101,7 @@ const SHOP = [
   // la molotov es de un solo uso: se compra estando vivo y si te matan la perdés
   { id: 'w10', cat: 'Bombas', name: 'Bomba molotov', w: 10, price: 300, once: 1, pack: ['molotov', 3], desc: 'Tecla G. 3 molotovs que dejan el piso en llamas 6 s. Si te matan, las perdés' },
   { id: 'w5', cat: 'Misiles', name: 'Lanzacohetes', w: 5, price: 1300, pack: ['rockets', 10], desc: 'Daño en área y rocket jump' },
-  { id: 'w6', cat: 'Rifles', name: 'Rifle de plasma', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Atraviesa a todos los que estén en línea' },
+  { id: 'w6', cat: 'Rifles', name: 'Rifle de plasma', w: 6, price: 1700, pack: ['slugs', 10], desc: 'Mantené el botón para cargar: un toque pincha, la carga llena mata de un tiro. Atraviesa a todos los que estén en línea' },
   { id: 'w8', cat: 'Rifles', name: 'Francotirador', w: 8, price: 1500, pack: ['sniper', 10], desc: 'Click derecho para apuntar con mira. Mata de un tiro a quien no tiene blindaje' },
   { id: 'w9', cat: 'Rifles', name: 'Rifle de caza', w: 9, price: 1400, pack: ['caza', 8], desc: 'La bala viaja y cae: cualquier impacto mata. Tiros largos o al aire dan premio' },
   { id: 'w7', cat: 'Cuerpo a cuerpo', name: 'Cuchillo', w: 7, price: 0, free: 1, desc: 'Cuchillo mariposa: dos puñaladas matan siempre. No lo frena el blindaje' },
@@ -3078,6 +3083,7 @@ class Game {
         break;
       }
       case 'fire': this.humanFire(p, m); break;
+      case 'chg': { const w = m.w | 0, W_ = WEAPONS[w]; if (W_ && W_.carga && p.alive && p.w === w) p.chgT = this.time; break; }   // empezó a cargar el plasma
       case 'reload': { const w = m.w | 0, W_ = WEAPONS[w]; if (W_ && W_.mag && p.alive && p.mag[w] < W_.mag && !(p.relT[w] > this.time)) p.relT[w] = this.time + W_.reload * .75; break; }
       case 'buy': this.buy(p, String(m.id || '')); break;
       case 'skin': {
@@ -3402,6 +3408,12 @@ class Game {
   }
 
   /* ---- disparos ---- */
+  // daño del plasma según lo que se cargó: de DMG_MIN a DMG_MAX siguiendo la curva EXP
+  cargaDmg(W_, carga) {
+    const C_ = W_.carga; if (!C_) return W_.dmg;
+    const q = clamp((carga - C_.MIN) / (C_.MAX - C_.MIN), 0, 1);
+    return C_.DMG_MIN + (C_.DMG_MAX - C_.DMG_MIN) * Math.pow(q, C_.EXP);
+  }
   canFire(p, w) {
     const W_ = WEAPONS[w]; if (!W_ || !p.alive || !p.ow[w] || !this.live()) return false;
     if (W_.ammo && p.am[W_.ammo] < W_.cost && !this.mode.gg && !this.mode.inf) return false;
@@ -3423,15 +3435,22 @@ class Game {
     const d = [m.d[0] / dl, m.d[1] / dl, m.d[2] / dl];
     let o = m.o; const ex = p.s.x, ey = p.s.y + K.EYE, ez = p.s.z;
     if (Math.hypot(o[0] - ex, o[1] - ey, o[2] - ez) > 3) o = [ex, ey, ez];
-    this.consume(p, w);
     const W_ = WEAPONS[w];
+    // plasma: cuánto cargó lo mide el servidor con el reloj de la partida, no el cliente
+    if (W_.carga) {
+      const C_ = W_.carga;
+      p.carga = clamp(p.chgT ? this.time - p.chgT : 0, 0, C_.MAX);
+      p.chgT = 0;
+      if (p.carga < C_.MIN) return;   // apenas lo tocó: no sale el tiro
+    }
+    this.consume(p, w);
     const ns = !!W_.scope && !m.sc; // arma con mira disparada sin apuntar
     if (W_.type === 'proj') { this.spawnProj(p, w, o, d); this.projs[this.projs.length - 1].ns = ns; return; }
     const pasa = setPasa(p.team);
     try { this.humanHits(p, m, w, W_, o, d, ns); } finally { setPasa(pasa); }
   }
   humanHits(p, m, w, W_, o, d, ns) {
-    this.bcast({ t: 'ev', e: 'shot', id: p.id, w, o: r3a(o), d: r3a(d) }, p.id);
+    this.bcast({ t: 'ev', e: 'shot', id: p.id, w, o: r3a(o), d: r3a(d), cg: W_.carga ? r2(p.carga || 0) : 0 }, p.id);
     this.curNS = ns;
     const claims = Array.isArray(m.h) ? m.h.slice(0, 16) : [];
     const done = new Set();
@@ -3443,7 +3462,8 @@ class Game {
       done.add(t.id);
       const n = clamp(c[1] | 0, 0, W_.pel), hs = clamp(c[2] | 0, 0, n); if (!n) continue;
       if (!this.validHit(o, d, t, W_, p)) continue;
-      const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? W_.dmg * (hs ? 1.5 : 1) : W_.head ? W_.dmg * (hs ? W_.head : 1) : (n + hs) * W_.dmg * falloff(W_, Math.hypot(t.s.x - o[0], t.s.y + 1 - o[1], t.s.z - o[2]));
+      const base = W_.carga ? this.cargaDmg(W_, p.carga || 0) : W_.dmg;
+      const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? base * (hs ? 1.5 : 1) : W_.head ? base * (hs ? W_.head : 1) : (n + hs) * base * falloff(W_, Math.hypot(t.s.x - o[0], t.s.y + 1 - o[1], t.s.z - o[2]));
       this.curHS = hs > 0 && !W_.melee;
       this.damage(t, dmg * this.mult(p), p, w, d, .05, 'frag');
       this.curHS = false;
@@ -3491,16 +3511,24 @@ class Game {
     hits = pierce ? hits : hits.slice(0, 1);
     return { wt, n: wall ? wall.n : null, hits, st: this.dom && wall && !(hits.length && !pierce) ? this.domStruct(o, d, wall) : null };
   }
+  // los bots cargan el plasma antes de soltarlo: cuanto mejor el bot, más lo carga
+  botCarga(W_) {
+    if (!W_.carga) return 0;
+    const sk = Math.max(0, Math.min(3, this.o.botSkill | 0)), C_ = W_.carga;
+    return C_.MIN + (C_.MAX - C_.MIN) * [.15, .4, .7, 1][sk];
+  }
   botFire(p, w, o, d) {
     if (!this.canFire(p, w)) return;
     this.consume(p, w);
     const W_ = WEAPONS[w];
     if (W_.type === 'proj') { this.spawnProj(p, w, o, d); return; }
-    this.bcast({ t: 'ev', e: 'shot', id: p.id, w, o: r3a(o), d: r3a(d) });
+    p.carga = this.botCarga(W_);
+    this.bcast({ t: 'ev', e: 'shot', id: p.id, w, o: r3a(o), d: r3a(d), cg: r2(p.carga) });
     const pasa = setPasa(p.team);
     try { this.botHits(p, w, W_, o, d); } finally { setPasa(pasa); }
   }
   botHits(p, w, W_, o, d) {
+    const BASE = W_.carga ? this.cargaDmg(W_, p.carga || 0) : W_.dmg;
     const acc = new Map(), sacc = new Map();
     for (let i = 0; i < W_.pel; i++) {
       let dd = d;
@@ -3513,10 +3541,10 @@ class Game {
       }
       const tr = this.trace(o, dd, W_.range || 300, p, W_.type === 'rail');
       for (const h of tr.hits) { const a = acc.get(h.p) || { n: 0, hs: 0 }; a.n++; if (h.head) a.hs++; acc.set(h.p, a); }
-      if (tr.st) { const k = tr.st.kind + tr.st.i + (tr.st.core ? 'c' : ''), a = sacc.get(k) || { st: tr.st, dmg: 0 }; a.dmg += W_.dmg * falloff(W_, tr.wt); sacc.set(k, a); }
+      if (tr.st) { const k = tr.st.kind + tr.st.i + (tr.st.core ? 'c' : ''), a = sacc.get(k) || { st: tr.st, dmg: 0 }; a.dmg += BASE * falloff(W_, tr.wt); sacc.set(k, a); }
     }
     for (const [t, a] of acc) {
-      const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? W_.dmg * (a.hs ? 1.5 : 1) : W_.head ? W_.dmg * (a.hs ? W_.head : 1) : (a.n + a.hs) * W_.dmg * falloff(W_, Math.hypot(t.s.x - o[0], t.s.y + 1 - o[1], t.s.z - o[2]));
+      const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? BASE * (a.hs ? 1.5 : 1) : W_.head ? BASE * (a.hs ? W_.head : 1) : (a.n + a.hs) * BASE * falloff(W_, Math.hypot(t.s.x - o[0], t.s.y + 1 - o[1], t.s.z - o[2]));
       this.damage(t, dmg * this.mult(p) * this.skill().dmg, p, w, d, .05, 'frag');
     }
     for (const a of sacc.values()) this.domHit(p, a.st.kind, a.st.i, a.dmg * this.mult(p) * this.skill().dmg, a.st.core);
@@ -3527,7 +3555,7 @@ class Game {
       if (Math.hypot(cx - d[0] * pr, cy - d[1] * pr, cz - d[2] * pr) > .85) continue;
       const prev = setPasa(p.team), tapa = raycast(this.W, o[0], o[1], o[2], d[0], d[1], d[2], pr - .5); setPasa(prev);
       if (tapa) continue;
-      this.domMinDamage(m, W_.dmg * falloff(W_, pr) * this.mult(p) * this.skill().dmg * (W_.pel || 1) * .6, p);
+      this.domMinDamage(m, BASE * falloff(W_, pr) * this.mult(p) * this.skill().dmg * (W_.pel || 1) * .6, p);
       break;
     }
   }
@@ -3637,6 +3665,7 @@ class Game {
   /* ---- daño y muertes ---- */
   damage(t, amt, att, w, dir, ks, how) {
     if (!t.alive || !this.live() || amt <= 0) return;
+    t.chgT = 0;   // si te pegan mientras cargás el plasma, perdés la carga
     if (this.dom && this.time - t.spawnT < DOM.SPAWN_INV && how !== 'void' && how !== 'water') return;   // recién aparecido: invulnerable un momento
     if (this.mode.teams && att && att !== t && att.team === t.team) return; // sin fuego amigo
     if (att && att !== t && hasCard(att, 'carnicero')) amt *= CARD_FX.DMG;   // carta Carnicero
@@ -3977,7 +4006,8 @@ class Game {
     }
     const core = boss && hs > 0 && this.domCore(dm.boss[i], o, d, h ? h.t : 1e9, 1.5);
     const dist = h ? h.t : 0;
-    const dmg = W_.melee ? W_.dmg : W_.type === 'rail' ? W_.dmg : W_.head ? W_.dmg : n * W_.dmg * falloff(W_, dist);
+    const base = W_.carga ? this.cargaDmg(W_, p.carga || 0) : W_.dmg;
+    const dmg = W_.melee ? base : W_.type === 'rail' ? base : W_.head ? base : n * base * falloff(W_, dist);
     this.domHit(p, boss ? 'b' : 'g', i, dmg * this.mult(p), core);
   }
   // explosiones y fuego: daño de área a generadores y bosses rivales
@@ -4371,7 +4401,8 @@ class Game {
     const falso = { s: { x: m.x, y: m.y, z: m.z, vx: 0, vz: 0 }, hist: m.hist.map(h => [h[0], h[1], h[2], h[3]]) };
     if (!this.validHit(o, d, falso, W_, p)) return;
     const dist = Math.hypot(m.x - o[0], m.y + 1 - o[1], m.z - o[2]);
-    const dmg = W_.melee ? W_.dmg : W_.type === 'rail' ? W_.dmg : n * W_.dmg * falloff(W_, dist);
+    const base = W_.carga ? this.cargaDmg(W_, p.carga || 0) : W_.dmg;
+    const dmg = W_.melee ? base : W_.type === 'rail' ? base : n * base * falloff(W_, dist);
     this.domMinDamage(m, dmg * this.mult(p), p);
   }
   domMinDamage(m, amt, att) {
@@ -5114,5 +5145,5 @@ class Game {
   }
 }
 
-return { PRIMARY, primaryOf, censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, MODE_ALIAS, DOM, setPasa, gridOf, slab, rayBrush, inv, findNode, r1, CARDS, CARD_BY, CARD_AT, CARD_MAX, CARD_FX, hasCard, CROWN, STORM, stormR, stormDmg, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, EMBLEMS, SKILL, topAt, pmove, inZeroG, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav, dijkstra };
+return { PRIMARY, primaryOf, censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, MODE_ALIAS, DOM, CARGA, setPasa, gridOf, slab, rayBrush, inv, findNode, r1, CARDS, CARD_BY, CARD_AT, CARD_MAX, CARD_FX, hasCard, CROWN, STORM, stormR, stormDmg, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, EMBLEMS, SKILL, topAt, pmove, inZeroG, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav, dijkstra };
 });

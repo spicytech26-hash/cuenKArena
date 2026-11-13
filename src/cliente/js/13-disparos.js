@@ -61,7 +61,7 @@ function inspect(){if(!me.alive||me.scope||(me.rel>0&&me.relW===me.w))return;me.
 function selectWeapon(i,silent){if(i===me.w||!me.ow[i]||!me.alive)return;if(!hasAmmo(i)&&!silent){SFX.click();return;}me.lastW=me.w;me.w=i;me.scope=false;me.inspT=9;me.fireT=9;if(me.rel>0&&me.relW!==i){me.rel=0;}me.raise=1;me.cool=Math.max(me.cool,.2);showWeapon();updateHUD();}
 function cycleWeapon(d){const n=WEAPONS.length;for(let k=1;k<=n;k++){const i=((me.w+d*k)%n+n)%n;if(me.ow[i]&&hasAmmo(i)){selectWeapon(i);return;}}}
 function autoSwitch(){for(const i of [6,5,2,3,1,4,0]){if(me.ow[i]&&hasAmmo(i)){if(i!==me.w)selectWeapon(i,true);return;}}}
-function showWeapon(){vms.forEach((g,k)=>g.visible=k===me.w);}
+function showWeapon(){vms.forEach((g,k)=>g.visible=k===me.w);if(me.cg){me.cg=0;me.cgTop=0;}if(typeof cargaHud==='function')cargaHud(-1);}
 const rgtV=new THREE.Vector3(),upV=new THREE.Vector3();
 /* recarga con animación propia de cada arma, al estilo de TF2 y Quake 3: el arma baja e inclina, hace su movimiento
    (cargador afuera y adentro, cartuchos de a uno, quebrar la escopeta, cohetes al tubo) y vuelve. u va de 0 a 1 */
@@ -101,6 +101,31 @@ function vOnFire(w){const g=vms[w];
   if(w===0)vEject(g,[.02,.04,-.02],[1.3,1.4,.3],'brass');
   if(w===3)vEject(g,[.036,.01,-.02],[1.6,.9,.4],'brass');
   if(w===4)me.drumA=(me.drumA||0)+Math.PI/3;}
+/* Carga del rifle de plasma (constantes en CARGA, 01-datos.js). Mantener el botón carga y al soltar sale el
+   rayo. El servidor mide la carga por su cuenta a partir del mensaje 'chg': acá solo se predice para el HUD
+   y los efectos, así que un cliente trucado no puede cobrar más daño del que le corresponde. */
+function cargaTick(dt,W_){
+  const C_=C.CARGA,ahora=performance.now()/1000;
+  if(mouseDown&&liveState()&&$('shop').hidden&&me.raise<.4&&me.cool<=0){
+    if(!me.cg){
+      if(W_.mag&&me.mag[me.w]<=0){startReload(me.w);return;}
+      if(W_.ammo&&(me.am[W_.ammo]|0)<W_.cost&&!C.MODES[MODE].inf)return;
+      me.cg=1e-4;me.cgT0=ahora;me.cgTop=0;if(net)net.send({t:'chg',w:me.w});SFX.cargaIni();
+    }
+    // la carga se mide con el reloj y no sumando cuadros: así el HUD coincide con lo que mide el servidor
+    me.cg=Math.min(C_.MAX+C_.SOBRA,Math.max(1e-4,ahora-me.cgT0));
+    const q=Math.min(1,me.cg/C_.MAX);
+    if(q>=1&&!me.cgTop){me.cgTop=1;SFX.cargaTop();}
+    if(me.cg>=C_.MAX+C_.SOBRA)soltarCarga();            // si la dejás cargada, se descarga sola
+    cargaHud(q,me.cg>C_.MAX);
+  }else if(me.cg)soltarCarga();
+  else cargaHud(-1);
+}
+function soltarCarga(){
+  const c=Math.min(me.cg,C.CARGA.MAX);me.cg=0;me.cgTop=0;
+  if(c<C.CARGA.MIN)return;
+  me.carga=c;fire();me.carga=0;cargaHud(-1);
+}
 function fire(){
   const w=me.w,W_=WEAPONS[w];
   if(!hasAmmo(w)){SFX.click();me.cool=.3;autoSwitch();return;}
@@ -145,7 +170,7 @@ function fire(){
       if(DM.on&&(!use.length||W_.type==='rail')){const mn=mnClaim(claims,ex,ey,ez,dd,wt);if(!mn)domClaim(claims,wall,ex,ey,ez,dd);}   // minion, generador o boss
       for(const h of use){const c=claims.get(h.q.id)||[h.q.id,0,0];c[1]++;if(h.head)c[2]++;claims.set(h.q.id,c);fxBlood(ex+dd[0]*h.t,ey+dd[1]*h.t,ez+dd[2]*h.t,W_.type==='rail'?14:4);}
       const end=[ex+dd[0]*wt,ey+dd[1]*wt,ez+dd[2]*wt];
-      if(W_.type==='rail'){fxRail(vmWorldTip(),end,new THREE.Color(colorOf(myId)).getHex());if(wall)for(let j=0;j<16;j++)emit(sparks,end[0],end[1],end[2],wall.n[0]*3+R(4),wall.n[1]*3+R(4),wall.n[2]*3+R(4),.5,.5,.8,1,4);}
+      if(W_.type==='rail'){fxRail(vmWorldTip(),end,new THREE.Color(colorOf(myId)).getHex(),W_.carga?.45+(me.carga||0)/C.CARGA.MAX*1.7:1);if(wall)for(let j=0;j<16;j++)emit(sparks,end[0],end[1],end[2],wall.n[0]*3+R(4),wall.n[1]*3+R(4),wall.n[2]*3+R(4),.5,.5,.8,1,4);}
       else{if(w===8||w===0||w===3)fxTracer(vmWorldTip(),use.length?[ex+dd[0]*use[0].t,ey+dd[1]*use[0].t,ez+dd[2]*use[0].t]:end);if(!use.length&&wall)fxSparks(end[0]-dd[0]*.05,end[1]-dd[1]*.05,end[2]-dd[2]*.05,wall.n,pel>1?3:6);}
     }
     if(W_.melee){
@@ -168,3 +193,20 @@ const r3=a=>a.map(v=>Math.round(v*1000)/1000);
 function vmWorldTip(){if(TP.blend>.5)return tpMuzzle();const d=C.dirFromAngles(me.yaw,me.pitch);return [me.s.x+d[0]*.6+rgtV.x*.2-upV.x*.15,me.s.y+K.EYE+d[1]*.6+rgtV.y*.2-upV.y*.15,me.s.z+d[2]*.6+rgtV.z*.2-upV.z*.15];}
 function gunTip(p){const d=C.dirFromAngles(p.yaw,p.pitch),rx=Math.cos(p.yaw),rz=-Math.sin(p.yaw);return [p.x+d[0]*.9+rx*.42,p.y+1.35+d[1]*.9,p.z+d[2]*.9+rz*.42];}
 
+// sonidos de la carga del plasma: un chirrido que sube y un aviso seco al llegar al máximo
+Object.assign(SFX,{
+  cargaIni:()=>{tn({type:'sawtooth',f0:140,f1:900,dur:C.CARGA.MAX,vol:.1});nz({dur:C.CARGA.MAX,f0:300,f1:2400,type:'bandpass',q:4,vol:.07});},
+  cargaTop:()=>{tn({type:'square',f0:1500,f1:1500,dur:.07,vol:.1});tn({type:'square',f0:2100,f1:2100,dur:.07,vol:.08,delay:.08});}
+});
+/* Anillo de carga alrededor de la mira: se llena de 0 a 1 y parpadea en blanco al llegar al máximo.
+   q<0 lo esconde (arma sin carga, muerto, tienda abierta o recién disparado). */
+let cargaQ=-9;
+function cargaHud(q,sobra){
+  const el=$('cargaRing');if(!el)return;
+  if(q<0){if(cargaQ>=0){cargaQ=-9;el.hidden=true;el.classList.remove('full');}return;}
+  if(cargaQ<0)el.hidden=false;
+  const r=Math.round(q*60)/60;
+  if(r!==cargaQ){cargaQ=r;el.querySelector('.fg').style.strokeDashoffset=264*(1-r);}
+  el.classList.toggle('full',q>=1);
+  el.classList.toggle('sobra',!!sobra);
+}

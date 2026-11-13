@@ -130,7 +130,8 @@
     }
     const core = boss && hs > 0 && this.domCore(dm.boss[i], o, d, h ? h.t : 1e9, 1.5);
     const dist = h ? h.t : 0;
-    const dmg = W_.melee ? W_.dmg : W_.type === 'rail' ? W_.dmg : W_.head ? W_.dmg : n * W_.dmg * falloff(W_, dist);
+    const base = W_.carga ? this.cargaDmg(W_, p.carga || 0) : W_.dmg;
+    const dmg = W_.melee ? base : W_.type === 'rail' ? base : W_.head ? base : n * base * falloff(W_, dist);
     this.domHit(p, boss ? 'b' : 'g', i, dmg * this.mult(p), core);
   }
   // explosiones y fuego: daño de área a generadores y bosses rivales

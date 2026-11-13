@@ -1,6 +1,7 @@
   /* ---- daño y muertes ---- */
   damage(t, amt, att, w, dir, ks, how) {
     if (!t.alive || !this.live() || amt <= 0) return;
+    t.chgT = 0;   // si te pegan mientras cargás el plasma, perdés la carga
     if (this.dom && this.time - t.spawnT < DOM.SPAWN_INV && how !== 'void' && how !== 'water') return;   // recién aparecido: invulnerable un momento
     if (this.mode.teams && att && att !== t && att.team === t.team) return; // sin fuego amigo
     if (att && att !== t && hasCard(att, 'carnicero')) amt *= CARD_FX.DMG;   // carta Carnicero

@@ -24,6 +24,7 @@ function updMe(dt){
   const free=!chatOpen&&$('shop').hidden;
   if(free){if(keys.KeyW||keys.ArrowUp)f+=1;if(keys.KeyS||keys.ArrowDown)f-=1;if(keys.KeyD)s+=1;if(keys.KeyA)s-=1;if(keys.ArrowLeft)me.yaw+=dt*2.4;if(keys.ArrowRight)me.yaw-=dt*2.4;
     if(TC.on&&(TC.f||TC.s)){f=Math.max(-1,Math.min(1,f+TC.f));s=Math.max(-1,Math.min(1,s+TC.s));}}   // palanca táctil (analógica)
+  if(me.cg>0){const L=C.CARGA.LENTO;f*=L;s*=L;}   // cargando el plasma se camina un poco más lento
   const sy=Math.sin(me.yaw),cyw=Math.cos(me.yaw);
   const wx=-sy*f+cyw*s,wz=-cyw*f-sy*s;
   const jumpKey=free&&!!keys.Space;
@@ -51,7 +52,9 @@ function updMe(dt){
   me.cool-=dt;me.heat=Math.max(0,me.heat-dt*1.5);
   if(!mouseDown)me.held=false;
   const W_=WEAPONS[me.w];
-  if(mouseDown&&me.cool<=0&&me.raise<.4&&!(W_.semi&&me.held)&&liveState()&&$('shop').hidden){fire();me.held=true;}
+  // plasma: el botón carga y el tiro sale al soltar (cargaTick, en 13-disparos.js)
+  if(W_.carga)cargaTick(dt,W_);
+  else if(mouseDown&&me.cool<=0&&me.raise<.4&&!(W_.semi&&me.held)&&liveState()&&$('shop').hidden){fire();me.held=true;}
   G.sendT-=dt;if(G.sendT<=0){G.sendT=1/30;sendState();}
 }
 function sendState(){if(net)net.send({t:'st',p:r3([me.s.x,me.s.y,me.s.z]),v:r3([me.s.vx,me.s.vy,me.s.vz]),y:Math.round(me.yaw*1000)/1000,x:Math.round(me.pitch*1000)/1000,w:me.w,o:me.s.on?1:0,c:me.s.crouch?1:0,sl:me.s.slide?1:0});}

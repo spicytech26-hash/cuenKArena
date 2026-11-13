@@ -151,7 +151,8 @@
     const falso = { s: { x: m.x, y: m.y, z: m.z, vx: 0, vz: 0 }, hist: m.hist.map(h => [h[0], h[1], h[2], h[3]]) };
     if (!this.validHit(o, d, falso, W_, p)) return;
     const dist = Math.hypot(m.x - o[0], m.y + 1 - o[1], m.z - o[2]);
-    const dmg = W_.melee ? W_.dmg : W_.type === 'rail' ? W_.dmg : n * W_.dmg * falloff(W_, dist);
+    const base = W_.carga ? this.cargaDmg(W_, p.carga || 0) : W_.dmg;
+    const dmg = W_.melee ? base : W_.type === 'rail' ? base : n * base * falloff(W_, dist);
     this.domMinDamage(m, dmg * this.mult(p), p);
   }
   domMinDamage(m, amt, att) {

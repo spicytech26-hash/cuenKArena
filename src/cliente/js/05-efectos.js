@@ -51,16 +51,17 @@ function updFires(dt){
     f.lt-=dt;if(f.lt<=0){f.lt=.12;flashLight(f.x,f.y+1,f.z,0xff6a18,.16+Math.random()*.08);}
   }
 }
-function fxRail(a,b,color){
+function fxRail(a,b,color,gordo){
+  gordo=gordo||1;
   let line=beamPool.pop();
   if(!line){const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(6),3));line=new THREE.Line(geo,new THREE.LineBasicMaterial({transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));line.frustumCulled=false;}
   const pa=line.geometry.attributes.position;pa.setXYZ(0,a[0],a[1],a[2]);pa.setXYZ(1,b[0],b[1],b[2]);pa.needsUpdate=true;
-  line.material.color.setHex(color||0xa8e6ff);line.material.opacity=1;line.visible=true;if(!line.parent)scene.add(line);beams.push({line,t:0,life:.8});
-  const dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2],L=Math.hypot(dx,dy,dz)||1,n=Math.min(220,L*3|0);
+  line.material.color.setHex(color||0xa8e6ff);line.material.opacity=1;line.material.linewidth=gordo;line.visible=true;if(!line.parent)scene.add(line);beams.push({line,t:0,life:.8*gordo});
+  const dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2],L=Math.hypot(dx,dy,dz)||1,n=Math.min(260,L*3*gordo|0);
   const ux=dx/L,uy=dy/L,uz=dz/L;let px=-uz,pz=ux;const pl=Math.hypot(px,pz)||1;px/=pl;pz/=pl;const py=0;
   const qx=uy*pz-uz*py,qy=uz*px-ux*pz,qz=ux*py-uy*px;
   const col=new THREE.Color(color||0xa8e6ff);
-  for(let i=0;i<n;i++){const t=i/n,an=i*.7,c=Math.cos(an)*.12,s=Math.sin(an)*.12;emit(sparks,a[0]+dx*t+px*c+qx*s,a[1]+dy*t+py*c+qy*s,a[2]+dz*t+pz*c+qz*s,R(.3),R(.3)+.2,R(.3),.7+Math.random()*.3,col.r*.6,col.g*.8,col.b,0);}
+  for(let i=0;i<n;i++){const t=i/n,an=i*.7,c=Math.cos(an)*.12*gordo,s=Math.sin(an)*.12*gordo;emit(sparks,a[0]+dx*t+px*c+qx*s,a[1]+dy*t+py*c+qy*s,a[2]+dz*t+pz*c+qz*s,R(.3),R(.3)+.2,R(.3),.7+Math.random()*.3,col.r*.6,col.g*.8,col.b,0);}
 }
 function fxTracer(a,b){
   const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(a[0],a[1],a[2]),new THREE.Vector3(b[0],b[1],b[2])]);

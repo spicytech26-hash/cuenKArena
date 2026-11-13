@@ -1,4 +1,10 @@
   /* ---- disparos ---- */
+  // daño del plasma según lo que se cargó: de DMG_MIN a DMG_MAX siguiendo la curva EXP
+  cargaDmg(W_, carga) {
+    const C_ = W_.carga; if (!C_) return W_.dmg;
+    const q = clamp((carga - C_.MIN) / (C_.MAX - C_.MIN), 0, 1);
+    return C_.DMG_MIN + (C_.DMG_MAX - C_.DMG_MIN) * Math.pow(q, C_.EXP);
+  }
   canFire(p, w) {
     const W_ = WEAPONS[w]; if (!W_ || !p.alive || !p.ow[w] || !this.live()) return false;
     if (W_.ammo && p.am[W_.ammo] < W_.cost && !this.mode.gg && !this.mode.inf) return false;
@@ -20,15 +26,22 @@
     const d = [m.d[0] / dl, m.d[1] / dl, m.d[2] / dl];
     let o = m.o; const ex = p.s.x, ey = p.s.y + K.EYE, ez = p.s.z;
     if (Math.hypot(o[0] - ex, o[1] - ey, o[2] - ez) > 3) o = [ex, ey, ez];
-    this.consume(p, w);
     const W_ = WEAPONS[w];
+    // plasma: cuánto cargó lo mide el servidor con el reloj de la partida, no el cliente
+    if (W_.carga) {
+      const C_ = W_.carga;
+      p.carga = clamp(p.chgT ? this.time - p.chgT : 0, 0, C_.MAX);
+      p.chgT = 0;
+      if (p.carga < C_.MIN) return;   // apenas lo tocó: no sale el tiro
+    }
+    this.consume(p, w);
     const ns = !!W_.scope && !m.sc; // arma con mira disparada sin apuntar
     if (W_.type === 'proj') { this.spawnProj(p, w, o, d); this.projs[this.projs.length - 1].ns = ns; return; }
     const pasa = setPasa(p.team);
     try { this.humanHits(p, m, w, W_, o, d, ns); } finally { setPasa(pasa); }
   }
   humanHits(p, m, w, W_, o, d, ns) {
-    this.bcast({ t: 'ev', e: 'shot', id: p.id, w, o: r3a(o), d: r3a(d) }, p.id);
+    this.bcast({ t: 'ev', e: 'shot', id: p.id, w, o: r3a(o), d: r3a(d), cg: W_.carga ? r2(p.carga || 0) : 0 }, p.id);
     this.curNS = ns;
     const claims = Array.isArray(m.h) ? m.h.slice(0, 16) : [];
     const done = new Set();
@@ -40,7 +53,8 @@
       done.add(t.id);
       const n = clamp(c[1] | 0, 0, W_.pel), hs = clamp(c[2] | 0, 0, n); if (!n) continue;
       if (!this.validHit(o, d, t, W_, p)) continue;
-      const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? W_.dmg * (hs ? 1.5 : 1) : W_.head ? W_.dmg * (hs ? W_.head : 1) : (n + hs) * W_.dmg * falloff(W_, Math.hypot(t.s.x - o[0], t.s.y + 1 - o[1], t.s.z - o[2]));
+      const base = W_.carga ? this.cargaDmg(W_, p.carga || 0) : W_.dmg;
+      const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? base * (hs ? 1.5 : 1) : W_.head ? base * (hs ? W_.head : 1) : (n + hs) * base * falloff(W_, Math.hypot(t.s.x - o[0], t.s.y + 1 - o[1], t.s.z - o[2]));
       this.curHS = hs > 0 && !W_.melee;
       this.damage(t, dmg * this.mult(p), p, w, d, .05, 'frag');
       this.curHS = false;
@@ -88,16 +102,24 @@
     hits = pierce ? hits : hits.slice(0, 1);
     return { wt, n: wall ? wall.n : null, hits, st: this.dom && wall && !(hits.length && !pierce) ? this.domStruct(o, d, wall) : null };
   }
+  // los bots cargan el plasma antes de soltarlo: cuanto mejor el bot, más lo carga
+  botCarga(W_) {
+    if (!W_.carga) return 0;
+    const sk = Math.max(0, Math.min(3, this.o.botSkill | 0)), C_ = W_.carga;
+    return C_.MIN + (C_.MAX - C_.MIN) * [.15, .4, .7, 1][sk];
+  }
   botFire(p, w, o, d) {
     if (!this.canFire(p, w)) return;
     this.consume(p, w);
     const W_ = WEAPONS[w];
     if (W_.type === 'proj') { this.spawnProj(p, w, o, d); return; }
-    this.bcast({ t: 'ev', e: 'shot', id: p.id, w, o: r3a(o), d: r3a(d) });
+    p.carga = this.botCarga(W_);
+    this.bcast({ t: 'ev', e: 'shot', id: p.id, w, o: r3a(o), d: r3a(d), cg: r2(p.carga) });
     const pasa = setPasa(p.team);
     try { this.botHits(p, w, W_, o, d); } finally { setPasa(pasa); }
   }
   botHits(p, w, W_, o, d) {
+    const BASE = W_.carga ? this.cargaDmg(W_, p.carga || 0) : W_.dmg;
     const acc = new Map(), sacc = new Map();
     for (let i = 0; i < W_.pel; i++) {
       let dd = d;
@@ -110,10 +132,10 @@
       }
       const tr = this.trace(o, dd, W_.range || 300, p, W_.type === 'rail');
       for (const h of tr.hits) { const a = acc.get(h.p) || { n: 0, hs: 0 }; a.n++; if (h.head) a.hs++; acc.set(h.p, a); }
-      if (tr.st) { const k = tr.st.kind + tr.st.i + (tr.st.core ? 'c' : ''), a = sacc.get(k) || { st: tr.st, dmg: 0 }; a.dmg += W_.dmg * falloff(W_, tr.wt); sacc.set(k, a); }
+      if (tr.st) { const k = tr.st.kind + tr.st.i + (tr.st.core ? 'c' : ''), a = sacc.get(k) || { st: tr.st, dmg: 0 }; a.dmg += BASE * falloff(W_, tr.wt); sacc.set(k, a); }
     }
     for (const [t, a] of acc) {
-      const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? W_.dmg * (a.hs ? 1.5 : 1) : W_.head ? W_.dmg * (a.hs ? W_.head : 1) : (a.n + a.hs) * W_.dmg * falloff(W_, Math.hypot(t.s.x - o[0], t.s.y + 1 - o[1], t.s.z - o[2]));
+      const dmg = W_.melee ? this.meleeDmg(p, t, W_) : W_.type === 'rail' ? BASE * (a.hs ? 1.5 : 1) : W_.head ? BASE * (a.hs ? W_.head : 1) : (a.n + a.hs) * BASE * falloff(W_, Math.hypot(t.s.x - o[0], t.s.y + 1 - o[1], t.s.z - o[2]));
       this.damage(t, dmg * this.mult(p) * this.skill().dmg, p, w, d, .05, 'frag');
     }
     for (const a of sacc.values()) this.domHit(p, a.st.kind, a.st.i, a.dmg * this.mult(p) * this.skill().dmg, a.st.core);
@@ -124,7 +146,7 @@
       if (Math.hypot(cx - d[0] * pr, cy - d[1] * pr, cz - d[2] * pr) > .85) continue;
       const prev = setPasa(p.team), tapa = raycast(this.W, o[0], o[1], o[2], d[0], d[1], d[2], pr - .5); setPasa(prev);
       if (tapa) continue;
-      this.domMinDamage(m, W_.dmg * falloff(W_, pr) * this.mult(p) * this.skill().dmg * (W_.pel || 1) * .6, p);
+      this.domMinDamage(m, BASE * falloff(W_, pr) * this.mult(p) * this.skill().dmg * (W_.pel || 1) * .6, p);
       break;
     }
   }

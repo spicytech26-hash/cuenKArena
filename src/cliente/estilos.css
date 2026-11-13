@@ -1150,3 +1150,12 @@ body.tactil #shop,body.tactil #inter,body.tactil #kickMenu,body.tactil #mapMenu{
 #stmBox #stmC{fill:rgba(255,60,30,.22);stroke-width:2.4}
 body.tactil #killRow{left:auto;right:calc(8px + env(safe-area-inset-right,0px));top:calc(42px + env(safe-area-inset-top,0px));transform:scale(.72);transform-origin:right top}
 body.tactil #killRow~#feed,body.tactil #feed{top:calc(100px + env(safe-area-inset-top,0px))}
+
+/* anillo de carga del rifle de plasma, alrededor de la mira */
+#cargaRing{position:fixed;left:50%;top:50%;width:62px;height:62px;margin:-31px 0 0 -31px;pointer-events:none;z-index:4}
+#cargaRing svg{width:100%;height:100%;transform:rotate(-90deg)}
+#cargaRing circle{fill:none;stroke-width:7;stroke-linecap:butt}
+#cargaRing .bg{stroke:rgba(0,0,0,.45)}
+#cargaRing .fg{stroke:#49d6ff;stroke-dasharray:264;stroke-dashoffset:264;filter:drop-shadow(0 0 4px #49d6ff)}
+#cargaRing.full .fg{stroke:#fff;filter:drop-shadow(0 0 7px #8ef0ff);animation:blink .18s steps(2) infinite}
+#cargaRing.sobra .fg{stroke:#ff5a3c;filter:drop-shadow(0 0 7px #ff7a33)}

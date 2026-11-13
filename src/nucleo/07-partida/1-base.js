@@ -119,6 +119,7 @@ class Game {
         break;
       }
       case 'fire': this.humanFire(p, m); break;
+      case 'chg': { const w = m.w | 0, W_ = WEAPONS[w]; if (W_ && W_.carga && p.alive && p.w === w) p.chgT = this.time; break; }   // empezó a cargar el plasma
       case 'reload': { const w = m.w | 0, W_ = WEAPONS[w]; if (W_ && W_.mag && p.alive && p.mag[w] < W_.mag && !(p.relT[w] > this.time)) p.relT[w] = this.time + W_.reload * .75; break; }
       case 'buy': this.buy(p, String(m.id || '')); break;
       case 'skin': {

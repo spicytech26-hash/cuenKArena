@@ -6,6 +6,7 @@
    4. una partida corta con bots en cada modo y mapa no tira errores
    5. todos los botiquines y escudos se pueden agarrar
    6. Captura el dominio: barreras, bloqueo por equipo, núcleo del boss, fin de partida y desempates
+   7. Rifle de plasma: curva de daño por carga, instakill solo al máximo, techo de carga y cooldown
    Uso:  node herramientas/probar.js            (todo)
          node herramientas/probar.js lacuenca   (solo ese mapa) */
 'use strict';
@@ -299,6 +300,110 @@ if (!solo || solo === 'santuario') try {
     return s > 0 || 'en 7 minutos los bots no rompieron ningún generador';
   });
 } catch (e) { mal('Captura el dominio: ' + (e && e.stack || e)); }
+
+console.log('7. Rifle de plasma: carga y disparo');
+if (!solo || solo === 'santuario') try {
+  const G_ = C.CARGA, W6 = C.WEAPONS[6], dt = 1 / 40, D2 = C.DOM;
+  const MS2 = C.MAPS.santuario, BAR2 = MS2.bars[1], XM = Math.abs(BAR2.x), Y2 = BAR2.y + 1.5;
+  const prueba = (nombre, f) => { try { const r = f(); if (r === true) ok(nombre); else mal(nombre + (r ? ': ' + r : '')); } catch (e) { mal(nombre + ': ' + (e && e.stack || e)); } };
+  // dos jugadores cara a cara en la ruta del centro, fuera de la barrera: el azul le tira al rojo
+  const duelo = () => {
+    const g = new C.Game({ mode: 'dominio', bots: 0 }), ps = [];
+    for (let i = 0; i < 2; i++) { const id = g.addClient(() => {}); g.onMessage(id, { t: 'join', name: 'p' + i }); ps.push(g.players.get(id)); }
+    const a = ps.find(q => q.team === 1), b = ps.find(q => q.team === 0);
+    g.time += D2.SPAWN_INV + 1;   // se les pasa la invulnerabilidad de aparición
+    const pos = (p, x) => { p.s = { x, y: Y2 - 1, z: BAR2.z, vx: 0, vy: 0, vz: 0, on: true, tm: p.team }; p.spawnT = -99; };
+    pos(a, XM - 9); pos(b, XM - 3);
+    a.ow[6] = true; a.w = 6; a.am.slugs = 40; a.mag[6] = W6.mag;
+    b.hp = 1000; b.ar = 0;
+    return { g, a, b };
+  };
+  // dispara con `carga` segundos de botón apretado y devuelve lo que le sacó al rival
+  const tiro = (g, a, b, carga) => {
+    const o = [a.s.x, a.s.y + C.K.EYE, a.s.z], c = [b.s.x, b.s.y + 1, b.s.z];
+    const d = [c[0] - o[0], c[1] - o[1], c[2] - o[2]], L = Math.hypot(d[0], d[1], d[2]);
+    a.chgT = carga > 0 ? g.time - carga : 0;
+    const hp0 = b.hp + b.ar;
+    g.onMessage(a.id, { t: 'fire', w: 6, o, d: [d[0] / L, d[1] / L, d[2] / L], h: [[b.id, 1, 0]] });
+    return hp0 - (b.alive ? b.hp + b.ar : 0);
+  };
+  const libre = (g, a) => { a.lastFire = -99; a.mag[6] = W6.mag; };   // saltea el cooldown entre pruebas
+
+  prueba('la curva de daño va del toque (' + G_.DMG_MIN + ') a la carga máxima (' + G_.DMG_MAX + ')', () => {
+    const { g, a, b } = duelo();
+    const casos = [[G_.MIN, G_.DMG_MIN], [G_.MAX, G_.DMG_MAX]];
+    for (const [cg, esp] of casos) {
+      libre(g, a); const dmg = tiro(g, a, b, cg);
+      if (Math.abs(dmg - esp) > .5) return 'con ' + cg + ' s de carga sacó ' + dmg.toFixed(1) + ' y tendría que sacar ' + esp;
+    }
+    libre(g, a); const medio = tiro(g, a, b, .5);
+    if (!(medio > 60 && medio < 100)) return 'media carga (.5 s) sacó ' + medio.toFixed(1) + ', fuera del rango medio';
+    libre(g, a); const corto = tiro(g, a, b, .15);
+    if (!(corto > G_.DMG_MIN && corto < medio)) return 'la curva no sube: .15 s sacó ' + corto.toFixed(1) + ' y .5 s ' + medio.toFixed(1);
+    return true;
+  });
+
+  prueba('un toque más corto que ' + G_.MIN + ' s no saca el tiro ni gasta munición', () => {
+    const { g, a, b } = duelo(), am0 = a.am.slugs;
+    const dmg = tiro(g, a, b, G_.MIN * .4);
+    if (dmg > 0) return 'salió un tiro de ' + dmg.toFixed(1) + ' de daño';
+    return a.am.slugs === am0 || 'gastó munición sin disparar';
+  });
+
+  prueba('solo la carga máxima mata de un tiro a un jugador con vida y escudo llenos', () => {
+    const { g, a, b } = duelo();
+    const sano = () => { b.hp = 100; b.ar = 100; b.alive = true; };
+    sano(); libre(g, a); tiro(g, a, b, .5);
+    if (!b.alive) return 'media carga (.5 s) ya lo mató';
+    sano(); libre(g, a); tiro(g, a, b, .8);
+    if (!b.alive) return 'una carga de .8 s ya lo mató: con el escudo lleno tendría que aguantar';
+    sano(); libre(g, a); tiro(g, a, b, G_.MAX);
+    if (b.alive) return 'la carga máxima le dejó ' + b.hp.toFixed(0) + ' de vida y ' + b.ar.toFixed(0) + ' de escudo';
+    b.hp = 100; b.ar = 0; b.alive = true;
+    libre(g, a); tiro(g, a, b, .5);
+    return b.alive || 'media carga mata a un jugador sin escudo: no tendría que alcanzar';
+  });
+
+  prueba('mantenerla de más no suma: el daño tiene techo', () => {
+    const { g, a, b } = duelo();
+    libre(g, a); const tope = tiro(g, a, b, G_.MAX);
+    libre(g, a); const pasado = tiro(g, a, b, G_.MAX + G_.SOBRA + 5);
+    return Math.abs(tope - pasado) < .5 || 'cargando de más sacó ' + pasado.toFixed(1) + ' contra ' + tope.toFixed(1);
+  });
+
+  prueba('entre tiro y tiro hay cooldown', () => {
+    const { g, a, b } = duelo();
+    libre(g, a);
+    if (!(tiro(g, a, b, G_.MAX) > 0)) return 'no salió el primer tiro';
+    const seguido = tiro(g, a, b, G_.MAX);
+    if (seguido > 0) return 'disparó dos veces seguidas sin esperar';
+    g.time += W6.rate;
+    return tiro(g, a, b, G_.MAX) > 0 || 'después del cooldown no volvió a disparar';
+  });
+
+  prueba('si te pegan mientras cargás, perdés la carga', () => {
+    const { g, a, b } = duelo();
+    g.onMessage(a.id, { t: 'chg', w: 6 });
+    if (!a.chgT) return 'el mensaje de carga no se registró';
+    g.damage(a, 10, b, 0, [1, 0, 0], 0, 'frag');
+    return !a.chgT || 'siguió cargando después del golpe';
+  });
+
+  prueba('los bots cargan el plasma dentro de los límites', () => {
+    for (const sk of [0, 1, 2, 3]) {
+      const g = new C.Game({ mode: 'dominio', bots: 0, botSkill: sk });
+      for (let k = 0; k < 200; k++) { const c = g.botCarga(W6); if (!(c >= G_.MIN && c <= G_.MAX)) return 'con habilidad ' + sk + ' cargó ' + c; }
+    }
+    return true;
+  });
+
+  prueba('la barrera rival también frena el rayo cargado', () => {
+    const g = new C.Game({ mode: 'dominio', bots: 0 });
+    const o = C.setPasa(1);
+    try { const h = C.raycast(g.W, XM - 10, Y2, BAR2.z, 1, 0, 0, W6.range); return !!(h && h.b.bar) || 'el rayo pasó la barrera'; }
+    finally { C.setPasa(o); }
+  });
+} catch (e) { mal('Rifle de plasma: ' + (e && e.stack || e)); }
 
 console.log(fallas ? '\n' + fallas + ' problema(s).' : '\nTodo bien.');
 process.exit(fallas ? 1 : 0);

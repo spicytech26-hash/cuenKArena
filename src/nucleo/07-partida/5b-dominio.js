@@ -86,6 +86,11 @@
     const d = this.dom, b = d.boss[t];
     b.hp = 0; b.atk = 0; b.ph = 0; d.win = 1 - t; d.why = 'boss';
     
+    // Forzamos la parada inmediata del motor y asignamos el ganador globalmente
+    this.state = 'end';
+    this.winner = 1 - t;
+    this.left = 0;
+
     // Aislamos los eventos y los pagos para que un error acá no impida que termine la partida
     try {
       if (att) { 
@@ -98,8 +103,6 @@
       console.error("Error silencioso evitado al procesar la muerte del boss:", e);
     }
     
-    // Forzamos el tiempo a 0 para que el servidor cierre la partida al instante
-    this.left = 0;
     this.endMatch();
   }
   /* quién gana: el que mató al boss rival. Por tiempo: el que más vida porcentual le sacó al boss rival;

@@ -48,7 +48,7 @@
         this.bcast({ t: 'ev', e: 'crw', a: 'regi', id: att.id, n: att.name, v: v.name, pts: CROWN.KILL_PTS });
       }
       this.checkCard(att);
-    } else if (how !== 'storm' && how !== 'boss') v.kills--;   // la tormenta no le da puntos a nadie, pero tampoco te resta
+    } else if (how !== 'storm' && how !== 'boss' && how !== 'minion') v.kills--;   // la tormenta no le da puntos a nadie, pero tampoco te resta
     v.streak = 0; v.burnT = 0;
     this.dropCarried(v);
     const ns = !!(this.curNS && k && k !== v.id && w != null && WEAPONS[w] && WEAPONS[w].scope);

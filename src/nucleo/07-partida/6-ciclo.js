@@ -5,7 +5,7 @@
       .sort((a, b) => (gg ? b.lvl - a.lvl : 0) || (this.mode.teams ? b.caps - a.caps : 0) || b.kills - a.kills || (this.mode.crown ? b.ctime - a.ctime : 0) || a.deaths - b.deaths)
       .map(p => [p.id, p.name, p.kills, p.deaths, p.bot ? 0 : p.ping, p.bot ? 1 : 0, p.color, p.cr, p.lvl, p.team, p.caps, p.plvl, Math.round(p.dmg || 0), p.cpts || 0, Math.round(p.ctime || 0)]);
   }
-  sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, st: this.state, map: this.W.id, mode: this.o.mode, ts: this.ts, fs: this.flagState(), cd: Math.ceil(this.countT), hn: this.humanCount(false), mp: this.mode.minPlayers || 0, cw: this.crownState(), dm: this.domState(), iu: this.items.map(it => it.up ? 1 : 0).join('') }); }   // iu: qué ítems están en pie; el cliente se resincroniza cada segundo, así un botiquín nunca queda "desaparecido" por un aviso perdido
+  sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, st: this.state, map: this.W.id, mode: this.o.mode, ts: this.ts, fs: this.flagState(), cd: Math.ceil(this.countT), hn: this.humanCount(false), mp: this.mode.minPlayers || 0, cw: this.crownState(), dm: this.domState(), mn: this.domMinState(), iu: this.items.map(it => it.up ? 1 : 0).join('') }); }   // iu: qué ítems están en pie; el cliente se resincroniza cada segundo, así un botiquín nunca queda "desaparecido" por un aviso perdido
   endMatch() {
     if (this.state !== 'play') return;
     this.state = 'inter'; this.interT = 25;
@@ -57,11 +57,11 @@
     if (this.crown) { this.crown = null; this.bcast({ t: 'ev', e: 'crw', a: 'off' }); }
     if (this.storm) { this.storm = null; this.bcast({ t: 'ev', e: 'stm', a: 'off' }); }
     const id = mapId || this.nextMap || this.W.id; this.nextMap = null;
-    if (id !== this.W.id) this.setMap(id); else { this.resetFlags(); this.domSetup(); }
+    if (id !== this.W.id) this.setMap(id); else { this.resetFlags(); this.domSetup(); this.domMinSetup(); }
     this.state = 'play'; this.left = this.o.timelimit; this.projs.length = 0;
     if (this.mode.minPlayers && this.o.online && this.humanCount(false) < this.mode.minPlayers) this.state = 'lobby';
     for (const it of this.items) { it.up = !it.off; it.t = 0; it.type = it.base; }
-    this.bcast({ t: 'start', map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), tm: this.time, fs: this.flagState(), ts: this.ts, dm: this.domState() });
+    this.bcast({ t: 'start', map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), tm: this.time, fs: this.flagState(), ts: this.ts, dm: this.domState(), mn: this.domMinState() });
     for (const p of this.players.values()) if (p.joined) {
       p.ready = false; p.kills = 0; p.deaths = 0; p.cr = ECON.START; p.unl = OW0(); p.eq = 1; p.perk = { ar: 0, am: 0 }; p.cards = []; p.cof = null; p.cofT = 0; p.burnT = 0; p.streak = 0; p.lvl = 0; p.caps = 0; p.rkills = 0; p.cpts = 0; p.ctime = 0; p.stormT = 0; p.dmg = 0; p.bestLife = 0; p.lifeT0 = p.alive ? this.time : null; p.joinT = this.time; p.dirty = true;
       this.spawn(p);
@@ -142,7 +142,7 @@
     }
     if (this.mvote) { this.mvT = (this.mvT || 0) - dt; if (this.mvT <= 0) { this.mvT = 1; this.checkMapVote(); if (this.mvote) this.sendVote(); } }
     if (this.vote) { this.voteT = (this.voteT || 0) - dt; if (this.voteT <= 0) { this.voteT = 1; this.checkVote(); if (this.vote) this.sendVote(); } }
-    if (this.live()) { this.tickProjs(dt); this.tickFires(dt); this.tickItems(dt); this.tickShards(dt); this.tickBurn(dt); if (this.mode.cards) this.tickCards(dt); if (this.mode.crown) this.tickCrown(dt); if (this.mode.storm) this.tickStorm(dt); if (this.flags.length && this.state === 'play') this.tickFlags(dt); if (this.dom) this.tickDom(dt); }
+    if (this.live()) { this.tickProjs(dt); this.tickFires(dt); this.tickItems(dt); this.tickShards(dt); this.tickBurn(dt); if (this.mode.cards) this.tickCards(dt); if (this.mode.crown) this.tickCrown(dt); if (this.mode.storm) this.tickStorm(dt); if (this.flags.length && this.state === 'play') this.tickFlags(dt); if (this.dom) { this.tickDom(dt); this.tickMins(dt); } }
     this.snapT -= dt;
     if (this.snapT <= 1e-6) { this.snapT += .05; if (this.snapT < 0) this.snapT = 0; this.snapshot(); }
     this.scT -= dt;
@@ -164,6 +164,8 @@
       if (key !== d.bsKey) { d.bsKey = key; sn.bs = bs; }
       if (d.dirtyG.size) { sn.gh = [...d.dirtyG].map(i => [i, Math.ceil(d.gens[i].hp)]); d.dirtyG.clear(); }
       if (d.orbs.length) sn.ob = d.orbs.map(o => [o.id, r2(o.x), r2(o.y), r2(o.z), o.team]);
+      // minions: cada dos snapshots (10 por segundo) y solo si alguno se movió o cambió
+      if (d.mins && d.mins.length) { d.minN = (d.minN || 0) + 1; if (d.minN % 2 === 0) { const mn = this.domMinState(true); if (mn) sn.mn = mn; } }
     }
     this.bcast(sn);
     for (const p of this.players.values()) {

@@ -200,7 +200,7 @@ function buildSantuario() {
         const zg = L.z + s * 11;
         // puesto fortificado del generador: plataforma, parapeto con huecos y cobertura alrededor
         A(XG - 4, L.y, zg - 4, XG + 3, L.y + .6, zg + 4, 'tiles');
-        A(XG - 4.6, L.y + .6, zg - 4.6, XG - 3.4, L.y + 2, zg + 4.6, 'brick');
+        for (let q = -4.6; q < 4.5; q += 2.6) A(XG - 4.6, L.y + .6, zg + q, XG - 3.4, L.y + 2, zg + q + 1.6, 'brick');   // parapeto almenado: cubre, pero deja ver y tirar
         A(XG - 4.6, L.y + .6, zg + s * 4, XG + 3, L.y + 2.2, zg + s * 4.6, 'brick');
         col_(XG + 2.5, zg - 3.5, L.y + .6, 3.4, .45, 'pillar'); col_(XG + 2.5, zg + 3.5, L.y + .6, 3.4, .45, 'pillar');
         A(XG - 8, L.y, zg - 1.2, XG - 6, L.y + 1.4, zg + 1.2, 'crate');

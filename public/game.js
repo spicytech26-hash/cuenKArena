@@ -19,6 +19,7 @@ const K = {
 const hOf = s => s.crouch ? K.HC : K.H;
 const EPS = 1e-3;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const r1 = v => Math.round(v * 10) / 10;
 const r2 = v => Math.round(v * 100) / 100;
 const r3a = a => [Math.round(a[0] * 1000) / 1000, Math.round(a[1] * 1000) / 1000, Math.round(a[2] * 1000) / 1000];
 const r3 = v => Math.round(v * 1000) / 1000;
@@ -160,6 +161,21 @@ const DOM = {
     7: { n: 'zona',     warn: 1.4, hit: .12, rec: .5, forma: 'circulo', r: 7, dmg: 70, kick: 8, lock: .45, suelo: 1 }
   },
   GRAB: { pull: 32 },
+  /* Minions defensores (07-partida/5c-minions.js): dos por generador, uno cuerpo a cuerpo y otro a distancia.
+     Molestan y obligan a entrar en equipo, pero no son un muro. */
+  MIN: {
+    POR_GEN: 2,     // cuántos cuida cada generador
+    HP: 55,
+    DMG_C: 11, RATE_C: .85, RANGE_C: 2.8,    // cuerpo a cuerpo: daño, cada cuánto pega y alcance
+    DMG_D: 8,  RATE_D: 1.5, RANGE_D: 20,     // a distancia
+    SPD: 5.4,       // a cuánto corre (el jugador va a 10)
+    SEE: 21,        // a qué distancia te ve
+    LEASH: 25,      // si te alejás más de esto de su puesto, te deja y vuelve
+    RESP: 25,       // cuánto tarda en volver a aparecer
+    MAX: 18,        // tope de minions vivos por equipo
+    CRED: 60,       // créditos por matarlo (no cuenta como baja)
+    R: .45, H: 1.5  // radio y alto
+  },
   ORBS: { n: 3, dmg: 28, speed: 15, turn: 2.4, life: 6, r: 1.3 },   // proyectiles teledirigidos de la salva
   ZONES_RAGE: 3,        // al abrirse un carril el boss castiga la entrada con esta cantidad de zonas
   ALERT_EVERY: 12,      // cada cuánto se repite el aviso "están atacando a tu boss"
@@ -2121,7 +2137,7 @@ function buildSantuario() {
         const zg = L.z + s * 11;
         // puesto fortificado del generador: plataforma, parapeto con huecos y cobertura alrededor
         A(XG - 4, L.y, zg - 4, XG + 3, L.y + .6, zg + 4, 'tiles');
-        A(XG - 4.6, L.y + .6, zg - 4.6, XG - 3.4, L.y + 2, zg + 4.6, 'brick');
+        for (let q = -4.6; q < 4.5; q += 2.6) A(XG - 4.6, L.y + .6, zg + q, XG - 3.4, L.y + 2, zg + q + 1.6, 'brick');   // parapeto almenado: cubre, pero deja ver y tirar
         A(XG - 4.6, L.y + .6, zg + s * 4, XG + 3, L.y + 2.2, zg + s * 4.6, 'brick');
         col_(XG + 2.5, zg - 3.5, L.y + .6, 3.4, .45, 'pillar'); col_(XG + 2.5, zg + 3.5, L.y + .6, 3.4, .45, 'pillar');
         A(XG - 8, L.y, zg - 1.2, XG - 6, L.y + 1.4, zg + 1.2, 'crate');
@@ -2962,7 +2978,7 @@ class Game {
     const off = t => !!this.mode.gg && t !== 'health'; // en gungame no hay armas ni munición tiradas (cada arma se gana con bajas), pero sí botiquines
     this.items = this.W.items.map((it, i) => ({ i, type: it.type, base: it.type, x: it.x, y: it.y, z: it.z, off: off(it.type), up: !off(it.type), t: 0 }));
     this.projs.length = 0; this.fires = [];
-    this.resetFlags(); this.domSetup();
+    this.resetFlags(); this.domSetup(); this.domMinSetup();
     updateMovers(this.W, this.time);
   }
   resetFlags() {
@@ -3044,7 +3060,7 @@ class Game {
         if (this.mode.teams) this.setTeam(p, this.pickTeam(p));
         p.joined = true; p.joinT = this.time; p.rkills = 0; p.dmg = 0; p.bestLife = 0;
         if (this.mode.tdm && this.o.online && this.humanCount(false) <= 1 && Number.isInteger(m.fl) && m.fl >= 5 && m.fl <= 500) this.o.fraglimit = m.fl;
-        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts, cd: p.cards.slice(), sh: this.shards.map(s => [s.id, r3(s.x), r3(s.y), r3(s.z), r2(s.t)]), cw: this.crownState(), st: this.stormInfo(), mv: this.voteState(), dm: this.domState() });
+        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts, cd: p.cards.slice(), sh: this.shards.map(s => [s.id, r3(s.x), r3(s.y), r3(s.z), r2(s.t)]), cw: this.crownState(), st: this.stormInfo(), mv: this.voteState(), dm: this.domState(), mn: this.domMinState() });
         this.bcast({ t: 'ev', e: 'join', id, n: p.name, c: p.color, s: p.skin, tm: p.team }, id);
         this.spawn(p); this.botT = 0; this.sendScores();
         break;
@@ -3421,6 +3437,7 @@ class Game {
     const done = new Set();
     for (const c of claims) {
       if (!Array.isArray(c)) continue;
+      if (c[0] <= -1000) { if (!done.has(c[0])) { done.add(c[0]); this.domMinClaim(p, o, d, c[0] | 0, clamp(c[1] | 0, 0, W_.pel), W_); } continue; }   // minion
       if (c[0] < 0) { if (!done.has(c[0])) { done.add(c[0]); this.domClaim(p, o, d, c[0] | 0, clamp(c[1] | 0, 0, W_.pel), c[2] | 0, W_); } continue; }   // generador o boss
       const t = this.players.get(c[0] | 0); if (!t || !t.alive || t === p || done.has(t.id)) continue;
       done.add(t.id);
@@ -3503,6 +3520,16 @@ class Game {
       this.damage(t, dmg * this.mult(p) * this.skill().dmg, p, w, d, .05, 'frag');
     }
     for (const a of sacc.values()) this.domHit(p, a.st.kind, a.st.i, a.dmg * this.mult(p) * this.skill().dmg, a.st.core);
+    if (this.dom && this.dom.mins) for (const m of this.dom.mins) {   // los bots también le pegan a los minions
+      if (m.hp <= 0 || m.team === p.team) continue;
+      const cx = m.x - o[0], cy = m.y + 1 - o[1], cz = m.z - o[2], pr = cx * d[0] + cy * d[1] + cz * d[2];
+      if (pr < 0 || pr > (W_.range || 300)) continue;
+      if (Math.hypot(cx - d[0] * pr, cy - d[1] * pr, cz - d[2] * pr) > .85) continue;
+      const prev = setPasa(p.team), tapa = raycast(this.W, o[0], o[1], o[2], d[0], d[1], d[2], pr - .5); setPasa(prev);
+      if (tapa) continue;
+      this.domMinDamage(m, W_.dmg * falloff(W_, pr) * this.mult(p) * this.skill().dmg * (W_.pel || 1) * .6, p);
+      break;
+    }
   }
   spawnProj(p, w, o, d) {
     const W_ = WEAPONS[w], v = projLaunch(w, d);
@@ -3539,7 +3566,7 @@ class Game {
     const W_ = WEAPONS[pr.w];
     if (this.dom && own) {   // generadores y bosses: impacto directo y daño de área
       if (pr.st && W_.direct) this.domHit(own, pr.st.kind, pr.st.i, W_.direct * pr.q, pr.st.core);
-      if (W_.rad) this.domBlast(own, pr.x, pr.y, pr.z, W_.rad, W_.dmg * pr.q, W_.sfall || .6, pr.st && W_.direct ? pr.st : null);
+      if (W_.rad) { this.domBlast(own, pr.x, pr.y, pr.z, W_.rad, W_.dmg * pr.q, W_.sfall || .6, pr.st && W_.direct ? pr.st : null); this.domMinBlast(own, pr.x, pr.y, pr.z, W_.rad, W_.dmg * pr.q, W_.sfall || .6); }
       if (!this.live()) return;
     }
     if (direct && W_.direct) {
@@ -3587,7 +3614,7 @@ class Game {
       if (f.tick > 0) continue;
       f.tick = f.every;
       const own = this.players.get(f.own);
-      if (this.dom && own) { this.domBlast(own, f.x, f.y + .5, f.z, f.r, f.hit, 0, null); if (!this.live()) return; }
+      if (this.dom && own) { this.domBlast(own, f.x, f.y + .5, f.z, f.r, f.hit, 0, null); this.domMinBlast(own, f.x, f.y + .5, f.z, f.r, f.hit, 0); if (!this.live()) return; }
       for (const t of this.players.values()) {
         if (!t.alive || !t.joined) continue;
         if (Math.hypot(t.s.x - f.x, t.s.z - f.z) > f.r || t.s.y < f.y - 1 || t.s.y > f.y + 1.6) continue;
@@ -3657,7 +3684,7 @@ class Game {
         this.bcast({ t: 'ev', e: 'crw', a: 'regi', id: att.id, n: att.name, v: v.name, pts: CROWN.KILL_PTS });
       }
       this.checkCard(att);
-    } else if (how !== 'storm' && how !== 'boss') v.kills--;   // la tormenta no le da puntos a nadie, pero tampoco te resta
+    } else if (how !== 'storm' && how !== 'boss' && how !== 'minion') v.kills--;   // la tormenta no le da puntos a nadie, pero tampoco te resta
     v.streak = 0; v.burnT = 0;
     this.dropCarried(v);
     const ns = !!(this.curNS && k && k !== v.id && w != null && WEAPONS[w] && WEAPONS[w].scope);
@@ -4191,6 +4218,200 @@ class Game {
     return true;
   }
 
+  /* =====================================================================
+     MINIONS DEFENSORES (Captura el dominio)
+     Robotitos del color de su equipo que cuidan cada generador: patrullan alrededor, persiguen al que se
+     acerca, lo atacan y vuelven al puesto si se aleja. Son entidades del servidor, distintas de los bots
+     jugadores: no entran al marcador ni al tablero, dan créditos al matarlos y vuelven a aparecer cada
+     DOM.MIN.RESP mientras su generador siga en pie. Al caer el generador, los suyos se apagan.
+     Estados (m.st): 0 patrulla · 1 persigue · 2 ataca · 3 vuelve al puesto.
+     Los disparos contra ellos se validan con el mismo rebobinado que contra los jugadores (m.hist).
+     ===================================================================== */
+  domMinSetup() {
+    const d = this.dom; if (!d) return;
+    d.mins = []; d.mid = 1; d.minT = 0; d.minSent = new Map();
+    const M = MAPS[this.W.id];
+    d.gens.forEach((g, gi) => { for (let k = 0; k < DOM.MIN.POR_GEN; k++) this.domMinSpawn(gi, k); });
+  }
+  domMinSpawn(gi, k) {
+    const d = this.dom, g = d.gens[gi]; let hx2, hz2;
+    if (!d || !g || g.hp <= 0) return null;
+    if (d.mins.filter(m => m.team === g.team && m.hp > 0).length >= DOM.MIN.MAX) return null;
+    // se plantan en el camino por el que entra el rival (entre el generador y su punto de ataque): son la
+    // primera línea. Ese tramo siempre es terreno abierto y transitable, en cualquiera de los tres carriles.
+    const lado = k % 2 ? 1 : -1, f = .45 + (k >> 1) * .15;
+    const ax = g.atk.x - g.x, az = g.atk.z - g.z, al = Math.hypot(ax, az) || 1;
+    const hx = g.x + ax * f - az / al * lado * 2.3, hz = g.z + az * f + ax / al * lado * 2.3, y0 = g.y + (g.atk.y - g.y) * f;
+    // si justo ahí hay una caja o una columna, prueba unos lugares cerca antes de rendirse
+    let px = hx, pz = hz, py = y0;
+    for (const [ox, oz] of [[0, 0], [1.6, 0], [-1.6, 0], [0, 1.6], [0, -1.6], [2.6, 2.6], [-2.6, -2.6]]) {
+      const qx = hx + ox, qz = hz + oz, h = raycast(this.W, qx, y0 + 2.2, qz, 0, -1, 0, 7);
+      if (!h) continue;
+      const qy = y0 + 2.2 - h.t;
+      if (solidAt(this.W, qx, qy + .05, qz, DOM.MIN.R, DOM.MIN.H)) continue;
+      px = qx; pz = qz; py = qy; break;
+    }
+    const hy = py; hx2 = px; hz2 = pz;
+    const m = {
+      id: d.mid++, team: g.team, gen: gi, kind: k % 2,   // 0 cuerpo a cuerpo, 1 a distancia
+      x: hx2, y: hy, z: hz2, yaw: Math.atan2(-ax / al, -az / al),
+      hp: DOM.MIN.HP, st: 0, t: 0, tgt: 0, cd: .5 + Math.random(), home: { x: hx2, y: hy, z: hz2 }, ph: Math.random() * 6, hist: []
+    };
+    d.mins.push(m);
+    this.domEv({ a: 'min+', i: m.id, p: r3a([m.x, m.y, m.z]), k: m.kind, b: m.team });
+    return m;
+  }
+  /* Estado de red: lista plana y cuantizada (id, x, y, z, giro, vida·8+estado). `delta` manda solo los que
+     cambiaron desde la última vez; un minion en su puesto no gasta nada, porque quieto no cambia nada. */
+  domMinState(delta) {
+    const d = this.dom; if (!d || !d.mins) return null;
+    const out = [];
+    for (const m of d.mins) {
+      if (m.hp <= 0) continue;
+      // el último número lleva vida, estado, equipo y tipo juntos: así el que entra a mitad de partida
+      // puede armar los minions que todavía no vio aparecer
+      const v = [m.id, r1(m.x), r1(m.y), r1(m.z), Math.round(m.yaw * 10), ((Math.round(m.hp / DOM.MIN.HP * 100) * 4 + m.st) * 2 + m.team) * 2 + m.kind];
+      if (delta) { const a = d.minSent.get(m.id); if (a && a[1] === v[1] && a[2] === v[2] && a[3] === v[3] && a[4] === v[4] && a[5] === v[5]) continue; d.minSent.set(m.id, v); }
+      out.push(v[0], v[1], v[2], v[3], v[4], v[5]);
+    }
+    return out.length ? out : null;
+  }
+  tickMins(dt) {
+    const d = this.dom, K2 = DOM.MIN; if (!d || !d.mins || this.state !== 'play') return;
+    d.minT -= dt;
+    const reponer = d.minT <= 0; if (reponer) d.minT = 2;
+    for (let i = d.mins.length - 1; i >= 0; i--) {
+      const m = d.mins[i];
+      if (m.hp <= 0) { if (this.time - m.t > K2.RESP) { d.mins.splice(i, 1); this.domMinSpawn(m.gen, m.id % DOM.MIN.POR_GEN); } continue; }
+      if (d.gens[m.gen].hp <= 0) { this.domMinDown(m, null, true); continue; }   // sin generador no hay minions
+      this.tickMin(m, dt);
+      if (this.state !== 'play') return;
+      const h = m.hist; h.push([this.time, m.x, m.y, m.z]); if (h.length > 28) h.shift();
+    }
+    if (reponer) for (let gi = 0; gi < d.gens.length; gi++) {
+      if (d.gens[gi].hp <= 0) continue;
+      const vivos = d.mins.filter(m => m.gen === gi && m.hp > 0).length;
+      if (vivos < K2.POR_GEN && !d.mins.some(m => m.gen === gi && m.hp <= 0)) this.domMinSpawn(gi, vivos);
+    }
+  }
+  tickMin(m, dt) {
+    const K2 = DOM.MIN, g = this.dom.gens[m.gen];
+    m.cd -= dt;
+    // a quién tiene cerca (lo recalcula cada 1/4 de segundo)
+    m.t2 = (m.t2 || 0) - dt;
+    if (m.t2 <= 0) {
+      m.t2 = .25; let mejor = null, md = 1e9;
+      for (const t of this.players.values()) {
+        if (!t.alive || !t.joined || t.team === m.team || t.team < 0) continue;
+        const dd = Math.hypot(t.s.x - m.x, t.s.z - m.z);
+        if (dd > K2.SEE || Math.abs(t.s.y - m.y) > 7) continue;
+        if (Math.hypot(t.s.x - m.home.x, t.s.z - m.home.z) > K2.LEASH) continue;
+        if (dd > 11 && !los(this.W, m.x, m.y + 1.2, m.z, t.s.x, t.s.y + 1.2, t.s.z) && !los(this.W, m.x, m.y + 1.2, m.z, t.s.x, t.s.y + .3, t.s.z)) continue;   // a menos de 8 m lo tiene encima: no hace falta verlo
+        if (dd < md) { md = dd; mejor = t; }
+      }
+      m.tgt = mejor ? mejor.id : 0;
+    }
+    const t = m.tgt ? this.players.get(m.tgt) : null;
+    const alcance = m.kind ? K2.RANGE_D : K2.RANGE_C;
+    let wx = 0, wz = 0;
+    if (t && t.alive) {
+      const dx = t.s.x - m.x, dz = t.s.z - m.z, dl = Math.hypot(dx, dz) || 1e-6;
+      m.yaw = Math.atan2(-dx, -dz);
+      if (dl > alcance * .85) { m.st = 1; wx = dx / dl; wz = dz / dl; }
+      else {
+        m.st = 2;
+        if (dl < alcance * .5 && m.kind) { wx = -dx / dl * .6; wz = -dz / dl * .6; }   // el de lejos se despega
+        if (m.cd <= 0) {
+          m.cd = m.kind ? K2.RATE_D : K2.RATE_C;
+          if (m.kind) this.domMinShoot(m, t); else { this.damage(t, K2.DMG_C, null, null, [dx / dl, .3, dz / dl], .04, 'minion'); this.domEv({ a: 'minhit', i: m.id }); }
+          if (this.state !== 'play') return;
+        }
+      }
+    } else {
+      const dh = Math.hypot(m.x - m.home.x, m.z - m.home.z);
+      if (dh > 1.2) { m.st = 3; wx = (m.home.x - m.x) / dh; wz = (m.home.z - m.z) / dh; }
+      else m.st = 0;   // en su puesto: se queda quieto (el vaivén de mirar alrededor lo hace el cliente)
+    }
+    // si choca con una caja o un parapeto, se corre de costado un momento y la rodea
+    if (m.rodeoT > 0) { m.rodeoT -= dt; const px = -wz || 1, pz = wx; wx = (wx + px * m.rodeo * 1.6) * .6; wz = (wz + pz * m.rodeo * 1.6) * .6; }
+    if (!this.domMinMove(m, wx, wz, dt) && (wx || wz) && m.rodeoT <= 0) { m.rodeo = Math.random() < .5 ? -1 : 1; m.rodeoT = .7; }
+    if (Math.hypot(m.x - m.home.x, m.z - m.home.z) > DOM.MIN.LEASH * 1.4) { m.x = m.home.x; m.y = m.home.y; m.z = m.home.z; m.st = 0; m.tgt = 0; m.hist.length = 0; }   // red de seguridad
+  }
+  // movimiento sencillo: avanza pegado al piso y no atraviesa paredes ni barreras de otros
+  domMinMove(m, wx, wz, dt) {
+    if (!wx && !wz) return true;
+    const K2 = DOM.MIN, sp = K2.SPD * dt, prev = setPasa(m.team);
+    try {
+      for (const [ax, az] of [[wx * sp, wz * sp], [wx * sp, 0], [0, wz * sp]]) {
+        if (!ax && !az) continue;
+        const nx = m.x + ax, nz = m.z + az;
+        // escalón: busca el piso un poco más arriba y se deja caer
+        const h = raycast(this.W, nx, m.y + K.STEP + .4, nz, 0, -1, 0, 3.4);
+        if (!h) continue;                                   // no hay piso: no se tira al vacío
+        const ny = m.y + K.STEP + .4 - h.t;
+        if (ny - m.y > K.STEP + .06) continue;
+        if (solidAt(this.W, nx, ny + .05, nz, K2.R, K2.H)) continue;
+        m.x = nx; m.z = nz; m.y = ny; return true;
+      }
+      return false;
+    } finally { setPasa(prev); }
+  }
+  domMinShoot(m, t) {
+    const K2 = DOM.MIN, dx = t.s.x - m.x, dy = t.s.y + 1 - (m.y + 1.1), dz = t.s.z - m.z, dl = Math.hypot(dx, dy, dz) || 1;
+    this.domEv({ a: 'minfire', i: m.id, p: r3a([t.s.x, t.s.y + 1, t.s.z]) });
+    const prev = setPasa(m.team), h = raycast(this.W, m.x, m.y + 1.1, m.z, dx / dl, dy / dl, dz / dl, dl); setPasa(prev);
+    if (h) return;   // le pegó a una pared
+    this.damage(t, K2.DMG_D, null, null, [dx / dl, .2, dz / dl], .03, 'minion');
+  }
+  // un jugador dice que le pegó a un minion (id = -1000 - idMinion)
+  domMinClaim(p, o, d, id, n, W_) {
+    const dm = this.dom; if (!dm || !dm.mins) return;
+    const m = dm.mins.find(q => q.id === -1000 - id);
+    if (!m || m.hp <= 0 || m.team === p.team) return;
+    const falso = { s: { x: m.x, y: m.y, z: m.z, vx: 0, vz: 0 }, hist: m.hist.map(h => [h[0], h[1], h[2], h[3]]) };
+    if (!this.validHit(o, d, falso, W_, p)) return;
+    const dist = Math.hypot(m.x - o[0], m.y + 1 - o[1], m.z - o[2]);
+    const dmg = W_.melee ? W_.dmg : W_.type === 'rail' ? W_.dmg : n * W_.dmg * falloff(W_, dist);
+    this.domMinDamage(m, dmg * this.mult(p), p);
+  }
+  domMinDamage(m, amt, att) {
+    if (m.hp <= 0 || !(amt > 0)) return 0;
+    const real = Math.min(m.hp, amt); m.hp -= real;
+    if (att && att.send) att.send({ t: 'ev', e: 'hit', id: -1000 - m.id, n: Math.round(real), k: m.hp <= 0 ? 1 : 0, h: 0 });
+    if (m.hp <= 0) this.domMinDown(m, att, false);
+    return real;
+  }
+  domMinDown(m, att, apagado) {
+    m.hp = 0; m.t = this.time; m.st = 0; m.tgt = 0; m.hist.length = 0;
+    if (att) { this.credit(att, DOM.MIN.CRED, 'minion'); att.mins = (att.mins || 0) + 1; }
+    this.domEv({ a: 'min-', i: m.id, p: r3a([m.x, m.y, m.z]), off: apagado ? 1 : 0, b: m.team });
+  }
+  // daño de área (explosiones y fuego) a los minions del equipo rival
+  domMinBlast(own, x, y, z, rad, dmg, sfall) {
+    const dm = this.dom; if (!dm || !dm.mins || !own) return;
+    for (const m of dm.mins) {
+      if (m.hp <= 0 || m.team === own.team) continue;
+      const ds = Math.hypot(x - m.x, Math.max(0, Math.abs(y - (m.y + .8)) - .8), z - m.z);
+      if (ds < rad) this.domMinDamage(m, dmg * (1 - sfall * ds / rad), own);
+    }
+  }
+  // para los bots: el minion rival más cercano que estorba y se puede ver
+  domMinTarget(p, range) {
+    const dm = this.dom; if (!dm || !dm.mins) return null;
+    let best = null, bd = 1e9;
+    const prev = setPasa(p.team);
+    try {
+      for (const m of dm.mins) {
+        if (m.hp <= 0 || m.team === p.team) continue;
+        const dd = Math.hypot(m.x - p.s.x, m.z - p.s.z);
+        if (dd > range || dd > bd) continue;
+        if (!los(this.W, p.s.x, p.s.y + K.EYE, p.s.z, m.x, m.y + 1, m.z)) continue;
+        bd = dd; best = m;
+      }
+    } finally { setPasa(prev); }
+    return best;
+  }
+
   /* ---- partida ---- */
   scores() {
     const gg = this.mode.gg;
@@ -4198,7 +4419,7 @@ class Game {
       .sort((a, b) => (gg ? b.lvl - a.lvl : 0) || (this.mode.teams ? b.caps - a.caps : 0) || b.kills - a.kills || (this.mode.crown ? b.ctime - a.ctime : 0) || a.deaths - b.deaths)
       .map(p => [p.id, p.name, p.kills, p.deaths, p.bot ? 0 : p.ping, p.bot ? 1 : 0, p.color, p.cr, p.lvl, p.team, p.caps, p.plvl, Math.round(p.dmg || 0), p.cpts || 0, Math.round(p.ctime || 0)]);
   }
-  sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, st: this.state, map: this.W.id, mode: this.o.mode, ts: this.ts, fs: this.flagState(), cd: Math.ceil(this.countT), hn: this.humanCount(false), mp: this.mode.minPlayers || 0, cw: this.crownState(), dm: this.domState(), iu: this.items.map(it => it.up ? 1 : 0).join('') }); }   // iu: qué ítems están en pie; el cliente se resincroniza cada segundo, así un botiquín nunca queda "desaparecido" por un aviso perdido
+  sendScores() { this.bcast({ t: 'sc', l: this.scores(), tl: Math.max(0, Math.ceil(this.left)), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, st: this.state, map: this.W.id, mode: this.o.mode, ts: this.ts, fs: this.flagState(), cd: Math.ceil(this.countT), hn: this.humanCount(false), mp: this.mode.minPlayers || 0, cw: this.crownState(), dm: this.domState(), mn: this.domMinState(), iu: this.items.map(it => it.up ? 1 : 0).join('') }); }   // iu: qué ítems están en pie; el cliente se resincroniza cada segundo, así un botiquín nunca queda "desaparecido" por un aviso perdido
   endMatch() {
     if (this.state !== 'play') return;
     this.state = 'inter'; this.interT = 25;
@@ -4250,11 +4471,11 @@ class Game {
     if (this.crown) { this.crown = null; this.bcast({ t: 'ev', e: 'crw', a: 'off' }); }
     if (this.storm) { this.storm = null; this.bcast({ t: 'ev', e: 'stm', a: 'off' }); }
     const id = mapId || this.nextMap || this.W.id; this.nextMap = null;
-    if (id !== this.W.id) this.setMap(id); else { this.resetFlags(); this.domSetup(); }
+    if (id !== this.W.id) this.setMap(id); else { this.resetFlags(); this.domSetup(); this.domMinSetup(); }
     this.state = 'play'; this.left = this.o.timelimit; this.projs.length = 0;
     if (this.mode.minPlayers && this.o.online && this.humanCount(false) < this.mode.minPlayers) this.state = 'lobby';
     for (const it of this.items) { it.up = !it.off; it.t = 0; it.type = it.base; }
-    this.bcast({ t: 'start', map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), tm: this.time, fs: this.flagState(), ts: this.ts, dm: this.domState() });
+    this.bcast({ t: 'start', map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), tm: this.time, fs: this.flagState(), ts: this.ts, dm: this.domState(), mn: this.domMinState() });
     for (const p of this.players.values()) if (p.joined) {
       p.ready = false; p.kills = 0; p.deaths = 0; p.cr = ECON.START; p.unl = OW0(); p.eq = 1; p.perk = { ar: 0, am: 0 }; p.cards = []; p.cof = null; p.cofT = 0; p.burnT = 0; p.streak = 0; p.lvl = 0; p.caps = 0; p.rkills = 0; p.cpts = 0; p.ctime = 0; p.stormT = 0; p.dmg = 0; p.bestLife = 0; p.lifeT0 = p.alive ? this.time : null; p.joinT = this.time; p.dirty = true;
       this.spawn(p);
@@ -4335,7 +4556,7 @@ class Game {
     }
     if (this.mvote) { this.mvT = (this.mvT || 0) - dt; if (this.mvT <= 0) { this.mvT = 1; this.checkMapVote(); if (this.mvote) this.sendVote(); } }
     if (this.vote) { this.voteT = (this.voteT || 0) - dt; if (this.voteT <= 0) { this.voteT = 1; this.checkVote(); if (this.vote) this.sendVote(); } }
-    if (this.live()) { this.tickProjs(dt); this.tickFires(dt); this.tickItems(dt); this.tickShards(dt); this.tickBurn(dt); if (this.mode.cards) this.tickCards(dt); if (this.mode.crown) this.tickCrown(dt); if (this.mode.storm) this.tickStorm(dt); if (this.flags.length && this.state === 'play') this.tickFlags(dt); if (this.dom) this.tickDom(dt); }
+    if (this.live()) { this.tickProjs(dt); this.tickFires(dt); this.tickItems(dt); this.tickShards(dt); this.tickBurn(dt); if (this.mode.cards) this.tickCards(dt); if (this.mode.crown) this.tickCrown(dt); if (this.mode.storm) this.tickStorm(dt); if (this.flags.length && this.state === 'play') this.tickFlags(dt); if (this.dom) { this.tickDom(dt); this.tickMins(dt); } }
     this.snapT -= dt;
     if (this.snapT <= 1e-6) { this.snapT += .05; if (this.snapT < 0) this.snapT = 0; this.snapshot(); }
     this.scT -= dt;
@@ -4357,6 +4578,8 @@ class Game {
       if (key !== d.bsKey) { d.bsKey = key; sn.bs = bs; }
       if (d.dirtyG.size) { sn.gh = [...d.dirtyG].map(i => [i, Math.ceil(d.gens[i].hp)]); d.dirtyG.clear(); }
       if (d.orbs.length) sn.ob = d.orbs.map(o => [o.id, r2(o.x), r2(o.y), r2(o.z), o.team]);
+      // minions: cada dos snapshots (10 por segundo) y solo si alguno se movió o cambió
+      if (d.mins && d.mins.length) { d.minN = (d.minN || 0) + 1; if (d.minN % 2 === 0) { const mn = this.domMinState(true); if (mn) sn.mn = mn; } }
     }
     this.bcast(sn);
     for (const p of this.players.values()) {
@@ -4774,7 +4997,10 @@ class Game {
       const t = this.findTarget(p);
       if (t) { if (t.id !== ai.tgt) { ai.seeT = 0; ai.replan = Math.min(ai.replan, .2); } ai.tgt = t.id; ai.last = [t.s.x, t.s.y, t.s.z]; ai.lostT = 3; }
       else if (ai.tgt) { ai.tgt = 0; ai.replan = 0; }
-      ai.st = !t && this.dom ? this.domBotTarget(p) : null;   // sin rivales a la vista: le tira al generador o al boss
+      // sin rivales a la vista: primero los minions que estorban, después el generador o el boss
+      ai.min = null;
+      if (!t && this.dom) { const mm = this.domMinTarget(p, Math.max(26, this.skill().range * .6)); if (mm) { ai.min = mm; ai.st = { x: mm.x, y: mm.y + .9, z: mm.z, min: mm.id }; } }
+      ai.st = ai.st && ai.min ? ai.st : (!t && this.dom ? this.domBotTarget(p) : null);
       if (this.dom && (ai.dodge == null || Math.random() < .05)) ai.dodge = Math.random() < DOM.BOT_DODGE[Math.max(0, Math.min(3, this.o.botSkill | 0))];
     }
     if (ai.replan <= 0 && s.on) { if (this.planBudget > 0) { this.planBudget--; ai.replan = .7 + Math.random() * .5; this.planBot(p); } else ai.replan = .03; }
@@ -4866,7 +5092,7 @@ class Game {
       if (ai.seeT > sk.react && Math.abs(dy) < .12 + 1 / (dist + 1) && this.canFire(p, w) && this.time - p.lastFire >= W_.rate * sk.fire) {
         if (W_.type !== 'proj' || dist > 3) this.botFire(p, w, [ex, ey, ez], dirFromAngles(p.yaw, p.pitch));
       }
-    } else if (ai.st) {   // Captura el dominio: apunta y dispara a la estructura
+    } else if (ai.st) {   // Captura el dominio: apunta y dispara a la estructura o al minion que tenga enfrente
       const q = ai.st, ex = s.x, ey = s.y + K.EYE, ez = s.z, dist = Math.hypot(q.x - ex, q.y - ey, q.z - ez);
       const w = this.chooseWeapon(p, Math.max(dist, 8)); if (w !== p.w) { p.w = w; p.lastFire = Math.max(p.lastFire, this.time - WEAPONS[w].rate * .5); }
       const W_ = WEAPONS[w], ty = q.y + (W_.proj === 'grenade' ? dist * .06 : 0);
@@ -4888,5 +5114,5 @@ class Game {
   }
 }
 
-return { PRIMARY, primaryOf, censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, MODE_ALIAS, DOM, setPasa, gridOf, slab, rayBrush, inv, findNode, CARDS, CARD_BY, CARD_AT, CARD_MAX, CARD_FX, hasCard, CROWN, STORM, stormR, stormDmg, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, EMBLEMS, SKILL, topAt, pmove, inZeroG, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav, dijkstra };
+return { PRIMARY, primaryOf, censor, isBad, okChestImg, geyserPhase, geyserOn, K, padReady, XP, levelInfo, xpToNext, MEDALS, medalOf, MAX_LEVEL, WEAPONS, NW, AMMO0, MODES, MODE_IDS, MODE_ALIAS, DOM, setPasa, gridOf, slab, rayBrush, inv, findNode, r1, CARDS, CARD_BY, CARD_AT, CARD_MAX, CARD_FX, hasCard, CROWN, STORM, stormR, stormDmg, GG, TEAMS, AMMO_MAX, AMMO_NAME, ITEMS, COLORS, WORLD, MAPS, MAP_IDS, SHOP, ECON, ACCESSORIES, EMBLEMS, SKILL, topAt, pmove, inZeroG, triggers, launchPad, padVel, raycast, los, rayPlayer, boxDist, dirFromAngles, projLaunch, projStep, updateMovers, Game, getNav, dijkstra };
 });

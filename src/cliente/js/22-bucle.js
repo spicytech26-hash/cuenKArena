@@ -20,7 +20,7 @@ function frame(now){
     G.pingT-=dt;if(online&&G.pingT<=0&&net){G.pingT=2;net.send({t:'ping',c:performance.now(),r:ping});}
     if(Math.floor(G.time*2)!==Math.floor((G.time-dt)*2))updateHUD();
   }else if(!inGame){attract(dt);vms.forEach(v=>v.visible=false);flashMesh.visible=false;}
-  updClub(dt,beatNow());musicTick();updFlags();if(inGame&&!paused){updCrown(dt);updStorm(dt);updDom(dt);}
+  updClub(dt,beatNow());musicTick();updFlags();if(inGame&&!paused){updCrown(dt);updStorm(dt);updDom(dt);updMins(dt);}
   updEffects(dt);renderLocker(dt);
   updLightSlots(dt);
   if(inGame&&paused&&(G.pf=((G.pf||0)+1)%3))return;   // en pausa la escena está quieta: se redibuja a 1/3 de los cuadros
@@ -33,5 +33,5 @@ function frame(now){
 requestAnimationFrame(frame);
 setTimeout(warmIcons,2500);   // los íconos de la tienda se arman mientras estás en el menú
 // gancho de depuración para las pruebas automáticas del proyecto (no lo usa el juego)
-window.DBG=()=>({scene,level,W,DM,camera,renderer,THREE});
+window.DBG=()=>({scene,level,W,DM,MN,camera,renderer,THREE});
 })();

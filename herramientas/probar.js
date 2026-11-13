@@ -248,6 +248,50 @@ if (!solo || solo === 'santuario') try {
     return largo / ancho < 1.6 || 'es un pasillo: ' + (largo / ancho).toFixed(2) + ' de largo por ancho';
   });
 
+  prueba('los minions cuidan su generador: dos por generador, solo atacan al rival y vuelven al puesto', () => {
+    const { g, d, azul } = nueva(), K2 = D.MIN;
+    if (d.mins.length !== d.gens.length * K2.POR_GEN) return 'hay ' + d.mins.length + ' minions y tendrían que ser ' + d.gens.length * K2.POR_GEN;
+    for (let gi = 0; gi < d.gens.length; gi++) if (d.mins.filter(m => m.gen === gi).length !== K2.POR_GEN) return 'el generador ' + (gi + 1) + ' no tiene sus ' + K2.POR_GEN + ' minions';
+    if (d.mins.some(m => m.team !== d.gens[m.gen].team)) return 'hay un minion del equipo equivocado';
+    if (!d.mins.some(m => m.kind === 0) || !d.mins.some(m => m.kind === 1)) return 'faltan los dos tipos (cuerpo a cuerpo y a distancia)';
+    // un compañero al lado no le interesa; un rival sí
+    const m = d.mins.find(q => q.team === 0 && q.gen === 2), rojo = [...g.players.values()].find(q => q.team === 0);
+    g.time += D.SPAWN_INV + .1;
+    rojo.s = { x: m.x + 1.5, y: m.y, z: m.z, vx: 0, vy: 0, vz: 0, on: true, tm: 0 }; rojo.hp = 100;
+    for (let k = 0; k < 120; k++) g.tick(dt);
+    if (rojo.hp < 100) return 'le pegó a uno de su propio equipo';
+    azul.s = { x: m.x + 2, y: m.y, z: m.z, vx: 0, vy: 0, vz: 0, on: true, tm: 1 }; azul.hp = 100; azul.armor = 0;
+    for (let k = 0; k < 200; k++) g.tick(dt);
+    if (azul.hp >= 100) return 'tuvo al rival encima 5 s y no lo atacó';
+    // no se aleja del puesto más de lo que dice la correa
+    for (const q of d.mins) if (Math.hypot(q.x - q.home.x, q.z - q.home.z) > K2.LEASH * 1.5) return 'un minion se fue lejísimos de su puesto';
+    return true;
+  });
+
+  prueba('matar un minion da créditos pero no cuenta como baja; vuelve a aparecer mientras viva su generador', () => {
+    const { g, d, azul } = nueva(), K2 = D.MIN;
+    const m = d.mins.find(q => q.team === 0), cr0 = azul.cr, k0 = azul.kills;
+    while (m.hp > 0) g.domMinDamage(m, 10, azul);
+    if (azul.cr !== cr0 + K2.CRED) return 'tendría que dar ' + K2.CRED + ' créditos (dio ' + (azul.cr - cr0) + ')';
+    if (azul.kills !== k0) return 'contó como baja en el marcador';
+    if (azul.mins !== 1) return 'no se anotó el minion bajado';
+    for (let k = 0; k < (K2.RESP + 3) * 40; k++) g.tick(dt);
+    if (d.mins.filter(q => q.gen === m.gen && q.hp > 0).length !== K2.POR_GEN) return 'no volvió a aparecer a los ' + K2.RESP + ' s';
+    return true;
+  });
+
+  prueba('al caer el generador se apagan sus minions y no vuelven', () => {
+    const { g, d, azul } = nueva();
+    const gi = 2, antes = d.mins.filter(m => m.gen === gi && m.hp > 0).length;
+    if (!antes) return 'el generador no tenía minions';
+    while (d.gens[gi].hp > 0) g.domHit(azul, 'g', gi, 200, false);
+    for (let k = 0; k < 40; k++) g.tick(dt);
+    if (d.mins.some(m => m.gen === gi && m.hp > 0)) return 'quedaron minions de un generador destruido';
+    for (let k = 0; k < (D.MIN.RESP + 4) * 40; k++) g.tick(dt);
+    if (d.mins.some(m => m.gen === gi && m.hp > 0)) return 'volvieron a aparecer sin generador';
+    return d.mins.filter(m => m.gen === 3 && m.hp > 0).length === D.MIN.POR_GEN || 'se apagaron también los del generador de al lado';
+  });
+
   prueba('partida entera con bots: abren una ruta y se pegan con el boss sin errores', () => {
     const g = new C.Game({ mode: 'dominio', bots: 10, botSkill: 2 });
     for (let k = 0; k < 40 * 420 && g.state === 'play'; k++) g.tick(dt);

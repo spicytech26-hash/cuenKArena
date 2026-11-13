@@ -19,7 +19,7 @@ class Game {
     const off = t => !!this.mode.gg && t !== 'health'; // en gungame no hay armas ni munición tiradas (cada arma se gana con bajas), pero sí botiquines
     this.items = this.W.items.map((it, i) => ({ i, type: it.type, base: it.type, x: it.x, y: it.y, z: it.z, off: off(it.type), up: !off(it.type), t: 0 }));
     this.projs.length = 0; this.fires = [];
-    this.resetFlags(); this.domSetup();
+    this.resetFlags(); this.domSetup(); this.domMinSetup();
     updateMovers(this.W, this.time);
   }
   resetFlags() {
@@ -101,7 +101,7 @@ class Game {
         if (this.mode.teams) this.setTeam(p, this.pickTeam(p));
         p.joined = true; p.joinT = this.time; p.rkills = 0; p.dmg = 0; p.bestLife = 0;
         if (this.mode.tdm && this.o.online && this.humanCount(false) <= 1 && Number.isInteger(m.fl) && m.fl >= 5 && m.fl <= 500) this.o.fraglimit = m.fl;
-        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts, cd: p.cards.slice(), sh: this.shards.map(s => [s.id, r3(s.x), r3(s.y), r3(s.z), r2(s.t)]), cw: this.crownState(), st: this.stormInfo(), mv: this.voteState(), dm: this.domState() });
+        p.send({ t: 'welcome', id, mode: this.o.mode, mp: this.mode.minPlayers || 0, team: p.team, map: this.W.id, items: this.items.map(it => it.up ? 1 : 0), ity: this.items.map(it => it.type), fl: this.mode.teamLimit || this.o.fraglimit, cl: this.o.caplimit, tl: Math.ceil(this.left), roster: this.roster(), online: this.o.online, state: this.state, tm: this.time, fs: this.flagState(), ts: this.ts, cd: p.cards.slice(), sh: this.shards.map(s => [s.id, r3(s.x), r3(s.y), r3(s.z), r2(s.t)]), cw: this.crownState(), st: this.stormInfo(), mv: this.voteState(), dm: this.domState(), mn: this.domMinState() });
         this.bcast({ t: 'ev', e: 'join', id, n: p.name, c: p.color, s: p.skin, tm: p.team }, id);
         this.spawn(p); this.botT = 0; this.sendScores();
         break;

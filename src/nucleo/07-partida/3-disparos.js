@@ -34,6 +34,7 @@
     const done = new Set();
     for (const c of claims) {
       if (!Array.isArray(c)) continue;
+      if (c[0] <= -1000) { if (!done.has(c[0])) { done.add(c[0]); this.domMinClaim(p, o, d, c[0] | 0, clamp(c[1] | 0, 0, W_.pel), W_); } continue; }   // minion
       if (c[0] < 0) { if (!done.has(c[0])) { done.add(c[0]); this.domClaim(p, o, d, c[0] | 0, clamp(c[1] | 0, 0, W_.pel), c[2] | 0, W_); } continue; }   // generador o boss
       const t = this.players.get(c[0] | 0); if (!t || !t.alive || t === p || done.has(t.id)) continue;
       done.add(t.id);
@@ -116,6 +117,16 @@
       this.damage(t, dmg * this.mult(p) * this.skill().dmg, p, w, d, .05, 'frag');
     }
     for (const a of sacc.values()) this.domHit(p, a.st.kind, a.st.i, a.dmg * this.mult(p) * this.skill().dmg, a.st.core);
+    if (this.dom && this.dom.mins) for (const m of this.dom.mins) {   // los bots también le pegan a los minions
+      if (m.hp <= 0 || m.team === p.team) continue;
+      const cx = m.x - o[0], cy = m.y + 1 - o[1], cz = m.z - o[2], pr = cx * d[0] + cy * d[1] + cz * d[2];
+      if (pr < 0 || pr > (W_.range || 300)) continue;
+      if (Math.hypot(cx - d[0] * pr, cy - d[1] * pr, cz - d[2] * pr) > .85) continue;
+      const prev = setPasa(p.team), tapa = raycast(this.W, o[0], o[1], o[2], d[0], d[1], d[2], pr - .5); setPasa(prev);
+      if (tapa) continue;
+      this.domMinDamage(m, W_.dmg * falloff(W_, pr) * this.mult(p) * this.skill().dmg * (W_.pel || 1) * .6, p);
+      break;
+    }
   }
   spawnProj(p, w, o, d) {
     const W_ = WEAPONS[w], v = projLaunch(w, d);
@@ -152,7 +163,7 @@
     const W_ = WEAPONS[pr.w];
     if (this.dom && own) {   // generadores y bosses: impacto directo y daño de área
       if (pr.st && W_.direct) this.domHit(own, pr.st.kind, pr.st.i, W_.direct * pr.q, pr.st.core);
-      if (W_.rad) this.domBlast(own, pr.x, pr.y, pr.z, W_.rad, W_.dmg * pr.q, W_.sfall || .6, pr.st && W_.direct ? pr.st : null);
+      if (W_.rad) { this.domBlast(own, pr.x, pr.y, pr.z, W_.rad, W_.dmg * pr.q, W_.sfall || .6, pr.st && W_.direct ? pr.st : null); this.domMinBlast(own, pr.x, pr.y, pr.z, W_.rad, W_.dmg * pr.q, W_.sfall || .6); }
       if (!this.live()) return;
     }
     if (direct && W_.direct) {
@@ -200,7 +211,7 @@
       if (f.tick > 0) continue;
       f.tick = f.every;
       const own = this.players.get(f.own);
-      if (this.dom && own) { this.domBlast(own, f.x, f.y + .5, f.z, f.r, f.hit, 0, null); if (!this.live()) return; }
+      if (this.dom && own) { this.domBlast(own, f.x, f.y + .5, f.z, f.r, f.hit, 0, null); this.domMinBlast(own, f.x, f.y + .5, f.z, f.r, f.hit, 0); if (!this.live()) return; }
       for (const t of this.players.values()) {
         if (!t.alive || !t.joined) continue;
         if (Math.hypot(t.s.x - f.x, t.s.z - f.z) > f.r || t.s.y < f.y - 1 || t.s.y > f.y + 1.6) continue;

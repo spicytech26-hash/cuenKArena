@@ -132,7 +132,10 @@
       const t = this.findTarget(p);
       if (t) { if (t.id !== ai.tgt) { ai.seeT = 0; ai.replan = Math.min(ai.replan, .2); } ai.tgt = t.id; ai.last = [t.s.x, t.s.y, t.s.z]; ai.lostT = 3; }
       else if (ai.tgt) { ai.tgt = 0; ai.replan = 0; }
-      ai.st = !t && this.dom ? this.domBotTarget(p) : null;   // sin rivales a la vista: le tira al generador o al boss
+      // sin rivales a la vista: primero los minions que estorban, después el generador o el boss
+      ai.min = null;
+      if (!t && this.dom) { const mm = this.domMinTarget(p, Math.max(26, this.skill().range * .6)); if (mm) { ai.min = mm; ai.st = { x: mm.x, y: mm.y + .9, z: mm.z, min: mm.id }; } }
+      ai.st = ai.st && ai.min ? ai.st : (!t && this.dom ? this.domBotTarget(p) : null);
       if (this.dom && (ai.dodge == null || Math.random() < .05)) ai.dodge = Math.random() < DOM.BOT_DODGE[Math.max(0, Math.min(3, this.o.botSkill | 0))];
     }
     if (ai.replan <= 0 && s.on) { if (this.planBudget > 0) { this.planBudget--; ai.replan = .7 + Math.random() * .5; this.planBot(p); } else ai.replan = .03; }
@@ -224,7 +227,7 @@
       if (ai.seeT > sk.react && Math.abs(dy) < .12 + 1 / (dist + 1) && this.canFire(p, w) && this.time - p.lastFire >= W_.rate * sk.fire) {
         if (W_.type !== 'proj' || dist > 3) this.botFire(p, w, [ex, ey, ez], dirFromAngles(p.yaw, p.pitch));
       }
-    } else if (ai.st) {   // Captura el dominio: apunta y dispara a la estructura
+    } else if (ai.st) {   // Captura el dominio: apunta y dispara a la estructura o al minion que tenga enfrente
       const q = ai.st, ex = s.x, ey = s.y + K.EYE, ez = s.z, dist = Math.hypot(q.x - ex, q.y - ey, q.z - ez);
       const w = this.chooseWeapon(p, Math.max(dist, 8)); if (w !== p.w) { p.w = w; p.lastFire = Math.max(p.lastFire, this.time - WEAPONS[w].rate * .5); }
       const W_ = WEAPONS[w], ty = q.y + (W_.proj === 'grenade' ? dist * .06 : 0);

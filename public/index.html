@@ -2024,7 +2024,7 @@ function loadMap(id){
   }
   L.items=M.items.map(it=>{const g=buildItem(it.type);g.position.set(it.x,it.y+.6,it.z);group.add(g);return {g,it,ty:it.type,ph:Math.random()*6};});
   if(th.club)L.club=buildClub(group);
-  domLoad(group,M);   // Captura el dominio: bosses, generadores, barreras y arte
+  domLoad(group,M);mnClear();   // Captura el dominio: bosses, generadores, barreras y arte
   level=L;
   $('bTitle').textContent=M.name;
   warmShaders();
@@ -4522,6 +4522,122 @@ Object.assign(SFX,{
   domAlert:()=>{[0,.22,.44].forEach(d=>tn({type:'square',f0:740,f1:520,dur:.16,vol:.13,delay:d}));},
   domDeath:v=>{const k=Math.max(.4,v);tn({type:'sawtooth',f0:300,f1:24,dur:2.4,vol:.3*k});nz({dur:2.2,f0:3000,f1:50,vol:.9*k});[0,.3,.7,1.2].forEach(d=>tn({type:'sine',f0:80,f1:30,dur:.5,vol:.5*k,delay:d}));}
 });
+/* ---------- Minions defensores (cliente) ----------
+   Versiones chiquitas de los bosses: cuerpo blanco, núcleo y remates del color de su equipo. El servidor
+   manda posición, giro, vida y estado (src/nucleo/07-partida/5c-minions.js) cada dos snapshots y acá se
+   interpola. La geometría se arma una sola vez por equipo y tipo, y cada minion es un grupo de tres piezas,
+   así treinta minions cuestan pocas mallas. A más de MLOD metros no se dibujan. */
+const MN = { on: false, m: new Map(), geo: null, MLOD: 95 };
+function mnGeos() {
+  if (MN.geo) return MN.geo;
+  const WH = 0xe9edf0, DK = 0x22252b, MT = 0x8b9098;
+  const cuerpo = (kind) => {
+    const p = [[dmBox(.62, .5, .42, 0, .95, 0), WH], [dmBox(.5, .22, .34, 0, 1.24, 0), DK],
+      [dmBox(.46, .34, .4, 0, 1.5, 0), WH], [dmBox(.3, .1, .06, 0, 1.52, -.21), DK]];
+    for (const s of [-1, 1]) {
+      p.push([dmBox(.16, .52, .18, s * .2, .4, 0), DK], [dmBox(.22, .12, .3, s * .2, .08, -.04), MT]);
+      if (kind) p.push([dmCyl(.07, .1, .5, 6, s * .42, 1.02, -.1, 1.5708), MT]);      // cañoncito
+      else p.push([dmBox(.14, .44, .14, s * .42, .92, .04, .35), MT]);                 // garra
+    }
+    return dmGeo(p);
+  };
+  MN.geo = { cuerpo: [cuerpo(0), cuerpo(1)], nucleo: new THREE.SphereGeometry(.13, 8, 6), halo: new THREE.SphereGeometry(.3, 8, 6) };
+  return MN.geo;
+}
+function mnBuild(team, kind) {
+  const G_ = mnGeos(), g = new THREE.Group();
+  const cuerpo = new THREE.Mesh(G_.cuerpo[kind], dmMat());
+  const nuc = new THREE.Mesh(G_.nucleo, new THREE.MeshBasicMaterial({ color: DCOL[team], fog: false }));
+  nuc.position.set(0, .95, -.2);
+  const halo = new THREE.Mesh(G_.halo, dmGlow(DCOL[team], .22)); halo.position.copy(nuc.position);
+  g.add(cuerpo, nuc, halo);
+  return { g, cuerpo, nuc, halo };
+}
+function mnClear() { for (const o of MN.m.values()) scene.remove(o.g); MN.m.clear(); MN.on = false; }
+function mnSet(arr) {
+  if (!DM.on) return;
+  MN.on = true;
+  if (!arr) return;
+  for (let i = 0; i < arr.length; i += 6) {
+    const id = arr[i], x = arr[i + 1], y = arr[i + 2], z = arr[i + 3], yaw = arr[i + 4] / 10, hs = arr[i + 5];
+    const kind = hs & 1, team = (hs >> 1) & 1, st = (hs >> 2) & 3, hp = (hs >> 4) / 100;
+    let o = MN.m.get(id);
+    if (!o) { o = mnArma(id, team, kind, x, y, z); o.nace = 0; }   // entró a mitad de partida: lo arma sin efecto
+    o.tx = x; o.ty = y; o.tz = z; o.tyaw = yaw; o.hp = hp; o.st = st;
+  }
+}
+function mnArma(id, team, kind, x, y, z) {
+  const o = mnBuild(team, kind);
+  o.id = id; o.team = team; o.kind = kind; o.hp = 1; o.st = 0; o.ph = Math.random() * 6; o.t = 0; o.golpe = 0; o.nace = .5;
+  o.x = o.tx = x; o.y = o.ty = y; o.z = o.tz = z; o.yaw = o.tyaw = 0;
+  o.g.position.set(x, y, z); scene.add(o.g); MN.m.set(id, o);
+  return o;
+}
+function mnEvent(m) {
+  if (m.a === 'min+') {
+    if (MN.m.has(m.i)) return;
+    MN.on = true;
+    const o = mnArma(m.i, m.b, m.k, m.p[0], m.p[1], m.p[2]);
+    SFX.minUp(vAt(o.x, o.y + 1, o.z));
+    for (let k = 0; k < 10; k++) emit(sparks, o.x + R(.5), o.y + .4 + Math.random(), o.z + R(.5), R(2), 2 + Math.random() * 2, R(2), .5, m.b ? .3 : 1, .7, m.b ? 1 : .3, 1);
+  } else if (m.a === 'min-') {
+    const o = MN.m.get(m.i); if (!o) return;
+    MN.m.delete(m.i); scene.remove(o.g);
+    if (m.off) { SFX.minOff(vAt(m.p[0], m.p[1], m.p[2])); for (let k = 0; k < 8; k++) emit(sparks, m.p[0] + R(.4), m.p[1] + .6, m.p[2] + R(.4), R(1), 1, R(1), 1.1, .3, .3, .3, -1); }
+    else { fxSparks(m.p[0], m.p[1] + .8, m.p[2], [0, 1, 0], 12); SFX.minDie(vAt(m.p[0], m.p[1], m.p[2])); for (let k = 0; k < 14; k++) emit(sparks, m.p[0], m.p[1] + .7, m.p[2], R(5), 1 + Math.random() * 4, R(5), .8, .9, .9, .95, 3); }
+  } else if (m.a === 'minfire') {
+    const o = MN.m.get(m.i); if (!o) return;
+    o.golpe = .25; fxTracer([o.x, o.y + 1.05, o.z], m.p); SFX.minShot(vAt(o.x, o.y + 1, o.z));
+  } else if (m.a === 'minhit') {
+    const o = MN.m.get(m.i); if (!o) return;
+    o.golpe = .3; SFX.minMelee(vAt(o.x, o.y + 1, o.z));
+  }
+}
+function updMins(dt) {
+  if (!MN.on) return;
+  const cx = camera.position.x, cz = camera.position.z;
+  for (const o of MN.m.values()) {
+    const vis = Math.hypot(o.x - cx, o.z - cz) < MN.MLOD;
+    if (o.g.visible !== vis) o.g.visible = vis;
+    const k = Math.min(1, dt * 12);
+    o.x += (o.tx - o.x) * k; o.y += (o.ty - o.y) * k; o.z += (o.tz - o.z) * k;
+    let dy = o.tyaw - o.yaw; while (dy > Math.PI) dy -= 6.2832; while (dy < -Math.PI) dy += 6.2832;
+    o.yaw += dy * Math.min(1, dt * 10);
+    if (!vis) continue;
+    o.t += dt; o.golpe = Math.max(0, o.golpe - dt); o.nace = Math.max(0, (o.nace || 0) - dt);
+    const and = o.st === 1 || o.st === 3, bob = and ? Math.abs(Math.sin(o.t * 9)) * .09 : Math.sin(o.t * 1.6 + o.ph) * .025;
+    o.g.position.set(o.x, o.y + bob, o.z);
+    o.g.rotation.y = o.yaw + (o.st === 0 ? Math.sin(o.t * .5 + o.ph) * .5 : 0);   // en el puesto mira para los costados
+    o.g.rotation.x = and ? .1 : 0 + (o.golpe > 0 ? -o.golpe * 1.2 : 0);
+    o.g.scale.setScalar(o.nace > 0 ? 1 - o.nace * 1.3 : 1);
+    o.halo.scale.setScalar(.8 + .3 * Math.sin(o.t * 3 + o.ph) + o.golpe * 2);
+    o.halo.material.opacity = (.14 + .1 * o.hp) + o.golpe * .4;
+    o.nuc.material.color.setHex(o.hp < .4 && Math.sin(o.t * 16) > 0 ? 0xffffff : DCOL[o.team]);
+  }
+}
+// el jugador les dispara: se cobra igual que a un rival, con id negativo (-1000 - id del minion)
+function mnClaim(claims, ex, ey, ez, dd, wt) {
+  if (!MN.on) return null;
+  let best = null, bt = wt;
+  for (const o of MN.m.values()) {
+    if (o.team === myTeam) continue;
+    const cx = o.x - ex, cy = o.y + .95 - ey, cz = o.z - ez, pr = cx * dd[0] + cy * dd[1] + cz * dd[2];
+    if (pr < .3 || pr > bt) continue;
+    if (Math.hypot(cx - dd[0] * pr, cy - dd[1] * pr, cz - dd[2] * pr) > .75) continue;
+    bt = pr; best = o;
+  }
+  if (!best) return null;
+  const id = -1000 - best.id, c = claims.get(id) || [id, 0, 0]; c[1]++; claims.set(id, c);
+  fxSparks(best.x, best.y + .95, best.z, [0, 1, 0], 5);
+  return best;
+}
+Object.assign(SFX, {
+  minUp: v => { if (v <= 0) return; tn({ type: 'square', f0: 300, f1: 900, dur: .18, vol: .1 * v }); nz({ dur: .2, f0: 1200, f1: 400, vol: .18 * v }); },
+  minOff: v => { if (v <= 0) return; tn({ type: 'sawtooth', f0: 500, f1: 60, dur: .5, vol: .14 * v }); },
+  minDie: v => { if (v <= 0) return; nz({ dur: .35, f0: 2600, f1: 200, vol: .5 * v }); tn({ type: 'square', f0: 700, f1: 90, dur: .3, vol: .12 * v }); },
+  minShot: v => { if (v <= 0) return; tn({ type: 'square', f0: 1100, f1: 520, dur: .09, vol: .09 * v }); },
+  minMelee: v => { if (v <= 0) return; nz({ dur: .12, f0: 3000, f1: 700, type: 'bandpass', q: 1.5, vol: .3 * v }); }
+});
 /* =================== ESTADO =================== */
 const me={s:{x:0,y:0,z:0,vx:0,vy:0,vz:0,on:true},yaw:0,pitch:0,alive:false,hp:100,ar:0,am:C.AMMO0(0),ow:[1,1,0,0,0,0,0,1,0],mag:{2:2},rel:0,relW:-1,scope:false,lvlSwitch:false,w:1,q:0,deadT:0,killer:0,lvl:0,
   cards:[],rkills:0,cr:C.ECON.START,unl:[1,1,0,0,0,0,0,1,0],eyeC:K.EYE,mt:9,mdir:1,ads:0,perk:{ar:0,am:0},cool:0,held:false,kick:0,raise:0,flash:0,bob:0,dip:0,roll:0,tilt:0,padT:0,stepT:0,lastW:0,heat:0};
@@ -4651,7 +4767,7 @@ function onMsg(m){
       myId=m.id;fragLimit=m.fl;timeLeft=m.tl;matchState=m.state;
       MODE=m.mode||'arena';myTeam=m.team!=null?m.team:-1;FL=m.fs||[];TS=m.ts||[0,0];capLimit=m.cl||5;
       C.setPasa(myTeam);me.s.tm=myTeam;   // las barreras de campo de fuerza dejan pasar solo a tu equipo
-      loadMap(m.map);applyMode();domSet(m.dm);
+      loadMap(m.map);applyMode();domSet(m.dm);mnSet(m.mn);
       if(typeof m.tm==='number'&&online)CLK.off=m.tm-performance.now()/1000-.05;
       m.roster.forEach(r=>{if(r[0]!==myId)ensurePlayer(r[0],r[1],r[2],r[3],r[4],r[5]);});
       syncItems(m);clearShards();clearCrown();clearStorm();setCrownState(m.cw);stormSet(m.st);resetCards();if(m.cd&&m.cd.length){me.cards=m.cd.slice();renderMyCards();}if(m.sh)for(const s of m.sh)addShard(s[0],s[1],s[2],s[3],s[1],s[2],s[3],s[4]);
@@ -4692,7 +4808,7 @@ function onMsg(m){
       if(CLK.off===null||sample>CLK.off)CLK.off=sample;else CLK.off+=(sample-CLK.off)*.003;
       const dev=CLK.off-sample;CLK.jit=CLK.jit*.92+dev*.08;
       CLK.delay=online?Math.min(.3,Math.max(.07,.055+CLK.jit*2.2)):.06;
-      domSnap(m);
+      domSnap(m);if(m.mn)mnSet(m.mn);
       for(const r of m.ps){
         if(r[0]===myId)continue;
         const p=ensurePlayer(r[0]);
@@ -4705,7 +4821,7 @@ function onMsg(m){
       if(m.iu&&level)for(let i=0;i<m.iu.length;i++){const o=level.items[i];if(o){const u=m.iu[i]==='1';if(o.g.visible!==u)o.g.visible=u;}}
       scores=m.l;timeLeft=m.tl;fragLimit=m.fl;
       if(m.cw!==undefined)setCrownState(m.cw);
-      if(m.dm)domSet(m.dm);   // resincroniza la corona una vez por segundo
+      if(m.dm)domSet(m.dm);if(m.mn!==undefined)mnSet(m.mn);   // resincroniza una vez por segundo
       if(m.st!==matchState&&m.st==='count')SFX.start();
       matchState=m.st;LOBBY={cd:m.cd||0,hn:m.hn||0,mp:m.mp||0};
       if(m.ts)TS=m.ts;if(m.fs)FL=m.fs;if(m.cl)capLimit=m.cl;
@@ -4737,7 +4853,7 @@ function onMsg(m){
       if(!document.pointerLockElement&&$('menu').hidden&&inGame){announce('¡ARRANCÓ!','Hacé click para jugar');}
       if(m.fs)FL=m.fs;if(m.ts)TS=m.ts;me.lvl=0;resetCards();
       if(m.map&&m.map!==W.id){loadMap(m.map);projs.forEach(p=>scene.remove(p.m));projs.length=0;}
-      syncItems(m);if(MODE==='dominio'){if(DM.on)domLoad(level.group,W);domSet(m.dm);}
+      syncItems(m);if(MODE==='dominio'){if(DM.on)domLoad(level.group,W);domSet(m.dm);mnClear();mnSet(m.mn);}
       announce(W.name.toUpperCase(),MODE==='dominio'?'matá al boss rival · 15 minutos':(MODE==='tdm'||MODE==='snipers')?'primer equipo en llegar a '+fragLimit+' bajas':MODE==='gungame'?'primero en completar los '+GG.length+' niveles':'gana el que más bajas haga');SFX.start();
       break;
     case 'pong': ping=Math.round(performance.now()-m.c);break;
@@ -4761,7 +4877,7 @@ function onEvent(m){
       break;
     case 'flag': FL=m.fs;TS=m.ts;onFlag(m);break;
     case 'crw': crownEvent(m);break;
-    case 'dom': domEvent(m);break;
+    case 'dom': domEvent(m);mnEvent(m);break;
     case 'fix': me.s.x=m.p[0];me.s.y=m.p[1];me.s.z=m.p[2];me.s.vx=me.s.vz=0;if(m.yaw!=null){me.yaw=m.yaw;me.pitch=0;me.s.vy=0;}break;   // el servidor no aceptó cruzar una barrera (o un /ir de prueba)
     case 'stm': stormEvent(m);break;
     case 'fire': fxFire(m);break;
@@ -4863,6 +4979,7 @@ function onKill(m){
   else if(m.how==='void')line=vn+' <i>cayó al vacío</i>';
   else if(m.how==='storm')line=vn+' <i>se quedó en la tormenta</i>';
   else if(m.how==='boss')line=vn+' <i>cayó ante el boss</i>';
+  else if(m.how==='minion')line=vn+' <i>lo bajaron los minions</i>';
   else if(!m.k||m.k===m.v)line=vn+' <i>se voló a sí mismo</i>';
   else if(m.ns)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>mató</i> <b class="ns">SIN USAR MIRA</b> <i>a</i> '+vn;
   else if(W_&&W_.melee)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>le entró a pelo a</i> '+vn;
@@ -4872,7 +4989,7 @@ function onKill(m){
   if(m.v===myId){
     me.alive=false;me.deadT=0;me.killer=m.k;me.respawnAsk=false;me.deathPos=[me.s.x,me.s.y,me.s.z];
     // "JUGADOR te ha eliminado" en grande, el arma abajo y "Cobrale venganza" en chico; si no fue un jugador, el motivo en grande
-    const env=m.how==='water'?'Te llevó el río':m.how==='lava'?'Te derretiste en la lava':m.how==='void'?'Caíste al vacío':m.how==='storm'?'Te comíó la tormenta':m.how==='boss'?'Te mató el boss':(!m.k||m.k===myId)?'Te volaste a vos mismo':'';
+    const env=m.how==='water'?'Te llevó el río':m.how==='lava'?'Te derretiste en la lava':m.how==='void'?'Caíste al vacío':m.how==='storm'?'Te comíó la tormenta':m.how==='boss'?'Te mató el boss':m.how==='minion'?'Te bajaron los minions':(!m.k||m.k===myId)?'Te volaste a vos mismo':'';
     if(env){$('deathBig').textContent=env;$('deathBy').textContent='';$('deathRev').textContent='Volvé más fuerte';}
     else{$('deathBig').innerHTML='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> te ha eliminado';$('deathBy').textContent=m.how==='fire'?'te prendió fuego':m.how==='cblast'?'explotó al morir':m.ns?'sin usar mira':W_?'con '+W_.name:'';$('deathRev').textContent='Cobrale venganza';}
     $('deathBox').hidden=false;$('deathBox').classList.remove('in');void $('deathBox').offsetWidth;$('deathBox').classList.add('in');$('deathHint').textContent='';
@@ -5068,7 +5185,7 @@ function fire(){
       for(const q of players.values()){if(!q.alive||!q.model||!q.model.g.visible||(teamsMode()&&q.team===myTeam))continue;const h=C.rayPlayer(q.x,q.y,q.z,ex,ey,ez,dd[0],dd[1],dd[2],q.crouch);if(h&&h.t<wt)hits.push({q,t:h.t,head:h.head});}
       hits.sort((a,b)=>a.t-b.t);
       const use=W_.type==='rail'?hits:hits.slice(0,1);
-      if(DM.on&&(!use.length||W_.type==='rail'))domClaim(claims,wall,ex,ey,ez,dd);   // generador o boss
+      if(DM.on&&(!use.length||W_.type==='rail')){const mn=mnClaim(claims,ex,ey,ez,dd,wt);if(!mn)domClaim(claims,wall,ex,ey,ez,dd);}   // minion, generador o boss
       for(const h of use){const c=claims.get(h.q.id)||[h.q.id,0,0];c[1]++;if(h.head)c[2]++;claims.set(h.q.id,c);fxBlood(ex+dd[0]*h.t,ey+dd[1]*h.t,ez+dd[2]*h.t,W_.type==='rail'?14:4);}
       const end=[ex+dd[0]*wt,ey+dd[1]*wt,ez+dd[2]*wt];
       if(W_.type==='rail'){fxRail(vmWorldTip(),end,new THREE.Color(colorOf(myId)).getHex());if(wall)for(let j=0;j<16;j++)emit(sparks,end[0],end[1],end[2],wall.n[0]*3+R(4),wall.n[1]*3+R(4),wall.n[2]*3+R(4),.5,.5,.8,1,4);}
@@ -7356,7 +7473,7 @@ function frame(now){
     G.pingT-=dt;if(online&&G.pingT<=0&&net){G.pingT=2;net.send({t:'ping',c:performance.now(),r:ping});}
     if(Math.floor(G.time*2)!==Math.floor((G.time-dt)*2))updateHUD();
   }else if(!inGame){attract(dt);vms.forEach(v=>v.visible=false);flashMesh.visible=false;}
-  updClub(dt,beatNow());musicTick();updFlags();if(inGame&&!paused){updCrown(dt);updStorm(dt);updDom(dt);}
+  updClub(dt,beatNow());musicTick();updFlags();if(inGame&&!paused){updCrown(dt);updStorm(dt);updDom(dt);updMins(dt);}
   updEffects(dt);renderLocker(dt);
   updLightSlots(dt);
   if(inGame&&paused&&(G.pf=((G.pf||0)+1)%3))return;   // en pausa la escena está quieta: se redibuja a 1/3 de los cuadros
@@ -7369,6 +7486,6 @@ function frame(now){
 requestAnimationFrame(frame);
 setTimeout(warmIcons,2500);   // los íconos de la tienda se arman mientras estás en el menú
 // gancho de depuración para las pruebas automáticas del proyecto (no lo usa el juego)
-window.DBG=()=>({scene,level,W,DM,camera,renderer,THREE});
+window.DBG=()=>({scene,level,W,DM,MN,camera,renderer,THREE});
 })();
 </script>

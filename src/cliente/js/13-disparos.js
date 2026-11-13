@@ -142,7 +142,7 @@ function fire(){
       for(const q of players.values()){if(!q.alive||!q.model||!q.model.g.visible||(teamsMode()&&q.team===myTeam))continue;const h=C.rayPlayer(q.x,q.y,q.z,ex,ey,ez,dd[0],dd[1],dd[2],q.crouch);if(h&&h.t<wt)hits.push({q,t:h.t,head:h.head});}
       hits.sort((a,b)=>a.t-b.t);
       const use=W_.type==='rail'?hits:hits.slice(0,1);
-      if(DM.on&&(!use.length||W_.type==='rail'))domClaim(claims,wall,ex,ey,ez,dd);   // generador o boss
+      if(DM.on&&(!use.length||W_.type==='rail')){const mn=mnClaim(claims,ex,ey,ez,dd,wt);if(!mn)domClaim(claims,wall,ex,ey,ez,dd);}   // minion, generador o boss
       for(const h of use){const c=claims.get(h.q.id)||[h.q.id,0,0];c[1]++;if(h.head)c[2]++;claims.set(h.q.id,c);fxBlood(ex+dd[0]*h.t,ey+dd[1]*h.t,ez+dd[2]*h.t,W_.type==='rail'?14:4);}
       const end=[ex+dd[0]*wt,ey+dd[1]*wt,ez+dd[2]*wt];
       if(W_.type==='rail'){fxRail(vmWorldTip(),end,new THREE.Color(colorOf(myId)).getHex());if(wall)for(let j=0;j<16;j++)emit(sparks,end[0],end[1],end[2],wall.n[0]*3+R(4),wall.n[1]*3+R(4),wall.n[2]*3+R(4),.5,.5,.8,1,4);}

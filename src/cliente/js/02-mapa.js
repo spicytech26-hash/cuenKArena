@@ -157,7 +157,7 @@ function loadMap(id){
   }
   L.items=M.items.map(it=>{const g=buildItem(it.type);g.position.set(it.x,it.y+.6,it.z);group.add(g);return {g,it,ty:it.type,ph:Math.random()*6};});
   if(th.club)L.club=buildClub(group);
-  domLoad(group,M);   // Captura el dominio: bosses, generadores, barreras y arte
+  domLoad(group,M);mnClear();   // Captura el dominio: bosses, generadores, barreras y arte
   level=L;
   $('bTitle').textContent=M.name;
   warmShaders();

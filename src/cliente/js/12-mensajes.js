@@ -5,7 +5,7 @@ function onMsg(m){
       myId=m.id;fragLimit=m.fl;timeLeft=m.tl;matchState=m.state;
       MODE=m.mode||'arena';myTeam=m.team!=null?m.team:-1;FL=m.fs||[];TS=m.ts||[0,0];capLimit=m.cl||5;
       C.setPasa(myTeam);me.s.tm=myTeam;   // las barreras de campo de fuerza dejan pasar solo a tu equipo
-      loadMap(m.map);applyMode();domSet(m.dm);
+      loadMap(m.map);applyMode();domSet(m.dm);mnSet(m.mn);
       if(typeof m.tm==='number'&&online)CLK.off=m.tm-performance.now()/1000-.05;
       m.roster.forEach(r=>{if(r[0]!==myId)ensurePlayer(r[0],r[1],r[2],r[3],r[4],r[5]);});
       syncItems(m);clearShards();clearCrown();clearStorm();setCrownState(m.cw);stormSet(m.st);resetCards();if(m.cd&&m.cd.length){me.cards=m.cd.slice();renderMyCards();}if(m.sh)for(const s of m.sh)addShard(s[0],s[1],s[2],s[3],s[1],s[2],s[3],s[4]);
@@ -46,7 +46,7 @@ function onMsg(m){
       if(CLK.off===null||sample>CLK.off)CLK.off=sample;else CLK.off+=(sample-CLK.off)*.003;
       const dev=CLK.off-sample;CLK.jit=CLK.jit*.92+dev*.08;
       CLK.delay=online?Math.min(.3,Math.max(.07,.055+CLK.jit*2.2)):.06;
-      domSnap(m);
+      domSnap(m);if(m.mn)mnSet(m.mn);
       for(const r of m.ps){
         if(r[0]===myId)continue;
         const p=ensurePlayer(r[0]);
@@ -59,7 +59,7 @@ function onMsg(m){
       if(m.iu&&level)for(let i=0;i<m.iu.length;i++){const o=level.items[i];if(o){const u=m.iu[i]==='1';if(o.g.visible!==u)o.g.visible=u;}}
       scores=m.l;timeLeft=m.tl;fragLimit=m.fl;
       if(m.cw!==undefined)setCrownState(m.cw);
-      if(m.dm)domSet(m.dm);   // resincroniza la corona una vez por segundo
+      if(m.dm)domSet(m.dm);if(m.mn!==undefined)mnSet(m.mn);   // resincroniza una vez por segundo
       if(m.st!==matchState&&m.st==='count')SFX.start();
       matchState=m.st;LOBBY={cd:m.cd||0,hn:m.hn||0,mp:m.mp||0};
       if(m.ts)TS=m.ts;if(m.fs)FL=m.fs;if(m.cl)capLimit=m.cl;
@@ -91,7 +91,7 @@ function onMsg(m){
       if(!document.pointerLockElement&&$('menu').hidden&&inGame){announce('¡ARRANCÓ!','Hacé click para jugar');}
       if(m.fs)FL=m.fs;if(m.ts)TS=m.ts;me.lvl=0;resetCards();
       if(m.map&&m.map!==W.id){loadMap(m.map);projs.forEach(p=>scene.remove(p.m));projs.length=0;}
-      syncItems(m);if(MODE==='dominio'){if(DM.on)domLoad(level.group,W);domSet(m.dm);}
+      syncItems(m);if(MODE==='dominio'){if(DM.on)domLoad(level.group,W);domSet(m.dm);mnClear();mnSet(m.mn);}
       announce(W.name.toUpperCase(),MODE==='dominio'?'matá al boss rival · 15 minutos':(MODE==='tdm'||MODE==='snipers')?'primer equipo en llegar a '+fragLimit+' bajas':MODE==='gungame'?'primero en completar los '+GG.length+' niveles':'gana el que más bajas haga');SFX.start();
       break;
     case 'pong': ping=Math.round(performance.now()-m.c);break;
@@ -115,7 +115,7 @@ function onEvent(m){
       break;
     case 'flag': FL=m.fs;TS=m.ts;onFlag(m);break;
     case 'crw': crownEvent(m);break;
-    case 'dom': domEvent(m);break;
+    case 'dom': domEvent(m);mnEvent(m);break;
     case 'fix': me.s.x=m.p[0];me.s.y=m.p[1];me.s.z=m.p[2];me.s.vx=me.s.vz=0;if(m.yaw!=null){me.yaw=m.yaw;me.pitch=0;me.s.vy=0;}break;   // el servidor no aceptó cruzar una barrera (o un /ir de prueba)
     case 'stm': stormEvent(m);break;
     case 'fire': fxFire(m);break;
@@ -217,6 +217,7 @@ function onKill(m){
   else if(m.how==='void')line=vn+' <i>cayó al vacío</i>';
   else if(m.how==='storm')line=vn+' <i>se quedó en la tormenta</i>';
   else if(m.how==='boss')line=vn+' <i>cayó ante el boss</i>';
+  else if(m.how==='minion')line=vn+' <i>lo bajaron los minions</i>';
   else if(!m.k||m.k===m.v)line=vn+' <i>se voló a sí mismo</i>';
   else if(m.ns)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>mató</i> <b class="ns">SIN USAR MIRA</b> <i>a</i> '+vn;
   else if(W_&&W_.melee)line='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> <i>le entró a pelo a</i> '+vn;
@@ -226,7 +227,7 @@ function onKill(m){
   if(m.v===myId){
     me.alive=false;me.deadT=0;me.killer=m.k;me.respawnAsk=false;me.deathPos=[me.s.x,me.s.y,me.s.z];
     // "JUGADOR te ha eliminado" en grande, el arma abajo y "Cobrale venganza" en chico; si no fue un jugador, el motivo en grande
-    const env=m.how==='water'?'Te llevó el río':m.how==='lava'?'Te derretiste en la lava':m.how==='void'?'Caíste al vacío':m.how==='storm'?'Te comíó la tormenta':m.how==='boss'?'Te mató el boss':(!m.k||m.k===myId)?'Te volaste a vos mismo':'';
+    const env=m.how==='water'?'Te llevó el río':m.how==='lava'?'Te derretiste en la lava':m.how==='void'?'Caíste al vacío':m.how==='storm'?'Te comíó la tormenta':m.how==='boss'?'Te mató el boss':m.how==='minion'?'Te bajaron los minions':(!m.k||m.k===myId)?'Te volaste a vos mismo':'';
     if(env){$('deathBig').textContent=env;$('deathBy').textContent='';$('deathRev').textContent='Volvé más fuerte';}
     else{$('deathBig').innerHTML='<b style="color:'+colorOf(m.k)+'">'+esc(nameOf(m.k))+'</b> te ha eliminado';$('deathBy').textContent=m.how==='fire'?'te prendió fuego':m.how==='cblast'?'explotó al morir':m.ns?'sin usar mira':W_?'con '+W_.name:'';$('deathRev').textContent='Cobrale venganza';}
     $('deathBox').hidden=false;$('deathBox').classList.remove('in');void $('deathBox').offsetWidth;$('deathBox').classList.add('in');$('deathHint').textContent='';

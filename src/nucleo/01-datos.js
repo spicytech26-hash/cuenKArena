@@ -7,6 +7,7 @@ const K = {
 const hOf = s => s.crouch ? K.HC : K.H;
 const EPS = 1e-3;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const r1 = v => Math.round(v * 10) / 10;
 const r2 = v => Math.round(v * 100) / 100;
 const r3a = a => [Math.round(a[0] * 1000) / 1000, Math.round(a[1] * 1000) / 1000, Math.round(a[2] * 1000) / 1000];
 const r3 = v => Math.round(v * 1000) / 1000;
@@ -148,6 +149,21 @@ const DOM = {
     7: { n: 'zona',     warn: 1.4, hit: .12, rec: .5, forma: 'circulo', r: 7, dmg: 70, kick: 8, lock: .45, suelo: 1 }
   },
   GRAB: { pull: 32 },
+  /* Minions defensores (07-partida/5c-minions.js): dos por generador, uno cuerpo a cuerpo y otro a distancia.
+     Molestan y obligan a entrar en equipo, pero no son un muro. */
+  MIN: {
+    POR_GEN: 2,     // cuántos cuida cada generador
+    HP: 55,
+    DMG_C: 11, RATE_C: .85, RANGE_C: 2.8,    // cuerpo a cuerpo: daño, cada cuánto pega y alcance
+    DMG_D: 8,  RATE_D: 1.5, RANGE_D: 20,     // a distancia
+    SPD: 5.4,       // a cuánto corre (el jugador va a 10)
+    SEE: 21,        // a qué distancia te ve
+    LEASH: 25,      // si te alejás más de esto de su puesto, te deja y vuelve
+    RESP: 25,       // cuánto tarda en volver a aparecer
+    MAX: 18,        // tope de minions vivos por equipo
+    CRED: 60,       // créditos por matarlo (no cuenta como baja)
+    R: .45, H: 1.5  // radio y alto
+  },
   ORBS: { n: 3, dmg: 28, speed: 15, turn: 2.4, life: 6, r: 1.3 },   // proyectiles teledirigidos de la salva
   ZONES_RAGE: 3,        // al abrirse un carril el boss castiga la entrada con esta cantidad de zonas
   ALERT_EVERY: 12,      // cada cuánto se repite el aviso "están atacando a tu boss"

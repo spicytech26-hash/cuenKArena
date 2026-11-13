@@ -1,4 +1,4 @@
-  /* ---- daño y muertes ---- */
+/* ---- daño y muertes ---- */
   damage(t, amt, att, w, dir, ks, how) {
     if (!t.alive || !this.live() || amt <= 0) return;
     t.chgT = 0;   // si te pegan mientras cargás el plasma, perdés la carga
@@ -27,6 +27,7 @@
     if (t.hp > 0 && att && att !== t && how !== 'fire' && hasCard(att, 'igneo')) this.ignite(t, att);
     if (t.hp <= 0) this.kill(t, att, w, how, amt);
   }
+
   kill(v, att, w, how) {
     const gib = v.hp < -40;
     v.alive = false; v.deadT = 0; v.deaths++; v.dirty = true; v.quadT = 0;
@@ -34,6 +35,7 @@
     let k = 0;
     const carrier = this.flags.some(f => f.st === 1 && f.by === v.id), scoring = this.state === 'play';
     const crowned = !!(this.crownOn() && this.crown && this.crown.by === v.id);
+    
     if (!scoring) { v.deaths--; k = att && att !== v ? att.id : 0; }
     else if (att && att !== v) {
       att.kills++; att.rkills++; k = att.id; att.streak++;
@@ -43,36 +45,67 @@
       if (carrier) { n += 150; why.push('frenaste al de la bandera'); }
       if (hasCard(att, 'botin')) { n = Math.round(n * CARD_FX.CASH); why.push('botín de guerra'); }   // carta Botín de guerra
       this.credit(att, n, why.join(' · '));
-      if (att.alive && hasCard(att, 'trofeo')) { att.ar = Math.min(100, att.ar + CARD_FX.KILL_AR); att.dirty = true; }        // carta Trofeo
+      if (att.alive && hasCard(att, 'trofeo')) { att.ar = Math.min(100, att.ar + CARD_FX.KILL_AR); att.dirty = true; }         // carta Trofeo
       if (att.alive && hasCard(att, 'sanguijuela')) { att.hp = Math.min(100, att.hp + CARD_FX.KILL_HP); att.dirty = true; }   // carta Hambre de sangre
       if (crowned) {   // regicidio: puntos extra, los créditos son los normales de una baja
         att.kills += CROWN.KILL_PTS; att.cpts += CROWN.KILL_PTS;
         this.bcast({ t: 'ev', e: 'crw', a: 'regi', id: att.id, n: att.name, v: v.name, pts: CROWN.KILL_PTS });
       }
       this.checkCard(att);
-    } else if (how !== 'storm' && how !== 'boss' && how !== 'minion') v.kills--;   // la tormenta no le da puntos a nadie, pero tampoco te resta
+    } else if (how !== 'storm' && how !== 'boss' && how !== 'minion') {
+      v.kills--;   // la tormenta y bosses no dan puntos a nadie, pero tampoco te restan
+    }
+    
     v.streak = 0; v.burnT = 0;
     this.dropCarried(v);
     const ns = !!(this.curNS && k && k !== v.id && w != null && WEAPONS[w] && WEAPONS[w].scope);
     this.bcast({ t: 'ev', e: 'kill', k, v: v.id, w: w == null ? -1 : w, how: how || 'frag', gib: gib ? 1 : 0, ns: ns ? 1 : 0, p: r3a([v.s.x, v.s.y, v.s.z]) });
-    // kill mientras se desliza (o hasta 0,25 s después de soltar, por el lag): el servidor le avisa al que mató para que reciba el impulso de velocidad
+    
+    // Boost de deslizamiento
     if (scoring && att && att !== v && !att.bot && att.send && this.time - (att.slideT == null ? -9 : att.slideT) <= .25) att.send({ t: 'ev', e: 'boost' });
     if (scoring) this.dropShards(v);
     if (v.bot && v.ai) v.ai.path = null;
+    
     let won = false;
+    
+    // Lógica de victoria según el modo de juego
     if (this.mode.gg && scoring) won = this.ggKill(v, att, w);
-    if ((this.mode.tdm || this.mode.tk) && scoring && att && att !== v && att.team !== v.team && att.team >= 0) { this.ts[att.team]++; if (this.ts[att.team] >= (this.mode.teamLimit || this.o.fraglimit)) won = true; }
+    
+    if ((this.mode.tdm || this.mode.tk) && scoring && att && att !== v && att.team !== v.team && att.team >= 0) { 
+      this.ts[att.team]++; 
+      if (this.ts[att.team] >= (this.mode.teamLimit || this.o.fraglimit)) won = true; 
+    }
+
+    // --- NUEVA REGLA DE VICTORIA: MODO DOMINIO ---
+    if (this.mode.dom && scoring && att && att !== v && att.team !== v.team && att.team >= 0) {
+      // Registramos las bajas de jugadores dentro del estado del dominio
+      this.dom.stat[att.team].kills = (this.dom.stat[att.team].kills || 0) + 1;
+      
+      // Si querés que también se gane por llegar a un límite de bajas en Dominio, descomentá esto:
+      // if (this.dom.stat[att.team].kills >= (this.mode.teamLimit || this.o.fraglimit)) {
+      //   this.dom.win = att.team;
+      //   this.dom.why = 'limite_bajas';
+      //   won = true;
+      // }
+    }
+    // ---------------------------------------------
+
     if (this.mode.snipers && scoring && att && att !== v && att.streak === 6 && !att.ow[2]) {
       att.ow[2] = 1; att.am.shells = 999; att.dirty = true;
       if (att.send) att.send({ t: 'ev', e: 'unlock', w: 2 });
       this.bcast({ t: 'ev', e: 'sys', m: att.name + ' hizo una racha de 6 bajas: ¡desbloqueó la escopeta doble!' });
     }
+    
     this.sendScores();
-    // Arena termina siempre por tiempo: el límite de bajas no aportaba nada (5 minutos, casi nunca se llegaba).
-    // Queda detrás de `fragLimit` por si algún modo lo quiere de vuelta; los modos por equipos usan `teamLimit`.
-    if (won || (scoring && this.mode.fragLimit && !this.mode.gg && !this.mode.teams && att && att !== v && att.kills >= this.o.fraglimit)) this.endMatch();
-    if (scoring && hasCard(v, 'bomba')) this.deathBlast(v);   // carta Carga mortal: explota al morir
+    
+    // Evaluación final para cerrar la partida
+    if (won || (scoring && this.mode.fragLimit && !this.mode.gg && !this.mode.teams && !this.mode.dom && att && att !== v && att.kills >= this.o.fraglimit)) {
+      this.endMatch();
+    }
+    
+    if (scoring && hasCard(v, 'bomba')) this.deathBlast(v);   // carta Carga mortal
   }
+
   /* ---- gungame: subir y bajar de nivel ---- */
   ggKill(v, att, w) {
     const down = (p, why) => {

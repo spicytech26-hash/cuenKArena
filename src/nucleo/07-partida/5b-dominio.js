@@ -1,4 +1,4 @@
-  /* =====================================================================
+/* =====================================================================
      CAPTURA EL DOMINIO — solo los modos con `dom` (constantes en DOM, 01-datos.js)
      Todo es del servidor: generadores, barreras, bosses, ataques y quién gana. El cliente solo dibuja.
      this.dom = { gens, bars, boss, orbs, zones, stat } ; stat[equipo] = lo que ESE equipo le rompió al rival.
@@ -15,7 +15,7 @@
       gens: M.gens.map(g => ({ team: g.team, lane: g.lane, x: g.x, y: g.y, z: g.z, atk: g.atk, hp: DOM.GEN_HP })),
       bars: M.bars.map(b => ({ team: b.team, lane: b.lane, st: 0, t: 0 })),
       boss: M.bosses.map((b, t) => ({ team: t, x: b.x, y: b.y, z: b.z, yaw: b.yaw, yaw0: b.yaw, hp: DOM.BOSS_HP, atk: 0, ph: 0, t: 0, cd: 4, tgt: 0, p: null, aim: b.yaw, think: 0, seen: [], rage: -1, alertT: -99, hurtBy: 0 })),
-      orbs: [], zones: [], oid: 1, stat: [{ bars: 0, gens: 0, dmg: 0 }, { bars: 0, gens: 0, dmg: 0 }], first: [false, false], dirtyG: new Set(), bsKey: '', win: null, why: '', ban: [null, null]
+      orbs: [], zones: [], oid: 1, stat: [{ bars: 0, gens: 0, dmg: 0, kills: 0 }, { bars: 0, gens: 0, dmg: 0, kills: 0 }], first: [false, false], dirtyG: new Set(), bsKey: '', win: null, why: '', ban: [null, null]
     };
   }
   domState() { const d = this.dom; return d ? { g: d.gens.map(g => Math.ceil(g.hp)), b: d.bars.map(b => b.st), h: d.boss.map(b => Math.ceil(b.hp)) } : null; }
@@ -85,17 +85,35 @@
   domBossDown(t, att) {
     const d = this.dom, b = d.boss[t];
     b.hp = 0; b.atk = 0; b.ph = 0; d.win = 1 - t; d.why = 'boss';
-    if (att) { att.caps += 3; this.credit(att, DOM.PAY.BOSS_KILL, 'mataste al boss'); }
-    this.domEv({ a: 'bossdown', b: t, id: att ? att.id : 0, n: att ? att.name : '' });
+    
+    // Aislamos los eventos y los pagos para que un error acá no impida que termine la partida
+    try {
+      if (att) { 
+        att.caps += 3; 
+        const reward = (typeof DOM !== 'undefined' && DOM.PAY && DOM.PAY.BOSS_KILL) ? DOM.PAY.BOSS_KILL : 1000;
+        this.credit(att, reward, 'mataste al boss'); 
+      }
+      this.domEv({ a: 'bossdown', b: t, id: att ? att.id : 0, n: att ? att.name : '' });
+    } catch(e) {
+      console.error("Error silencioso evitado al procesar la muerte del boss:", e);
+    }
+    
+    // Ahora endMatch() se ejecuta incondicionalmente
     this.endMatch();
   }
   /* quién gana: el que mató al boss rival. Por tiempo: el que más vida porcentual le sacó al boss rival;
-     después más barreras tiradas, más generadores rotos y más daño total. Si todo empata, -1. */
+     después más barreras tiradas, más generadores rotos, más daño total y cantidad de bajas. Si todo empata, -1. */
   domWinner() {
     const d = this.dom; if (!d) return -1;
     if (d.win != null) return d.win;
     // por cada criterio, lo que logró cada equipo [rojo, azul]: gana el que tiene MÁS
-    const s = d.stat, cmp = [[1 - d.boss[1].hp / DOM.BOSS_HP, 1 - d.boss[0].hp / DOM.BOSS_HP, 'vida del boss'], [s[0].bars, s[1].bars, 'barreras'], [s[0].gens, s[1].gens, 'generadores'], [Math.round(s[0].dmg), Math.round(s[1].dmg), 'daño']];
+    const s = d.stat, cmp = [
+      [1 - d.boss[1].hp / DOM.BOSS_HP, 1 - d.boss[0].hp / DOM.BOSS_HP, 'vida del boss'], 
+      [s[0].bars, s[1].bars, 'barreras'], 
+      [s[0].gens, s[1].gens, 'generadores'], 
+      [Math.round(s[0].dmg), Math.round(s[1].dmg), 'daño'],
+      [s[0].kills, s[1].kills, 'bajas'] // Ahora las kills se toman en cuenta de forma oficial
+    ];
     for (const [a, b, why] of cmp) if (Math.abs(a - b) > 1e-9) { d.why = why; return a > b ? 0 : 1; }
     d.why = 'empate'; return -1;
   }
@@ -228,7 +246,7 @@
     const f = dirFromAngles(b.aim, 0), foes = this.domFoes(b);
     if (A.forma === 'orbes') return this.domOrbs(b, A);
     if (A.forma === 'barrido') { b.swing = Math.random() < .5 ? -1 : 1; b.aim -= b.swing * A.barre * A.hit / 2; return; }   // el rayo arranca de un costado y barre cruzando al objetivo
-    if (A.forma === 'circulo') return;                       // la zona explota sola (tickZones)
+    if (A.forma === 'circulo') return;                        // la zona explota sola (tickZones)
     for (const t of foes) {
       const dx = t.s.x - b.x, dz = t.s.z - b.z, dl = Math.hypot(dx, dz) || 1e-6;
       if (dl > A.r || Math.abs(t.s.y - b.y) > 9) continue;
@@ -379,4 +397,3 @@
     this.sendScores();
     return true;
   }
-

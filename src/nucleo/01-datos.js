@@ -129,17 +129,27 @@ const DOM = {
   CORE_R: 1.15,         // radio del núcleo (punto débil)
   CORE_MULT: 2,         // el núcleo recibe el doble
   BOSS_SEE: 48,         // hasta dónde ve y ataca
-  BOSS_TURN: 1.6,       // qué tan rápido gira (radianes por segundo)
-  WARN: 1,              // aviso antes de cada ataque, en segundos
-  GCD: [1.6, 2.8],      // descanso entre ataques (mínimo, máximo)
+  BOSS_TURN: 1.7,       // qué tan rápido gira mientras avisa (radianes por segundo)
+  GCD: [1.5, 2.6],      // descanso entre ataques (mínimo, máximo)
   ENRAGE: .35,          // con menos de esta fracción de vida ataca más seguido…
-  ENRAGE_CD: .65,       // …descansando este factor
-  LASH: { r: 18, cos: .45, dmg: 55, kick: 9 },            // boss rojo: latigazo de cadenas en abanico hacia adelante
-  GRAB: { range: 42, dmg: 20, pull: 30 },                 // boss rojo: agarre que arrastra a un jugador hacia él
-  PULSE: { r: 16, dmg: 50, kick: 13 },                    // boss azul: pulso de energía alrededor
-  ORBS: { n: 3, dmg: 28, speed: 15, turn: 2.4, life: 6, r: 1.3 },   // boss azul: proyectiles teledirigidos desde el halo
-  ZONE: { r: 7, dmg: 70, warn: 1.3, kick: 8 },            // los dos: círculo en el piso que explota
-  RAGE_ZONES: 3,        // al abrirse un carril el boss castiga la entrada con esta cantidad de zonas
+  ENRAGE_CD: .6,        // …descansando este factor
+  /* Los ataques. Cada uno tiene tres etapas: aviso (el boss se prepara y se marca en el piso la zona exacta),
+     golpe (el daño, justo donde decía la marca) y recuperación (queda vendido). `forma` es la figura del daño
+     y también la que dibuja el cliente: arco, anillo, linea, circulo o barrido. `lock` es en qué fracción del
+     aviso deja de girar: a partir de ahí el ataque ya no te sigue y se puede esquivar.
+     r = alcance · cos = coseno del medio ángulo del abanico · w = medio ancho · kick = empujón */
+  ATK: {
+    1: { n: 'latigazo', team: 0, warn: 1,   hit: .18, rec: .7,  forma: 'arco',    r: 19, cos: .42, dmg: 52, kick: 9,  lock: .55, near: 1 },
+    2: { n: 'agarre',   team: 0, warn: 1,   hit: .12, rec: 1.2, forma: 'linea',   r: 40, w: 1.7,   dmg: 22, pull: 32, lock: .6 },
+    3: { n: 'pisotón',  team: 0, warn: 1.1, hit: .22, rec: .9,  forma: 'anillo',  r: 16, dmg: 58,  kick: 11, lock: 0, near: 1, aire: 1 },
+    4: { n: 'pulso',    team: 1, warn: 1,   hit: .22, rec: .8,  forma: 'anillo',  r: 17, dmg: 55,  kick: 13, lock: 0, near: 1 },
+    5: { n: 'salva',    team: 1, warn: 1.1, hit: .5,  rec: .7,  forma: 'orbes',   r: 48, lock: .8 },
+    6: { n: 'rayo',     team: 1, warn: 1.2, hit: 1,   rec: 1,   forma: 'barrido', r: 46, w: 2.2,   dmg: 110, lock: .5, barre: .8 },
+    7: { n: 'zona',     warn: 1.4, hit: .12, rec: .5, forma: 'circulo', r: 7, dmg: 70, kick: 8, lock: .45, suelo: 1 }
+  },
+  GRAB: { pull: 32 },
+  ORBS: { n: 3, dmg: 28, speed: 15, turn: 2.4, life: 6, r: 1.3 },   // proyectiles teledirigidos de la salva
+  ZONES_RAGE: 3,        // al abrirse un carril el boss castiga la entrada con esta cantidad de zonas
   ALERT_EVERY: 12,      // cada cuánto se repite el aviso "están atacando a tu boss"
   // aparición
   SPAWN_INV: 3,         // segundos de invulnerabilidad al aparecer

@@ -157,7 +157,10 @@
     }
     const sn = { t: 'sn', tm: Math.round(this.time * 1000) / 1000, ps };
     if (this.dom) {   // Captura el dominio: solo viaja lo que cambió (vida y giro de los bosses, vida de generadores, orbes)
-      const d = this.dom, bs = d.boss.map(b => [Math.ceil(b.hp), r2(b.yaw), b.atk]), key = bs.join();
+      // bs por boss: vida, giro, ataque, etapa y lo que le queda a la etapa (en décimas). Se manda solo cuando
+      // cambia algo que se note, así un boss quieto no gasta red
+      const d = this.dom, bs = d.boss.map(b => [Math.ceil(b.hp), r2(b.yaw), b.atk, b.ph, Math.round(b.t * 10)]);
+      const key = d.boss.map(b => Math.ceil(b.hp) + ',' + Math.round(b.yaw * 12) + ',' + b.atk + b.ph).join();
       if (key !== d.bsKey) { d.bsKey = key; sn.bs = bs; }
       if (d.dirtyG.size) { sn.gh = [...d.dirtyG].map(i => [i, Math.ceil(d.gens[i].hp)]); d.dirtyG.clear(); }
       if (d.orbs.length) sn.ob = d.orbs.map(o => [o.id, r2(o.x), r2(o.y), r2(o.z), o.team]);

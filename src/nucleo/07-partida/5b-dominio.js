@@ -3,7 +3,7 @@
      Todo es del servidor: generadores, barreras, bosses, ataques y quién gana. El cliente solo dibuja.
      this.dom = { gens, bars, boss, orbs, zones, stat } ; stat[equipo] = lo que ESE equipo le rompió al rival.
      Estado de una barrera: 0 activa · 1 debilitada (cayó un generador) · 2 caída.
-     Ataques del boss (b.atk): 1 latigazo · 2 agarre · 3 pulso · 4 orbes · 5 zona.
+     Ataques del boss: DOM.ATK (1 latigazo · 2 agarre · 3 pisotón · 4 pulso · 5 salva · 6 rayo · 7 zona).
      ===================================================================== */
   domSetup() {
     this.dom = null;
@@ -14,7 +14,7 @@
     this.dom = {
       gens: M.gens.map(g => ({ team: g.team, lane: g.lane, x: g.x, y: g.y, z: g.z, atk: g.atk, hp: DOM.GEN_HP })),
       bars: M.bars.map(b => ({ team: b.team, lane: b.lane, st: 0, t: 0 })),
-      boss: M.bosses.map((b, t) => ({ team: t, x: b.x, y: b.y, z: b.z, yaw: b.yaw, yaw0: b.yaw, hp: DOM.BOSS_HP, atk: 0, t: 0, cd: 4, tgt: 0, p: null, think: 0, seen: [], rage: -1, alertT: -99, hurtBy: 0 })),
+      boss: M.bosses.map((b, t) => ({ team: t, x: b.x, y: b.y, z: b.z, yaw: b.yaw, yaw0: b.yaw, hp: DOM.BOSS_HP, atk: 0, ph: 0, t: 0, cd: 4, tgt: 0, p: null, aim: b.yaw, think: 0, seen: [], rage: -1, alertT: -99, hurtBy: 0 })),
       orbs: [], zones: [], oid: 1, stat: [{ bars: 0, gens: 0, dmg: 0 }, { bars: 0, gens: 0, dmg: 0 }], first: [false, false], dirtyG: new Set(), bsKey: '', win: null, why: '', ban: [null, null]
     };
   }
@@ -81,7 +81,7 @@
   }
   domBossDown(t, att) {
     const d = this.dom, b = d.boss[t];
-    b.hp = 0; b.atk = 0; d.win = 1 - t; d.why = 'boss';
+    b.hp = 0; b.atk = 0; b.ph = 0; d.win = 1 - t; d.why = 'boss';
     if (att) { att.caps += 3; this.credit(att, DOM.PAY.BOSS_KILL, 'mataste al boss'); }
     this.domEv({ a: 'bossdown', b: t, id: att ? att.id : 0, n: att ? att.name : '' });
     this.endMatch();
@@ -140,17 +140,23 @@
     dm.gens.forEach((g, i) => { if (g.hp <= 0 || g.team === own.team || (skip && skip.kind === 'g' && skip.i === i)) return; const ds = bd(g, 1, 3.2); if (ds < rad) this.domHit(own, 'g', i, dmg * (1 - sfall * ds / rad), false); });
     dm.boss.forEach((b, i) => { if (b.hp <= 0 || b.team === own.team || (skip && skip.kind === 'b' && skip.i === i)) return; const ds = bd(b, DOM.BOSS_R, DOM.BOSS_H); if (ds < rad) this.domHit(own, 'b', i, dmg * (1 - sfall * ds / rad), false); });
   }
-  /* ---- bosses ---- */
+  /* ================= LOS BOSSES =================
+     Cada ataque pasa por tres etapas (b.ph): 1 aviso · 2 golpe · 3 recuperación. Durante el aviso el boss gira
+     hacia su objetivo hasta la fracción `lock` y ahí fija la dirección: de ahí en más el ataque ya no te sigue.
+     El daño se calcula en el servidor con la MISMA figura que el cliente dibuja en el piso (DOM.ATK[k].forma),
+     en el instante en que empieza el golpe, con la dirección y el punto que quedaron fijados en el aviso. */
   domTargets(b) {
     const out = [];
     for (const t of this.players.values()) {
       if (!t.alive || !t.joined || t.team === b.team || t.team < 0) continue;
       if (Math.hypot(t.s.x - b.x, t.s.z - b.z) > DOM.BOSS_SEE) continue;
-      if (!los(this.W, b.x, b.y + DOM.CORE_Y, b.z, t.s.x, t.s.y + 1, t.s.z) && !los(this.W, b.x, b.y + DOM.BOSS_H - 1, b.z, t.s.x, t.s.y + 1.6, t.s.z)) continue;
+      if (!this.domSee(b, t)) continue;
       out.push(t);
     }
     return out;
   }
+  domSee(b, t) { return los(this.W, b.x, b.y + DOM.CORE_Y, b.z, t.s.x, t.s.y + 1, t.s.z) || los(this.W, b.x, b.y + DOM.BOSS_H - 1, b.z, t.s.x, t.s.y + 1.6, t.s.z); }
+  domFoes(b) { return [...this.players.values()].filter(t => t.alive && t.joined && t.team >= 0 && t.team !== b.team); }
   tickDom(dt) {
     const d = this.dom; if (!d || this.state !== 'play') return;
     for (const b of d.boss) { const prev = setPasa(b.team); try { this.tickBoss(b, dt); } finally { setPasa(prev); } if (this.state !== 'play') return; }
@@ -162,67 +168,102 @@
     const d = this.dom; if (b.hp <= 0) return;
     b.think -= dt;
     if (b.think <= 0) { b.think = .25; b.seen = this.domTargets(b); }
-    const ts = b.seen.filter(t => t.alive);
-    if (b.atk) {   // avisando: no gira, así el ataque se puede esquivar
-      b.t -= dt;
-      if (b.t <= 0) { const k = b.atk; b.atk = 0; b.cd = (DOM.GCD[0] + Math.random() * (DOM.GCD[1] - DOM.GCD[0])) * (b.hp < DOM.ENRAGE * DOM.BOSS_HP ? DOM.ENRAGE_CD : 1); this.domResolve(b, k); }
+    const ts = b.seen.filter(t => t.alive && t.team !== b.team);
+    if (b.ph) {   // está en medio de un ataque
+      const A = DOM.ATK[b.atk]; b.t -= dt;
+      if (b.ph === 1) {
+        const q = 1 - b.t / A.warn;
+        if (q < (A.lock || 0)) this.domTurn(b, this.players.get(b.tgt), dt);   // todavía te sigue
+        if (b.t <= 0) { b.ph = 2; b.t = A.hit; this.domStrike(b, A); if (this.state !== 'play') return; }
+      } else if (b.ph === 2) {
+        if (A.forma === 'barrido') { this.domBeam(b, A, dt); if (this.state !== 'play') return; }
+        if (b.t <= 0) { b.ph = 3; b.t = A.rec; }
+      } else if (b.t <= 0) {
+        b.ph = 0; b.atk = 0;
+        b.cd = (DOM.GCD[0] + Math.random() * (DOM.GCD[1] - DOM.GCD[0])) * (b.hp < DOM.ENRAGE * DOM.BOSS_HP ? DOM.ENRAGE_CD : 1);
+      }
       return;
     }
-    if (b.rage >= 0) {   // se abrió un carril: castiga la entrada
+    if (b.rage >= 0) {   // se abrió un carril: castiga la entrada con una tanda de zonas
       const g = MAPS[this.W.id].defPts[b.team][b.rage]; b.rage = -1;
-      if (g) for (let k = 0; k < DOM.RAGE_ZONES; k++) this.domZone(b, g.x + (Math.random() - .5) * 8, g.y, g.z + (k - (DOM.RAGE_ZONES - 1) / 2) * 6, DOM.ZONE.warn + k * .5);
-      this.domEv({ a: 'atk', b: b.team, k: 6, t: 1.5 });
+      if (g) { for (let k = 0; k < DOM.ZONES_RAGE; k++) this.domZone(b, g.x + (k - 1) * 5.5, g.y, g.z + ((k * 7) % 5 - 2) * 3, DOM.ATK[7].warn + k * .45); this.domEv({ a: 'rage', b: b.team }); }
     }
     let tg = ts.find(t => t.id === b.hurtBy) || ts.find(t => t.id === b.tgt) || null;
     if (!tg) for (const t of ts) if (!tg || Math.hypot(t.s.x - b.x, t.s.z - b.z) < Math.hypot(tg.s.x - b.x, tg.s.z - b.z)) tg = t;
     b.tgt = tg ? tg.id : 0;
-    const want = tg ? Math.atan2(-(tg.s.x - b.x), -(tg.s.z - b.z)) : b.yaw0;
-    let dy = want - b.yaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
-    b.yaw += clamp(dy, -DOM.BOSS_TURN * dt, DOM.BOSS_TURN * dt);
+    this.domTurn(b, tg, dt);
     b.cd -= dt;
     if (b.cd > 0 || !tg) return;
-    const dist = Math.hypot(tg.s.x - b.x, tg.s.z - b.z), near = b.team === 0 ? 1 : 3, far = b.team === 0 ? 2 : 4, nr = b.team === 0 ? DOM.LASH.r : DOM.PULSE.r, r = Math.random();
-    const k = dist < nr * .9 ? (r < .6 ? near : r < .8 ? 5 : far) : (r < .55 ? far : 5);
-    b.atk = k; b.t = k === 5 ? .7 : DOM.WARN; b.p = [tg.s.x, tg.s.y, tg.s.z];
-    if (k === 1) b.yaw = want;   // el latigazo sale hacia donde estaba el blanco al avisar
-    if (k === 5) this.domZone(b, tg.s.x, tg.s.y, tg.s.z, DOM.ZONE.warn);
-    this.domEv({ a: 'atk', b: b.team, k, t: r2(b.t), id: tg.id, y: r2(b.yaw) });
+    // elegir ataque: según distancia y cuántos rivales tiene encima
+    const dist = Math.hypot(tg.s.x - b.x, tg.s.z - b.z), cerca = ts.filter(t => Math.hypot(t.s.x - b.x, t.s.z - b.z) < 17).length;
+    const lista = Object.keys(DOM.ATK).filter(k => { const A = DOM.ATK[k]; return (A.team == null || A.team === b.team) && (!A.near || dist < A.r * .95) && (A.forma === 'circulo' || dist < (A.r || 99)); });
+    let k = lista.length ? +lista[(Math.random() * lista.length) | 0] : 7;
+    if (cerca >= 2) { const area = lista.filter(q => DOM.ATK[q].forma === 'anillo'); if (area.length && Math.random() < .7) k = +area[0]; }   // con varios encima prefiere el área
+    if (dist > 24 && Math.random() < .6) k = b.team ? (Math.random() < .5 ? 5 : 6) : 2;   // de lejos: a distancia
+    const A = DOM.ATK[k];
+    b.atk = k; b.ph = 1; b.t = A.warn; b.tgt = tg.id;
+    b.aim = Math.atan2(-(tg.s.x - b.x), -(tg.s.z - b.z));
+    b.p = A.suelo ? [tg.s.x, tg.s.y, tg.s.z] : null;
+    if (A.suelo) { const fl = raycast(this.W, b.p[0], b.p[1] + 1, b.p[2], 0, -1, 0, 12); if (fl) b.p[1] = b.p[1] + 1 - fl.t; }
+    this.domEv({ a: 'atk', b: b.team, k, t: r2(A.warn), id: tg.id, y: r2(b.aim), p: b.p ? r3a(b.p) : 0 });
+  }
+  domTurn(b, tg, dt) {
+    const want = tg && tg.alive ? Math.atan2(-(tg.s.x - b.x), -(tg.s.z - b.z)) : b.yaw0;
+    let dy = want - b.yaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
+    b.yaw += clamp(dy, -DOM.BOSS_TURN * dt, DOM.BOSS_TURN * dt);
+    b.aim = b.yaw;
+  }
+  domHurt(b, t, amt, dir, kick) { this.damage(t, amt, null, null, dir, kick / amt, 'boss'); }
+  // el golpe: se resuelve con la figura del ataque
+  domStrike(b, A) {
+    const f = dirFromAngles(b.aim, 0), foes = this.domFoes(b);
+    if (A.forma === 'orbes') return this.domOrbs(b, A);
+    if (A.forma === 'barrido') { b.swing = Math.random() < .5 ? -1 : 1; b.aim -= b.swing * A.barre * A.hit / 2; return; }   // el rayo arranca de un costado y barre cruzando al objetivo
+    if (A.forma === 'circulo') return;                       // la zona explota sola (tickZones)
+    for (const t of foes) {
+      const dx = t.s.x - b.x, dz = t.s.z - b.z, dl = Math.hypot(dx, dz) || 1e-6;
+      if (dl > A.r || Math.abs(t.s.y - b.y) > 9) continue;
+      if (A.forma === 'arco' && (dx * f[0] + dz * f[2]) / dl < A.cos) continue;
+      if (A.forma === 'linea') { const pr = dx * f[0] + dz * f[2]; if (pr < 0 || Math.hypot(dx - f[0] * pr, dz - f[2] * pr) > A.w) continue; }
+      if (A.aire && !t.s.on && t.s.y > b.y + 1.2) continue;   // el pisotón no alcanza al que saltó
+      if (!this.domSee(b, t)) continue;
+      if (A.pull) {   // el agarre arrastra hacia el boss
+        this.domHurt(b, t, A.dmg, [-dx / dl * .93, .34, -dz / dl * .93], A.pull);
+        this.domEv({ a: 'grab', b: b.team, id: t.id });
+        return;
+      }
+      this.domHurt(b, t, A.dmg, [dx / dl * .8, .6, dz / dl * .8], A.kick);
+      if (this.state !== 'play') return;
+    }
+    if (A.pull) this.domEv({ a: 'miss', b: b.team });   // la cadena vuelve vacía
+  }
+  // rayo del núcleo: barre mientras dura el golpe y quema al que toca
+  domBeam(b, A, dt) {
+    const A2 = DOM.ATK[b.atk], w = A2.barre || 0;
+    b.aim += w * dt * (b.swing || 1);
+    b.yaw = b.aim;
+    const f = dirFromAngles(b.aim, 0);
+    for (const t of this.domFoes(b)) {
+      const dx = t.s.x - b.x, dz = t.s.z - b.z, pr = dx * f[0] + dz * f[2];
+      if (pr < 1 || pr > A.r || Math.abs(t.s.y - b.y - 2) > 7) continue;
+      if (Math.hypot(dx - f[0] * pr, dz - f[2] * pr) > A.w) continue;
+      if (!this.domSee(b, t)) continue;
+      this.domHurt(b, t, A.dmg * dt / A.hit, [f[0] * .3, .25, f[2] * .3], 2);
+      if (this.state !== 'play') return;
+    }
+  }
+  domOrbs(b, A) {
+    const d = this.dom, ts = this.domFoes(b).filter(t => Math.hypot(t.s.x - b.x, t.s.z - b.z) <= A.r && this.domSee(b, t));
+    if (!ts.length) return;
+    for (let i = 0; i < DOM.ORBS.n; i++) {
+      const a = b.aim + (i - (DOM.ORBS.n - 1) / 2) * .8, f = dirFromAngles(a, .45);
+      d.orbs.push({ id: d.oid++, team: b.team, x: b.x + f[0] * 2.5, y: b.y + DOM.BOSS_H - .5, z: b.z + f[2] * 2.5, vx: f[0] * DOM.ORBS.speed, vy: f[1] * DOM.ORBS.speed, vz: f[2] * DOM.ORBS.speed, tgt: ts[i % ts.length].id, life: DOM.ORBS.life });
+    }
   }
   domZone(b, x, y, z, warn) {
     const fl = raycast(this.W, x, y + 1, z, 0, -1, 0, 12), fy = fl ? y + 1 - fl.t : y;
-    this.dom.zones.push({ team: b.team, x, y: fy, z, r: DOM.ZONE.r, t: warn });
-    this.domEv({ a: 'zone', b: b.team, p: r3a([x, fy, z]), r: DOM.ZONE.r, t: r2(warn) });
-  }
-  domHurt(b, t, amt, dir, kick) { this.damage(t, amt, null, null, dir, kick / amt, 'boss'); }
-  domResolve(b, k) {
-    const d = this.dom, hy = b.y + DOM.CORE_Y;
-    const vis = t => los(this.W, b.x, hy, b.z, t.s.x, t.s.y + 1, t.s.z) || los(this.W, b.x, b.y + DOM.BOSS_H - 1, b.z, t.s.x, t.s.y + 1.6, t.s.z);
-    const foes = [...this.players.values()].filter(t => t.alive && t.joined && t.team >= 0 && t.team !== b.team);
-    if (k === 1 || k === 3) {
-      const A = k === 1 ? DOM.LASH : DOM.PULSE, f = dirFromAngles(b.yaw, 0);
-      for (const t of foes) {
-        const dx = t.s.x - b.x, dz = t.s.z - b.z, dl = Math.hypot(dx, dz) || 1;
-        if (dl > A.r || Math.abs(t.s.y - b.y) > 8) continue;
-        if (k === 1 && (dx * f[0] + dz * f[2]) / dl < A.cos) continue;
-        if (!vis(t)) continue;
-        this.domHurt(b, t, A.dmg, [dx / dl * .8, .6, dz / dl * .8], A.kick);
-        if (this.state !== 'play') return;
-      }
-    } else if (k === 2) {
-      const t = this.players.get(b.tgt);
-      if (t && t.alive && t.team !== b.team && Math.hypot(t.s.x - b.x, t.s.z - b.z) <= DOM.GRAB.range && vis(t)) {
-        const dx = b.x - t.s.x, dz = b.z - t.s.z, dl = Math.hypot(dx, dz) || 1, pull = Math.min(DOM.GRAB.pull, 6 + dl * .9);
-        this.domHurt(b, t, DOM.GRAB.dmg, [dx / dl * .93, .36, dz / dl * .93], pull);
-        this.domEv({ a: 'grab', b: b.team, id: t.id });
-      }
-    } else if (k === 4) {
-      const ts = foes.filter(t => Math.hypot(t.s.x - b.x, t.s.z - b.z) <= DOM.BOSS_SEE && vis(t));
-      if (ts.length) for (let i = 0; i < DOM.ORBS.n; i++) {
-        const a = b.yaw + (i - (DOM.ORBS.n - 1) / 2) * .9, f = dirFromAngles(a, .5);
-        d.orbs.push({ id: d.oid++, team: b.team, x: b.x + f[0] * 2.5, y: b.y + DOM.BOSS_H - .5, z: b.z + f[2] * 2.5, vx: f[0] * DOM.ORBS.speed, vy: f[1] * DOM.ORBS.speed, vz: f[2] * DOM.ORBS.speed, tgt: ts[i % ts.length].id, life: DOM.ORBS.life });
-      }
-    }
-    this.domEv({ a: 'fx', b: b.team, k });
+    this.dom.zones.push({ team: b.team, x, y: fy, z, r: DOM.ATK[7].r, t: warn });
+    this.domEv({ a: 'zone', b: b.team, p: r3a([x, fy, z]), r: DOM.ATK[7].r, t: r2(warn) });
   }
   tickOrbs(dt) {
     const d = this.dom, O = DOM.ORBS;
@@ -246,7 +287,7 @@
     }
   }
   tickZones(dt) {
-    const d = this.dom, Z = DOM.ZONE;
+    const d = this.dom, Z = DOM.ATK[7];
     for (let i = d.zones.length - 1; i >= 0; i--) {
       const z = d.zones[i]; z.t -= dt; if (z.t > 0) continue;
       d.zones.splice(i, 1);
@@ -260,6 +301,7 @@
       }
     }
   }
+
   /* ---- bots ---- */
   // a qué estructura le puede tirar este bot ahora (la tiene que ver)
   domBotTarget(p) {
@@ -275,12 +317,16 @@
       return best;
     } finally { setPasa(prev); }
   }
-  // de dónde hay que salir corriendo: zonas avisadas y el alcance del latigazo o del pulso mientras el boss avisa
+  // de dónde hay que salir corriendo: zonas marcadas y el alcance del ataque que el boss está avisando
   domDanger(p) {
     const d = this.dom; if (!d) return null;
     for (const z of d.zones) if (z.team !== p.team && Math.hypot(p.s.x - z.x, p.s.z - z.z) < z.r + 1.5) return z;
     const b = d.boss[1 - p.team];
-    if (b.hp > 0 && (b.atk === 1 || b.atk === 3) && Math.hypot(p.s.x - b.x, p.s.z - b.z) < (b.atk === 1 ? DOM.LASH.r : DOM.PULSE.r) + 2) return b;
+    if (b.hp > 0 && b.ph === 1) {
+      const A = DOM.ATK[b.atk], dx = p.s.x - b.x, dz = p.s.z - b.z, dl = Math.hypot(dx, dz);
+      if (A.forma === 'anillo' || A.forma === 'arco') { if (dl < A.r + 2) return b; }
+      else if (A.forma === 'linea' || A.forma === 'barrido') { const f = dirFromAngles(b.aim, 0), pr = dx * f[0] + dz * f[2]; if (pr > 0 && pr < A.r && Math.hypot(dx - f[0] * pr, dz - f[2] * pr) < A.w + 2.5) return b; }
+    }
     return null;
   }
   // los atacantes se reparten por los tres carriles (id % 3); uno de cada DOM.BOT_DEF se queda a defender

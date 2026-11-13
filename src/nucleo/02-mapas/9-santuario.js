@@ -116,7 +116,7 @@ function buildSantuario() {
   for (let z = -62; z < 62; z += 26) deco.push({ t: 'bruma', soft: 1, x0: -CX + 2, x1: CX - 2, z0: z, z1: z + 24, y: CY + 2.4, o: .1, dir: z % 2 ? 1 : -1 });   // bruma sobre el río
 
   for (const sx of [1, -1]) {
-    const team = sx > 0 ? 0 : 1, col = team ? 'neonB' : 'neonR', luz = team ? 0x3a8bff : 0xff7a20, vid = team ? 'neonB' : 'neonR';
+    const team = sx > 0 ? 0 : 1, col = team ? 'neonB' : 'neonR', luz = team ? 0x3a8bff : 0xff7a20, vid = team ? 'vitB' : 'vitR';
     const A = (u0, y0, z0, u1, y1, z1, m, ex) => add(sx * u0, y0, z0, sx * u1, y1, z1, m, ex);
     const P = (u, y, z) => ({ x: sx * u, y, z });
     const col_ = (u, z, y, h, r, m) => columna(sx * u, z, y, h, r, m);
@@ -229,7 +229,7 @@ function buildSantuario() {
     for (let a = 0; a < 10; a++) { const an = a / 10 * 6.2832 + .31, cx2 = bx + Math.cos(an) * 14.5, cz = Math.sin(an) * 14.5; if (Math.abs(cz) > 13.6 || Math.abs(cx2 - bx) > 13.6) continue; columna(cx2, cz, 0, 13, .75, 'pillar'); add(cx2 - 1, 13, cz - 1, cx2 + 1, 14.5, cz + 1, 'brick', D_); }
     cupula(bx, 0, 15, 15, 5, col);
     for (const z of [-26, -16, 16, 26]) vitral(sx * 91.5, z, 4, 7, 10, 'z', vid);          // vitrales del fondo de la fortaleza
-    for (const s of [-1, 1]) { add(bx - 8.6, 0, s * 13, bx - 7.4, 11, s * 15, 'brick'); vitral(bx - 8, s * 14, 3, 6, 7, 'x', vid); }   // y dos en los machones de la arena
+    for (const s of [-1, 1]) { add(bx - 8.9, 0, s * 11, bx - 7.4, 12, s * 17, 'brick'); vitral(bx - 9.05, s * 14, 3, 5, 7, 'z', vid); }   // y dos en los machones de la arena
     for (const [u, z] of [[XB - 11, -11], [XB - 11, 11], [XB + 11, -11], [XB + 11, 11]]) { caj_(u, z, 0, 2, 1.5, 2); }
     bosses[team] = { x: bx, y: 1.4, z: 0, yaw: face(bx, 0, 0, 0) };
     add(bx - 2, 1.4, -2, bx + 2, 1.4 + DOM.BOSS_H, 2, 'clip', { boss: team });
